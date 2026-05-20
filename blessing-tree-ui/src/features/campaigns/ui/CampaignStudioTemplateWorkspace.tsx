@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import type {
   CommunicationTemplateDraft,
   CommunicationTemplateFocusTarget,
 } from '@/features/campaigns/model/campaignCommunicationTemplateBuilder';
 import { communicationAudienceOptions } from '@/features/campaigns/model/campaignStudio';
 import { CampaignStudioTemplateBlockEditor } from '@/features/campaigns/ui/CampaignStudioTemplateBlockEditor';
+import { CampaignStudioTemplateMergeFieldDrawer } from '@/features/campaigns/ui/CampaignStudioTemplateMergeFieldDrawer';
 import { CampaignStudioTemplatePreviewPanel } from '@/features/campaigns/ui/CampaignStudioTemplatePreviewPanel';
 
 interface CampaignStudioTemplateWorkspaceProps {
@@ -31,6 +33,8 @@ export function CampaignStudioTemplateWorkspace({
   onInsertMergeField,
   onFocusTarget,
 }: CampaignStudioTemplateWorkspaceProps) {
+  const [isMergeDrawerOpen, setIsMergeDrawerOpen] = useState(false);
+
   return (
     <section className="campaign-template-workspace" aria-label="Communication template builder">
       <div className="campaign-template-workspace__header">
@@ -140,41 +144,65 @@ export function CampaignStudioTemplateWorkspace({
         </div>
       ) : (
         <div className="campaign-template-workspace__content">
-          <div className="campaign-template-workspace__editor-column">
-            <label className="form-label campaign-template-workspace__subject-field">
-              Subject
-              <input
-                className="form-control"
-                value={draft.subjectTemplate}
-                onFocus={() => onFocusTarget({ kind: 'subject' })}
-                onChange={(event) =>
+          <div
+            className={`campaign-template-workspace__editor-stage ${
+              isMergeDrawerOpen ? 'is-merge-drawer-open' : ''
+            }`}
+          >
+            <CampaignStudioTemplateMergeFieldDrawer
+              isOpen={isMergeDrawerOpen}
+              onInsertMergeField={onInsertMergeField}
+            />
+
+            <div className="campaign-template-workspace__editor-column">
+              <div className="campaign-template-workspace__editor-toolbar">
+                <button
+                  type="button"
+                  className={`campaign-template-preview-shell__drawer-toggle ${
+                    isMergeDrawerOpen ? 'is-active' : ''
+                  }`}
+                  onClick={() => setIsMergeDrawerOpen((currentValue) => !currentValue)}
+                  aria-expanded={isMergeDrawerOpen}
+                >
+                  <i className="bi bi-braces-asterisk" aria-hidden="true" />
+                  <span>{isMergeDrawerOpen ? 'Hide merge fields' : 'Show merge fields'}</span>
+                </button>
+              </div>
+
+              <label className="form-label campaign-template-workspace__subject-field">
+                Subject
+                <input
+                  className="form-control"
+                  value={draft.subjectTemplate}
+                  onFocus={() => onFocusTarget({ kind: 'subject' })}
+                  onChange={(event) =>
+                    onChangeDraft((currentDraft) => ({
+                      ...currentDraft,
+                      subjectTemplate: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <CampaignStudioTemplateBlockEditor
+                blocks={draft.bodyBlocks}
+                isSaving={isSaving}
+                onChangeBlocks={(bodyBlocks) =>
                   onChangeDraft((currentDraft) => ({
                     ...currentDraft,
-                    subjectTemplate: event.target.value,
+                    bodyBlocks,
                   }))
                 }
+                onFocusBlockField={(blockId, field) =>
+                  onFocusTarget({ kind: 'block', blockId, field })
+                }
               />
-            </label>
-
-            <CampaignStudioTemplateBlockEditor
-              blocks={draft.bodyBlocks}
-              isSaving={isSaving}
-              onChangeBlocks={(bodyBlocks) =>
-                onChangeDraft((currentDraft) => ({
-                  ...currentDraft,
-                  bodyBlocks,
-                }))
-              }
-              onFocusBlockField={(blockId, field) =>
-                onFocusTarget({ kind: 'block', blockId, field })
-              }
-            />
+            </div>
           </div>
 
           <CampaignStudioTemplatePreviewPanel
             subjectTemplate={draft.subjectTemplate}
             blocks={draft.bodyBlocks}
-            onInsertMergeField={onInsertMergeField}
           />
         </div>
       )}

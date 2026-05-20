@@ -1,23 +1,18 @@
-import { useState } from 'react';
 import {
   renderTemplateBlocksPreview,
   renderTemplateText,
   type CommunicationTemplateBlock,
 } from '@/features/campaigns/model/campaignCommunicationTemplateBuilder';
-import { CampaignStudioTemplateMergeFieldDrawer } from '@/features/campaigns/ui/CampaignStudioTemplateMergeFieldDrawer';
 
 interface CampaignStudioTemplatePreviewPanelProps {
   subjectTemplate: string;
   blocks: CommunicationTemplateBlock[];
-  onInsertMergeField: (field: string) => void;
 }
 
 export function CampaignStudioTemplatePreviewPanel({
   subjectTemplate,
   blocks,
-  onInsertMergeField,
 }: CampaignStudioTemplatePreviewPanelProps) {
-  const [isMergeDrawerOpen, setIsMergeDrawerOpen] = useState(false);
   const renderedBlocks = renderTemplateBlocksPreview(blocks);
 
   return (
@@ -28,27 +23,11 @@ export function CampaignStudioTemplatePreviewPanel({
             <span className="campaign-studio__eyebrow">Rendered Preview</span>
             <div className="campaign-template-preview-shell__title">Live email sample</div>
           </div>
-          <button
-            type="button"
-            className={`campaign-template-preview-shell__drawer-toggle ${
-              isMergeDrawerOpen ? 'is-active' : ''
-            }`}
-            onClick={() => setIsMergeDrawerOpen((currentValue) => !currentValue)}
-            aria-expanded={isMergeDrawerOpen}
-            aria-controls="campaign-template-merge-drawer"
-          >
-            <i className="bi bi-braces-asterisk" aria-hidden="true" />
-            <span>{isMergeDrawerOpen ? 'Hide merge fields' : 'Show merge fields'}</span>
-          </button>
-        </div>
-        <div className={`campaign-template-preview-stage ${isMergeDrawerOpen ? 'is-drawer-open' : ''}`}>
-          <div id="campaign-template-merge-drawer">
-            <CampaignStudioTemplateMergeFieldDrawer
-              isOpen={isMergeDrawerOpen}
-              onInsertMergeField={onInsertMergeField}
-            />
+          <div className="campaign-template-preview-shell__note">
+            This surface shows the rendered version only.
           </div>
-
+        </div>
+        <div className="campaign-template-preview-stage">
           <div className="campaign-template-preview-email">
             <div className="campaign-template-preview-email__chrome">
               <span className="campaign-template-preview-email__dot" />

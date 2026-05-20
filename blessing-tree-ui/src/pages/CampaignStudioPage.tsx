@@ -45,6 +45,7 @@ export function CampaignStudioPage() {
   } = useCampaignStudio(campaignId);
   const [selectedSection, setSelectedSection] =
     useState<CampaignStudioSectionId>('overview');
+  const [isAiRailOpen, setIsAiRailOpen] = useState(false);
   const [isUpdatingCampaign, setIsUpdatingCampaign] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
@@ -86,6 +87,13 @@ export function CampaignStudioPage() {
           </p>
         </div>
         <div className="d-flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={`btn btn-sm ${isAiRailOpen ? 'btn-secondary' : 'btn-outline-secondary'}`}
+            onClick={() => setIsAiRailOpen((currentValue) => !currentValue)}
+          >
+            {isAiRailOpen ? 'Hide AI Panel' : 'Open AI Panel'}
+          </button>
           <Link to={routes.CAMPAIGNS} className="btn btn-outline-secondary btn-sm">
             Back to Campaigns
           </Link>
@@ -155,6 +163,7 @@ export function CampaignStudioPage() {
             addAssignment,
             addCommunicationTemplate,
             patchCommunicationTemplate,
+            openAiPanel: () => setIsAiRailOpen(true),
             addCommunicationSchedule,
             patchCommunicationSchedule,
             removeCommunicationSchedule,
@@ -165,7 +174,17 @@ export function CampaignStudioPage() {
           })}
         </main>
 
+        {isAiRailOpen ? (
+          <button
+            type="button"
+            className="campaign-studio__ai-backdrop"
+            aria-label="Close AI panel backdrop"
+            onClick={() => setIsAiRailOpen(false)}
+          />
+        ) : null}
         <CampaignStudioAiRail
+          open={isAiRailOpen}
+          onClose={() => setIsAiRailOpen(false)}
           campaign={studio.campaign}
           selectedSection={selectedSection}
           readiness={studio.readiness}
@@ -191,6 +210,7 @@ function renderStudioSection({
   addAssignment,
   addCommunicationTemplate,
   patchCommunicationTemplate,
+  openAiPanel,
   addCommunicationSchedule,
   patchCommunicationSchedule,
   removeCommunicationSchedule,
@@ -207,6 +227,7 @@ function renderStudioSection({
   addAssignment: ReturnType<typeof useCampaignStudio>['addAssignment'];
   addCommunicationTemplate: ReturnType<typeof useCampaignStudio>['addCommunicationTemplate'];
   patchCommunicationTemplate: ReturnType<typeof useCampaignStudio>['patchCommunicationTemplate'];
+  openAiPanel: () => void;
   addCommunicationSchedule: ReturnType<typeof useCampaignStudio>['addCommunicationSchedule'];
   patchCommunicationSchedule: ReturnType<typeof useCampaignStudio>['patchCommunicationSchedule'];
   removeCommunicationSchedule: ReturnType<typeof useCampaignStudio>['removeCommunicationSchedule'];
@@ -241,6 +262,7 @@ function renderStudioSection({
       <CampaignStudioCommunicationsSection
         templates={studio.communications.templates}
         isSaving={isSaving}
+        onOpenAiPanel={openAiPanel}
         onCreateTemplate={addCommunicationTemplate}
         onUpdateTemplate={patchCommunicationTemplate}
       />

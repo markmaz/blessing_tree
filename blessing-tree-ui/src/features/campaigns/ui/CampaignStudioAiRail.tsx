@@ -21,6 +21,8 @@ import type { Campaign } from '@/features/campaigns/model/campaignTypes';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 
 interface CampaignStudioAiRailProps {
+  open: boolean;
+  onClose: () => void;
   campaign: Campaign;
   selectedSection: CampaignStudioSectionId;
   readiness: CampaignReadiness;
@@ -36,6 +38,8 @@ interface CampaignStudioAiRailProps {
 }
 
 export function CampaignStudioAiRail({
+  open,
+  onClose,
   campaign,
   selectedSection,
   readiness,
@@ -116,9 +120,25 @@ export function CampaignStudioAiRail({
   };
 
   return (
-    <aside className="campaign-studio__ai-rail" aria-label="Campaign Studio AI builder">
-      <div className="campaign-studio__eyebrow">AI Builder</div>
-      <h2 className="h5 mb-2">Shape {campaign.name}</h2>
+    <aside
+      className={`campaign-studio__ai-rail ${open ? 'is-open' : 'is-closed'}`}
+      aria-label="Campaign Studio AI builder"
+      aria-hidden={!open}
+    >
+      <div className="campaign-studio__ai-rail-header">
+        <div>
+          <div className="campaign-studio__eyebrow">AI Builder</div>
+          <h2 className="h5 mb-2">Shape {campaign.name}</h2>
+        </div>
+        <button
+          type="button"
+          className="btn btn-sm btn-light"
+          aria-label="Close AI panel"
+          onClick={onClose}
+        >
+          <i className="bi bi-x-lg" aria-hidden="true" />
+        </button>
+      </div>
       <p className="text-muted small mb-4">
         {selectedSection === 'schedule'
           ? 'Draft and apply new calendar items directly from a prompt.'

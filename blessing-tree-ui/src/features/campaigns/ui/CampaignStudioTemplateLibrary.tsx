@@ -7,6 +7,7 @@ interface CampaignStudioTemplateLibraryProps {
   isCollapsed: boolean;
   onSelectTemplate: (templateId: string) => void;
   onCreateNew: () => void;
+  onOpenAiPanel: () => void;
   onToggleCollapsed: () => void;
 }
 
@@ -16,6 +17,7 @@ export function CampaignStudioTemplateLibrary({
   isCollapsed,
   onSelectTemplate,
   onCreateNew,
+  onOpenAiPanel,
   onToggleCollapsed,
 }: CampaignStudioTemplateLibraryProps) {
   return (
@@ -33,26 +35,43 @@ export function CampaignStudioTemplateLibrary({
             </p>
           </div>
         ) : null}
-        <button
-          type="button"
-          className="campaign-template-library__utility-button"
-          onClick={onCreateNew}
-          aria-label="New template"
-          title="New template"
-        >
-          <i className="bi bi-plus-lg" aria-hidden="true" />
-          {!isCollapsed ? <span>New</span> : null}
-        </button>
-        <button
-          type="button"
-          className="campaign-template-library__utility-button"
-          onClick={onToggleCollapsed}
-          aria-label={isCollapsed ? 'Expand saved templates' : 'Collapse saved templates'}
-          title={isCollapsed ? 'Expand saved templates' : 'Collapse saved templates'}
-        >
-          <i className={`bi ${isCollapsed ? 'bi-layout-sidebar-inset-reverse' : 'bi-layout-sidebar-inset'}`} aria-hidden="true" />
-          {!isCollapsed ? <span>{isCollapsed ? 'Expand' : 'Collapse'}</span> : null}
-        </button>
+        <div className="campaign-template-library__tools">
+          <button
+            type="button"
+            className="campaign-template-library__utility-button"
+            onClick={onCreateNew}
+            aria-label="New template"
+            title="New template"
+          >
+            <i className="bi bi-plus-lg" aria-hidden="true" />
+            {!isCollapsed ? <span>New</span> : null}
+          </button>
+          <button
+            type="button"
+            className="campaign-template-library__utility-button"
+            onClick={onOpenAiPanel}
+            aria-label="Open AI panel"
+            title="Open AI panel"
+          >
+            <i className="bi bi-stars" aria-hidden="true" />
+            {!isCollapsed ? <span>AI</span> : null}
+          </button>
+          <button
+            type="button"
+            className="campaign-template-library__utility-button"
+            onClick={onToggleCollapsed}
+            aria-label={isCollapsed ? 'Expand saved templates' : 'Collapse saved templates'}
+            title={isCollapsed ? 'Expand saved templates' : 'Collapse saved templates'}
+          >
+            <i
+              className={`bi ${
+                isCollapsed ? 'bi-layout-sidebar-inset-reverse' : 'bi-layout-sidebar-inset'
+              }`}
+              aria-hidden="true"
+            />
+            {!isCollapsed ? <span>{isCollapsed ? 'Expand' : 'Collapse'}</span> : null}
+          </button>
+        </div>
       </div>
 
       {!isCollapsed ? (
@@ -94,12 +113,7 @@ export function CampaignStudioTemplateLibrary({
             })
           )}
         </div>
-      ) : (
-        <div className="campaign-template-library__collapsed-note">
-          <div className="campaign-template-library__collapsed-count">{templates.length}</div>
-          <div className="campaign-template-library__collapsed-label">templates</div>
-        </div>
-      )}
+      ) : null}
     </aside>
   );
 }

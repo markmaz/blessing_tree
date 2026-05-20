@@ -53,6 +53,7 @@ describe('CampaignStudioCommunicationsSection', () => {
       <CampaignStudioCommunicationsSection
         templates={[]}
         isSaving={false}
+        onOpenAiPanel={vi.fn()}
         onCreateTemplate={onCreateTemplate}
         onUpdateTemplate={vi.fn().mockResolvedValue(true)}
       />
@@ -109,6 +110,7 @@ describe('CampaignStudioCommunicationsSection', () => {
       <CampaignStudioCommunicationsSection
         templates={templates}
         isSaving={false}
+        onOpenAiPanel={vi.fn()}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={onUpdateTemplate}
       />
@@ -145,6 +147,7 @@ describe('CampaignStudioCommunicationsSection', () => {
       <CampaignStudioCommunicationsSection
         templates={templates}
         isSaving={false}
+        onOpenAiPanel={vi.fn()}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
       />
@@ -153,7 +156,8 @@ describe('CampaignStudioCommunicationsSection', () => {
     await user.click(screen.getByRole('button', { name: /collapse saved templates/i }));
 
     expect(screen.queryByText(/saved templates/i)).not.toBeInTheDocument();
-    expect(screen.getByText(String(templates.length))).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /open ai panel/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /expand saved templates/i })).toBeInTheDocument();
   });
 
   it('loads the selected saved template into the builder draft', async () => {
@@ -163,6 +167,7 @@ describe('CampaignStudioCommunicationsSection', () => {
       <CampaignStudioCommunicationsSection
         templates={templates}
         isSaving={false}
+        onOpenAiPanel={vi.fn()}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
       />
@@ -183,6 +188,7 @@ describe('CampaignStudioCommunicationsSection', () => {
       <CampaignStudioCommunicationsSection
         templates={[]}
         isSaving={false}
+        onOpenAiPanel={vi.fn()}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
       />
@@ -194,5 +200,24 @@ describe('CampaignStudioCommunicationsSection', () => {
 
     expect(screen.getByLabelText(/^subject$/i)).toHaveValue('{{campaign.name}}');
     expect(screen.getByRole('button', { name: /hide merge fields/i })).toBeInTheDocument();
+  });
+
+  it('opens the AI panel from the template rail', async () => {
+    const user = userEvent.setup();
+    const onOpenAiPanel = vi.fn();
+
+    render(
+      <CampaignStudioCommunicationsSection
+        templates={templates}
+        isSaving={false}
+        onOpenAiPanel={onOpenAiPanel}
+        onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /open ai panel/i }));
+
+    expect(onOpenAiPanel).toHaveBeenCalledTimes(1);
   });
 });

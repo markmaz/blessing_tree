@@ -21,7 +21,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - The Studio AI rail can now draft and apply new schedule events, milestones, and communication schedules from prompt input, and the readiness surface still includes schedule-specific warnings from the backend.
 - Success alerts in Studio and campaign management flows now fade and dismiss themselves automatically after a short interval.
 - The Team section can now search the active user directory and create campaign role assignments directly from Studio.
-- The communications section is now a template-only builder with a collapsible saved-template rail, metadata/content editing, a stronger rendered preview surface, a merge-field drawer, heading/text/image content blocks, and inline uploads for small embedded images; communication timing remains in the calendar/scheduler flow.
+- The communications section is now a template-only builder with a collapsible tool rail, metadata/content editing, a stronger rendered preview surface, a builder-side merge-field drawer, heading/text/image content blocks, and inline uploads for small embedded images; the Studio AI panel now opens as a hidden right drawer instead of taking permanent page width.
 - The dates section now saves campaign milestone dates through the studio.
 - A Vitest + Testing Library harness now exists for automated frontend tests.
 - App admins can now create campaigns from the campaign library UI.

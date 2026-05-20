@@ -22,6 +22,7 @@ import { CampaignStudioTemplateWorkspace } from '@/features/campaigns/ui/Campaig
 interface CampaignStudioCommunicationsSectionProps {
   templates: CommunicationTemplate[];
   isSaving: boolean;
+  onOpenAiPanel: () => void;
   onCreateTemplate: (
     input: CreateCommunicationTemplateInput
   ) => Promise<CommunicationTemplate | null>;
@@ -34,6 +35,7 @@ interface CampaignStudioCommunicationsSectionProps {
 export function CampaignStudioCommunicationsSection({
   templates,
   isSaving,
+  onOpenAiPanel,
   onCreateTemplate,
   onUpdateTemplate,
 }: CampaignStudioCommunicationsSectionProps) {
@@ -100,6 +102,7 @@ export function CampaignStudioCommunicationsSection({
               }
             }}
             onCreateNew={handleCreateNew}
+            onOpenAiPanel={onOpenAiPanel}
             onToggleCollapsed={() => setIsLibraryCollapsed((currentValue) => !currentValue)}
           />
 

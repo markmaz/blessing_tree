@@ -84,6 +84,8 @@ describe('CampaignStudioAiRail', () => {
   it('shows schedule-specific prompt starters and signals', () => {
     render(
       <CampaignStudioAiRail
+        open
+        onClose={vi.fn()}
         campaign={campaign}
         selectedSection="schedule"
         readiness={readiness}
@@ -114,6 +116,8 @@ describe('CampaignStudioAiRail', () => {
 
     render(
       <CampaignStudioAiRail
+        open
+        onClose={vi.fn()}
         campaign={campaign}
         selectedSection="schedule"
         readiness={readiness}
@@ -156,6 +160,8 @@ describe('CampaignStudioAiRail', () => {
 
     render(
       <CampaignStudioAiRail
+        open
+        onClose={vi.fn()}
         campaign={campaign}
         selectedSection="schedule"
         readiness={readiness}
