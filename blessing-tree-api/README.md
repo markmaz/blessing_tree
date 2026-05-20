@@ -16,7 +16,7 @@ The backend is a Flask application built around:
 - Authentication routes are implemented.
 - The broader domain model exists in SQLAlchemy and SQL migration form.
 - The initial RBAC foundation now exists as a feature package with campaign role persistence, a capability matrix, an authorization service, and reusable enforcement decorators.
-- Most non-auth business routes are not yet exposed as API endpoints.
+- The first campaign business routes now exist as a feature package with protected list, detail, access, summary, create, and update endpoints.
 - Dependency manifests now exist as `requirements.txt` and `requirements-dev.txt`.
 - Backend build version now lives in `version.json`.
 
@@ -119,6 +119,27 @@ Core DDL lives in:
 - `db/migration/V001__Initial_DB.sql`
 - `db/migration/V002__Auth_Identity.sql`
 - `db/migration/V003__Campaign_User_Roles.sql`
+- `db/migration/V004__Campaign_Metadata.sql`
+
+## Campaign Routes
+
+Current routes under `/api/v1/campaigns`:
+
+- `GET /`
+- `POST /`
+- `GET /<campaign_id>`
+- `PATCH /<campaign_id>`
+- `GET /<campaign_id>/access`
+- `GET /<campaign_id>/summary`
+
+Current behavior:
+
+- list is filtered to campaigns visible to the current user
+- create is app-admin only
+- detail, access, and summary require campaign visibility via RBAC
+- update requires the `campaign.admin` capability
+- campaign metadata now includes `description`
+- multiple campaigns per year are allowed
 
 ## Local Commands
 

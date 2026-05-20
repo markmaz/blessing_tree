@@ -9,12 +9,23 @@ from app.features.rbac import decorators as rbac_decorators
 from app.services.auth import AuthService
 
 
+class _DummyQuery:
+    def filter(self, *_args, **_kwargs):
+        return self
+
+    def one_or_none(self):
+        return object()
+
+
 class _DummySession:
     def __enter__(self):
-        return object()
+        return self
 
     def __exit__(self, exc_type, exc, tb) -> bool:
         return False
+
+    def query(self, *_args, **_kwargs):
+        return _DummyQuery()
 
 
 @pytest.fixture

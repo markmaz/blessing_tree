@@ -14,6 +14,7 @@ Last updated: 2026-05-20
   - auth routes live
   - domain models and migrations exist
   - RBAC foundation now exists with campaign role persistence, capability bundles, and an authorization service
+  - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
   - runtime and dev dependency manifests now exist
   - checked-in `.env.example` now exists for local bootstrap
   - checked-in `version.json` now exists for backend build versioning
@@ -67,6 +68,18 @@ Last updated: 2026-05-20
 - Local MySQL verification:
   - `V003__Campaign_User_Roles.sql` has been applied to the local `blessing_tree` database
   - verified columns, indexes, and foreign keys for `campaign_user_role`
+- Campaign API foundation now exists:
+  - `db/migration/V004__Campaign_Metadata.sql`
+  - `app/features/campaigns/api.py`
+  - `app/features/campaigns/service.py`
+  - `app/features/campaigns/serializers.py`
+  - `app/features/campaigns/validation.py`
+  - `app/features/campaigns/constants.py`
+- Local MySQL verification:
+  - `V004__Campaign_Metadata.sql` has been applied to the local `blessing_tree` database
+  - verified `campaign.description`
+  - verified unique year constraint removal
+  - verified non-unique `idx_campaign_year`
 - Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
 
 ## Knowledge Graph

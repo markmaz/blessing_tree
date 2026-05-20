@@ -14,6 +14,7 @@ from flask_restx import Api
 from app.celery import celery, init_celery
 from app.config import FRONTEND_BASE_URL, LOG_QUEUE, VALKEY_ADDRESS, VALKEY_CONFIG, VALKEY_PORT
 from app.exceptions.service_error import ServiceError
+from app.features.campaigns import campaign_ns
 from app.routes.auth_routes import auth_ns, init_oauth
 from app.services.auth import AuthService
 from app.utils import build_url
@@ -96,6 +97,11 @@ def create_app():
     )
 
     api.add_namespace(auth_ns, path=build_url("/", NAME, VERSION, "auth"))
+    api.add_namespace(campaign_ns, path=build_url("/", NAME, VERSION, "campaigns"))
+
+    @api.errorhandler(ServiceError)
+    def handle_api_service_error(error):
+        return error.to_dict(), error.status_code
 
     configure_logging()
     logger = logging.getLogger(__name__)

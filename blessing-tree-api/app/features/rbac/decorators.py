@@ -7,6 +7,7 @@ from flask import g, make_response, request
 from app.db import SessionLocal
 from app.decorators.security import ensure_authenticated_request
 from app.exceptions.service_error import ServiceError
+from app.models.campaign import Campaign
 from app.features.rbac.services.authorization_service import AuthorizationService
 from app.features.rbac.scope import resolve_campaign_scope_id
 
@@ -60,6 +61,13 @@ def require_campaign_capability(
             )
 
             with SessionLocal() as db:
+                campaign = db.query(Campaign).filter(Campaign.id == campaign_id).one_or_none()
+                if campaign is None:
+                    raise ServiceError(
+                        "Campaign not found",
+                        status_code=404,
+                        details={"campaign_id": campaign_id},
+                    )
                 allowed = _authorization_service.user_has_campaign_capability(
                     db,
                     getattr(g, "user_id", None),

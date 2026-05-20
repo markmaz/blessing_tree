@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: RBAC enforcement infrastructure implemented; first protected APIs are next
+- Current step: first protected campaign APIs implemented; next step is frontend consumption and additional campaign/domain slices
 
 ## Recently Completed
 
@@ -24,15 +24,17 @@ Last updated: 2026-05-20
 - Implemented RBAC enforcement helpers for app-admin gating, campaign capability gating, and campaign scope resolution, with backend tests
 - Documented the concrete campaign API design, AI-assisted campaign draft flow, and Campaign Studio direction
 - Locked the remaining campaign design decisions: immediate `description`, expanded summary counts, and transient AI drafts
+- Implemented the first campaign backend feature slice with protected list, detail, access, summary, create, and update endpoints
+- Added and applied the campaign metadata migration to local MySQL, allowing `description` and multiple campaigns per year
 - Promoted additional coding rules into engineering policy for file size, single responsibility, version bumps, review, commit discipline, naming, and feature-driven backend structure
 - Promoted additional delivery rules into engineering policy for migrations, backend-authoritative authz, additive APIs, shared-module scope, tests, and doc updates
 - Initialized a single top-level Git repository with root `.gitignore` and `.gitattributes`
 
 ## Immediate Next Steps
 
-1. Apply RBAC to the first campaign-scoped APIs
-2. Start the first real domain API slice on top of the shared authenticated client
-3. Expose capability-aware frontend gating for the first protected screens
+1. Expose the new campaign APIs in the frontend with a campaign switcher and campaign detail flow
+2. Build the Campaign Studio shell on top of the campaign access and summary endpoints
+3. Start the next protected domain API slice for recipients, wishlists, and related counts
 
 ## Blockers Or Ambiguities
 
