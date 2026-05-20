@@ -152,6 +152,16 @@ export interface CreateCommunicationTemplateInput {
   audience: string;
   subjectTemplate: string;
   bodyTemplate: string;
+  isActive?: boolean;
+}
+
+export interface UpdateCommunicationTemplateInput {
+  templateKey?: string;
+  name?: string;
+  audience?: string;
+  subjectTemplate?: string;
+  bodyTemplate?: string;
+  isActive?: boolean;
 }
 
 export interface CreateCampaignAssignmentInput {

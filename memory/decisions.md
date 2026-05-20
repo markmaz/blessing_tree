@@ -70,6 +70,13 @@
 - Rationale: campaign managers need the schedule to behave more like a real calendar than a collection of alternate views, and the old `Timeline | Calendar | Milestones` split still made the calendar feel secondary. Prompt-driven add flows are also most useful when they land directly on the primary planning surface instead of generating disconnected suggestions.
 - Consequence: keep milestones and communications as their own source-of-truth records, but allow them to be edited through the shared calendar modal; maintain distinct visual treatment for each source type; support deleting communication schedules from the backend; and treat deeper AI/model-backed schedule drafting as an enhancement on top of the now-functional prompt-to-calendar path.
 
+## Communications Builder Direction
+
+- Status: active
+- Decision: make the Studio `Communications` section template-only and move all communication timing/scheduling responsibility to the calendar/scheduler surfaces. Use Query Forge's communication template builder as the interaction reference, but adapt it to Blessing Tree's simpler `subjectTemplate` and `bodyTemplate` backend model instead of copying Query Forge's block-based schema.
+- Rationale: campaign operators need one clear place to design reusable email content and another clear place to place that content on the calendar. Mixing template authoring and scheduling on the same Studio page duplicates responsibility and makes the communications surface less focused.
+- Consequence: the Communications section should present a saved-template rail, a metadata/content editing workspace, and a rendered email preview; it should support real create/update template persistence; and any communication scheduling UI should remain in the schedule calendar modal and related scheduler flows instead of the template builder page.
+
 ## Code Structure Policy
 
 - Status: active

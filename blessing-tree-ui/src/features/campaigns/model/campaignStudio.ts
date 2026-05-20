@@ -30,7 +30,7 @@ export const campaignStudioSections: CampaignStudioSection[] = [
     id: 'communications',
     label: 'Communications',
     icon: 'bi-envelope-paper',
-    description: 'Templates, reminders, and campaign messaging.',
+    description: 'Email templates and campaign messaging.',
   },
   {
     id: 'schedule',

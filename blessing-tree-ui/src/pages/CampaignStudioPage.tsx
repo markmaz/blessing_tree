@@ -33,6 +33,7 @@ export function CampaignStudioPage() {
     reload,
     addAssignment,
     addCommunicationTemplate,
+    patchCommunicationTemplate,
     addCommunicationSchedule,
     patchCommunicationSchedule,
     removeCommunicationSchedule,
@@ -153,6 +154,7 @@ export function CampaignStudioPage() {
             },
             addAssignment,
             addCommunicationTemplate,
+            patchCommunicationTemplate,
             addCommunicationSchedule,
             patchCommunicationSchedule,
             removeCommunicationSchedule,
@@ -188,6 +190,7 @@ function renderStudioSection({
   onUpdateCampaign,
   addAssignment,
   addCommunicationTemplate,
+  patchCommunicationTemplate,
   addCommunicationSchedule,
   patchCommunicationSchedule,
   removeCommunicationSchedule,
@@ -203,6 +206,7 @@ function renderStudioSection({
   onUpdateCampaign: (input: CampaignUpsertInput) => Promise<boolean>;
   addAssignment: ReturnType<typeof useCampaignStudio>['addAssignment'];
   addCommunicationTemplate: ReturnType<typeof useCampaignStudio>['addCommunicationTemplate'];
+  patchCommunicationTemplate: ReturnType<typeof useCampaignStudio>['patchCommunicationTemplate'];
   addCommunicationSchedule: ReturnType<typeof useCampaignStudio>['addCommunicationSchedule'];
   patchCommunicationSchedule: ReturnType<typeof useCampaignStudio>['patchCommunicationSchedule'];
   removeCommunicationSchedule: ReturnType<typeof useCampaignStudio>['removeCommunicationSchedule'];
@@ -236,10 +240,9 @@ function renderStudioSection({
     return (
       <CampaignStudioCommunicationsSection
         templates={studio.communications.templates}
-        schedules={studio.communications.schedules}
         isSaving={isSaving}
         onCreateTemplate={addCommunicationTemplate}
-        onCreateSchedule={addCommunicationSchedule}
+        onUpdateTemplate={patchCommunicationTemplate}
       />
     );
   }

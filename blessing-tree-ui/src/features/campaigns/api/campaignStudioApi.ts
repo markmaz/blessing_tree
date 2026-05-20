@@ -12,6 +12,7 @@ import {
   type CreateCommunicationScheduleInput,
   type CreateCommunicationTemplateInput,
   type SaveCampaignMilestoneInput,
+  type UpdateCommunicationTemplateInput,
   type UpdateCommunicationScheduleInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import {
@@ -199,7 +200,45 @@ export async function createCommunicationTemplate(
         channel: 'EMAIL',
         subject_template: input.subjectTemplate,
         body_template: input.bodyTemplate,
+        is_active: input.isActive ?? true,
       }),
+    }
+  );
+
+  return mapCommunicationTemplate(response);
+}
+
+export async function updateCommunicationTemplate(
+  campaignId: string,
+  templateId: string,
+  input: UpdateCommunicationTemplateInput
+): Promise<CommunicationTemplate> {
+  const payload: Record<string, unknown> = {};
+  if ('templateKey' in input) {
+    payload.template_key = input.templateKey;
+  }
+  if ('name' in input) {
+    payload.name = input.name;
+  }
+  if ('audience' in input) {
+    payload.audience = input.audience;
+  }
+  if ('subjectTemplate' in input) {
+    payload.subject_template = input.subjectTemplate;
+  }
+  if ('bodyTemplate' in input) {
+    payload.body_template = input.bodyTemplate;
+  }
+  if ('isActive' in input) {
+    payload.is_active = input.isActive;
+  }
+
+  const response = await apiFetchJson<CommunicationTemplateResponse>(
+    `/api/v1/campaigns/${campaignId}/communications/templates/${templateId}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     }
   );
 
