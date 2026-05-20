@@ -76,8 +76,8 @@ Goal: make the project safer to evolve.
 
 If momentum matters, start here:
 
-1. Add RBAC decorators/helpers and standardize campaign scope extraction.
-2. Apply RBAC to the first campaign-scoped APIs.
-3. Implement campaign/recipient/wishlist read APIs.
+1. Apply RBAC to the first campaign-scoped APIs.
+2. Implement campaign/recipient/wishlist read APIs.
+3. Add frontend capability consumption for the first protected screens.
 
 That sequence clears the largest current ambiguity and opens the path to real application work.

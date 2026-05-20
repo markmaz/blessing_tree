@@ -12,6 +12,8 @@ from app.features.rbac.constants import (
     normalize_app_role,
     normalize_campaign_role_key,
 )
+from app.features.rbac.decorators import require_app_admin, require_campaign_capability
+from app.features.rbac.scope import resolve_campaign_scope_id
 
 __all__ = [
     "ALL_CAMPAIGN_CAPABILITIES",
@@ -26,4 +28,7 @@ __all__ = [
     "get_capabilities_for_campaign_role",
     "normalize_app_role",
     "normalize_campaign_role_key",
+    "require_app_admin",
+    "require_campaign_capability",
+    "resolve_campaign_scope_id",
 ]

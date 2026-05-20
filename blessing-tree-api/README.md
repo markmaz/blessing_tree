@@ -15,7 +15,7 @@ The backend is a Flask application built around:
 
 - Authentication routes are implemented.
 - The broader domain model exists in SQLAlchemy and SQL migration form.
-- The initial RBAC foundation now exists as a feature package with campaign role persistence, a capability matrix, and an authorization service.
+- The initial RBAC foundation now exists as a feature package with campaign role persistence, a capability matrix, an authorization service, and reusable enforcement decorators.
 - Most non-auth business routes are not yet exposed as API endpoints.
 - Dependency manifests now exist as `requirements.txt` and `requirements-dev.txt`.
 - Backend build version now lives in `version.json`.
@@ -108,7 +108,12 @@ The current schema covers:
 - scan and audit events
 
 Core model files live in `app/models/`.
-RBAC feature code lives in `app/features/rbac/`.
+RBAC feature code lives in `app/features/rbac/`, including:
+
+- `constants.py`
+- `services/authorization_service.py`
+- `decorators.py`
+- `scope.py`
 Core DDL lives in:
 
 - `db/migration/V001__Initial_DB.sql`

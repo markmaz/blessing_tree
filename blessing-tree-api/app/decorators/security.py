@@ -79,6 +79,32 @@ def _extract_user_context(payload: dict) -> tuple[str, str, str, bool]:
     return str(user_id or "").strip(), str(display_name or "").strip(), role, is_admin
 
 
+def ensure_authenticated_request() -> None:
+    """Validate Bearer token and populate request-scoped user context once."""
+    if getattr(g, "user_id", None):
+        return
+
+    token = _extract_bearer_token()
+    payload = _auth_service.verify_token(token)
+    if not isinstance(payload, dict):
+        raise ServiceError("Invalid or expired token", status_code=401)
+
+    user_id, display_name, role, is_admin = _extract_user_context(payload)
+    if not user_id:
+        raise ServiceError(
+            "Invalid token payload: missing user identity",
+            status_code=401,
+            details={"required_claims": ["sub (preferred)", "email (fallback)"]},
+        )
+
+    g.user_data = payload
+    g.user_id = user_id
+    g.user_display_name = display_name
+    g.user_role = role
+    g.global_app_role = APP_ADMIN_ROLE if is_admin else normalize_app_role(role)
+    g.is_admin = is_admin
+
+
 def token_required(f):
     """Validate Bearer token and populate request-scoped user context."""
 
@@ -87,25 +113,7 @@ def token_required(f):
         if request.method == "OPTIONS":
             return make_response("", 204)
 
-        token = _extract_bearer_token()
-        payload = _auth_service.verify_token(token)
-        if not isinstance(payload, dict):
-            raise ServiceError("Invalid or expired token", status_code=401)
-
-        user_id, display_name, role, is_admin = _extract_user_context(payload)
-        if not user_id:
-            raise ServiceError(
-                "Invalid token payload: missing user identity",
-                status_code=401,
-                details={"required_claims": ["sub (preferred)", "email (fallback)"]},
-            )
-
-        g.user_data = payload
-        g.user_id = user_id
-        g.user_display_name = display_name
-        g.user_role = role
-        g.is_admin = is_admin
-
+        ensure_authenticated_request()
         return f(*args, **kwargs)
 
     return decorated_function
@@ -121,6 +129,7 @@ def require_roles(*allowed_roles: str):
             if request.method == "OPTIONS":
                 return make_response("", 204)
 
+            ensure_authenticated_request()
             role = getattr(g, "user_role", "").upper()
             if not role:
                 raise ServiceError("Authentication required", status_code=401)

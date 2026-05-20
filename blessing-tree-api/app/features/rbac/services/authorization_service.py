@@ -22,6 +22,9 @@ class AuthorizationService:
     def is_app_admin(self, user: AppUser | None) -> bool:
         return bool(user and user.is_active and self.get_global_app_role(user) == APP_ADMIN_ROLE)
 
+    def user_is_app_admin(self, db: Session, user_id: uuid.UUID | str | None) -> bool:
+        return self.is_app_admin(self._get_user(db, user_id))
+
     def get_campaign_role_keys(
         self,
         db: Session,

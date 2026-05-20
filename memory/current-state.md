@@ -62,10 +62,12 @@ Last updated: 2026-05-20
   - `app/features/rbac/constants.py`
   - `app/features/rbac/models/campaign_user_role.py`
   - `app/features/rbac/services/authorization_service.py`
+  - `app/features/rbac/decorators.py`
+  - `app/features/rbac/scope.py`
 - Local MySQL verification:
   - `V003__Campaign_User_Roles.sql` has been applied to the local `blessing_tree` database
   - verified columns, indexes, and foreign keys for `campaign_user_role`
-- Current RBAC direction remains: minimal app roles, campaign-scoped assignments, and code-defined capability bundles.
+- Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
 
 ## Knowledge Graph
 
