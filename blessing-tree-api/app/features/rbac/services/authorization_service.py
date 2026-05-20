@@ -13,6 +13,9 @@ from app.features.rbac.constants import (
 )
 from app.features.rbac.models.campaign_user_role import CampaignUserRole
 from app.models.app_user import AppUser
+from app.models.campaign_member import CampaignMember
+from app.models.campaign_member_constants import APP_ACCESS_STATUS_ACTIVE
+from app.models.campaign_member_access_role import CampaignMemberAccessRole
 
 
 class AuthorizationService:
@@ -35,6 +38,37 @@ class AuthorizationService:
         campaign_uuid = self._coerce_uuid(campaign_id)
         if user_uuid is None or campaign_uuid is None:
             return set()
+
+        member = (
+            db.query(CampaignMember.id)
+            .filter(
+                CampaignMember.campaign_id == campaign_uuid,
+                CampaignMember.app_user_id == user_uuid,
+            )
+            .one_or_none()
+        )
+
+        if member is not None:
+            rows = (
+                db.query(CampaignMemberAccessRole.role_key)
+                .join(
+                    CampaignMember,
+                    CampaignMember.id == CampaignMemberAccessRole.campaign_member_id,
+                )
+                .filter(
+                    CampaignMember.campaign_id == campaign_uuid,
+                    CampaignMember.app_user_id == user_uuid,
+                    CampaignMember.is_active == 1,
+                    CampaignMember.app_access_status == APP_ACCESS_STATUS_ACTIVE,
+                    CampaignMemberAccessRole.is_active == 1,
+                )
+                .all()
+            )
+            return {
+                normalize_campaign_role_key(role_key)
+                for (role_key,) in rows
+                if normalize_campaign_role_key(role_key)
+            }
 
         rows = (
             db.query(CampaignUserRole.role_key)

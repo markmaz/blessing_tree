@@ -10,7 +10,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import Session, sessionmaker
 
 import app.models.models  # noqa: F401
-from app.features.campaigns.team_constants import (
+from app.models.campaign_member_constants import (
     APP_ACCESS_STATUS_LINKED,
     APP_ACCESS_STATUS_NONE,
     CAMPAIGN_MEMBER_TYPE_CONTACT,

@@ -8,6 +8,10 @@ from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.models.campaign_member_constants import (
+    APP_ACCESS_STATUS_ACTIVE,
+    APP_ACCESS_STATUS_LINKED,
+)
 from app.features.rbac.constants import (
     ALL_CAMPAIGN_CAPABILITIES,
     APP_ADMIN_ROLE,
@@ -23,6 +27,8 @@ from app.features.rbac.services.authorization_service import AuthorizationServic
 from app.models.app_user import AppUser
 from app.models.auth import AuthIdentity
 from app.models.campaign import Campaign
+from app.models.campaign_member import CampaignMember
+from app.models.campaign_member_access_role import CampaignMemberAccessRole
 from app.models.base import Base
 import app.models.models  # noqa: F401
 
@@ -36,7 +42,14 @@ def _build_session() -> Session:
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(
         engine,
-        tables=[AppUser.__table__, AuthIdentity.__table__, Campaign.__table__, CampaignUserRole.__table__],
+        tables=[
+            AppUser.__table__,
+            AuthIdentity.__table__,
+            Campaign.__table__,
+            CampaignUserRole.__table__,
+            CampaignMember.__table__,
+            CampaignMemberAccessRole.__table__,
+        ],
     )
     return sessionmaker(bind=engine, autocommit=False, autoflush=False)()
 
@@ -109,6 +122,110 @@ def test_get_campaign_capabilities_unions_multiple_active_roles() -> None:
     assert CAMPAIGN_DONATIONS_EDIT_CAPABILITY in capabilities
     assert CAMPAIGN_GIFTS_CHECK_IN_CAPABILITY in capabilities
     assert service.user_has_campaign_capability(db, user.id, campaign.id, CAMPAIGN_GIFTS_CHECK_IN_CAPABILITY)
+    db.close()
+
+
+def test_get_campaign_capabilities_prefers_member_access_roles_when_member_exists() -> None:
+    db = _build_session()
+    service = AuthorizationService()
+    user = _create_user("VOLUNTEER")
+    campaign = _create_campaign()
+    db.add_all([user, campaign])
+    db.flush()
+
+    member = CampaignMember(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        display_name=user.display_name,
+        email=user.email,
+        app_user_id=user.id,
+        app_access_status=APP_ACCESS_STATUS_ACTIVE,
+        is_active=True,
+    )
+    db.add(member)
+    db.flush()
+    db.add(
+        CampaignMemberAccessRole(
+            id=uuid.uuid4(),
+            campaign_member_id=member.id,
+            role_key=GIFT_CHECKIN_ROLE,
+            is_active=True,
+        )
+    )
+    db.add(
+        CampaignUserRole(
+            id=uuid.uuid4(),
+            user_id=user.id,
+            campaign_id=campaign.id,
+            role_key=DONATION_ENTRY_ROLE,
+            is_active=True,
+        )
+    )
+    db.commit()
+
+    capabilities = service.get_campaign_capabilities(db, user.id, campaign.id)
+
+    assert CAMPAIGN_GIFTS_CHECK_IN_CAPABILITY in capabilities
+    assert CAMPAIGN_DONATIONS_EDIT_CAPABILITY not in capabilities
+    db.close()
+
+
+def test_get_campaign_capabilities_falls_back_to_legacy_roles_without_member_link() -> None:
+    db = _build_session()
+    service = AuthorizationService()
+    user = _create_user("VOLUNTEER")
+    campaign = _create_campaign()
+    db.add_all([user, campaign])
+    db.flush()
+    db.add(
+        CampaignUserRole(
+            id=uuid.uuid4(),
+            user_id=user.id,
+            campaign_id=campaign.id,
+            role_key=DONATION_ENTRY_ROLE,
+            is_active=True,
+        )
+    )
+    db.commit()
+
+    capabilities = service.get_campaign_capabilities(db, user.id, campaign.id)
+
+    assert CAMPAIGN_DONATIONS_EDIT_CAPABILITY in capabilities
+    db.close()
+
+
+def test_get_campaign_capabilities_ignores_non_active_member_access_status() -> None:
+    db = _build_session()
+    service = AuthorizationService()
+    user = _create_user("VOLUNTEER")
+    campaign = _create_campaign()
+    db.add_all([user, campaign])
+    db.flush()
+
+    member = CampaignMember(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        display_name=user.display_name,
+        email=user.email,
+        app_user_id=user.id,
+        app_access_status=APP_ACCESS_STATUS_LINKED,
+        is_active=True,
+    )
+    db.add(member)
+    db.flush()
+    db.add(
+        CampaignMemberAccessRole(
+            id=uuid.uuid4(),
+            campaign_member_id=member.id,
+            role_key=GIFT_CHECKIN_ROLE,
+            is_active=True,
+        )
+    )
+    db.commit()
+
+    capabilities = service.get_campaign_capabilities(db, user.id, campaign.id)
+
+    assert capabilities == set()
     db.close()
 
 

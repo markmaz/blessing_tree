@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Team phase 1 is implemented with the `campaign_member` backend foundation; the next step is the member-access-role transition layer
+- Current step: Team phase 2 is implemented with `campaign_member_access_role` and member-first authorization resolution; the next step is the operational team model foundation
 
 ## Recently Completed
 
@@ -68,6 +68,7 @@ Last updated: 2026-05-20
 - Documented the Campaign Team redesign: campaign roster separate from app users, fixed access roles for RBAC, user-defined teams for operations/email targeting, and a table-plus-drawer Team workspace
 - Documented the Campaign Team implementation plan, including the incremental migration path from direct `campaign_user_role` assignments to a member-centric roster, team, and access-role model
 - Implemented Team redesign phase 1 with the `campaign_member` model, relationships, migration, backend tests, and local MySQL verification against `blessing_tree`
+- Implemented Team redesign phase 2 with the `campaign_member_access_role` model, member-first authorization resolution, backend tests, and local MySQL verification against `blessing_tree`
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Fixed backend runtime gaps discovered during live stack verification:
@@ -80,9 +81,9 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Add the member-access-role transition layer so RBAC can move off direct `campaign_user_role` reads safely
-2. Add `campaign_team` and `campaign_team_member` as the operational grouping model
-3. Then expose member/team aggregate APIs before rewriting the Team Studio UI around the new workspace contract
+1. Add `campaign_team` and `campaign_team_member` as the operational grouping model
+2. Then expose member/team aggregate APIs before rewriting the Team Studio UI around the new workspace contract
+3. After the Team write paths move over, retire the temporary legacy `campaign_user_role` fallback in authorization resolution
 
 ## Blockers Or Ambiguities
 

@@ -84,6 +84,13 @@
 - Rationale: the current Team flow assumes every person is an app user and overloads roles as the only grouping mechanism. That does not fit the real operating model where some campaign participants never log in, some people hold multiple responsibilities, and campaign managers need named groups such as Sponsor Callers or Pickup Weekend Team for communication and coordination.
 - Consequence: add a `campaign_member`-centered design, make app access optional, keep RBAC code-defined, add user-defined teams, and move the Team UI toward a table-plus-drawer workspace instead of a one-role-at-a-time search flow.
 
+## Team Phase 2 Transition Policy
+
+- Status: active
+- Decision: phase 2 of the Team redesign adds `campaign_member_access_role` and member-first authorization resolution, but does not perform SQL backfill from legacy `campaign_user_role` because the app has no real users yet.
+- Rationale: the user explicitly said not to worry about migration backfill for this app state, and forcing backfill logic now would add noise without real data pressure.
+- Consequence: authorization should resolve through member-linked access roles when a linked campaign member exists, and should keep `campaign_user_role` as a temporary compatibility fallback until Team write flows move to the new model.
+
 ## Code Structure Policy
 
 - Status: active

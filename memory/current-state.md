@@ -15,6 +15,7 @@ Last updated: 2026-05-20
   - domain models and migrations exist
   - RBAC foundation now exists with campaign role persistence, capability bundles, and an authorization service
   - campaign roster foundation now exists with a new `campaign_member` model and migration
+  - member-centric RBAC transition now exists with a new `campaign_member_access_role` model and member-first authorization resolution
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
   - Campaign Studio backend support now exists for assignments, communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, and aggregate studio payloads
   - backend startup now imports the full SQLAlchemy model registry during app creation
@@ -91,6 +92,11 @@ Last updated: 2026-05-20
   - `app/features/rbac/services/authorization_service.py`
   - `app/features/rbac/decorators.py`
   - `app/features/rbac/scope.py`
+- Team transition layer now exists:
+  - `db/migration/V008__Campaign_Member_Access_Roles.sql`
+  - `app/models/campaign_member_access_role.py`
+  - `app/models/campaign_member.py`
+  - member-first authorization resolution with legacy fallback in `app/features/rbac/services/authorization_service.py`
 - Local MySQL verification:
   - `V003__Campaign_User_Roles.sql` has been applied to the local `blessing_tree` database
   - verified columns, indexes, and foreign keys for `campaign_user_role`
@@ -125,6 +131,9 @@ Last updated: 2026-05-20
   - `V007__Campaign_Members.sql` has been applied to the local `blessing_tree` database
   - verified `campaign_member`
   - verified campaign/app-user unique scope, indexes, and foreign keys
+  - `V008__Campaign_Member_Access_Roles.sql` has been applied to the local `blessing_tree` database
+  - verified `campaign_member_access_role`
+  - verified member-role unique scope, indexes, and foreign keys
 - Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
 - Frontend campaign routes now exist:
   - `/campaigns`
@@ -139,6 +148,8 @@ Last updated: 2026-05-20
   - `GET /api/v1/meta/version`
 - Local backend env note:
   - the ignored local `blessing-tree-api/.env` is still pointed at `query_forge`, so local Blessing Tree migration verification currently has to target the `blessing_tree` database explicitly
+- Team migration note:
+  - because the app has no real users yet, phase 2 shipped without SQL backfill; legacy `campaign_user_role` reads remain as a temporary compatibility fallback until Team write flows move to `campaign_member_access_role`
 - Live frontend verification on 2026-05-20 now includes:
   - Studio Team section rendering real assignments
   - Studio Team assignment creation now verified against the running backend through the new directory search + assignment flow

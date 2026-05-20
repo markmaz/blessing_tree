@@ -8,7 +8,7 @@ from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text, UniqueCo
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.features.campaigns.team_constants import (
+from .campaign_member_constants import (
     APP_ACCESS_STATUS_NONE,
     CAMPAIGN_MEMBER_APP_ACCESS_STATUSES,
     CAMPAIGN_MEMBER_TYPE_VOLUNTEER,
@@ -20,6 +20,7 @@ from .uuid_bin import UUIDBin
 if TYPE_CHECKING:
     from .app_user import AppUser
     from .campaign import Campaign
+    from .campaign_member_access_role import CampaignMemberAccessRole
 
 
 class CampaignMember(Base):
@@ -56,6 +57,11 @@ class CampaignMember(Base):
 
     campaign: Mapped["Campaign"] = relationship(back_populates="campaign_members")
     app_user: Mapped[Optional["AppUser"]] = relationship(back_populates="campaign_members")
+    access_roles: Mapped[list["CampaignMemberAccessRole"]] = relationship(
+        back_populates="campaign_member",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     __table_args__ = (
         UniqueConstraint("campaign_id", "app_user_id", name="uq_campaign_member_campaign_app_user"),
