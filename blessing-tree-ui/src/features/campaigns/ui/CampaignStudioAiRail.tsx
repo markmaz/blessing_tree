@@ -144,20 +144,26 @@ export function CampaignStudioAiRail({
           </div>
 
           <label className="form-label small fw-semibold">AI Draft Type</label>
-          <div className="campaign-studio__modal-type-switch mb-3">
+          <div className="campaign-studio__ai-draft-switch mb-2" role="tablist" aria-label="AI draft type">
             {scheduleDraftTypeOptions.map((option) => (
               <button
                 key={option.id}
                 type="button"
-                className={`campaign-studio__modal-type-button ${
+                className={`campaign-studio__ai-draft-button ${
                   draftType === option.id ? 'is-selected' : ''
                 }`}
                 onClick={() => setDraftType(option.id)}
+                aria-pressed={draftType === option.id}
+                aria-label={option.label}
+                title={option.label}
               >
+                <i className={`bi ${option.icon}`} aria-hidden="true" />
                 <span className="fw-semibold">{option.label}</span>
-                <span className="small text-muted">{option.description}</span>
               </button>
             ))}
+          </div>
+          <div className="campaign-studio__ai-draft-description mb-3">
+            {scheduleDraftTypeOptions.find((option) => option.id === draftType)?.description}
           </div>
         </>
       ) : null}
@@ -263,20 +269,24 @@ const scheduleDraftTypeOptions: Array<{
   id: ScheduleAiDraftType;
   label: string;
   description: string;
+  icon: string;
 }> = [
   {
     id: 'event',
     label: 'Event',
     description: 'Volunteer days, sorting blocks, pickup staffing, and other manual work.',
+    icon: 'bi-calendar-plus',
   },
   {
     id: 'milestone',
     label: 'Milestone',
     description: 'Named checkpoints like registration opening or pickup weekend.',
+    icon: 'bi-signpost-2',
   },
   {
     id: 'communication',
     label: 'Communication',
     description: 'Emails and reminders using one of the campaign templates.',
+    icon: 'bi-envelope-paper',
   },
 ];

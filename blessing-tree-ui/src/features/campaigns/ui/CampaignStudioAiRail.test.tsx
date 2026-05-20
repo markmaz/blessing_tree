@@ -150,4 +150,35 @@ describe('CampaignStudioAiRail', () => {
       notes: 'Add volunteer orientation on 2026-11-03 at 6pm',
     });
   });
+
+  it('uses a compact draft-type selector with a shared description area', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CampaignStudioAiRail
+        campaign={campaign}
+        selectedSection="schedule"
+        readiness={readiness}
+        scheduleItems={scheduleItems}
+        templates={templates}
+        milestones={milestones}
+        isSaving={false}
+        onCreateScheduleEvent={vi.fn().mockResolvedValue(true)}
+        onCreateCommunicationSchedule={vi.fn().mockResolvedValue(true)}
+        onSaveMilestones={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    expect(screen.getByText(/volunteer days, sorting blocks, pickup staffing/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^communication$/i }));
+
+    expect(
+      screen.getByText(/emails and reminders using one of the campaign templates/i)
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^communication$/i })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+  });
 });

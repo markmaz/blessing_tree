@@ -58,6 +58,7 @@ Last updated: 2026-05-20
 - Added shared modal editing for manual events, milestones, and communication schedules from the calendar surface
 - Added a prompt-driven AI draft/apply path for schedule events, milestones, and communications
 - Tightened Campaign Studio responsiveness by collapsing the section rail to icons at medium widths and preventing schedule/AI card content from bleeding outside their containers
+- Reworked the AI draft-type picker in the Studio rail into a compact horizontal segmented control with shared helper copy so the narrow rail no longer chops the option text
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Fixed backend runtime gaps discovered during live stack verification:

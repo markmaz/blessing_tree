@@ -311,6 +311,55 @@
   margin-bottom: 1rem;
 }
 
+.campaign-studio__ai-draft-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.campaign-studio__ai-draft-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-width: 0;
+  flex: 1 1 8rem;
+  border: 1px solid rgba(223, 214, 202, 0.92);
+  border-radius: 999px;
+  padding: 0.65rem 0.8rem;
+  background: rgba(250, 246, 239, 0.92);
+  color: var(--blessing-text-dark);
+  text-align: center;
+  transition: var(--blessing-transition);
+}
+
+.campaign-studio__ai-draft-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(167, 143, 111, 0.75);
+  background: rgba(255, 251, 243, 0.98);
+}
+
+.campaign-studio__ai-draft-button.is-selected {
+  border-color: rgba(93, 53, 129, 0.42);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.99), rgba(240, 234, 246, 0.96));
+  box-shadow: 0 10px 18px rgba(45, 21, 68, 0.07);
+}
+
+.campaign-studio__ai-draft-button span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.campaign-studio__ai-draft-description {
+  padding: 0.75rem 0.9rem;
+  border: 1px dashed rgba(167, 143, 111, 0.72);
+  border-radius: 0.95rem;
+  background: rgba(252, 249, 243, 0.9);
+  color: var(--blessing-text-light);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
 @media (max-width: 1320px) {
   .campaign-studio__calendar-grid {
     gap: 0.55rem;
@@ -333,6 +382,11 @@
 
   .campaign-studio__modal-type-switch {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .campaign-studio__ai-draft-button {
+    flex-basis: 100%;
+    justify-content: flex-start;
   }
 }
 
