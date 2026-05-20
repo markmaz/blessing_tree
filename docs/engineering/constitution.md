@@ -15,6 +15,7 @@
 - Use snake_case on the backend and camelCase on the frontend, with normal React component PascalCase conventions.
 - Backend implementation should move toward feature-driven organization rather than global route/service dumping grounds.
 - Ship migrations with the schema changes they belong to.
+- Apply and verify backend schema migrations against the local MySQL `blessing_tree` database when local DB access is available.
 - Backend authorization is authoritative; frontend access gating is advisory only.
 - Prefer additive API changes unless an explicit breaking-change decision is made.
 - Shared modules must stay narrowly scoped and must not become dumping grounds.

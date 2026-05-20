@@ -7,7 +7,8 @@
 3. Inspect the code before changing behavior.
 4. Update code.
 5. Verify with the smallest meaningful checks.
-6. Update docs and operational memory if the change affects them.
+6. For backend schema changes, apply and verify the migration against the local MySQL `blessing_tree` database when available.
+7. Update docs and operational memory if the change affects them.
 
 ## Roadmap Sequencing
 

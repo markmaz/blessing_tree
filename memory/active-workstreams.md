@@ -20,6 +20,7 @@ Last updated: 2026-05-20
 - Fixed the backend `python app/main.py` entrypoint so it no longer fails on the local `app/celery.py` import shadowing issue
 - Added RBAC design and implementation planning docs for campaign-scoped roles plus capability-based feature access
 - Implemented RBAC foundation with campaign role persistence, a capability matrix, an authorization service, backend version.json, and backend tests
+- Applied and verified the RBAC migration against the local MySQL `blessing_tree` database
 - Promoted additional coding rules into engineering policy for file size, single responsibility, version bumps, review, commit discipline, naming, and feature-driven backend structure
 - Promoted additional delivery rules into engineering policy for migrations, backend-authoritative authz, additive APIs, shared-module scope, tests, and doc updates
 - Initialized a single top-level Git repository with root `.gitignore` and `.gitattributes`
