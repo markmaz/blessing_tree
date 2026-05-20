@@ -22,8 +22,10 @@ Last updated: 2026-05-20
 - Frontend:
   - React + TypeScript + Vite
   - protected shell exists
-  - page shells exist for dashboard, families, donations, reports, and admin
-  - shared authenticated client exists for future protected data APIs
+  - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
+  - dashboard is now campaign-aware and loads live summary/access data from the backend
+  - page shells still exist for families, donations, reports, and admin
+  - shared authenticated client exists for protected data APIs
 
 ## Current Runtime Facts
 
@@ -81,6 +83,10 @@ Last updated: 2026-05-20
   - verified unique year constraint removal
   - verified non-unique `idx_campaign_year`
 - Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
+- Frontend campaign routes now exist:
+  - `/campaigns`
+  - `/campaigns/:campaignId`
+  - selected campaign is persisted in local storage per user
 
 ## Knowledge Graph
 

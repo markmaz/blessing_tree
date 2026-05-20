@@ -16,6 +16,7 @@ Blessing Tree is a split frontend/backend application for managing a church gift
 - OAuth callbacks now round-trip through the backend, set the refresh cookie, and complete in the frontend callback route.
 - Reload-time session restoration now uses the backend refresh cookie.
 - The frontend now has a shared authenticated API client with refresh-on-401 handling for future data screens.
+- The frontend now has a campaign switcher, campaign library, campaign detail flow, and a dashboard that follows the selected campaign.
 - The backend now has checked-in dependency manifests, an `.env.example`, the RBAC foundation layer, reusable RBAC enforcement helpers, and the first protected campaign endpoints, but the broader app is still in stabilization rather than feature delivery.
 
 ## Project Layout

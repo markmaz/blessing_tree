@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: first protected campaign APIs implemented; next step is frontend consumption and additional campaign/domain slices
+- Current step: first protected campaign frontend flow implemented; next step is Campaign Studio shell and the next domain slice
 
 ## Recently Completed
 
@@ -26,17 +26,17 @@ Last updated: 2026-05-20
 - Locked the remaining campaign design decisions: immediate `description`, expanded summary counts, and transient AI drafts
 - Implemented the first campaign backend feature slice with protected list, detail, access, summary, create, and update endpoints
 - Added and applied the campaign metadata migration to local MySQL, allowing `description` and multiple campaigns per year
+- Exposed the first campaign APIs in the frontend through a campaign provider, campaign switcher, campaign list/detail routes, and a campaign-aware dashboard
 - Promoted additional coding rules into engineering policy for file size, single responsibility, version bumps, review, commit discipline, naming, and feature-driven backend structure
 - Promoted additional delivery rules into engineering policy for migrations, backend-authoritative authz, additive APIs, shared-module scope, tests, and doc updates
 - Initialized a single top-level Git repository with root `.gitignore` and `.gitattributes`
 
 ## Immediate Next Steps
 
-1. Expose the new campaign APIs in the frontend with a campaign switcher and campaign detail flow
-2. Build the Campaign Studio shell on top of the campaign access and summary endpoints
-3. Start the next protected domain API slice for recipients, wishlists, and related counts
+1. Build the Campaign Studio shell on top of the campaign access and summary endpoints
+2. Start the next protected domain API slice for recipients, wishlists, and related counts
+3. Add create/update campaign UI for admins on top of the existing backend routes
 
 ## Blockers Or Ambiguities
 
-- RBAC enforcement helpers exist, but no business routes use them yet
 - Query Forge is a good source for auth/config patterns, but not all of its runtime surface belongs in Blessing Tree

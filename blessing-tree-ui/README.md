@@ -15,6 +15,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - `src/app/App.tsx` uses nested protected routes with `AppLayout`.
 - `src/shared/api/authApi.ts` already calls the backend local login route.
 - The frontend now completes local login directly on `/login` and includes backend refresh-cookie handling.
+- The frontend now consumes the protected campaign APIs through a campaign provider, top-bar switcher, campaign list, campaign detail page, and a campaign-aware dashboard.
 - Several older UI docs were delivery-era summaries and have been consolidated.
 
 ## Routes
@@ -27,6 +28,8 @@ Public routes:
 Protected routes:
 
 - `/`
+- `/campaigns`
+- `/campaigns/:campaignId`
 - `/families`
 - `/donations`
 - `/reports`
@@ -41,6 +44,7 @@ Route constants live in `src/app/routes.ts`.
 - `src/features/auth/model/authContext.tsx`: client auth state
 - `src/shared/api/authApi.ts`: frontend auth API client
 - `src/shared/api/client.ts`: shared authenticated fetch layer with refresh-on-401 handling
+- `src/features/campaigns/`: campaign API client, state, and UI components
 - `src/pages/`: current page-level UI
 
 ## Local Commands

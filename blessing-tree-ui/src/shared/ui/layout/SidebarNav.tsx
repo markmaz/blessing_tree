@@ -14,6 +14,11 @@ const navItems = [
     end: true,
   },
   {
+    label: 'Campaigns',
+    to: routes.CAMPAIGNS,
+    icon: 'bi-stars',
+  },
+  {
     label: 'Families',
     to: routes.FAMILIES,
     icon: 'bi-people',
