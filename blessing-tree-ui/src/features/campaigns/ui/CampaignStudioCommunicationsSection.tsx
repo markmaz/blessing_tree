@@ -4,9 +4,11 @@ import {
   createBlankCommunicationTemplateDraft,
   deriveTemplateKey,
   draftFromCommunicationTemplate,
+  insertMergeFieldIntoDraft,
   toCreateTemplateInput,
   toUpdateTemplateInput,
   type CommunicationTemplateDraft,
+  type CommunicationTemplateFocusTarget,
 } from '@/features/campaigns/model/campaignCommunicationTemplateBuilder';
 import type {
   CommunicationTemplate,
@@ -38,10 +40,11 @@ export function CampaignStudioCommunicationsSection({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
     templates[0]?.id ?? null
   );
+  const [isLibraryCollapsed, setIsLibraryCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<'metadata' | 'content'>('metadata');
-  const [focusedField, setFocusedField] = useState<'subjectTemplate' | 'bodyTemplate'>(
-    'bodyTemplate'
-  );
+  const [focusedTarget, setFocusedTarget] = useState<CommunicationTemplateFocusTarget>({
+    kind: 'subject',
+  });
   const [draft, setDraft] = useState<CommunicationTemplateDraft>(() =>
     templates[0]
       ? draftFromCommunicationTemplate(templates[0])
@@ -51,6 +54,7 @@ export function CampaignStudioCommunicationsSection({
   const handleCreateNew = () => {
     setSelectedTemplateId(null);
     setActiveTab('metadata');
+    setIsLibraryCollapsed(true);
     setDraft(createBlankCommunicationTemplateDraft());
   };
 
@@ -69,13 +73,9 @@ export function CampaignStudioCommunicationsSection({
   };
 
   const handleInsertMergeField = (field: string) => {
-    const token = `{{${field}}}`;
-    setDraft((currentDraft) => ({
-      ...currentDraft,
-      [focusedField]: currentDraft[focusedField]
-        ? `${currentDraft[focusedField]} ${token}`
-        : token,
-    }));
+    setDraft((currentDraft) =>
+      insertMergeFieldIntoDraft(currentDraft, focusedTarget, field)
+    );
   };
 
   return (
@@ -89,11 +89,18 @@ export function CampaignStudioCommunicationsSection({
           <CampaignStudioTemplateLibrary
             templates={templates}
             selectedTemplateId={selectedTemplateId}
+            isCollapsed={isLibraryCollapsed}
             onSelectTemplate={(templateId) => {
+              const selectedTemplate = templates.find((template) => template.id === templateId);
               setSelectedTemplateId(templateId);
               setActiveTab('metadata');
+              setIsLibraryCollapsed(false);
+              if (selectedTemplate) {
+                setDraft(draftFromCommunicationTemplate(selectedTemplate));
+              }
             }}
             onCreateNew={handleCreateNew}
+            onToggleCollapsed={() => setIsLibraryCollapsed((currentValue) => !currentValue)}
           />
 
           <CampaignStudioTemplateWorkspace
@@ -125,7 +132,7 @@ export function CampaignStudioCommunicationsSection({
             }
             onSave={handleSave}
             onInsertMergeField={handleInsertMergeField}
-            onFocusField={setFocusedField}
+            onFocusTarget={setFocusedTarget}
           />
         </div>
       </CampaignStudioSectionCard>

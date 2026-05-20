@@ -1,15 +1,15 @@
 import type { CampaignStatus } from '@/features/campaigns/model/campaignTypes';
 
 const statusClassNames: Record<CampaignStatus, string> = {
-  DRAFT: 'bg-secondary-subtle text-secondary-emphasis',
-  ACTIVE: 'bg-success-subtle text-success-emphasis',
-  CLOSED: 'bg-warning-subtle text-warning-emphasis',
-  ARCHIVED: 'bg-dark-subtle text-dark-emphasis',
+  DRAFT: 'is-draft',
+  ACTIVE: 'is-active',
+  CLOSED: 'is-closed',
+  ARCHIVED: 'is-archived',
 };
 
 export function CampaignStatusBadge({ status }: { status: CampaignStatus }) {
   return (
-    <span className={`badge rounded-pill ${statusClassNames[status]}`}>
+    <span className={`campaign-status-badge ${statusClassNames[status]}`}>
       {status}
     </span>
   );

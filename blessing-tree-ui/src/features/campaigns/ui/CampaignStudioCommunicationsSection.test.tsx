@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { parseStoredTemplateBlocks } from '@/features/campaigns/model/campaignCommunicationTemplateBuilder';
 import { CampaignStudioCommunicationsSection } from '@/features/campaigns/ui/CampaignStudioCommunicationsSection';
 import type { CommunicationTemplate } from '@/features/campaigns/model/campaignStudioTypes';
 
@@ -13,6 +14,20 @@ const templates: CommunicationTemplate[] = [
     channel: 'EMAIL',
     subjectTemplate: 'Reminder for {{campaign.name}}',
     bodyTemplate: 'Hello {{volunteer.first_name}},\n\nPlease arrive by {{event.start_at}}.',
+    isActive: true,
+    createdByUserId: null,
+    createdAt: null,
+    updatedAt: null,
+  },
+  {
+    id: 'template-2',
+    templateKey: 'sponsor_map',
+    name: 'Sponsor Map',
+    audience: 'SPONSOR',
+    channel: 'EMAIL',
+    subjectTemplate: 'Directions for {{campaign.name}}',
+    bodyTemplate:
+      '__bt_template_blocks_v1__::{"version":1,"blocks":[{"id":"block-1","type":"heading","content":"Pickup map"},{"id":"block-2","type":"image","src":"{{location.map_url}}","altText":"Map image","caption":"Warehouse route"}]}',
     isActive: true,
     createdByUserId: null,
     createdAt: null,
@@ -48,18 +63,35 @@ describe('CampaignStudioCommunicationsSection', () => {
     await user.click(screen.getByRole('button', { name: /content/i }));
     await user.click(screen.getByLabelText(/^subject$/i));
     await user.paste('Welcome to {{campaign.name}}');
-    await user.click(screen.getByLabelText(/^body$/i));
+    await user.click(screen.getByLabelText(/^Text$/i));
     await user.paste('Hi {{sponsor.first_name}},\n\nThank you for joining.');
+    await user.click(screen.getByRole('button', { name: /add image/i }));
+    await user.click(screen.getByLabelText(/image url/i));
+    await user.paste('{{location.map_url}}');
+    await user.type(screen.getByLabelText(/alt text/i), 'Pickup location map');
     await user.click(screen.getByRole('button', { name: /create template/i }));
 
-    expect(onCreateTemplate).toHaveBeenCalledWith({
+    expect(onCreateTemplate).toHaveBeenCalledTimes(1);
+    const createCall = onCreateTemplate.mock.calls[0]?.[0];
+    expect(createCall).toMatchObject({
       templateKey: 'sponsor_welcome',
       name: 'Sponsor Welcome',
       audience: 'SPONSOR',
       subjectTemplate: 'Welcome to {{campaign.name}}',
-      bodyTemplate: 'Hi {{sponsor.first_name}},\n\nThank you for joining.',
       isActive: true,
     });
+    expect(parseStoredTemplateBlocks(createCall.bodyTemplate)).toEqual([
+      expect.objectContaining({
+        type: 'text',
+        content: 'Hi {{sponsor.first_name}},\n\nThank you for joining.',
+      }),
+      expect.objectContaining({
+        type: 'image',
+        src: '{{location.map_url}}',
+        altText: 'Pickup location map',
+        caption: '',
+      }),
+    ]);
   });
 
   it('loads an existing template and saves updates without schedule controls', async () => {
@@ -84,13 +116,59 @@ describe('CampaignStudioCommunicationsSection', () => {
     await user.type(screen.getByLabelText(/template name/i), ' Updated');
     await user.click(screen.getByRole('button', { name: /save template/i }));
 
-    expect(onUpdateTemplate).toHaveBeenCalledWith('template-1', {
+    expect(onUpdateTemplate).toHaveBeenCalledTimes(1);
+    const updateCall = onUpdateTemplate.mock.calls[0];
+    expect(updateCall?.[0]).toBe('template-1');
+    expect(updateCall?.[1]).toMatchObject({
       templateKey: 'volunteer_reminder',
       name: 'Volunteer Reminder Updated',
       audience: 'VOLUNTEER',
       subjectTemplate: 'Reminder for {{campaign.name}}',
-      bodyTemplate: 'Hello {{volunteer.first_name}},\n\nPlease arrive by {{event.start_at}}.',
       isActive: true,
     });
+    expect(parseStoredTemplateBlocks(updateCall?.[1].bodyTemplate as string)).toEqual([
+      expect.objectContaining({
+        type: 'text',
+        content: 'Hello {{volunteer.first_name}},\n\nPlease arrive by {{event.start_at}}.',
+      }),
+    ]);
+  });
+
+  it('collapses the saved template rail to free editor space', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CampaignStudioCommunicationsSection
+        templates={templates}
+        isSaving={false}
+        onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /collapse saved templates/i }));
+
+    expect(screen.queryByText(/saved templates/i)).not.toBeInTheDocument();
+    expect(screen.getByText(String(templates.length))).toBeInTheDocument();
+  });
+
+  it('loads the selected saved template into the builder draft', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CampaignStudioCommunicationsSection
+        templates={templates}
+        isSaving={false}
+        onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /sponsor map/i }));
+    await user.click(screen.getByRole('button', { name: /content blocks/i }));
+
+    expect(screen.getByLabelText(/^subject$/i)).toHaveValue('Directions for {{campaign.name}}');
+    expect(screen.getByLabelText(/heading/i)).toHaveValue('Pickup map');
+    expect(screen.getByLabelText(/image url/i)).toHaveValue('{{location.map_url}}');
   });
 });

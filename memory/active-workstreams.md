@@ -60,6 +60,7 @@ Last updated: 2026-05-20
 - Tightened Campaign Studio responsiveness by collapsing the section rail to icons at medium widths and preventing schedule/AI card content from bleeding outside their containers
 - Reworked the AI draft-type picker in the Studio rail into a compact horizontal segmented control with shared helper copy so the narrow rail no longer chops the option text
 - Reworked Studio Communications into a template-only builder with a saved-template rail, metadata/content editing tabs, and rendered email preview based on the Query Forge template-builder interaction pattern
+- Expanded the Studio Communications builder to support heading, text, and image blocks through a persisted frontend block envelope, and made the saved-template rail collapsible so the editor has more room
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Fixed backend runtime gaps discovered during live stack verification:

@@ -1,11 +1,10 @@
-import { useMemo } from 'react';
-import {
-  communicationTemplateMergeFieldGroups,
-  renderTemplatePreview,
-  renderTemplatePreviewParagraphs,
-  type CommunicationTemplateDraft,
+import type {
+  CommunicationTemplateDraft,
+  CommunicationTemplateFocusTarget,
 } from '@/features/campaigns/model/campaignCommunicationTemplateBuilder';
 import { communicationAudienceOptions } from '@/features/campaigns/model/campaignStudio';
+import { CampaignStudioTemplateBlockEditor } from '@/features/campaigns/ui/CampaignStudioTemplateBlockEditor';
+import { CampaignStudioTemplatePreviewPanel } from '@/features/campaigns/ui/CampaignStudioTemplatePreviewPanel';
 
 interface CampaignStudioTemplateWorkspaceProps {
   draft: CommunicationTemplateDraft;
@@ -18,7 +17,7 @@ interface CampaignStudioTemplateWorkspaceProps {
   ) => void;
   onSave: () => void;
   onInsertMergeField: (field: string) => void;
-  onFocusField: (field: 'subjectTemplate' | 'bodyTemplate') => void;
+  onFocusTarget: (target: CommunicationTemplateFocusTarget) => void;
 }
 
 export function CampaignStudioTemplateWorkspace({
@@ -30,17 +29,8 @@ export function CampaignStudioTemplateWorkspace({
   onChangeDraft,
   onSave,
   onInsertMergeField,
-  onFocusField,
+  onFocusTarget,
 }: CampaignStudioTemplateWorkspaceProps) {
-  const previewSubject = useMemo(
-    () => renderTemplatePreview(draft.subjectTemplate),
-    [draft.subjectTemplate]
-  );
-  const previewParagraphs = useMemo(
-    () => renderTemplatePreviewParagraphs(draft.bodyTemplate),
-    [draft.bodyTemplate]
-  );
-
   return (
     <section className="campaign-template-workspace" aria-label="Communication template builder">
       <div className="campaign-template-workspace__header">
@@ -49,10 +39,13 @@ export function CampaignStudioTemplateWorkspace({
             {isExisting ? 'Editing Template' : 'New Template'}
           </div>
           <h3 className="mb-1">{draft.name.trim() || 'Untitled communication template'}</h3>
-          <div className="campaign-chip-row">
-            <span className="campaign-chip">{draft.audience}</span>
-            <span className={`campaign-chip ${draft.isActive ? '' : 'campaign-chip-muted'}`}>
+          <div className="campaign-template-badge-row">
+            <span className="campaign-template-badge">{draft.audience}</span>
+            <span className={`campaign-template-badge ${draft.isActive ? '' : 'is-muted'}`}>
               {draft.isActive ? 'Active' : 'Inactive'}
+            </span>
+            <span className="campaign-template-badge is-muted">
+              {draft.bodyBlocks.length} blocks
             </span>
           </div>
         </div>
@@ -80,7 +73,7 @@ export function CampaignStudioTemplateWorkspace({
           className={activeTab === 'content' ? 'is-active' : ''}
           onClick={() => onChangeTab('content')}
         >
-          Content
+          Content Blocks
         </button>
       </div>
 
@@ -153,7 +146,7 @@ export function CampaignStudioTemplateWorkspace({
               <input
                 className="form-control"
                 value={draft.subjectTemplate}
-                onFocus={() => onFocusField('subjectTemplate')}
+                onFocus={() => onFocusTarget({ kind: 'subject' })}
                 onChange={(event) =>
                   onChangeDraft((currentDraft) => ({
                     ...currentDraft,
@@ -162,65 +155,27 @@ export function CampaignStudioTemplateWorkspace({
                 }
               />
             </label>
-            <label className="form-label">
-              Body
-              <textarea
-                className="form-control"
-                rows={14}
-                value={draft.bodyTemplate}
-                onFocus={() => onFocusField('bodyTemplate')}
-                onChange={(event) =>
-                  onChangeDraft((currentDraft) => ({
-                    ...currentDraft,
-                    bodyTemplate: event.target.value,
-                  }))
-                }
-              />
-            </label>
+
+            <CampaignStudioTemplateBlockEditor
+              blocks={draft.bodyBlocks}
+              isSaving={isSaving}
+              onChangeBlocks={(bodyBlocks) =>
+                onChangeDraft((currentDraft) => ({
+                  ...currentDraft,
+                  bodyBlocks,
+                }))
+              }
+              onFocusBlockField={(blockId, field) =>
+                onFocusTarget({ kind: 'block', blockId, field })
+              }
+            />
           </div>
 
-          <div className="campaign-template-workspace__preview-column">
-            <div className="campaign-template-preview-card">
-              <div className="campaign-template-preview-card__heading">
-                <span className="campaign-studio__eyebrow">Email Preview</span>
-                <strong>Rendered sample</strong>
-              </div>
-              <div className="campaign-template-preview-card__subject">
-                {previewSubject || 'Subject line preview'}
-              </div>
-              <div className="campaign-template-preview-card__body">
-                {previewParagraphs.length > 0 ? (
-                  previewParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
-                ) : (
-                  <p className="text-muted mb-0">Body preview will appear here.</p>
-                )}
-              </div>
-            </div>
-
-            <div className="campaign-template-merge-fields">
-              <div className="campaign-template-preview-card__heading">
-                <span className="campaign-studio__eyebrow">Merge Fields</span>
-                <strong>Insert sample fields</strong>
-              </div>
-              {communicationTemplateMergeFieldGroups.map((group) => (
-                <div key={group.label} className="campaign-template-merge-fields__group">
-                  <div className="campaign-template-merge-fields__label">{group.label}</div>
-                  <div className="campaign-chip-row">
-                    {group.fields.map((field) => (
-                      <button
-                        key={field}
-                        type="button"
-                        className="campaign-template-merge-fields__chip"
-                        onClick={() => onInsertMergeField(field)}
-                      >
-                        {field}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <CampaignStudioTemplatePreviewPanel
+            subjectTemplate={draft.subjectTemplate}
+            blocks={draft.bodyBlocks}
+            onInsertMergeField={onInsertMergeField}
+          />
         </div>
       )}
     </section>
