@@ -13,6 +13,7 @@ import { AppLayout } from '@/shared/ui/layout/AppLayout';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { CampaignsPage } from '@/pages/CampaignsPage';
 import { CampaignDetailPage } from '@/pages/CampaignDetailPage';
+import { CampaignStudioPage } from '@/pages/CampaignStudioPage';
 import { FamiliesPage } from '@/pages/FamiliesPage';
 import { DonationsPage } from '@/pages/DonationsPage';
 import { ReportsPage } from '@/pages/ReportsPage';
@@ -43,6 +44,10 @@ export function App() {
               <Route
                 path={routes.CAMPAIGN_DETAIL.slice(1)}
                 element={<CampaignDetailPage />}
+              />
+              <Route
+                path={routes.CAMPAIGN_STUDIO.slice(1)}
+                element={<CampaignStudioPage />}
               />
               <Route path={routes.FAMILIES.slice(1)} element={<FamiliesPage />} />
               <Route path={routes.DONATIONS.slice(1)} element={<DonationsPage />} />

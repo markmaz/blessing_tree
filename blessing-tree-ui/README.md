@@ -16,6 +16,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - `src/shared/api/authApi.ts` already calls the backend local login route.
 - The frontend now completes local login directly on `/login` and includes backend refresh-cookie handling.
 - The frontend now consumes the protected campaign APIs through a campaign provider, top-bar switcher, campaign list, campaign detail page, and a campaign-aware dashboard.
+- Campaign Studio phase 1 now exists as a shell route with a left navigation rail, overview cards, and a non-destructive AI builder rail.
 - Several older UI docs were delivery-era summaries and have been consolidated.
 
 ## Routes
@@ -30,6 +31,7 @@ Protected routes:
 - `/`
 - `/campaigns`
 - `/campaigns/:campaignId`
+- `/campaigns/:campaignId/studio`
 - `/families`
 - `/donations`
 - `/reports`
@@ -45,6 +47,7 @@ Route constants live in `src/app/routes.ts`.
 - `src/shared/api/authApi.ts`: frontend auth API client
 - `src/shared/api/client.ts`: shared authenticated fetch layer with refresh-on-401 handling
 - `src/features/campaigns/`: campaign API client, state, and UI components
+- `src/pages/CampaignStudioPage.tsx`: phase 1 Campaign Studio shell
 - `src/pages/`: current page-level UI
 
 ## Local Commands

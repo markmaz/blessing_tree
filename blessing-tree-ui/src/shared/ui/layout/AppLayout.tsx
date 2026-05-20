@@ -9,6 +9,9 @@ const getIsDesktop = () =>
   window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`).matches;
 
 const getPageTitle = (pathname: string) => {
+  if (pathname.startsWith('/campaigns/') && pathname.endsWith('/studio')) {
+    return 'Campaign Studio';
+  }
   if (pathname.startsWith('/campaigns')) return 'Campaigns';
   if (pathname.startsWith('/families')) return 'Families';
   if (pathname.startsWith('/donations')) return 'Donations';

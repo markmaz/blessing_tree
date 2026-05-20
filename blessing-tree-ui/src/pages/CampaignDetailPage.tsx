@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { routes } from '@/app/routes';
+import { buildCampaignStudioPath, routes } from '@/app/routes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { useCampaignOverview } from '@/features/campaigns/model/useCampaignOverview';
 import { CampaignStatusBadge } from '@/features/campaigns/ui/CampaignStatusBadge';
@@ -82,6 +82,12 @@ export function CampaignDetailPage() {
             </button>
             <Link to={routes.CAMPAIGNS} className="btn btn-outline-secondary btn-sm">
               Back to Campaigns
+            </Link>
+            <Link
+              to={buildCampaignStudioPath(campaignId)}
+              className="btn btn-secondary btn-sm"
+            >
+              Open Studio
             </Link>
           </div>
         </div>

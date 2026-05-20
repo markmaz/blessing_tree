@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
-import { buildCampaignDetailPath, routes } from '@/app/routes';
+import {
+  buildCampaignStudioPath,
+  routes,
+} from '@/app/routes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { useCampaignOverview } from '@/features/campaigns/model/useCampaignOverview';
 import { CampaignStatusBadge } from '@/features/campaigns/ui/CampaignStatusBadge';
@@ -70,10 +73,10 @@ export function DashboardPage() {
             </div>
           </div>
           <Link
-            to={buildCampaignDetailPath(campaign.id)}
+            to={buildCampaignStudioPath(campaign.id)}
             className="btn btn-secondary btn-sm"
           >
-            Open Campaign Details
+            Open Campaign Studio
           </Link>
         </div>
       </div>

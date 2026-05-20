@@ -26,6 +26,7 @@ Last updated: 2026-05-20
   - protected shell exists
   - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
   - dashboard is now campaign-aware and loads live summary/access data from the backend
+  - Campaign Studio phase 1 shell now exists with left-rail navigation, overview cards, and a right-side AI builder rail
   - page shells still exist for families, donations, reports, and admin
   - shared authenticated client exists for protected data APIs
 
@@ -92,6 +93,7 @@ Last updated: 2026-05-20
 - Frontend campaign routes now exist:
   - `/campaigns`
   - `/campaigns/:campaignId`
+  - `/campaigns/:campaignId/studio`
   - selected campaign is persisted in local storage per user
 
 ## Knowledge Graph

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { buildCampaignDetailPath } from '@/app/routes';
+import { buildCampaignDetailPath, buildCampaignStudioPath } from '@/app/routes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { CampaignStatusBadge } from '@/features/campaigns/ui/CampaignStatusBadge';
 
@@ -106,6 +106,12 @@ export function CampaignsPage() {
               >
                 {selectedCampaignId === campaign.id ? 'Current Campaign' : 'Make Current'}
               </button>
+              <Link
+                to={buildCampaignStudioPath(campaign.id)}
+                className="btn btn-secondary btn-sm"
+              >
+                Open Studio
+              </Link>
               <Link
                 to={buildCampaignDetailPath(campaign.id)}
                 className="btn btn-outline-secondary btn-sm"

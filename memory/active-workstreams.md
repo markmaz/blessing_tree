@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: first protected campaign frontend flow implemented; next step is Campaign Studio shell and the next domain slice
+- Current step: Campaign Studio phase 1 shell implemented; next step is team/communications/milestone backend support and deeper studio wiring
 
 ## Recently Completed
 
@@ -28,6 +28,7 @@ Last updated: 2026-05-20
 - Added and applied the campaign metadata migration to local MySQL, allowing `description` and multiple campaigns per year
 - Exposed the first campaign APIs in the frontend through a campaign provider, campaign switcher, campaign list/detail routes, and a campaign-aware dashboard
 - Documented Campaign Studio as a concrete card-based campaign-building surface with a persistent AI builder rail, team/communications/milestone/readiness cards, and a `/campaigns/:campaignId/studio` primary route
+- Implemented Campaign Studio phase 1 with the primary studio route, left-rail section navigation, overview cards driven by existing campaign/access/summary data, placeholder section canvases, and a non-destructive AI builder rail
 - Fixed backend runtime gaps discovered during live stack verification:
   - removed the RBAC package import cycle at app startup
   - loaded the full SQLAlchemy model registry during app creation
@@ -38,8 +39,8 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Build the Campaign Studio shell on top of the campaign access and summary endpoints
-2. Start the next protected domain API slice for recipients, wishlists, and related counts
+1. Add backend APIs for campaign assignments, communication templates/schedules, milestone fields, and readiness output
+2. Wire the Team, Communications, Dates, and Readiness studio sections to those APIs
 3. Add create/update campaign UI for admins on top of the existing backend routes
 
 ## Blockers Or Ambiguities

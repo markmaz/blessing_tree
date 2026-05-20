@@ -10,6 +10,7 @@ export const routes = {
   DASHBOARD: '/',
   CAMPAIGNS: '/campaigns',
   CAMPAIGN_DETAIL: '/campaigns/:campaignId',
+  CAMPAIGN_STUDIO: '/campaigns/:campaignId/studio',
   FAMILIES: '/families',
   DONATIONS: '/donations',
   REPORTS: '/reports',
@@ -18,4 +19,8 @@ export const routes = {
 
 export function buildCampaignDetailPath(campaignId: string): string {
   return `/campaigns/${campaignId}`;
+}
+
+export function buildCampaignStudioPath(campaignId: string): string {
+  return `/campaigns/${campaignId}/studio`;
 }
