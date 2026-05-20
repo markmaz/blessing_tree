@@ -15,6 +15,8 @@ Last updated: 2026-05-20
   - domain models and migrations exist
   - RBAC foundation now exists with campaign role persistence, capability bundles, and an authorization service
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
+  - backend startup now imports the full SQLAlchemy model registry during app creation
+  - local auth compatibility now depends on `bcrypt 4.1.3` with `passlib 1.7.4`
   - runtime and dev dependency manifests now exist
   - checked-in `.env.example` now exists for local bootstrap
   - checked-in `version.json` now exists for backend build versioning
@@ -59,6 +61,10 @@ Last updated: 2026-05-20
   - Yahoo login/callback
   - refresh
   - logout
+- Local stack verification:
+  - Blessing Tree backend now boots correctly on port `5000`
+  - Blessing Tree frontend now serves correctly on port `5173`
+  - local login, refresh, logout, and protected campaign API routes were smoke-tested successfully against the running stack on 2026-05-20
 - Active-session automatic token refresh on 401 is now available through the shared frontend API client.
 - RBAC foundation now exists:
   - `db/migration/V003__Campaign_User_Roles.sql`

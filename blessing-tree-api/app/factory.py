@@ -11,6 +11,8 @@ from flask_cors import CORS
 from flask_mail import Mail
 from flask_restx import Api
 
+import app.models.models  # noqa: F401
+
 from app.celery import celery, init_celery
 from app.config import FRONTEND_BASE_URL, LOG_QUEUE, VALKEY_ADDRESS, VALKEY_CONFIG, VALKEY_PORT
 from app.exceptions.service_error import ServiceError
