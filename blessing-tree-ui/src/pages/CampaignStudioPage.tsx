@@ -11,10 +11,10 @@ import { canManageCampaign } from '@/features/campaigns/model/campaignPermission
 import type { CampaignUpsertInput } from '@/features/campaigns/model/campaignTypes';
 import { CampaignStudioAiRail } from '@/features/campaigns/ui/CampaignStudioAiRail';
 import { CampaignStudioCommunicationsSection } from '@/features/campaigns/ui/CampaignStudioCommunicationsSection';
-import { CampaignStudioDatesSection } from '@/features/campaigns/ui/CampaignStudioDatesSection';
 import { CampaignStudioOverview } from '@/features/campaigns/ui/CampaignStudioOverview';
 import { CampaignStudioReadinessSection } from '@/features/campaigns/ui/CampaignStudioReadinessSection';
 import { CampaignStudioRail } from '@/features/campaigns/ui/CampaignStudioRail';
+import { CampaignStudioScheduleSection } from '@/features/campaigns/ui/CampaignStudioScheduleSection';
 import { CampaignStudioTeamSection } from '@/features/campaigns/ui/CampaignStudioTeamSection';
 import { useCampaignStudio } from '@/features/campaigns/model/useCampaignStudio';
 import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudioSectionCard';
@@ -34,6 +34,9 @@ export function CampaignStudioPage() {
     addCommunicationTemplate,
     addCommunicationSchedule,
     persistMilestones,
+    addScheduleEvent,
+    updateScheduleEvent,
+    removeScheduleEvent,
     clearSaveMessage,
   } = useCampaignStudio(campaignId);
   const [selectedSection, setSelectedSection] =
@@ -163,6 +166,9 @@ export function CampaignStudioPage() {
             addCommunicationTemplate,
             addCommunicationSchedule,
             persistMilestones,
+            addScheduleEvent,
+            updateScheduleEvent,
+            removeScheduleEvent,
           })}
         </main>
 
@@ -185,6 +191,9 @@ function renderStudioSection({
   addCommunicationTemplate,
   addCommunicationSchedule,
   persistMilestones,
+  addScheduleEvent,
+  updateScheduleEvent,
+  removeScheduleEvent,
 }: {
   selectedSection: CampaignStudioSectionId;
   studio: NonNullable<ReturnType<typeof useCampaignStudio>['studio']>;
@@ -195,6 +204,9 @@ function renderStudioSection({
   addCommunicationTemplate: ReturnType<typeof useCampaignStudio>['addCommunicationTemplate'];
   addCommunicationSchedule: ReturnType<typeof useCampaignStudio>['addCommunicationSchedule'];
   persistMilestones: ReturnType<typeof useCampaignStudio>['persistMilestones'];
+  addScheduleEvent: ReturnType<typeof useCampaignStudio>['addScheduleEvent'];
+  updateScheduleEvent: ReturnType<typeof useCampaignStudio>['updateScheduleEvent'];
+  removeScheduleEvent: ReturnType<typeof useCampaignStudio>['removeScheduleEvent'];
 }) {
   if (selectedSection === 'overview') {
     return (
@@ -229,13 +241,18 @@ function renderStudioSection({
     );
   }
 
-  if (selectedSection === 'dates') {
+  if (selectedSection === 'schedule') {
     return (
-      <CampaignStudioDatesSection
-        key={studio.milestones.map((milestone) => `${milestone.milestoneKey}:${milestone.occursOn ?? ''}:${milestone.updatedAt ?? ''}`).join('|')}
+      <CampaignStudioScheduleSection
+        access={studio.access}
+        items={studio.schedule.items}
         milestones={studio.milestones}
         isSaving={isSaving}
-        onSave={persistMilestones}
+        onSaveMilestones={persistMilestones}
+        onCreateEvent={addScheduleEvent}
+        onUpdateEvent={updateScheduleEvent}
+        onDeleteEvent={removeScheduleEvent}
+        onOpenCommunications={() => setSelectedSection('communications')}
       />
     );
   }

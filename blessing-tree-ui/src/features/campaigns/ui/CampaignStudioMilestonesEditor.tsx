@@ -13,17 +13,17 @@ interface MilestoneDraft {
   sortOrder: number;
 }
 
-interface CampaignStudioDatesSectionProps {
+interface CampaignStudioMilestonesEditorProps {
   milestones: CampaignMilestone[];
   isSaving: boolean;
   onSave: (milestones: SaveCampaignMilestoneInput[]) => Promise<boolean>;
 }
 
-export function CampaignStudioDatesSection({
+export function CampaignStudioMilestonesEditor({
   milestones,
   isSaving,
   onSave,
-}: CampaignStudioDatesSectionProps) {
+}: CampaignStudioMilestonesEditorProps) {
   const drafts = buildMilestoneDrafts(milestones);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -50,9 +50,9 @@ export function CampaignStudioDatesSection({
   return (
     <div className="campaign-studio__canvas-stack">
       <CampaignStudioSectionCard
-        eyebrow="Dates"
-        title="Milestones and Timing"
-        description="Set the key dates that define campaign readiness and communication timing."
+        eyebrow="Schedule"
+        title="Milestones"
+        description="Set the named campaign checkpoints that drive readiness and scheduled communications."
       >
         <form onSubmit={handleSubmit}>
           <div className="campaign-studio__milestone-editor">

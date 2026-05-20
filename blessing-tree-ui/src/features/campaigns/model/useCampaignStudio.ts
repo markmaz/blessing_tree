@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
+  createCampaignEvent,
+  deleteCampaignEvent,
+  updateCampaignEvent,
+} from '@/features/campaigns/api/campaignStudioScheduleApi';
+import {
   createCommunicationSchedule,
   createCommunicationTemplate,
   getCampaignStudio,
@@ -9,9 +14,11 @@ import { createCampaignAssignment } from '@/features/campaigns/api/campaignStudi
 import type {
   CampaignStudioData,
   CreateCampaignAssignmentInput,
+  CreateCampaignEventInput,
   CreateCommunicationScheduleInput,
   CreateCommunicationTemplateInput,
   SaveCampaignMilestoneInput,
+  UpdateCampaignEventInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
 
 interface CampaignStudioState {
@@ -156,6 +163,45 @@ export function useCampaignStudio(campaignId: string | null) {
     );
   };
 
+  const addScheduleEvent = async (input: CreateCampaignEventInput) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await createCampaignEvent(campaignId, input);
+      },
+      'Schedule event added.'
+    );
+  };
+
+  const updateScheduleEvent = async (
+    eventId: string,
+    input: UpdateCampaignEventInput
+  ) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await updateCampaignEvent(campaignId, eventId, input);
+      },
+      'Schedule event updated.'
+    );
+  };
+
+  const removeScheduleEvent = async (eventId: string) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await deleteCampaignEvent(campaignId, eventId);
+      },
+      'Schedule event removed.'
+    );
+  };
+
   const clearSaveMessage = () => {
     setState((currentState) => ({
       ...currentState,
@@ -203,6 +249,9 @@ export function useCampaignStudio(campaignId: string | null) {
     addCommunicationTemplate,
     addCommunicationSchedule,
     persistMilestones,
+    addScheduleEvent,
+    updateScheduleEvent,
+    removeScheduleEvent,
     clearSaveMessage,
   };
 }

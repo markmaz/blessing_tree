@@ -85,6 +85,32 @@ export interface CampaignMilestone {
   updatedAt: string | null;
 }
 
+export type CampaignScheduleSourceType = 'manual' | 'milestone' | 'communication';
+
+export type CampaignScheduleEventType =
+  | 'GENERAL'
+  | 'VOLUNTEER'
+  | 'SPONSOR'
+  | 'DONATION'
+  | 'RECIPIENT'
+  | 'GIFT'
+  | 'PICKUP'
+  | 'COMMUNICATION'
+  | 'MILESTONE';
+
+export interface CampaignScheduleItem {
+  id: string;
+  title: string;
+  eventType: CampaignScheduleEventType;
+  sourceType: CampaignScheduleSourceType;
+  sourceId: string | null;
+  startAt: string | null;
+  endAt: string | null;
+  allDay: boolean;
+  notes: string | null;
+  isEditable: boolean;
+}
+
 export interface CampaignReadinessItem {
   severity: 'error' | 'warning' | 'info';
   code: string;
@@ -112,6 +138,9 @@ export interface CampaignStudioData {
   communications: {
     templates: CommunicationTemplate[];
     schedules: CommunicationSchedule[];
+  };
+  schedule: {
+    items: CampaignScheduleItem[];
   };
   milestones: CampaignMilestone[];
   readiness: CampaignReadiness;
@@ -145,4 +174,22 @@ export interface SaveCampaignMilestoneInput {
   occursOn: string;
   notes?: string | null;
   sortOrder: number;
+}
+
+export interface CreateCampaignEventInput {
+  title: string;
+  eventType: CampaignScheduleEventType;
+  startAt: string;
+  endAt?: string | null;
+  allDay?: boolean;
+  notes?: string | null;
+}
+
+export interface UpdateCampaignEventInput {
+  title?: string;
+  eventType?: CampaignScheduleEventType;
+  startAt?: string;
+  endAt?: string | null;
+  allDay?: boolean;
+  notes?: string | null;
 }

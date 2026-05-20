@@ -2,7 +2,7 @@ export type CampaignStudioSectionId =
   | 'overview'
   | 'team'
   | 'communications'
-  | 'dates'
+  | 'schedule'
   | 'readiness'
   | 'settings';
 
@@ -33,10 +33,10 @@ export const campaignStudioSections: CampaignStudioSection[] = [
     description: 'Templates, reminders, and campaign messaging.',
   },
   {
-    id: 'dates',
-    label: 'Dates',
+    id: 'schedule',
+    label: 'Schedule',
     icon: 'bi-calendar-event',
-    description: 'Milestones, intake windows, and pickup dates.',
+    description: 'Timeline, calendar planning, and milestone timing.',
   },
   {
     id: 'readiness',
@@ -56,6 +56,7 @@ export const campaignStudioPromptStarters = [
   'Create a sponsor reminder sequence for this campaign.',
   'Suggest the missing milestone dates before launch.',
   'Draft the volunteer and manager roles this campaign still needs.',
+  'Lay out a pickup and volunteer schedule across the campaign calendar.',
   'Build a readiness checklist for opening this campaign.',
 ] as const;
 

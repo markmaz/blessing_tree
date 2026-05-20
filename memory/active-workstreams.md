@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: schedule backend phase 1 is implemented; next step is replacing Studio `Dates` with `Schedule` and building `Timeline | Calendar | Milestones`
+- Current step: schedule frontend phase 2 is implemented; next step is expanding the first real operating slice into recipient groups, recipients, and wishlists
 
 ## Recently Completed
 
@@ -32,7 +32,7 @@ Last updated: 2026-05-20
 - Implemented Campaign Studio backend support with protected assignment, communication template/schedule, milestone, readiness, and aggregate studio endpoints
 - Applied and verified the Campaign Studio support migration against the local MySQL `blessing_tree` database
 - Live-smoke-tested the new Campaign Studio backend routes against the running Blessing Tree API
-- Wired Campaign Studio Team, Communications, Dates, and Readiness sections to the new backend APIs
+- Wired Campaign Studio Team, Communications, Schedule, and Readiness sections to the new backend APIs
 - Added frontend template and schedule creation flows inside Campaign Studio
 - Added frontend milestone save wiring inside Campaign Studio
 - Live-verified the Studio section rendering and communications create flows against the running Blessing Tree stack
@@ -49,6 +49,9 @@ Last updated: 2026-05-20
 - Implemented backend `campaign_event` persistence and unified schedule APIs
 - Applied and verified the `campaign_event` migration against local MySQL `blessing_tree`
 - Added backend test coverage for manual event CRUD and unified schedule reads
+- Replaced Studio `Dates` with `Schedule` in the frontend and added `Timeline | Calendar | Milestones` views
+- Added frontend manual event create/edit/delete flows on top of the unified schedule APIs
+- Added frontend automated test coverage for the new Schedule section behavior
 - Fixed backend runtime gaps discovered during live stack verification:
   - removed the RBAC package import cycle at app startup
   - loaded the full SQLAlchemy model registry during app creation
@@ -59,9 +62,9 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Replace Studio `Dates` with `Schedule` and add `Timeline | Calendar | Milestones` views
-2. Add manual event create/edit/delete UI inside the new Schedule section
-3. Expand the next real domain slice into recipient groups, recipients, and wishlists
+1. Expand the next real domain slice into recipient groups, recipients, and wishlists
+2. Add deeper edit/deactivate flows for campaign team and communications records
+3. Extend Studio readiness to incorporate schedule-specific gap detection
 
 ## Blockers Or Ambiguities
 

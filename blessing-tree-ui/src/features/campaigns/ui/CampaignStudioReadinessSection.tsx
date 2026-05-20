@@ -73,8 +73,8 @@ function toStudioSectionId(section: string): CampaignStudioSectionId {
   if (section === 'communications') {
     return 'communications';
   }
-  if (section === 'dates') {
-    return 'dates';
+  if (section === 'dates' || section === 'schedule') {
+    return 'schedule';
   }
   if (section === 'team') {
     return 'team';

@@ -1,8 +1,10 @@
 import { apiFetchJson } from '@/shared/api/client';
+import { mapCampaignScheduleItem } from '@/features/campaigns/api/campaignStudioScheduleApi';
 import {
   type CampaignAssignment,
   type CampaignMilestone,
   type CampaignReadiness,
+  type CampaignScheduleItem,
   type CampaignStudioData,
   type CampaignTeamSnapshot,
   type CommunicationSchedule,
@@ -110,6 +112,19 @@ interface CampaignMilestoneResponse {
   updated_at: string | null;
 }
 
+interface CampaignScheduleItemResponse {
+  id: string;
+  title: string;
+  event_type: CampaignScheduleItem['eventType'];
+  source_type: CampaignScheduleItem['sourceType'];
+  source_id: string | null;
+  start_at: string | null;
+  end_at: string | null;
+  all_day: boolean;
+  notes: string | null;
+  is_editable: boolean;
+}
+
 interface CampaignReadinessItemResponse {
   severity: CampaignReadiness['items'][number]['severity'];
   code: string;
@@ -138,6 +153,9 @@ interface CampaignStudioResponse {
     templates: CommunicationTemplateResponse[];
     schedules: CommunicationScheduleResponse[];
   };
+  schedule: {
+    items: CampaignScheduleItemResponse[];
+  };
   milestones: CampaignMilestoneResponse[];
   readiness: CampaignReadinessResponse;
 }
@@ -155,6 +173,9 @@ export async function getCampaignStudio(campaignId: string): Promise<CampaignStu
     communications: {
       templates: response.communications.templates.map(mapCommunicationTemplate),
       schedules: response.communications.schedules.map(mapCommunicationSchedule),
+    },
+    schedule: {
+      items: response.schedule.items.map(mapCampaignScheduleItem),
     },
     milestones: response.milestones.map(mapCampaignMilestone),
     readiness: mapCampaignReadiness(response.readiness),

@@ -3,6 +3,7 @@ import type {
 } from '@/features/campaigns/model/campaignStudioTypes';
 import { buildCampaignDetailPath } from '@/app/routes';
 import { campaignSummaryLabels } from '@/features/campaigns/api/campaignApi';
+import { formatScheduleDateRange, sourceLabel } from '@/features/campaigns/model/campaignSchedule';
 import { CampaignStatusBadge } from '@/features/campaigns/ui/CampaignStatusBadge';
 import { CampaignSummaryGrid } from '@/features/campaigns/ui/CampaignSummaryGrid';
 import { Link } from 'react-router-dom';
@@ -14,10 +15,19 @@ export function CampaignStudioOverview({
   studio: CampaignStudioData;
   onEditCampaign: () => void;
 }) {
-  const { campaign, access, summary, team, communications, milestones, readiness } = studio;
+  const {
+    campaign,
+    access,
+    summary,
+    team,
+    communications,
+    schedule,
+    readiness,
+  } = studio;
   const topMetric = campaignSummaryLabels
     .slice(0, 3)
     .map((item) => `${item.label}: ${summary.counts[item.key]}`);
+  const upcomingItems = schedule.items.filter((item) => item.startAt).slice(0, 3);
 
   return (
     <div className="campaign-studio__canvas-stack">
@@ -113,16 +123,19 @@ export function CampaignStudioOverview({
         </article>
 
         <article className="campaign-surface-card">
-          <div className="campaign-studio__card-eyebrow">Dates</div>
-          <h2 className="h5 mb-3">Milestones</h2>
+          <div className="campaign-studio__card-eyebrow">Schedule</div>
+          <h2 className="h5 mb-3">Upcoming Plan</h2>
           <div className="campaign-studio__milestone-list">
-            {milestones.length === 0 ? (
-              <div className="small text-muted">No milestone dates have been saved yet.</div>
+            {upcomingItems.length === 0 ? (
+              <div className="small text-muted">No scheduled items have been saved yet.</div>
             ) : (
-              milestones.slice(0, 3).map((milestone) => (
-                <div key={milestone.id} className="campaign-studio__milestone-item">
-                  <span>{milestone.label}</span>
-                  <strong>{milestone.occursOn || 'Not set'}</strong>
+              upcomingItems.map((item) => (
+                <div key={item.id} className="campaign-studio__milestone-item">
+                  <span>
+                    {item.title}
+                    <span className="small text-muted d-block">{sourceLabel(item.sourceType)}</span>
+                  </span>
+                  <strong>{formatScheduleDateRange(item)}</strong>
                 </div>
               ))
             )}
