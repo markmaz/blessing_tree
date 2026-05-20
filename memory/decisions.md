@@ -52,9 +52,9 @@
 ## Campaign Product Direction
 
 - Status: active
-- Decision: treat campaign as the primary operating container, allow multiple campaigns per year, use one selected active campaign in the UI, default to archival rather than delete, support AI-assisted campaign draft creation, and design a Campaign Studio surface inspired by Query Forge Workflow Studio's rail/work-area/inspector interaction model.
+- Decision: treat campaign as the primary operating container, allow multiple campaigns per year, use one selected active campaign in the UI, add `description` in the immediate schema work, default to archival rather than delete, include sponsorship-item and fulfillment counts in v1 summary, support AI-assisted campaign draft creation, keep AI drafts transient by default, and design a Campaign Studio surface inspired by Query Forge Workflow Studio's rail/work-area/inspector interaction model.
 - Rationale: the existing data model is already campaign-centered, operational users will likely move across multiple campaigns, and the app needs a structured control surface that is richer than plain CRUD forms.
-- Consequence: campaign APIs should be path-scoped and capability-aware, campaign creation should support both structured input and prompt-driven draft generation, and the frontend should evolve toward a studio-style campaign surface rather than only list/detail forms.
+- Consequence: campaign APIs should be path-scoped and capability-aware, the next campaign migration batch should include `description`, summary endpoints should expose the broader operational counts, campaign creation should support both structured input and prompt-driven draft generation, AI drafts should not require backend persistence before save, and the frontend should evolve toward a studio-style campaign surface rather than only list/detail forms.
 
 ## Code Structure Policy
 

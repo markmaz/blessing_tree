@@ -87,6 +87,8 @@ Campaign summary should include at least:
 - wishlist item count
 - donation count
 - sponsorship count
+- sponsorship item count
+- fulfillment count
 - pickup count
 
 ### Status Transitions
@@ -115,13 +117,12 @@ Base campaign fields:
 - `start_date`
 - `end_date`
 - `status`
-- `description` (recommended add)
+- `description`
 - `created_at`
 - `updated_at`
 
 Recommended near-term metadata additions:
 
-- `description`
 - `intake_notes`
 - `operational_notes`
 
@@ -365,6 +366,8 @@ Response:
     "wishlist_items": 978,
     "donations": 54,
     "sponsorships": 202,
+    "sponsorship_items": 611,
+    "fulfillments": 188,
     "pickups": 61
   }
 }
@@ -398,6 +401,7 @@ The campaign API should support a structured AI-assisted creation path in additi
 - allow staff to create an initial campaign draft from a natural-language prompt
 - keep AI output advisory until the user accepts or edits it
 - avoid direct blind writes from a raw model response into production records
+- keep AI drafts transient by default unless the user creates a real campaign
 
 ### Recommended Flow
 
@@ -475,6 +479,7 @@ Behavior:
 - AI-created campaigns should default to `DRAFT`
 - inferred dates/sections must be visible to the user before save
 - AI should not create assignments or user permissions automatically beyond the standard creator-manager rule
+- AI drafts should remain transient by default and may be cached in frontend local storage for in-progress editing
 
 ## Campaign Studio
 
@@ -600,10 +605,8 @@ Recommendation:
 - make `/campaigns/:campaignId/studio` the main operator-facing route
 - use the simpler detail/settings/access routes for direct navigation and deep-linking
 
-## Open Follow-Ups
+## Resolved Follow-Ups
 
-These do not block implementation of the first campaign APIs, but should be answered during studio implementation:
-
-- Should `description` be added immediately to the DB schema or deferred until the next campaign migration batch?
-- Should campaign summary include sponsorship-item and fulfillment counts in v1 or wait for those APIs?
-- Should AI-generated campaign drafts be persisted server-side before final creation, or remain transient until saved?
+- `description` should be added immediately to the DB schema.
+- Campaign summary should include sponsorship-item and fulfillment counts in v1.
+- AI-generated campaign drafts should remain transient until the user creates a real campaign, with frontend local storage as an acceptable cache for in-progress drafts.
