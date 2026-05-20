@@ -6,50 +6,30 @@ import {
   type CampaignStudioSectionId,
 } from '@/features/campaigns/model/campaignStudio';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
-import { useCampaignOverview } from '@/features/campaigns/model/useCampaignOverview';
 import { CampaignStudioAiRail } from '@/features/campaigns/ui/CampaignStudioAiRail';
+import { CampaignStudioCommunicationsSection } from '@/features/campaigns/ui/CampaignStudioCommunicationsSection';
+import { CampaignStudioDatesSection } from '@/features/campaigns/ui/CampaignStudioDatesSection';
 import { CampaignStudioOverview } from '@/features/campaigns/ui/CampaignStudioOverview';
+import { CampaignStudioReadinessSection } from '@/features/campaigns/ui/CampaignStudioReadinessSection';
 import { CampaignStudioRail } from '@/features/campaigns/ui/CampaignStudioRail';
-
-function CampaignStudioSectionPlaceholder({
-  sectionLabel,
-}: {
-  sectionLabel: string;
-}) {
-  return (
-    <div className="campaign-studio__canvas-stack">
-      <section className="campaign-surface-card">
-        <div className="campaign-studio__card-eyebrow">{sectionLabel}</div>
-        <h1 className="h4 mb-3">{sectionLabel} Builder</h1>
-        <p className="text-muted mb-4">
-          Phase 1 establishes the studio shell and overview surface. This
-          section will become editable once its supporting APIs are added.
-        </p>
-        <div className="campaign-studio__placeholder-grid">
-          <div className="campaign-studio__placeholder-card">
-            <h2 className="h6 mb-2">Visible Representation</h2>
-            <p className="small text-muted mb-0">
-              This card area will show the structured state of the {sectionLabel.toLowerCase()}{' '}
-              section instead of a plain settings form.
-            </p>
-          </div>
-          <div className="campaign-studio__placeholder-card">
-            <h2 className="h6 mb-2">Next API Dependency</h2>
-            <p className="small text-muted mb-0">
-              The next implementation phase will connect this section to its own
-              create, update, and readiness endpoints.
-            </p>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
+import { CampaignStudioTeamSection } from '@/features/campaigns/ui/CampaignStudioTeamSection';
+import { useCampaignStudio } from '@/features/campaigns/model/useCampaignStudio';
+import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudioSectionCard';
 
 export function CampaignStudioPage() {
   const { campaignId = null } = useParams();
   const { selectedCampaignId, selectCampaign } = useCampaigns();
-  const { campaign, access, summary, isLoading, error } = useCampaignOverview(campaignId);
+  const {
+    studio,
+    isLoading,
+    isSaving,
+    error,
+    saveMessage,
+    addCommunicationTemplate,
+    addCommunicationSchedule,
+    persistMilestones,
+    clearSaveMessage,
+  } = useCampaignStudio(campaignId);
   const [selectedSection, setSelectedSection] =
     useState<CampaignStudioSectionId>('overview');
 
@@ -71,17 +51,13 @@ export function CampaignStudioPage() {
     return <p className="text-muted">Loading campaign studio...</p>;
   }
 
-  if (error || !campaign || !access || !summary) {
+  if (error || !studio) {
     return (
       <div className="alert alert-danger" role="alert">
         {error ?? 'Unable to load campaign studio.'}
       </div>
     );
   }
-
-  const selectedSectionLabel =
-    campaignStudioSections.find((section) => section.id === selectedSection)?.label ??
-    'Overview';
 
   return (
     <section>
@@ -98,7 +74,7 @@ export function CampaignStudioPage() {
             Back to Campaigns
           </Link>
           <Link
-            to={`/campaigns/${campaign.id}`}
+            to={`/campaigns/${studio.campaign.id}`}
             className="btn btn-outline-secondary btn-sm"
           >
             Open Detail View
@@ -114,22 +90,109 @@ export function CampaignStudioPage() {
         />
 
         <main className="campaign-studio__canvas" aria-label="Campaign Studio canvas">
-          {selectedSection === 'overview' ? (
-            <CampaignStudioOverview
-              campaign={campaign}
-              access={access}
-              summary={summary}
-            />
-          ) : (
-            <CampaignStudioSectionPlaceholder sectionLabel={selectedSectionLabel} />
-          )}
+          {saveMessage ? (
+            <div className="alert alert-success" role="alert">
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <span>{saveMessage}</span>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-success"
+                  onClick={clearSaveMessage}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          ) : null}
+          {renderStudioSection({
+            selectedSection,
+            studio,
+            isSaving,
+            setSelectedSection,
+            addCommunicationTemplate,
+            addCommunicationSchedule,
+            persistMilestones,
+          })}
         </main>
 
         <CampaignStudioAiRail
-          campaign={campaign}
+          campaign={studio.campaign}
           selectedSection={selectedSection}
         />
       </div>
     </section>
+  );
+}
+
+function renderStudioSection({
+  selectedSection,
+  studio,
+  isSaving,
+  setSelectedSection,
+  addCommunicationTemplate,
+  addCommunicationSchedule,
+  persistMilestones,
+}: {
+  selectedSection: CampaignStudioSectionId;
+  studio: NonNullable<ReturnType<typeof useCampaignStudio>['studio']>;
+  isSaving: boolean;
+  setSelectedSection: (sectionId: CampaignStudioSectionId) => void;
+  addCommunicationTemplate: ReturnType<typeof useCampaignStudio>['addCommunicationTemplate'];
+  addCommunicationSchedule: ReturnType<typeof useCampaignStudio>['addCommunicationSchedule'];
+  persistMilestones: ReturnType<typeof useCampaignStudio>['persistMilestones'];
+}) {
+  if (selectedSection === 'overview') {
+    return <CampaignStudioOverview studio={studio} />;
+  }
+
+  if (selectedSection === 'team') {
+    return <CampaignStudioTeamSection team={studio.team} />;
+  }
+
+  if (selectedSection === 'communications') {
+    return (
+      <CampaignStudioCommunicationsSection
+        templates={studio.communications.templates}
+        schedules={studio.communications.schedules}
+        isSaving={isSaving}
+        onCreateTemplate={addCommunicationTemplate}
+        onCreateSchedule={addCommunicationSchedule}
+      />
+    );
+  }
+
+  if (selectedSection === 'dates') {
+    return (
+      <CampaignStudioDatesSection
+        key={studio.milestones.map((milestone) => `${milestone.milestoneKey}:${milestone.occursOn ?? ''}:${milestone.updatedAt ?? ''}`).join('|')}
+        milestones={studio.milestones}
+        isSaving={isSaving}
+        onSave={persistMilestones}
+      />
+    );
+  }
+
+  if (selectedSection === 'readiness') {
+    return (
+      <CampaignStudioReadinessSection
+        readiness={studio.readiness}
+        onSelectSection={setSelectedSection}
+      />
+    );
+  }
+
+  return (
+    <div className="campaign-studio__canvas-stack">
+      <CampaignStudioSectionCard
+        eyebrow="Settings"
+        title="Campaign Settings"
+        description="This section will become the launch point for campaign metadata editing and lifecycle actions."
+      >
+        <div className="campaign-studio__empty-note">
+          Settings remain read-only in this phase. The next step is wiring create/update
+          campaign UI for admins on top of the existing backend campaign routes.
+        </div>
+      </CampaignStudioSectionCard>
+    </div>
   );
 }

@@ -58,3 +58,26 @@ export const campaignStudioPromptStarters = [
   'Draft the volunteer and manager roles this campaign still needs.',
   'Build a readiness checklist for opening this campaign.',
 ] as const;
+
+export const milestoneDefinitions: Array<{
+  key: string;
+  label: string;
+  sortOrder: number;
+}> = [
+  { key: 'registration_open', label: 'Registration Opens', sortOrder: 1 },
+  { key: 'registration_close', label: 'Registration Closes', sortOrder: 2 },
+  { key: 'sponsor_outreach_start', label: 'Sponsor Outreach Starts', sortOrder: 3 },
+  { key: 'gift_intake_start', label: 'Gift Intake Starts', sortOrder: 4 },
+  { key: 'gift_intake_end', label: 'Gift Intake Ends', sortOrder: 5 },
+  { key: 'pickup_start', label: 'Pickup Window Opens', sortOrder: 6 },
+  { key: 'pickup_end', label: 'Pickup Window Closes', sortOrder: 7 },
+  { key: 'campaign_close', label: 'Campaign Closes', sortOrder: 8 },
+] as const;
+
+export const communicationAudienceOptions = [
+  'SPONSOR',
+  'VOLUNTEER',
+  'MANAGER',
+  'FAMILY',
+  'GENERAL',
+] as const;

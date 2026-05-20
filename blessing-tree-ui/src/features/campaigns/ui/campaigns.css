@@ -340,6 +340,86 @@
   background: rgba(251, 248, 241, 0.82);
 }
 
+.campaign-studio__section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.campaign-studio__section-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.campaign-studio__list-column {
+  min-width: 0;
+}
+
+.campaign-studio__list-card,
+.campaign-studio__milestone-editor-card,
+.campaign-studio__stat-card {
+  border: 1px solid rgba(226, 218, 205, 0.88);
+  border-radius: 0.95rem;
+  background: rgba(252, 249, 243, 0.9);
+  padding: 1rem;
+}
+
+.campaign-studio__stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.campaign-studio__stat-label {
+  display: block;
+  color: var(--blessing-text-light);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.campaign-studio__empty-note,
+.campaign-studio__inline-note {
+  padding: 0.95rem 1rem;
+  border-radius: 0.95rem;
+  background: rgba(95, 86, 76, 0.08);
+  color: #5a5047;
+  font-size: 0.92rem;
+}
+
+.campaign-studio__inline-note {
+  border: 1px dashed rgba(167, 143, 111, 0.72);
+}
+
+.campaign-studio__form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.campaign-studio__form-span-2 {
+  grid-column: span 2;
+}
+
+.campaign-studio__form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.campaign-studio__milestone-editor {
+  display: grid;
+  gap: 1rem;
+}
+
+.campaign-studio__readiness-content {
+  display: grid;
+  gap: 0.35rem;
+}
+
 @media (max-width: 991px) {
   .campaign-studio {
     grid-template-columns: 1fr;
@@ -351,11 +431,18 @@
   }
 
   .campaign-studio__overview-grid,
-  .campaign-studio__placeholder-grid {
+  .campaign-studio__placeholder-grid,
+  .campaign-studio__section-grid,
+  .campaign-studio__form-grid,
+  .campaign-studio__stat-grid {
     grid-template-columns: 1fr;
   }
 
   .campaign-studio__overview-span-2 {
+    grid-column: span 1;
+  }
+
+  .campaign-studio__form-span-2 {
     grid-column: span 1;
   }
 

@@ -27,7 +27,9 @@ Last updated: 2026-05-20
   - protected shell exists
   - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
   - dashboard is now campaign-aware and loads live summary/access data from the backend
-  - Campaign Studio phase 1 shell now exists with left-rail navigation, overview cards, and a right-side AI builder rail
+  - Campaign Studio now has live Team, Communications, Dates, and Readiness sections backed by the backend studio APIs
+  - Campaign Studio can now create communication templates and schedules from the frontend
+  - Campaign Studio can now save milestone dates from the frontend
   - page shells still exist for families, donations, reports, and admin
   - shared authenticated client exists for protected data APIs
 
@@ -107,6 +109,12 @@ Last updated: 2026-05-20
   - `/campaigns/:campaignId`
   - `/campaigns/:campaignId/studio`
   - selected campaign is persisted in local storage per user
+- Live frontend verification on 2026-05-20 now includes:
+  - Studio Team section rendering real assignments
+  - Studio Communications section rendering real template/schedule state
+  - Studio Communications section creating a template and schedule in-browser against the running backend
+  - Studio Dates section wiring to the milestone save path
+  - Studio Readiness section rendering backend readiness findings
 - Live stack verification on 2026-05-20 now also includes:
   - `GET /api/v1/campaigns/<campaign_id>/studio`
   - `GET /api/v1/campaigns/<campaign_id>/assignments`

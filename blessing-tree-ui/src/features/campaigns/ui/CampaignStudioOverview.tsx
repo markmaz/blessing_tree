@@ -1,83 +1,18 @@
-import { Link } from 'react-router-dom';
+import type {
+  CampaignStudioData,
+} from '@/features/campaigns/model/campaignStudioTypes';
 import { buildCampaignDetailPath } from '@/app/routes';
 import { campaignSummaryLabels } from '@/features/campaigns/api/campaignApi';
 import { CampaignStatusBadge } from '@/features/campaigns/ui/CampaignStatusBadge';
 import { CampaignSummaryGrid } from '@/features/campaigns/ui/CampaignSummaryGrid';
-import type {
-  Campaign,
-  CampaignAccess,
-  CampaignSummary,
-} from '@/features/campaigns/model/campaignTypes';
-
-interface CampaignStudioOverviewProps {
-  campaign: Campaign;
-  access: CampaignAccess;
-  summary: CampaignSummary;
-}
-
-interface ReadinessItem {
-  label: string;
-  tone: 'attention' | 'healthy';
-}
-
-function buildReadinessItems(
-  campaign: Campaign,
-  access: CampaignAccess,
-  summary: CampaignSummary
-): ReadinessItem[] {
-  const items: ReadinessItem[] = [];
-
-  if (!campaign.description) {
-    items.push({
-      label: 'Add a campaign description so staff understand the season intent.',
-      tone: 'attention',
-    });
-  }
-
-  if (!campaign.startDate || !campaign.endDate) {
-    items.push({
-      label: 'Set the campaign operating window before activation.',
-      tone: 'attention',
-    });
-  }
-
-  if (campaign.status === 'DRAFT') {
-    items.push({
-      label: 'The campaign is still in draft and not yet open for live operations.',
-      tone: 'attention',
-    });
-  }
-
-  if (summary.counts.recipientGroups === 0) {
-    items.push({
-      label: 'No recipient groups have been added yet.',
-      tone: 'attention',
-    });
-  }
-
-  if (access.roleKeys.length === 0) {
-    items.push({
-      label: 'No campaign-specific role bundles are assigned to you yet.',
-      tone: 'attention',
-    });
-  }
-
-  if (items.length === 0) {
-    items.push({
-      label: 'The current campaign shell is healthy enough to keep building.',
-      tone: 'healthy',
-    });
-  }
-
-  return items;
-}
+import { Link } from 'react-router-dom';
 
 export function CampaignStudioOverview({
-  campaign,
-  access,
-  summary,
-}: CampaignStudioOverviewProps) {
-  const readinessItems = buildReadinessItems(campaign, access, summary);
+  studio,
+}: {
+  studio: CampaignStudioData;
+}) {
+  const { campaign, access, summary, team, communications, milestones, readiness } = studio;
   const topMetric = campaignSummaryLabels
     .slice(0, 3)
     .map((item) => `${item.label}: ${summary.counts[item.key]}`);
@@ -145,34 +80,29 @@ export function CampaignStudioOverview({
         <article className="campaign-surface-card">
           <div className="campaign-studio__card-eyebrow">Team</div>
           <h2 className="h5 mb-3">Current Operators</h2>
-          <p className="text-muted mb-3">
-            Phase 1 shows the current role bundles attached to your session while
-            assignment APIs are being added.
-          </p>
           <div className="campaign-chip-row mb-3">
-            {access.roleKeys.map((roleKey) => (
+            {Object.entries(team.counts.roleCounts).map(([roleKey, count]) => (
               <span key={roleKey} className="campaign-chip">
-                {roleKey}
+                {roleKey} · {count}
               </span>
             ))}
           </div>
           <div className="small text-muted">
-            Next API slice: add managers, coordinators, and volunteers directly
-            from this card.
+            {team.counts.memberCount} people are assigned across {team.counts.activeAssignmentCount}{' '}
+            active campaign roles.
           </div>
         </article>
 
         <article className="campaign-surface-card">
           <div className="campaign-studio__card-eyebrow">Communications</div>
           <h2 className="h5 mb-3">Templates and Scheduled Touchpoints</h2>
-          <p className="text-muted mb-3">
-            Communication templates and schedules are not attached yet. This
-            card will become the launch point for sponsor reminders, volunteer
-            onboarding, and pickup communications.
-          </p>
           <div className="campaign-chip-row">
-            <span className="campaign-chip campaign-chip-muted">Templates pending</span>
-            <span className="campaign-chip campaign-chip-muted">Schedules pending</span>
+            <span className="campaign-chip">
+              {communications.templates.length} templates
+            </span>
+            <span className="campaign-chip campaign-chip-muted">
+              {communications.schedules.length} schedules
+            </span>
           </div>
         </article>
 
@@ -180,18 +110,16 @@ export function CampaignStudioOverview({
           <div className="campaign-studio__card-eyebrow">Dates</div>
           <h2 className="h5 mb-3">Milestones</h2>
           <div className="campaign-studio__milestone-list">
-            <div className="campaign-studio__milestone-item">
-              <span>Campaign window opens</span>
-              <strong>{campaign.startDate || 'Not set'}</strong>
-            </div>
-            <div className="campaign-studio__milestone-item">
-              <span>Campaign window closes</span>
-              <strong>{campaign.endDate || 'Not set'}</strong>
-            </div>
-            <div className="campaign-studio__milestone-item">
-              <span>Next milestone layer</span>
-              <strong>Registration and pickup dates pending</strong>
-            </div>
+            {milestones.length === 0 ? (
+              <div className="small text-muted">No milestone dates have been saved yet.</div>
+            ) : (
+              milestones.slice(0, 3).map((milestone) => (
+                <div key={milestone.id} className="campaign-studio__milestone-item">
+                  <span>{milestone.label}</span>
+                  <strong>{milestone.occursOn || 'Not set'}</strong>
+                </div>
+              ))
+            )}
           </div>
         </article>
 
@@ -206,13 +134,20 @@ export function CampaignStudioOverview({
           <div className="campaign-studio__card-eyebrow">Readiness</div>
           <h2 className="h5 mb-3">What Still Needs Attention</h2>
           <div className="campaign-studio__readiness-list">
-            {readinessItems.map((item) => (
+            {(readiness.items.length === 0
+              ? [{ message: 'The campaign is currently ready for deeper build-out.', severity: 'info' as const }]
+              : readiness.items
+            ).map((item) => (
               <div
-                key={item.label}
-                className={`campaign-studio__readiness-item ${item.tone === 'attention' ? 'needs-attention' : 'healthy'}`}
+                key={item.message}
+                className={`campaign-studio__readiness-item ${
+                  item.severity === 'error' || item.severity === 'warning'
+                    ? 'needs-attention'
+                    : 'healthy'
+                }`}
               >
                 <span className="campaign-studio__readiness-indicator" aria-hidden="true" />
-                <span>{item.label}</span>
+                <span>{item.message}</span>
               </div>
             ))}
           </div>

@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Campaign Studio backend support is implemented; next step is deeper frontend wiring for Team, Communications, Dates, and Readiness
+- Current step: Campaign Studio frontend wiring is implemented; next step is campaign admin editing and a user-directory flow for team assignment creation
 
 ## Recently Completed
 
@@ -32,6 +32,10 @@ Last updated: 2026-05-20
 - Implemented Campaign Studio backend support with protected assignment, communication template/schedule, milestone, readiness, and aggregate studio endpoints
 - Applied and verified the Campaign Studio support migration against the local MySQL `blessing_tree` database
 - Live-smoke-tested the new Campaign Studio backend routes against the running Blessing Tree API
+- Wired Campaign Studio Team, Communications, Dates, and Readiness sections to the new backend APIs
+- Added frontend template and schedule creation flows inside Campaign Studio
+- Added frontend milestone save wiring inside Campaign Studio
+- Live-verified the Studio section rendering and communications create flows against the running Blessing Tree stack
 - Fixed backend runtime gaps discovered during live stack verification:
   - removed the RBAC package import cycle at app startup
   - loaded the full SQLAlchemy model registry during app creation
@@ -42,8 +46,8 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Wire the Team, Communications, Dates, and Readiness studio sections to the new backend APIs
-2. Add create/update campaign UI for admins on top of the existing backend routes
+1. Add create/update campaign UI for admins on top of the existing backend routes
+2. Add a user directory/search flow so Team assignments can be created from the Studio UI without raw IDs
 3. Expand the next real domain slice into recipient groups, recipients, and wishlists
 
 ## Blockers Or Ambiguities
