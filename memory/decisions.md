@@ -56,6 +56,13 @@
 - Rationale: the existing data model is already campaign-centered, operational users will likely move across multiple campaigns, and the app needs a structured control surface that is richer than plain CRUD forms.
 - Consequence: campaign APIs should be path-scoped and capability-aware, the next campaign migration batch should include `description`, summary endpoints should expose the broader operational counts, campaign creation should support both structured input and prompt-driven draft generation, AI drafts should not require backend persistence before save, and the frontend should evolve toward a studio-style campaign surface rather than only list/detail forms.
 
+## Campaign Studio V1 Direction
+
+- Status: active
+- Decision: make Campaign Studio a card-based campaign composition surface at `/campaigns/:campaignId/studio`, with left-rail section navigation, a visible center work surface, and a persistent AI builder rail. Treat team, communications, milestone dates, and readiness as first-class campaign-building cards. Use global mail templates with campaign bindings, fixed named milestone fields in v1, role-assignment-based volunteer management first, and AI suggestions that require human approval before apply.
+- Rationale: the project needs a visible “build the campaign” cockpit rather than another settings form, and the Query Forge Workflow Studio interaction model is a strong reference for keeping overview, detail, and AI assistance in one operator-facing workspace.
+- Consequence: the next frontend step should be the Campaign Studio shell and overview cards, while the next backend steps should add campaign assignment, communication template binding, schedule, milestone, and readiness APIs to support that shell.
+
 ## Code Structure Policy
 
 - Status: active

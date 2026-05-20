@@ -27,6 +27,7 @@ Last updated: 2026-05-20
 - Implemented the first campaign backend feature slice with protected list, detail, access, summary, create, and update endpoints
 - Added and applied the campaign metadata migration to local MySQL, allowing `description` and multiple campaigns per year
 - Exposed the first campaign APIs in the frontend through a campaign provider, campaign switcher, campaign list/detail routes, and a campaign-aware dashboard
+- Documented Campaign Studio as a concrete card-based campaign-building surface with a persistent AI builder rail, team/communications/milestone/readiness cards, and a `/campaigns/:campaignId/studio` primary route
 - Fixed backend runtime gaps discovered during live stack verification:
   - removed the RBAC package import cycle at app startup
   - loaded the full SQLAlchemy model registry during app creation

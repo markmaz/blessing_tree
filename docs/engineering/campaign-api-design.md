@@ -487,6 +487,8 @@ The user wants a campaign surface more like Query Forge Workflow Studio than a p
 
 That is the right direction.
 
+The detailed studio product design now lives in `docs/engineering/campaign-studio-design.md`.
+
 ### Studio Concept
 
 Campaign Studio should present the campaign as an operational composition surface with:
