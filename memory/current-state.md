@@ -29,6 +29,7 @@ Last updated: 2026-05-20
   - dashboard is now campaign-aware and loads live summary/access data from the backend
   - Campaign Studio now has live Team, Communications, Schedule, Readiness, and Settings sections backed by the backend studio APIs
   - Campaign Studio Schedule now includes `Timeline`, `Calendar`, and `Milestones` views plus manual planning event create/edit/delete
+  - Campaign Studio AI rail now adapts prompt starters to schedule readiness gaps
   - Campaign Studio Team can now search active users and create campaign assignments directly from the frontend
   - Campaign Studio can now create communication templates and schedules from the frontend
   - Campaign Studio can now save milestone dates from the frontend
@@ -131,6 +132,7 @@ Last updated: 2026-05-20
   - Studio Communications section creating a template and schedule in-browser against the running backend
   - Studio Schedule section wiring to the unified schedule read APIs and milestone save path
   - Studio Schedule manual event create/edit/delete wiring to the new campaign event endpoints
+  - Studio readiness now includes schedule-specific warnings for missing manual planning coverage and missing milestone-linked communication timing
   - Studio Readiness section rendering backend readiness findings
   - campaign create/update UI wiring against the existing backend campaign routes
 - Live stack verification on 2026-05-20 now also includes:
@@ -145,6 +147,7 @@ Last updated: 2026-05-20
   - `GET /api/v1/campaigns/<campaign_id>/readiness`
   - `POST /api/v1/campaigns`
   - `PATCH /api/v1/campaigns/<campaign_id>`
+  - live readiness verification now confirms schedule-specific codes such as `missing_manual_schedule`
 
 ## Knowledge Graph
 

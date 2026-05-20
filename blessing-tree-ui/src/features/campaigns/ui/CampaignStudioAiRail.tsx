@@ -1,20 +1,33 @@
 import { useState } from 'react';
 import {
-  campaignStudioPromptStarters,
   type CampaignStudioSectionId,
 } from '@/features/campaigns/model/campaignStudio';
+import {
+  getAiPromptStarters,
+  getAiReadinessSignals,
+} from '@/features/campaigns/model/campaignStudioAi';
+import type {
+  CampaignReadiness,
+  CampaignScheduleItem,
+} from '@/features/campaigns/model/campaignStudioTypes';
 import type { Campaign } from '@/features/campaigns/model/campaignTypes';
 
 interface CampaignStudioAiRailProps {
   campaign: Campaign;
   selectedSection: CampaignStudioSectionId;
+  readiness: CampaignReadiness;
+  scheduleItems: CampaignScheduleItem[];
 }
 
 export function CampaignStudioAiRail({
   campaign,
   selectedSection,
+  readiness,
+  scheduleItems,
 }: CampaignStudioAiRailProps) {
   const [draftPrompt, setDraftPrompt] = useState('');
+  const promptStarters = getAiPromptStarters(selectedSection, readiness, scheduleItems);
+  const readinessSignals = getAiReadinessSignals(selectedSection, readiness);
 
   return (
     <aside className="campaign-studio__ai-rail" aria-label="Campaign Studio AI builder">
@@ -50,7 +63,7 @@ export function CampaignStudioAiRail({
       <div className="campaign-studio__suggestions">
         <div className="small fw-semibold mb-2">Prompt Starters</div>
         <div className="d-grid gap-2">
-          {campaignStudioPromptStarters.map((prompt) => (
+          {promptStarters.map((prompt) => (
             <button
               key={prompt}
               type="button"
@@ -62,6 +75,22 @@ export function CampaignStudioAiRail({
           ))}
         </div>
       </div>
+
+      {readinessSignals.length > 0 ? (
+        <div className="campaign-studio__suggestions">
+          <div className="small fw-semibold mb-2">Current Signals</div>
+          <div className="d-grid gap-2">
+            {readinessSignals.map((item) => (
+              <div key={item.code} className="campaign-studio__inline-note">
+                <div className="fw-semibold small mb-1">{item.message}</div>
+                <div className="small text-muted">
+                  Use the prompt panel to draft a response for this {item.section} gap.
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="campaign-studio__ai-note mt-4">
         <div className="small fw-semibold mb-1">Phase 1 Note</div>

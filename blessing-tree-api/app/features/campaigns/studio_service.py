@@ -205,6 +205,7 @@ class CampaignStudioService:
         milestones = self.list_milestones(db, campaign_id)
         schedules = self.list_schedules(db, campaign_id)
         templates = self.list_templates(db)
+        manual_events = self.schedule.list_events(db, campaign_id)
         return build_campaign_readiness(
             campaign,
             assignments=team["assignments"],
@@ -212,6 +213,7 @@ class CampaignStudioService:
             milestones=milestones,
             schedules=schedules,
             templates=templates,
+            manual_events=manual_events,
         )
 
     @staticmethod

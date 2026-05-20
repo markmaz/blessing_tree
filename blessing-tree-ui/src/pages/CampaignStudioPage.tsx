@@ -175,6 +175,8 @@ export function CampaignStudioPage() {
         <CampaignStudioAiRail
           campaign={studio.campaign}
           selectedSection={selectedSection}
+          readiness={studio.readiness}
+          scheduleItems={studio.schedule.items}
         />
       </div>
     </section>

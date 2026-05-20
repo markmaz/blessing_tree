@@ -17,6 +17,7 @@ def build_campaign_readiness(
     milestones,
     schedules,
     templates,
+    manual_events,
 ) -> dict[str, object]:
     items: list[dict[str, object]] = []
     active_assignments = [assignment for assignment in assignments if assignment.is_active]
@@ -24,6 +25,23 @@ def build_campaign_readiness(
     missing_milestone_keys = sorted(REQUIRED_MILESTONE_KEYS - milestone_keys)
     active_schedules = [schedule for schedule in schedules if schedule.status != "DISABLED"]
     active_templates = [template for template in templates if template.is_active]
+    manual_events_with_dates = [
+        event
+        for event in manual_events
+        if event.source_type == "manual" and event.start_at is not None
+    ]
+    milestone_keys_with_schedule = {
+        schedule.milestone_key
+        for schedule in active_schedules
+        if schedule.milestone_key
+    }
+    milestone_keys_needing_schedule = sorted(
+        milestone.milestone_key
+        for milestone in milestones
+        if milestone.milestone_key in REQUIRED_MILESTONE_KEYS
+        and milestone.occurs_on is not None
+        and milestone.milestone_key not in milestone_keys_with_schedule
+    )
 
     if not campaign.description:
         items.append(_readiness_item("warning", "missing_description", "settings", "Add a campaign description."))
@@ -48,6 +66,25 @@ def build_campaign_readiness(
                 "dates",
                 "Add the remaining required milestone dates.",
                 details={"missing_keys": missing_milestone_keys},
+            )
+        )
+    if not manual_events_with_dates:
+        items.append(
+            _readiness_item(
+                "warning",
+                "missing_manual_schedule",
+                "schedule",
+                "Add at least one manual planning event to shape the campaign timeline.",
+            )
+        )
+    if milestone_keys_needing_schedule:
+        items.append(
+            _readiness_item(
+                "warning",
+                "missing_schedule_messaging",
+                "schedule",
+                "Add communication timing for the key milestones already on the calendar.",
+                details={"missing_keys": milestone_keys_needing_schedule},
             )
         )
     if not active_templates:

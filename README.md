@@ -19,6 +19,7 @@ Blessing Tree is a split frontend/backend application for managing a church gift
 - The frontend now has a campaign switcher, campaign library, campaign detail flow, and a dashboard that follows the selected campaign.
 - The frontend now has a live Campaign Studio at `/campaigns/:campaignId/studio` with Team, Communications, Schedule, Readiness, and Settings sections backed by the new backend studio APIs.
 - The Schedule section now provides `Timeline`, `Calendar`, and `Milestones` views plus manual planning event create/edit/delete on top of the unified backend schedule APIs.
+- Schedule readiness now flags missing manual planning events and missing communication timing for key milestones, and the AI rail now surfaces schedule-aware prompt starters from those gaps.
 - The Team section in Campaign Studio can now search active users and create campaign assignments without raw user IDs.
 - The frontend now also has campaign admin create/update UI on top of the existing campaign backend routes.
 - The frontend now has a Vitest + Testing Library harness, and automated frontend tests are required for new UI behavior.

@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: schedule frontend phase 2 is implemented; next step is expanding the first real operating slice into recipient groups, recipients, and wishlists
+- Current step: schedule phase 3 is implemented; next step depends on whether we continue deeper Studio AI work or return to the roadmap’s first operating domain slice
 
 ## Recently Completed
 
@@ -52,6 +52,8 @@ Last updated: 2026-05-20
 - Replaced Studio `Dates` with `Schedule` in the frontend and added `Timeline | Calendar | Milestones` views
 - Added frontend manual event create/edit/delete flows on top of the unified schedule APIs
 - Added frontend automated test coverage for the new Schedule section behavior
+- Connected schedule quality into backend readiness with warnings for missing manual planning events and missing milestone-linked communication timing
+- Connected the Studio AI rail to schedule readiness so schedule prompts are now contextual instead of generic
 - Fixed backend runtime gaps discovered during live stack verification:
   - removed the RBAC package import cycle at app startup
   - loaded the full SQLAlchemy model registry during app creation
@@ -62,9 +64,9 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Expand the next real domain slice into recipient groups, recipients, and wishlists
-2. Add deeper edit/deactivate flows for campaign team and communications records
-3. Extend Studio readiness to incorporate schedule-specific gap detection
+1. If we stay on the Studio track, add structured draft/apply endpoints for AI-generated schedule proposals
+2. If we return to the broader roadmap, expand the first real domain slice into recipient groups, recipients, and wishlists
+3. Add deeper edit/deactivate flows for campaign team and communications records
 
 ## Blockers Or Ambiguities
 

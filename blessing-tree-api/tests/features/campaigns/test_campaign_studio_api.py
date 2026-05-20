@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 from flask import Flask
 from app.features.campaigns import api as campaign_api_module
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
+from app.models.campaign_event import CampaignEvent
 from app.models.campaign_milestone import CampaignMilestone
 from app.models.communication_template import CommunicationTemplate
 from tests.features.campaigns.studio_test_support import (
@@ -222,3 +223,120 @@ def test_create_template_and_schedule_then_readiness_reflects_changes(
     readiness = readiness_response.get_json()
     assert "missing_templates" not in {item["code"] for item in readiness["items"]}
     assert "missing_schedules" not in {item["code"] for item in readiness["items"]}
+
+
+def test_readiness_flags_missing_manual_schedule_and_missing_schedule_messaging(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    template = CommunicationTemplate(
+        id=uuid.uuid4(),
+        template_key="volunteer_welcome",
+        name="Volunteer Welcome",
+        audience="VOLUNTEER",
+        channel="EMAIL",
+        subject_template="Welcome",
+        body_template="Thanks for helping.",
+        is_active=True,
+        created_by_user_id=manager.id,
+    )
+    milestone = CampaignMilestone(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        milestone_key="registration_open",
+        label="Registration Opens",
+        occurs_on=date(2026, 9, 1),
+        sort_order=1,
+    )
+    session.add_all([template, milestone])
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/readiness",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    readiness_codes = {item["code"] for item in response.get_json()["items"]}
+    assert "missing_manual_schedule" in readiness_codes
+    assert "missing_schedule_messaging" in readiness_codes
+
+
+def test_readiness_clears_schedule_warnings_after_manual_event_and_milestone_schedule(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    template = CommunicationTemplate(
+        id=uuid.uuid4(),
+        template_key="sponsor_reminder",
+        name="Sponsor Reminder",
+        audience="SPONSOR",
+        channel="EMAIL",
+        subject_template="Reminder",
+        body_template="Please sponsor.",
+        is_active=True,
+        created_by_user_id=manager.id,
+    )
+    milestone = CampaignMilestone(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        milestone_key="registration_open",
+        label="Registration Opens",
+        occurs_on=date(2026, 9, 1),
+        sort_order=1,
+    )
+    session.add_all([template, milestone])
+    session.flush()
+    session.add(
+        CampaignCommunicationSchedule(
+            id=uuid.uuid4(),
+            campaign_id=campaign.id,
+            template_id=template.id,
+            milestone_key="registration_open",
+            status="SCHEDULED",
+        )
+    )
+    session.add(
+        CampaignEvent(
+            id=uuid.uuid4(),
+            campaign_id=campaign.id,
+            title="Volunteer Orientation",
+            event_type="VOLUNTEER",
+            start_at=datetime(2026, 8, 15, 9, 0, 0),
+            end_at=None,
+            all_day=True,
+            notes=None,
+            source_type="manual",
+            source_id=None,
+            created_by_user_id=manager.id,
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/readiness",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    readiness_codes = {item["code"] for item in response.get_json()["items"]}
+    assert "missing_manual_schedule" not in readiness_codes
+    assert "missing_schedule_messaging" not in readiness_codes
