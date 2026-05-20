@@ -19,6 +19,8 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - Campaign Studio now has real Team, Communications, Dates, and Readiness sections backed by the new backend studio APIs.
 - The communications section can now create templates and schedules against the running backend.
 - The dates section now saves campaign milestone dates through the studio.
+- App admins can now create campaigns from the campaign library UI.
+- Campaign managers and app admins can now update campaign metadata, dates, and status from the detail page and Studio settings section.
 - Several older UI docs were delivery-era summaries and have been consolidated.
 
 ## Routes
@@ -52,6 +54,7 @@ Route constants live in `src/app/routes.ts`.
 - `src/pages/CampaignStudioPage.tsx`: Campaign Studio workspace and section routing
 - `src/features/campaigns/api/campaignStudioApi.ts`: studio aggregate and mutation API client
 - `src/features/campaigns/model/useCampaignStudio.ts`: studio state and reload/mutation flow
+- `src/features/campaigns/ui/CampaignEditorForm.tsx`: reusable create/update campaign editor
 - `src/pages/`: current page-level UI
 
 ## Local Commands

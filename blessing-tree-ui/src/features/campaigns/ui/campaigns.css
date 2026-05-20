@@ -51,6 +51,11 @@
   gap: 1.25rem;
 }
 
+.campaign-page-stack {
+  display: grid;
+  gap: 1.5rem;
+}
+
 .campaign-card {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(226, 218, 205, 0.9);
@@ -418,6 +423,10 @@
 .campaign-studio__readiness-content {
   display: grid;
   gap: 0.35rem;
+}
+
+.campaign-editor-form {
+  min-width: 0;
 }
 
 @media (max-width: 991px) {

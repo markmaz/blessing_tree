@@ -9,8 +9,10 @@ import { Link } from 'react-router-dom';
 
 export function CampaignStudioOverview({
   studio,
+  onEditCampaign,
 }: {
   studio: CampaignStudioData;
+  onEditCampaign: () => void;
 }) {
   const { campaign, access, summary, team, communications, milestones, readiness } = studio;
   const topMetric = campaignSummaryLabels
@@ -51,7 +53,11 @@ export function CampaignStudioOverview({
             >
               Open Detail View
             </Link>
-            <button type="button" className="btn btn-secondary btn-sm" disabled>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={onEditCampaign}
+            >
               Edit Campaign Setup
             </button>
           </div>

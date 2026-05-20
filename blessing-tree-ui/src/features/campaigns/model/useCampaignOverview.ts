@@ -16,6 +16,7 @@ interface CampaignOverviewState {
   campaign: Campaign | null;
   access: CampaignAccess | null;
   summary: CampaignSummary | null;
+  reload: () => Promise<void>;
 }
 
 const emptyOverviewState: CampaignOverviewState = {
@@ -24,6 +25,7 @@ const emptyOverviewState: CampaignOverviewState = {
   campaign: null,
   access: null,
   summary: null,
+  reload: async () => {},
 };
 
 export function useCampaignOverview(campaignId: string | null): CampaignOverviewState {
@@ -60,6 +62,7 @@ export function useCampaignOverview(campaignId: string | null): CampaignOverview
           campaign,
           access,
           summary,
+          reload: load,
         });
       } catch (loadError) {
         if (cancelled) {
@@ -77,6 +80,7 @@ export function useCampaignOverview(campaignId: string | null): CampaignOverview
           campaign: null,
           access: null,
           summary: null,
+          reload: load,
         });
       }
     };

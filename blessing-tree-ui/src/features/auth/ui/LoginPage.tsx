@@ -64,7 +64,7 @@ export function LoginPage() {
 
     try {
       const response = await login(data.email, data.password);
-      contextLogin(response.userId, response.email, response.token);
+      contextLogin(response.userId, response.email, response.token, response.role);
       navigate(routes.HOME);
     } catch (error) {
       setApiError(

@@ -13,12 +13,14 @@ export interface LoginResponse {
   userId: string;
   email: string;
   token: string;
+  role: string | null;
 }
 
 export interface SessionResponse {
   userId: string;
   email: string;
   token: string;
+  role: string | null;
 }
 
 interface LocalLoginApiResponse {
@@ -30,6 +32,7 @@ interface LocalLoginApiResponse {
 interface TokenClaims {
   sub?: unknown;
   email?: unknown;
+  role?: unknown;
 }
 
 function authUrl(path: string): string {
@@ -96,6 +99,15 @@ function getEmailFromToken(token: string): string | null {
   }
 }
 
+function getRoleFromToken(token: string): string | null {
+  try {
+    const payload = getTokenClaims(token);
+    return typeof payload.role === 'string' && payload.role ? payload.role : null;
+  } catch {
+    return null;
+  }
+}
+
 function getTokenClaims(token: string): TokenClaims {
   const tokenParts = token.split('.');
   if (tokenParts.length < 2) {
@@ -139,6 +151,7 @@ export async function login(
     userId,
     email,
     token: payload.access_token,
+    role: getRoleFromToken(payload.access_token),
   };
 }
 
@@ -189,5 +202,6 @@ export async function refreshSession(): Promise<SessionResponse> {
     userId: getUserIdFromToken(payload.access_token) ?? '',
     email: getEmailFromToken(payload.access_token) ?? '',
     token: payload.access_token,
+    role: getRoleFromToken(payload.access_token),
   };
 }

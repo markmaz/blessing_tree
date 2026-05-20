@@ -76,8 +76,8 @@ Goal: make the project safer to evolve.
 
 If momentum matters, start here:
 
-1. Add create/update campaign UI for admins on top of the current campaign routes.
-2. Add a campaign user directory/search flow so Team assignments can be created from the Studio UI without raw IDs.
-3. Expand the next real domain slice into recipient groups, recipients, and wishlists.
+1. Add a campaign user directory/search flow so Team assignments can be created from the Studio UI without raw IDs.
+2. Expand the next real domain slice into recipient groups, recipients, and wishlists.
+3. Decide whether campaign setup editing should also be available from the dashboard or remain centered on detail/studio.
 
 That sequence clears the largest current ambiguity and opens the path to real application work.

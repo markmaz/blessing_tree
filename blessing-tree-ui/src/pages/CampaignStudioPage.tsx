@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { routes } from '@/app/routes';
+import { updateCampaign } from '@/features/campaigns/api/campaignApi';
 import {
   campaignStudioSections,
   type CampaignStudioSectionId,
 } from '@/features/campaigns/model/campaignStudio';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
+import { canManageCampaign } from '@/features/campaigns/model/campaignPermissions';
+import type { CampaignUpsertInput } from '@/features/campaigns/model/campaignTypes';
 import { CampaignStudioAiRail } from '@/features/campaigns/ui/CampaignStudioAiRail';
 import { CampaignStudioCommunicationsSection } from '@/features/campaigns/ui/CampaignStudioCommunicationsSection';
 import { CampaignStudioDatesSection } from '@/features/campaigns/ui/CampaignStudioDatesSection';
@@ -15,16 +18,18 @@ import { CampaignStudioRail } from '@/features/campaigns/ui/CampaignStudioRail';
 import { CampaignStudioTeamSection } from '@/features/campaigns/ui/CampaignStudioTeamSection';
 import { useCampaignStudio } from '@/features/campaigns/model/useCampaignStudio';
 import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudioSectionCard';
+import { CampaignEditorForm } from '@/features/campaigns/ui/CampaignEditorForm';
 
 export function CampaignStudioPage() {
   const { campaignId = null } = useParams();
-  const { selectedCampaignId, selectCampaign } = useCampaigns();
+  const { selectedCampaignId, selectCampaign, reloadCampaigns } = useCampaigns();
   const {
     studio,
     isLoading,
     isSaving,
     error,
     saveMessage,
+    reload,
     addCommunicationTemplate,
     addCommunicationSchedule,
     persistMilestones,
@@ -32,6 +37,9 @@ export function CampaignStudioPage() {
   } = useCampaignStudio(campaignId);
   const [selectedSection, setSelectedSection] =
     useState<CampaignStudioSectionId>('overview');
+  const [isUpdatingCampaign, setIsUpdatingCampaign] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [updateMessage, setUpdateMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignId) {
@@ -104,11 +112,52 @@ export function CampaignStudioPage() {
               </div>
             </div>
           ) : null}
+          {updateMessage ? (
+            <div className="alert alert-success" role="alert">
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <span>{updateMessage}</span>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-success"
+                  onClick={() => setUpdateMessage(null)}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          ) : null}
+          {updateError ? (
+            <div className="alert alert-danger" role="alert">
+              {updateError}
+            </div>
+          ) : null}
           {renderStudioSection({
             selectedSection,
             studio,
-            isSaving,
+            isSaving: isSaving || isUpdatingCampaign,
             setSelectedSection,
+            onUpdateCampaign: async (input) => {
+              setIsUpdatingCampaign(true);
+              setUpdateError(null);
+              setUpdateMessage(null);
+
+              try {
+                await updateCampaign(campaignId, input);
+                await Promise.all([reloadCampaigns(), reload()]);
+                setSelectedSection('overview');
+                setUpdateMessage('Campaign updated.');
+                return true;
+              } catch (updateCampaignError) {
+                setUpdateError(
+                  updateCampaignError instanceof Error
+                    ? updateCampaignError.message
+                    : 'Unable to update campaign'
+                );
+                return false;
+              } finally {
+                setIsUpdatingCampaign(false);
+              }
+            },
             addCommunicationTemplate,
             addCommunicationSchedule,
             persistMilestones,
@@ -129,6 +178,7 @@ function renderStudioSection({
   studio,
   isSaving,
   setSelectedSection,
+  onUpdateCampaign,
   addCommunicationTemplate,
   addCommunicationSchedule,
   persistMilestones,
@@ -137,12 +187,18 @@ function renderStudioSection({
   studio: NonNullable<ReturnType<typeof useCampaignStudio>['studio']>;
   isSaving: boolean;
   setSelectedSection: (sectionId: CampaignStudioSectionId) => void;
+  onUpdateCampaign: (input: CampaignUpsertInput) => Promise<boolean>;
   addCommunicationTemplate: ReturnType<typeof useCampaignStudio>['addCommunicationTemplate'];
   addCommunicationSchedule: ReturnType<typeof useCampaignStudio>['addCommunicationSchedule'];
   persistMilestones: ReturnType<typeof useCampaignStudio>['persistMilestones'];
 }) {
   if (selectedSection === 'overview') {
-    return <CampaignStudioOverview studio={studio} />;
+    return (
+      <CampaignStudioOverview
+        studio={studio}
+        onEditCampaign={() => setSelectedSection('settings')}
+      />
+    );
   }
 
   if (selectedSection === 'team') {
@@ -183,16 +239,33 @@ function renderStudioSection({
 
   return (
     <div className="campaign-studio__canvas-stack">
-      <CampaignStudioSectionCard
-        eyebrow="Settings"
-        title="Campaign Settings"
-        description="This section will become the launch point for campaign metadata editing and lifecycle actions."
-      >
-        <div className="campaign-studio__empty-note">
-          Settings remain read-only in this phase. The next step is wiring create/update
-          campaign UI for admins on top of the existing backend campaign routes.
-        </div>
-      </CampaignStudioSectionCard>
+      {canManageCampaign(studio.access) ? (
+        <CampaignStudioSectionCard
+          eyebrow="Settings"
+          title="Campaign Settings"
+          description="Update the campaign metadata, lifecycle, and operating dates without leaving Studio."
+        >
+          <CampaignEditorForm
+            campaign={studio.campaign}
+            title="Edit Campaign Setup"
+            description="Changes here feed directly into the campaign overview, detail page, and Studio cards."
+            submitLabel="Save Campaign"
+            isSaving={isSaving}
+            showHeader={false}
+            onSubmit={onUpdateCampaign}
+          />
+        </CampaignStudioSectionCard>
+      ) : (
+        <CampaignStudioSectionCard
+          eyebrow="Settings"
+          title="Campaign Settings"
+          description="Campaign settings are available only to managers and app admins."
+        >
+          <div className="campaign-studio__empty-note">
+            You do not currently have the `campaign.admin` capability for this campaign.
+          </div>
+        </CampaignStudioSectionCard>
+      )}
     </div>
   );
 }

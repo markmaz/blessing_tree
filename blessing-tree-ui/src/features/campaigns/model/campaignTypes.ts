@@ -39,3 +39,12 @@ export interface Campaign {
 export interface CampaignListItem extends Campaign {
   userAccess: CampaignAccess;
 }
+
+export interface CampaignUpsertInput {
+  name: string;
+  year: number;
+  description: string | null;
+  status: CampaignStatus;
+  startDate: string | null;
+  endDate: string | null;
+}

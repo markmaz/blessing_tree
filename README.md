@@ -18,6 +18,7 @@ Blessing Tree is a split frontend/backend application for managing a church gift
 - The frontend now has a shared authenticated API client with refresh-on-401 handling for future data screens.
 - The frontend now has a campaign switcher, campaign library, campaign detail flow, and a dashboard that follows the selected campaign.
 - The frontend now has a live Campaign Studio at `/campaigns/:campaignId/studio` with Team, Communications, Dates, and Readiness sections backed by the new backend studio APIs.
+- The frontend now also has campaign admin create/update UI on top of the existing campaign backend routes.
 - The backend now has checked-in dependency manifests, an `.env.example`, the RBAC foundation layer, reusable RBAC enforcement helpers, and Campaign Studio backend support, but the broader app is still in stabilization rather than feature delivery.
 
 ## Project Layout

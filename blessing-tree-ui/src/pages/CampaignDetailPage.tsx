@@ -1,7 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { buildCampaignStudioPath, routes } from '@/app/routes';
+import { updateCampaign } from '@/features/campaigns/api/campaignApi';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
+import { canManageCampaign } from '@/features/campaigns/model/campaignPermissions';
+import type { CampaignUpsertInput } from '@/features/campaigns/model/campaignTypes';
+import { CampaignEditorForm } from '@/features/campaigns/ui/CampaignEditorForm';
 import { useCampaignOverview } from '@/features/campaigns/model/useCampaignOverview';
 import { CampaignStatusBadge } from '@/features/campaigns/ui/CampaignStatusBadge';
 import { CampaignSummaryGrid } from '@/features/campaigns/ui/CampaignSummaryGrid';
@@ -12,8 +16,11 @@ function metadataValue(value: string | null): string {
 
 export function CampaignDetailPage() {
   const { campaignId = null } = useParams();
-  const { campaigns, selectedCampaignId, selectCampaign } = useCampaigns();
-  const { campaign, access, summary, isLoading, error } = useCampaignOverview(campaignId);
+  const { campaigns, selectedCampaignId, selectCampaign, reloadCampaigns } = useCampaigns();
+  const { campaign, access, summary, isLoading, error, reload } = useCampaignOverview(campaignId);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!campaignId) {
@@ -43,9 +50,32 @@ export function CampaignDetailPage() {
 
   const isCurrentCampaign = selectedCampaignId === campaignId;
   const otherCampaignCount = Math.max(campaigns.length - 1, 0);
+  const showAdminEditor = canManageCampaign(access);
+
+  const handleUpdateCampaign = async (input: CampaignUpsertInput) => {
+    setIsEditing(true);
+    setSaveError(null);
+    setSaveMessage(null);
+
+    try {
+      await updateCampaign(campaignId, input);
+      await Promise.all([reloadCampaigns(), reload()]);
+      setSaveMessage('Campaign updated.');
+      return true;
+    } catch (updateCampaignError) {
+      setSaveError(
+        updateCampaignError instanceof Error
+          ? updateCampaignError.message
+          : 'Unable to update campaign'
+      );
+      return false;
+    } finally {
+      setIsEditing(false);
+    }
+  };
 
   return (
-    <section>
+    <section className="campaign-page-stack">
       <div className="campaign-hero-card mb-4">
         <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
           <div>
@@ -92,6 +122,29 @@ export function CampaignDetailPage() {
           </div>
         </div>
       </div>
+
+      {showAdminEditor ? (
+        <section className="campaign-surface-card">
+          {saveError ? (
+            <div className="alert alert-danger" role="alert">
+              {saveError}
+            </div>
+          ) : null}
+          {saveMessage ? (
+            <div className="alert alert-success" role="alert">
+              {saveMessage}
+            </div>
+          ) : null}
+          <CampaignEditorForm
+            campaign={campaign}
+            title="Edit Campaign Setup"
+            description="Managers and app admins can update the campaign metadata, lifecycle, and operating dates here."
+            submitLabel="Save Campaign"
+            isSaving={isEditing}
+            onSubmit={handleUpdateCampaign}
+          />
+        </section>
+      ) : null}
 
       <div className="row g-4">
         <div className="col-12 col-xl-8">

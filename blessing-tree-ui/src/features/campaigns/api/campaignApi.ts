@@ -5,6 +5,7 @@ import type {
   CampaignListItem,
   CampaignSummary,
   CampaignSummaryCounts,
+  CampaignUpsertInput,
 } from '@/features/campaigns/model/campaignTypes';
 
 interface CampaignAccessResponse {
@@ -76,6 +77,29 @@ export async function getCampaignSummary(campaignId: string): Promise<CampaignSu
   };
 }
 
+export async function createCampaign(input: CampaignUpsertInput): Promise<Campaign> {
+  const response = await apiFetchJson<CampaignResponse>('/api/v1/campaigns', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(serializeCampaignUpsertInput(input)),
+  });
+
+  return mapCampaign(response);
+}
+
+export async function updateCampaign(
+  campaignId: string,
+  input: CampaignUpsertInput
+): Promise<Campaign> {
+  const response = await apiFetchJson<CampaignResponse>(`/api/v1/campaigns/${campaignId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(serializeCampaignUpsertInput(input)),
+  });
+
+  return mapCampaign(response);
+}
+
 function mapCampaign(campaign: CampaignResponse): Campaign {
   return {
     id: campaign.id,
@@ -96,6 +120,17 @@ function mapCampaignAccess(access: CampaignAccessResponse): CampaignAccess {
     globalAppRole: access.global_app_role,
     roleKeys: access.role_keys,
     capabilities: access.capabilities,
+  };
+}
+
+function serializeCampaignUpsertInput(input: CampaignUpsertInput) {
+  return {
+    name: input.name,
+    year: input.year,
+    description: input.description,
+    status: input.status,
+    start_date: input.startDate,
+    end_date: input.endDate,
   };
 }
 

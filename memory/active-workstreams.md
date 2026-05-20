@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Campaign Studio frontend wiring is implemented; next step is campaign admin editing and a user-directory flow for team assignment creation
+- Current step: campaign admin create/update UI is implemented; next step is a user-directory flow for team assignment creation
 
 ## Recently Completed
 
@@ -36,6 +36,9 @@ Last updated: 2026-05-20
 - Added frontend template and schedule creation flows inside Campaign Studio
 - Added frontend milestone save wiring inside Campaign Studio
 - Live-verified the Studio section rendering and communications create flows against the running Blessing Tree stack
+- Added app-admin campaign creation UI on the campaign library page
+- Added campaign update UI on the detail page and Studio settings section
+- Live-verified the campaign create/update backend paths against the running Blessing Tree stack
 - Fixed backend runtime gaps discovered during live stack verification:
   - removed the RBAC package import cycle at app startup
   - loaded the full SQLAlchemy model registry during app creation
@@ -46,9 +49,9 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Add create/update campaign UI for admins on top of the existing backend routes
-2. Add a user directory/search flow so Team assignments can be created from the Studio UI without raw IDs
-3. Expand the next real domain slice into recipient groups, recipients, and wishlists
+1. Add a user directory/search flow so Team assignments can be created from the Studio UI without raw IDs
+2. Expand the next real domain slice into recipient groups, recipients, and wishlists
+3. Decide whether campaign setup editing should also be exposed from the dashboard
 
 ## Blockers Or Ambiguities
 

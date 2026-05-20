@@ -30,6 +30,8 @@ Last updated: 2026-05-20
   - Campaign Studio now has live Team, Communications, Dates, and Readiness sections backed by the backend studio APIs
   - Campaign Studio can now create communication templates and schedules from the frontend
   - Campaign Studio can now save milestone dates from the frontend
+  - app admins can now create campaigns from the campaign library UI
+  - campaign managers and app admins can now update campaign metadata from the detail page and Studio settings section
   - page shells still exist for families, donations, reports, and admin
   - shared authenticated client exists for protected data APIs
 
@@ -115,6 +117,7 @@ Last updated: 2026-05-20
   - Studio Communications section creating a template and schedule in-browser against the running backend
   - Studio Dates section wiring to the milestone save path
   - Studio Readiness section rendering backend readiness findings
+  - campaign create/update UI wiring against the existing backend campaign routes
 - Live stack verification on 2026-05-20 now also includes:
   - `GET /api/v1/campaigns/<campaign_id>/studio`
   - `GET /api/v1/campaigns/<campaign_id>/assignments`
@@ -122,6 +125,8 @@ Last updated: 2026-05-20
   - `GET /api/v1/campaigns/<campaign_id>/communications/schedules`
   - `GET /api/v1/campaigns/<campaign_id>/milestones`
   - `GET /api/v1/campaigns/<campaign_id>/readiness`
+  - `POST /api/v1/campaigns`
+  - `PATCH /api/v1/campaigns/<campaign_id>`
 
 ## Knowledge Graph
 
