@@ -5,6 +5,8 @@ Last updated: 2026-05-20
 ## Status
 
 - Proposed and accepted for implementation planning on 2026-05-20
+- Implementation sequencing is now documented in:
+  - `docs/engineering/campaign-team-implementation-plan.md`
 
 ## Purpose
 

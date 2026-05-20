@@ -58,6 +58,7 @@ Last updated: 2026-05-20
   - `blessing-tree-api/README.md`
   - `blessing-tree-ui/README.md`
   - `docs/engineering/campaign-team-design.md`
+  - `docs/engineering/campaign-team-implementation-plan.md`
   - `docs/engineering/rbac-design.md`
   - `docs/engineering/rbac-implementation-plan.md`
   - `docs/engineering/campaign-schedule-design.md`
