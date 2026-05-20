@@ -175,4 +175,24 @@ describe('CampaignStudioCommunicationsSection', () => {
     expect(screen.getByLabelText(/heading/i)).toHaveValue('Pickup map');
     expect(screen.getByLabelText(/image url/i)).toHaveValue('{{location.map_url}}');
   });
+
+  it('opens the merge field drawer and inserts a field into the focused input', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CampaignStudioCommunicationsSection
+        templates={[]}
+        isSaving={false}
+        onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /content/i }));
+    await user.click(screen.getByRole('button', { name: /show merge fields/i }));
+    await user.click(screen.getByRole('button', { name: 'campaign.name' }));
+
+    expect(screen.getByLabelText(/^subject$/i)).toHaveValue('{{campaign.name}}');
+    expect(screen.getByRole('button', { name: /hide merge fields/i })).toBeInTheDocument();
+  });
 });
