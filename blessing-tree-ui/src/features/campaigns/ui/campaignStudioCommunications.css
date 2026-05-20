@@ -30,6 +30,7 @@
 .campaign-template-library.is-collapsed {
   width: 4.75rem;
   padding: 0.9rem 0.7rem;
+  justify-items: center;
 }
 
 .campaign-template-library__header {
@@ -42,7 +43,8 @@
 
 .campaign-template-library.is-collapsed .campaign-template-library__header {
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
+  width: 100%;
 }
 
 .campaign-template-library__utility-button {
@@ -60,8 +62,8 @@
 }
 
 .campaign-template-library.is-collapsed .campaign-template-library__utility-button {
-  width: 100%;
-  padding-inline: 0.55rem;
+  width: 2.6rem;
+  padding-inline: 0;
 }
 
 .campaign-template-library__list {
@@ -227,10 +229,24 @@
   min-width: 0;
   display: grid;
   gap: 0.75rem;
+  align-content: start;
 }
 
 .campaign-template-workspace__subject-field {
   margin-bottom: 0;
+}
+
+.campaign-template-workspace__editor-column .form-label,
+.campaign-template-block-card .form-label {
+  display: block;
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.campaign-template-workspace__editor-column .form-control,
+.campaign-template-block-card .form-control,
+.campaign-template-block-card textarea.form-control {
+  width: 100%;
 }
 
 .campaign-template-block-editor {
@@ -308,6 +324,11 @@
 .campaign-template-block-card__field-stack {
   display: grid;
   gap: 0.85rem;
+}
+
+.campaign-template-block-card textarea.form-control {
+  resize: vertical;
+  min-height: 7rem;
 }
 
 .campaign-template-image-upload {
