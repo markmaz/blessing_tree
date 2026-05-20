@@ -206,6 +206,38 @@ def test_post_assignment_creates_campaign_role_assignment(
     assert payload["user"]["display_name"] == "Volunteer User"
 
 
+def test_get_directory_users_returns_matching_active_users_with_assignment_context(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = _seed_user(session, name="Manager User")
+    volunteer = _seed_user(session, name="Volunteer Candidate")
+    _seed_user(session, name="Different Person")
+    inactive = _seed_user(session, name="Inactive Volunteer")
+    inactive.is_active = False
+    campaign = _seed_campaign(session)
+    _assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    _assign_role(session, volunteer, campaign, "VOLUNTEER_VIEWER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/directory-users?search=volunteer",
+        headers=_auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert [item["display_name"] for item in payload] == ["Volunteer Candidate"]
+    assert payload[0]["assigned_role_keys"] == ["VOLUNTEER_VIEWER"]
+    assert payload[0]["inactive_role_keys"] == []
+
+
 def test_put_milestones_replaces_campaign_milestones(
     app: Flask,
     monkeypatch: pytest.MonkeyPatch,

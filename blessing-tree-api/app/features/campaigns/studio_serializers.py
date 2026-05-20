@@ -40,6 +40,10 @@ def serialize_team_snapshot(assignments: list[CampaignUserRole], counts: dict[st
     }
 
 
+def serialize_directory_user(payload: dict[str, Any]) -> dict[str, Any]:
+    return payload
+
+
 def serialize_communication_template(template: CommunicationTemplate) -> dict[str, Any]:
     return {
         "id": str(template.id),

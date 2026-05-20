@@ -28,6 +28,7 @@ Last updated: 2026-05-20
   - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
   - dashboard is now campaign-aware and loads live summary/access data from the backend
   - Campaign Studio now has live Team, Communications, Dates, and Readiness sections backed by the backend studio APIs
+  - Campaign Studio Team can now search active users and create campaign assignments directly from the frontend
   - Campaign Studio can now create communication templates and schedules from the frontend
   - Campaign Studio can now save milestone dates from the frontend
   - app admins can now create campaigns from the campaign library UI
@@ -113,6 +114,7 @@ Last updated: 2026-05-20
   - selected campaign is persisted in local storage per user
 - Live frontend verification on 2026-05-20 now includes:
   - Studio Team section rendering real assignments
+  - Studio Team assignment creation now verified against the running backend through the new directory search + assignment flow
   - Studio Communications section rendering real template/schedule state
   - Studio Communications section creating a template and schedule in-browser against the running backend
   - Studio Dates section wiring to the milestone save path
@@ -121,6 +123,7 @@ Last updated: 2026-05-20
 - Live stack verification on 2026-05-20 now also includes:
   - `GET /api/v1/campaigns/<campaign_id>/studio`
   - `GET /api/v1/campaigns/<campaign_id>/assignments`
+  - `GET /api/v1/campaigns/<campaign_id>/directory-users`
   - `GET /api/v1/campaigns/<campaign_id>/communications/templates`
   - `GET /api/v1/campaigns/<campaign_id>/communications/schedules`
   - `GET /api/v1/campaigns/<campaign_id>/milestones`

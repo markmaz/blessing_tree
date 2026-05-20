@@ -5,8 +5,10 @@ import {
   getCampaignStudio,
   saveCampaignMilestones,
 } from '@/features/campaigns/api/campaignStudioApi';
+import { createCampaignAssignment } from '@/features/campaigns/api/campaignStudioTeamApi';
 import type {
   CampaignStudioData,
+  CreateCampaignAssignmentInput,
   CreateCommunicationScheduleInput,
   CreateCommunicationTemplateInput,
   SaveCampaignMilestoneInput,
@@ -142,6 +144,18 @@ export function useCampaignStudio(campaignId: string | null) {
     );
   };
 
+  const addAssignment = async (input: CreateCampaignAssignmentInput) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await createCampaignAssignment(campaignId, input);
+      },
+      'Campaign assignment added.'
+    );
+  };
+
   const clearSaveMessage = () => {
     setState((currentState) => ({
       ...currentState,
@@ -185,6 +199,7 @@ export function useCampaignStudio(campaignId: string | null) {
   return {
     ...state,
     reload,
+    addAssignment,
     addCommunicationTemplate,
     addCommunicationSchedule,
     persistMilestones,

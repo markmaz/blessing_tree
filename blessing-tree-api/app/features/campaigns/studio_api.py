@@ -9,15 +9,18 @@ from app.features.campaigns.studio_serializers import (
     serialize_campaign_assignment,
     serialize_communication_schedule,
     serialize_communication_template,
+    serialize_directory_user,
     serialize_milestone,
     serialize_readiness,
     serialize_studio_payload,
     serialize_team_snapshot,
 )
 from app.features.campaigns.studio_service import CampaignStudioService
+from app.features.campaigns.studio_team_service import CampaignStudioTeamService
 from app.features.rbac.decorators import require_campaign_capability
 
 _studio_service = CampaignStudioService()
+_team_service = CampaignStudioTeamService()
 
 
 @campaign_ns.route("/<string:campaign_id>/studio")
@@ -34,15 +37,29 @@ class CampaignAssignmentListResource(Resource):
     @require_campaign_capability("campaign.view")
     def get(self, campaign_id: str):
         with SessionLocal() as db:
-            snapshot = _studio_service.get_team_snapshot(db, campaign_id)
+            snapshot = _team_service.get_team_snapshot(db, campaign_id)
         return serialize_team_snapshot(snapshot["assignments"], snapshot["counts"])
 
     @require_campaign_capability("campaign.admin")
     def post(self, campaign_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
-            assignment = _studio_service.create_assignment(db, campaign_id, payload)
+            assignment = _team_service.create_assignment(db, campaign_id, payload)
         return serialize_campaign_assignment(assignment), 201
+
+
+@campaign_ns.route("/<string:campaign_id>/directory-users")
+class CampaignDirectoryUserListResource(Resource):
+    @require_campaign_capability("campaign.admin")
+    def get(self, campaign_id: str):
+        with SessionLocal() as db:
+            users = _team_service.search_directory_users(
+                db,
+                campaign_id,
+                search=request.args.get("search"),
+                limit=_parse_limit(request.args.get("limit")),
+            )
+        return [serialize_directory_user(user) for user in users]
 
 
 @campaign_ns.route("/<string:campaign_id>/assignments/<string:assignment_id>")
@@ -51,7 +68,7 @@ class CampaignAssignmentDetailResource(Resource):
     def patch(self, campaign_id: str, assignment_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
-            assignment = _studio_service.update_assignment(db, campaign_id, assignment_id, payload)
+            assignment = _team_service.update_assignment(db, campaign_id, assignment_id, payload)
         return serialize_campaign_assignment(assignment)
 
 
@@ -130,3 +147,10 @@ class CampaignReadinessResource(Resource):
         with SessionLocal() as db:
             readiness = _studio_service.get_readiness(db, campaign_id)
         return serialize_readiness(readiness)
+
+
+def _parse_limit(value: str | None) -> int:
+    try:
+        return int(value or "10")
+    except ValueError:
+        return 10

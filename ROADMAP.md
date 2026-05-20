@@ -76,8 +76,8 @@ Goal: make the project safer to evolve.
 
 If momentum matters, start here:
 
-1. Add a campaign user directory/search flow so Team assignments can be created from the Studio UI without raw IDs.
-2. Expand the next real domain slice into recipient groups, recipients, and wishlists.
-3. Decide whether campaign setup editing should also be available from the dashboard or remain centered on detail/studio.
+1. Expand the next real domain slice into recipient groups, recipients, and wishlists.
+2. Decide whether campaign setup editing should also be available from the dashboard or remain centered on detail/studio.
+3. Decide whether team assignment editing should add role changes and deactivation directly in Studio.
 
-That sequence clears the largest current ambiguity and opens the path to real application work.
+The directory/search flow for Studio team assignment is now complete. The remaining sequence opens the path from campaign setup into the first real operating data slice.

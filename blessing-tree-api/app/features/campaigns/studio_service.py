@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import uuid
-from collections import Counter
 from collections.abc import Mapping
 
 from sqlalchemy.orm import Session, joinedload
@@ -9,22 +8,18 @@ from sqlalchemy.orm import Session, joinedload
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns.service import CampaignService
 from app.features.campaigns.studio_readiness import build_campaign_readiness
+from app.features.campaigns.studio_team_service import CampaignStudioTeamService
 from app.features.campaigns.studio_validation import (
     parse_bool,
     parse_optional_datetime,
     require_milestone_list,
     require_short_text,
-    require_user_id,
     validate_audience,
     validate_channel,
     validate_milestone_key,
-    validate_role_key,
     validate_schedule_status,
     validate_template_key,
 )
-from app.features.rbac.constants import CAMPAIGN_MANAGER_ROLE
-from app.features.rbac.models.campaign_user_role import CampaignUserRole
-from app.models.app_user import AppUser
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
 from app.models.campaign_milestone import CampaignMilestone
 from app.models.communication_template import CommunicationTemplate
@@ -33,12 +28,13 @@ from app.models.communication_template import CommunicationTemplate
 class CampaignStudioService:
     def __init__(self, campaign_service: CampaignService | None = None) -> None:
         self.campaigns = campaign_service or CampaignService()
+        self.team = CampaignStudioTeamService(self.campaigns)
 
     def get_studio_payload(self, db: Session, user_id: str, campaign_id: str) -> dict[str, object]:
         campaign = self.campaigns.get_campaign(db, campaign_id)
         access = self.campaigns.get_campaign_access_payload(db, user_id, campaign_id)
         summary = self.campaigns.get_campaign_summary_counts(db, campaign_id)
-        team = self.get_team_snapshot(db, campaign_id)
+        team = self.team.get_team_snapshot(db, campaign_id)
         templates = self.list_templates(db)
         schedules = self.list_schedules(db, campaign_id)
         milestones = self.list_milestones(db, campaign_id)
@@ -53,99 +49,6 @@ class CampaignStudioService:
             "milestones": milestones,
             "readiness": readiness,
         }
-
-    def list_assignments(self, db: Session, campaign_id: str) -> list[CampaignUserRole]:
-        return (
-            db.query(CampaignUserRole)
-            .options(joinedload(CampaignUserRole.user))
-            .filter(CampaignUserRole.campaign_id == campaign_id)
-            .order_by(CampaignUserRole.role_key.asc(), CampaignUserRole.created_at.asc())
-            .all()
-        )
-
-    def get_team_snapshot(self, db: Session, campaign_id: str) -> dict[str, object]:
-        assignments = self.list_assignments(db, campaign_id)
-        active_assignments = [assignment for assignment in assignments if assignment.is_active]
-        role_counts = Counter(assignment.role_key for assignment in active_assignments)
-        member_count = len({assignment.user_id for assignment in active_assignments})
-        return {
-            "assignments": assignments,
-            "counts": {
-                "assignment_count": len(assignments),
-                "active_assignment_count": len(active_assignments),
-                "member_count": member_count,
-                "manager_count": role_counts.get(CAMPAIGN_MANAGER_ROLE, 0),
-                "role_counts": dict(sorted(role_counts.items())),
-            },
-        }
-
-    def create_assignment(self, db: Session, campaign_id: str, payload: Mapping[str, object]) -> CampaignUserRole:
-        user_id = require_user_id(payload.get("user_id"))
-        role_key = validate_role_key(payload.get("role_key"))
-        is_active = parse_bool(payload.get("is_active"), "is_active", default=True)
-        self.campaigns.get_campaign(db, campaign_id)
-        user = db.get(AppUser, user_id)
-        if user is None:
-            raise ServiceError("User not found", status_code=404, details={"user_id": str(user_id)})
-
-        existing = (
-            db.query(CampaignUserRole)
-            .filter(
-                CampaignUserRole.campaign_id == campaign_id,
-                CampaignUserRole.user_id == user_id,
-                CampaignUserRole.role_key == role_key,
-            )
-            .one_or_none()
-        )
-        if existing is not None:
-            raise ServiceError(
-                "Campaign role assignment already exists",
-                status_code=409,
-                details={"campaign_id": campaign_id, "user_id": str(user_id), "role_key": role_key},
-            )
-
-        assignment = CampaignUserRole(
-            id=uuid.uuid4(),
-            campaign_id=campaign_id,
-            user_id=user_id,
-            role_key=role_key,
-            is_active=is_active,
-        )
-        db.add(assignment)
-        db.commit()
-        return self._get_assignment(db, campaign_id, str(assignment.id))
-
-    def update_assignment(
-        self,
-        db: Session,
-        campaign_id: str,
-        assignment_id: str,
-        payload: Mapping[str, object],
-    ) -> CampaignUserRole:
-        assignment = self._get_assignment(db, campaign_id, assignment_id)
-        if "role_key" in payload:
-            next_role_key = validate_role_key(payload.get("role_key"))
-            duplicate = (
-                db.query(CampaignUserRole)
-                .filter(
-                    CampaignUserRole.campaign_id == campaign_id,
-                    CampaignUserRole.user_id == assignment.user_id,
-                    CampaignUserRole.role_key == next_role_key,
-                    CampaignUserRole.id != assignment.id,
-                )
-                .one_or_none()
-            )
-            if duplicate is not None:
-                raise ServiceError(
-                    "Campaign role assignment already exists",
-                    status_code=409,
-                    details={"campaign_id": campaign_id, "user_id": str(assignment.user_id), "role_key": next_role_key},
-                )
-            assignment.role_key = next_role_key
-        if "is_active" in payload:
-            assignment.is_active = parse_bool(payload.get("is_active"), "is_active")
-        db.commit()
-        return self._get_assignment(db, campaign_id, assignment_id)
 
     def list_templates(self, db: Session) -> list[CommunicationTemplate]:
         return db.query(CommunicationTemplate).order_by(CommunicationTemplate.name.asc()).all()
@@ -294,7 +197,7 @@ class CampaignStudioService:
 
     def get_readiness(self, db: Session, campaign_id: str) -> dict[str, object]:
         campaign = self.campaigns.get_campaign(db, campaign_id)
-        team = self.get_team_snapshot(db, campaign_id)
+        team = self.team.get_team_snapshot(db, campaign_id)
         milestones = self.list_milestones(db, campaign_id)
         schedules = self.list_schedules(db, campaign_id)
         templates = self.list_templates(db)
@@ -310,21 +213,6 @@ class CampaignStudioService:
     @staticmethod
     def campaigns_optional_text(value: object) -> str | None:
         return require_short_text(value, "notes", max_length=5000) if value not in (None, "") else None
-
-    def _get_assignment(self, db: Session, campaign_id: str, assignment_id: str) -> CampaignUserRole:
-        assignment = (
-            db.query(CampaignUserRole)
-            .options(joinedload(CampaignUserRole.user))
-            .filter(CampaignUserRole.campaign_id == campaign_id, CampaignUserRole.id == assignment_id)
-            .one_or_none()
-        )
-        if assignment is None:
-            raise ServiceError(
-                "Campaign assignment not found",
-                status_code=404,
-                details={"campaign_id": campaign_id, "assignment_id": assignment_id},
-            )
-        return assignment
 
     @staticmethod
     def _get_template(db: Session, template_id: object) -> CommunicationTemplate:

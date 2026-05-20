@@ -36,6 +36,16 @@ export interface CampaignTeamSnapshot {
   counts: CampaignTeamCounts;
 }
 
+export interface CampaignDirectoryUser {
+  id: string;
+  email: string;
+  displayName: string;
+  appRole: string;
+  isActive: boolean;
+  assignedRoleKeys: string[];
+  inactiveRoleKeys: string[];
+}
+
 export interface CommunicationTemplate {
   id: string;
   templateKey: string;
@@ -113,6 +123,12 @@ export interface CreateCommunicationTemplateInput {
   audience: string;
   subjectTemplate: string;
   bodyTemplate: string;
+}
+
+export interface CreateCampaignAssignmentInput {
+  userId: string;
+  roleKey: string;
+  isActive?: boolean;
 }
 
 export interface CreateCommunicationScheduleInput {

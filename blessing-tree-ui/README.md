@@ -17,6 +17,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - The frontend now completes local login directly on `/login` and includes backend refresh-cookie handling.
 - The frontend now consumes the protected campaign APIs through a campaign provider, top-bar switcher, campaign list, campaign detail page, and a campaign-aware dashboard.
 - Campaign Studio now has real Team, Communications, Dates, and Readiness sections backed by the new backend studio APIs.
+- The Team section can now search the active user directory and create campaign role assignments directly from Studio.
 - The communications section can now create templates and schedules against the running backend.
 - The dates section now saves campaign milestone dates through the studio.
 - App admins can now create campaigns from the campaign library UI.

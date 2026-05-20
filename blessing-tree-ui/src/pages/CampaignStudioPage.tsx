@@ -30,6 +30,7 @@ export function CampaignStudioPage() {
     error,
     saveMessage,
     reload,
+    addAssignment,
     addCommunicationTemplate,
     addCommunicationSchedule,
     persistMilestones,
@@ -158,6 +159,7 @@ export function CampaignStudioPage() {
                 setIsUpdatingCampaign(false);
               }
             },
+            addAssignment,
             addCommunicationTemplate,
             addCommunicationSchedule,
             persistMilestones,
@@ -179,6 +181,7 @@ function renderStudioSection({
   isSaving,
   setSelectedSection,
   onUpdateCampaign,
+  addAssignment,
   addCommunicationTemplate,
   addCommunicationSchedule,
   persistMilestones,
@@ -188,6 +191,7 @@ function renderStudioSection({
   isSaving: boolean;
   setSelectedSection: (sectionId: CampaignStudioSectionId) => void;
   onUpdateCampaign: (input: CampaignUpsertInput) => Promise<boolean>;
+  addAssignment: ReturnType<typeof useCampaignStudio>['addAssignment'];
   addCommunicationTemplate: ReturnType<typeof useCampaignStudio>['addCommunicationTemplate'];
   addCommunicationSchedule: ReturnType<typeof useCampaignStudio>['addCommunicationSchedule'];
   persistMilestones: ReturnType<typeof useCampaignStudio>['persistMilestones'];
@@ -202,7 +206,15 @@ function renderStudioSection({
   }
 
   if (selectedSection === 'team') {
-    return <CampaignStudioTeamSection team={studio.team} />;
+    return (
+      <CampaignStudioTeamSection
+        campaignId={studio.campaign.id}
+        access={studio.access}
+        team={studio.team}
+        isSaving={isSaving}
+        onAddAssignment={addAssignment}
+      />
+    );
   }
 
   if (selectedSection === 'communications') {

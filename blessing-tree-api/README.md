@@ -18,6 +18,7 @@ The backend is a Flask application built around:
 - The initial RBAC foundation now exists as a feature package with campaign role persistence, a capability matrix, an authorization service, and reusable enforcement decorators.
 - The first campaign business routes now exist as a feature package with protected list, detail, access, summary, create, and update endpoints.
 - Campaign Studio backend support now exists for team assignments, communication templates/schedules, milestone dates, readiness evaluation, and aggregate studio payloads.
+- Campaign Studio now also exposes a campaign-scoped active-user directory search endpoint to support assignment creation from the frontend.
 - Dependency manifests now exist as `requirements.txt` and `requirements-dev.txt`.
 - Backend build version now lives in `version.json`.
 
@@ -136,6 +137,7 @@ Current routes under `/api/v1/campaigns`:
 - `GET /<campaign_id>/studio`
 - `GET /<campaign_id>/assignments`
 - `POST /<campaign_id>/assignments`
+- `GET /<campaign_id>/directory-users`
 - `PATCH /<campaign_id>/assignments/<assignment_id>`
 - `GET /<campaign_id>/communications/templates`
 - `POST /<campaign_id>/communications/templates`
@@ -153,6 +155,7 @@ Current behavior:
 - create is app-admin only
 - detail, access, and summary require campaign visibility via RBAC
 - update requires the `campaign.admin` capability
+- directory-user search requires the `campaign.admin` capability and returns active users plus current/inactive role context for that campaign
 - campaign metadata now includes `description`
 - multiple campaigns per year are allowed
 - Campaign Studio aggregate and section endpoints now power team, communications, milestone, and readiness cards in the frontend studio shell

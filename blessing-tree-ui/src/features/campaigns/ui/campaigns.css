@@ -360,6 +360,17 @@
   min-width: 0;
 }
 
+.campaign-studio__directory-user {
+  min-width: 0;
+}
+
+.campaign-studio__directory-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
 .campaign-studio__list-card,
 .campaign-studio__milestone-editor-card,
 .campaign-studio__stat-card {
