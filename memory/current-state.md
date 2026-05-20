@@ -31,6 +31,7 @@ Last updated: 2026-05-20
   - Campaign Studio Team can now search active users and create campaign assignments directly from the frontend
   - Campaign Studio can now create communication templates and schedules from the frontend
   - Campaign Studio can now save milestone dates from the frontend
+  - a Vitest + Testing Library harness now exists for automated frontend tests
   - app admins can now create campaigns from the campaign library UI
   - campaign managers and app admins can now update campaign metadata from the detail page and Studio settings section
   - page shells still exist for families, donations, reports, and admin
@@ -112,6 +113,10 @@ Last updated: 2026-05-20
   - `/campaigns/:campaignId`
   - `/campaigns/:campaignId/studio`
   - selected campaign is persisted in local storage per user
+- Frontend verification now includes:
+  - `npm run lint`
+  - `npm run build`
+  - `npm run test`
 - Live frontend verification on 2026-05-20 now includes:
   - Studio Team section rendering real assignments
   - Studio Team assignment creation now verified against the running backend through the new directory search + assignment flow

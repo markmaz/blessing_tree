@@ -20,6 +20,7 @@ Blessing Tree is a split frontend/backend application for managing a church gift
 - The frontend now has a live Campaign Studio at `/campaigns/:campaignId/studio` with Team, Communications, Dates, and Readiness sections backed by the new backend studio APIs.
 - The Team section in Campaign Studio can now search active users and create campaign assignments without raw user IDs.
 - The frontend now also has campaign admin create/update UI on top of the existing campaign backend routes.
+- The frontend now has a Vitest + Testing Library harness, and automated frontend tests are required for new UI behavior.
 - The backend now has checked-in dependency manifests, an `.env.example`, the RBAC foundation layer, reusable RBAC enforcement helpers, and Campaign Studio backend support, but the broader app is still in stabilization rather than feature delivery.
 
 ## Project Layout
@@ -49,6 +50,7 @@ From `blessing-tree-ui/`:
 npm run dev
 npm run build
 npm run lint
+npm run test
 ```
 
 The frontend expects `VITE_API_BASE_URL`, defaulting to `http://localhost:5000`.

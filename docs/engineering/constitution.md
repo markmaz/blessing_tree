@@ -20,6 +20,7 @@
 - Prefer additive API changes unless an explicit breaking-change decision is made.
 - Shared modules must stay narrowly scoped and must not become dumping grounds.
 - New behavior should ship with tests unless deferred explicitly.
+- Automated frontend tests are mandatory for frontend behavior changes unless explicitly deferred and documented.
 - Check in completed code work after verification.
 
 ## Invariants

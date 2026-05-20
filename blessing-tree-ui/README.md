@@ -20,6 +20,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - The Team section can now search the active user directory and create campaign role assignments directly from Studio.
 - The communications section can now create templates and schedules against the running backend.
 - The dates section now saves campaign milestone dates through the studio.
+- A Vitest + Testing Library harness now exists for automated frontend tests.
 - App admins can now create campaigns from the campaign library UI.
 - Campaign managers and app admins can now update campaign metadata, dates, and status from the detail page and Studio settings section.
 - Several older UI docs were delivery-era summaries and have been consolidated.
@@ -66,6 +67,7 @@ From `blessing-tree-ui/`:
 npm run dev
 npm run build
 npm run lint
+npm run test
 npm run preview
 ```
 

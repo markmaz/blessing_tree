@@ -28,6 +28,8 @@
 - Avoid god files. Target roughly 400 lines or less per file unless there is a strong reason not to.
 - When code changes, bump the frontend version in `package.json`. Do not bump versions for docs-only changes.
 - Do not describe transitional UI behavior as final production design in docs.
+- Frontend behavior changes must ship with automated tests unless explicitly deferred and documented.
+- Frontend verification for code changes now includes `npm run test` in addition to lint/build.
 
 ## APIs And Shared Code
 
@@ -44,5 +46,6 @@
 
 - Run a code review before marking a task done. Review should check correctness, scope discipline, regressions, and obvious cleanup opportunities.
 - Ship tests with new behavior unless the task explicitly documents why they are deferred.
+- Treat automated frontend tests as mandatory for new frontend behavior unless an explicit deferral is documented.
 - Update canonical docs in the same change when behavior changes.
 - Commit completed code work once the task is finished and verified.

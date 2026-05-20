@@ -6,6 +6,7 @@ Last updated: 2026-05-20
 
 - Active roadmap phase: Phase 3
 - Current step: Campaign Studio team assignment directory flow is implemented; next step is the next real domain slice beyond campaign setup
+- Current step: frontend automated test harness is established; next step is the next real domain slice beyond campaign setup
 
 ## Recently Completed
 
@@ -42,6 +43,9 @@ Last updated: 2026-05-20
 - Added a campaign-scoped user directory search endpoint for Team assignment creation
 - Wired Campaign Studio Team to search active users and create campaign assignments without raw IDs
 - Live-verified the directory search and assignment creation flow against the running Blessing Tree backend
+- Added a Vitest + Testing Library frontend test harness
+- Added the first automated UI test coverage for the Campaign Studio Team assignment flow
+- Locked frontend automated tests as mandatory for new UI behavior
 - Fixed backend runtime gaps discovered during live stack verification:
   - removed the RBAC package import cycle at app startup
   - loaded the full SQLAlchemy model registry during app creation
