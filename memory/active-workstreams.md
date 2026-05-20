@@ -5,9 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Campaign Studio team assignment directory flow is implemented; next step is the next real domain slice beyond campaign setup
-- Current step: frontend automated test harness is established; next step is the next real domain slice beyond campaign setup
-- Current step: campaign schedule/event design is now documented; next step is backend implementation of `campaign_event` and unified Studio schedule APIs
+- Current step: schedule backend phase 1 is implemented; next step is replacing Studio `Dates` with `Schedule` and building `Timeline | Calendar | Milestones`
 
 ## Recently Completed
 
@@ -48,6 +46,9 @@ Last updated: 2026-05-20
 - Added the first automated UI test coverage for the Campaign Studio Team assignment flow
 - Locked frontend automated tests as mandatory for new UI behavior
 - Documented concrete Campaign Schedule design with `campaign_event`, unified schedule reads, and `Timeline | Calendar | Milestones` Studio views
+- Implemented backend `campaign_event` persistence and unified schedule APIs
+- Applied and verified the `campaign_event` migration against local MySQL `blessing_tree`
+- Added backend test coverage for manual event CRUD and unified schedule reads
 - Fixed backend runtime gaps discovered during live stack verification:
   - removed the RBAC package import cycle at app startup
   - loaded the full SQLAlchemy model registry during app creation
@@ -58,8 +59,8 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Implement backend `campaign_event` persistence and unified schedule APIs
-2. Replace Studio `Dates` with `Schedule` and add `Timeline | Calendar | Milestones` views
+1. Replace Studio `Dates` with `Schedule` and add `Timeline | Calendar | Milestones` views
+2. Add manual event create/edit/delete UI inside the new Schedule section
 3. Expand the next real domain slice into recipient groups, recipients, and wishlists
 
 ## Blockers Or Ambiguities

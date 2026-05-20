@@ -6,20 +6,24 @@ from flask_restx import Resource
 from app.db import SessionLocal
 from app.features.campaigns import campaign_ns
 from app.features.campaigns.studio_serializers import (
+    serialize_campaign_event,
     serialize_campaign_assignment,
     serialize_communication_schedule,
     serialize_communication_template,
     serialize_directory_user,
     serialize_milestone,
     serialize_readiness,
+    serialize_schedule_item,
     serialize_studio_payload,
     serialize_team_snapshot,
 )
+from app.features.campaigns.studio_schedule_service import CampaignStudioScheduleService
 from app.features.campaigns.studio_service import CampaignStudioService
 from app.features.campaigns.studio_team_service import CampaignStudioTeamService
 from app.features.rbac.decorators import require_campaign_capability
 
 _studio_service = CampaignStudioService()
+_schedule_service = CampaignStudioScheduleService()
 _team_service = CampaignStudioTeamService()
 
 
@@ -122,6 +126,50 @@ class CommunicationScheduleDetailResource(Resource):
         with SessionLocal() as db:
             schedule = _studio_service.update_schedule(db, campaign_id, schedule_id, payload)
         return serialize_communication_schedule(schedule)
+
+
+@campaign_ns.route("/<string:campaign_id>/schedule")
+class CampaignScheduleResource(Resource):
+    @require_campaign_capability("campaign.view")
+    def get(self, campaign_id: str):
+        with SessionLocal() as db:
+            items = _schedule_service.list_schedule_items(db, campaign_id)
+        return {
+            "campaign_id": campaign_id,
+            "items": [serialize_schedule_item(item) for item in items],
+        }
+
+
+@campaign_ns.route("/<string:campaign_id>/events")
+class CampaignEventListResource(Resource):
+    @require_campaign_capability("campaign.view")
+    def get(self, campaign_id: str):
+        with SessionLocal() as db:
+            events = _schedule_service.list_events(db, campaign_id)
+        return [serialize_campaign_event(event) for event in events]
+
+    @require_campaign_capability("campaign.admin")
+    def post(self, campaign_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            event = _schedule_service.create_event(db, getattr(g, "user_id"), campaign_id, payload)
+        return serialize_campaign_event(event), 201
+
+
+@campaign_ns.route("/<string:campaign_id>/events/<string:event_id>")
+class CampaignEventDetailResource(Resource):
+    @require_campaign_capability("campaign.admin")
+    def patch(self, campaign_id: str, event_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            event = _schedule_service.update_event(db, campaign_id, event_id, payload)
+        return serialize_campaign_event(event)
+
+    @require_campaign_capability("campaign.admin")
+    def delete(self, campaign_id: str, event_id: str):
+        with SessionLocal() as db:
+            _schedule_service.delete_event(db, campaign_id, event_id)
+        return "", 204
 
 
 @campaign_ns.route("/<string:campaign_id>/milestones")

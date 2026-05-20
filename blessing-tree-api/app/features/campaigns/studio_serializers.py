@@ -10,6 +10,7 @@ from app.features.campaigns.serializers import (
 )
 from app.features.rbac.models.campaign_user_role import CampaignUserRole
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
+from app.models.campaign_event import CampaignEvent
 from app.models.campaign_milestone import CampaignMilestone
 from app.models.communication_template import CommunicationTemplate
 
@@ -75,6 +76,39 @@ def serialize_communication_schedule(schedule: CampaignCommunicationSchedule) ->
     }
 
 
+def serialize_campaign_event(event: CampaignEvent) -> dict[str, Any]:
+    return {
+        "id": str(event.id),
+        "campaign_id": str(event.campaign_id),
+        "title": event.title,
+        "event_type": event.event_type,
+        "start_at": _serialize_datetime(event.start_at),
+        "end_at": _serialize_datetime(event.end_at),
+        "all_day": bool(event.all_day),
+        "notes": event.notes,
+        "source_type": event.source_type,
+        "source_id": str(event.source_id) if event.source_id else None,
+        "created_by_user_id": str(event.created_by_user_id) if event.created_by_user_id else None,
+        "created_at": _serialize_datetime(event.created_at),
+        "updated_at": _serialize_datetime(event.updated_at),
+    }
+
+
+def serialize_schedule_item(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": str(payload.get("id")),
+        "title": payload.get("title"),
+        "event_type": payload.get("event_type"),
+        "source_type": payload.get("source_type"),
+        "source_id": str(payload["source_id"]) if payload.get("source_id") is not None else None,
+        "start_at": _serialize_datetime(payload.get("start_at")),
+        "end_at": _serialize_datetime(payload.get("end_at")),
+        "all_day": bool(payload.get("all_day")),
+        "notes": payload.get("notes"),
+        "is_editable": bool(payload.get("is_editable")),
+    }
+
+
 def serialize_milestone(milestone: CampaignMilestone) -> dict[str, Any]:
     return {
         "id": str(milestone.id),
@@ -102,6 +136,7 @@ def serialize_studio_payload(
     templates: list[CommunicationTemplate],
     schedules: list[CampaignCommunicationSchedule],
     milestones: list[CampaignMilestone],
+    schedule_items: list[dict[str, Any]],
     readiness: dict[str, Any],
 ) -> dict[str, Any]:
     return {
@@ -112,6 +147,9 @@ def serialize_studio_payload(
         "communications": {
             "templates": [serialize_communication_template(template) for template in templates],
             "schedules": [serialize_communication_schedule(schedule) for schedule in schedules],
+        },
+        "schedule": {
+            "items": [serialize_schedule_item(item) for item in schedule_items],
         },
         "milestones": [serialize_milestone(milestone) for milestone in milestones],
         "readiness": serialize_readiness(readiness),

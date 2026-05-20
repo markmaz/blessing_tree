@@ -7,6 +7,7 @@ from datetime import date, datetime
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns.service import _optional_text
 from app.features.campaigns.studio_constants import (
+    CAMPAIGN_EVENT_TYPES,
     COMMUNICATION_AUDIENCES,
     COMMUNICATION_CHANNELS,
     COMMUNICATION_SCHEDULE_STATUSES,
@@ -93,10 +94,19 @@ def parse_optional_datetime(value: object, field_name: str) -> datetime | None:
         return None
     if isinstance(value, datetime):
         return value
+    if isinstance(value, date):
+        return datetime.combine(value, datetime.min.time())
     try:
         return datetime.fromisoformat(str(value))
     except ValueError:
         raise ServiceError(f"Invalid datetime for {field_name}", status_code=400, details={"field": field_name})
+
+
+def parse_required_datetime(value: object, field_name: str) -> datetime:
+    parsed = parse_optional_datetime(value, field_name)
+    if parsed is None:
+        raise ServiceError(f"{field_name} is required", status_code=400, details={"field": field_name})
+    return parsed
 
 
 def validate_schedule_status(value: object) -> str:
@@ -108,6 +118,17 @@ def validate_schedule_status(value: object) -> str:
             details={"field": "status", "allowed_values": sorted(COMMUNICATION_SCHEDULE_STATUSES)},
         )
     return status
+
+
+def validate_event_type(value: object) -> str:
+    event_type = str(value or "GENERAL").strip().upper()
+    if event_type not in CAMPAIGN_EVENT_TYPES:
+        raise ServiceError(
+            "Campaign event_type is invalid",
+            status_code=400,
+            details={"field": "event_type", "allowed_values": sorted(CAMPAIGN_EVENT_TYPES)},
+        )
+    return event_type
 
 
 def validate_milestone_key(value: object) -> str:
@@ -164,3 +185,18 @@ def _parse_sort_order(value: object) -> int:
         return int(value)
     except (TypeError, ValueError):
         raise ServiceError("sort_order must be an integer", status_code=400, details={"field": "sort_order"})
+
+
+def validate_datetime_range(
+    start_at: datetime,
+    end_at: datetime | None,
+    *,
+    start_field: str = "start_at",
+    end_field: str = "end_at",
+) -> None:
+    if end_at is not None and end_at < start_at:
+        raise ServiceError(
+            f"{end_field} must be on or after {start_field}",
+            status_code=400,
+            details={"fields": [start_field, end_field]},
+        )

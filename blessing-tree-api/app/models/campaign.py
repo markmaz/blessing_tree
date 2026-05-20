@@ -11,6 +11,7 @@ from .base import Base
 from .uuid_bin import UUIDBin
 
 if TYPE_CHECKING:
+    from .campaign_event import CampaignEvent
     from .campaign_communication_schedule import CampaignCommunicationSchedule
     from .campaign_milestone import CampaignMilestone
     from app.features.rbac.models.campaign_user_role import CampaignUserRole
@@ -106,6 +107,11 @@ class Campaign(Base):
         passive_deletes=True,
     )
     communication_schedules: Mapped[List["CampaignCommunicationSchedule"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    events: Mapped[List["CampaignEvent"]] = relationship(
         back_populates="campaign",
         cascade="all, delete-orphan",
         passive_deletes=True,

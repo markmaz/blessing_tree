@@ -15,7 +15,7 @@ Last updated: 2026-05-20
   - domain models and migrations exist
   - RBAC foundation now exists with campaign role persistence, capability bundles, and an authorization service
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
-  - Campaign Studio backend support now exists for assignments, communication templates, communication schedules, milestone dates, readiness output, and aggregate studio payloads
+  - Campaign Studio backend support now exists for assignments, communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, and aggregate studio payloads
   - backend startup now imports the full SQLAlchemy model registry during app creation
   - local auth compatibility now depends on `bcrypt 4.1.3` with `passlib 1.7.4`
   - runtime and dev dependency manifests now exist
@@ -94,7 +94,9 @@ Last updated: 2026-05-20
   - `app/features/campaigns/constants.py`
 - Campaign Studio backend support now exists:
   - `db/migration/V005__Campaign_Studio_Support.sql`
+  - `db/migration/V006__Campaign_Schedule.sql`
   - `app/features/campaigns/studio_api.py`
+  - `app/features/campaigns/studio_schedule_service.py`
   - `app/features/campaigns/studio_service.py`
   - `app/features/campaigns/studio_serializers.py`
   - `app/features/campaigns/studio_validation.py`
@@ -108,6 +110,9 @@ Last updated: 2026-05-20
   - verified `communication_template`
   - verified `campaign_milestone`
   - verified `campaign_communication_schedule`
+  - `V006__Campaign_Schedule.sql` has been applied to the local `blessing_tree` database
+  - verified `campaign_event`
+  - verified schedule indexes and foreign keys
 - Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
 - Frontend campaign routes now exist:
   - `/campaigns`
@@ -132,6 +137,8 @@ Last updated: 2026-05-20
   - `GET /api/v1/campaigns/<campaign_id>/directory-users`
   - `GET /api/v1/campaigns/<campaign_id>/communications/templates`
   - `GET /api/v1/campaigns/<campaign_id>/communications/schedules`
+  - backend test coverage now includes `GET /api/v1/campaigns/<campaign_id>/schedule`
+  - backend test coverage now includes `GET|POST|PATCH|DELETE /api/v1/campaigns/<campaign_id>/events`
   - `GET /api/v1/campaigns/<campaign_id>/milestones`
   - `GET /api/v1/campaigns/<campaign_id>/readiness`
   - `POST /api/v1/campaigns`

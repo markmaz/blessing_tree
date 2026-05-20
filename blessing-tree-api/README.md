@@ -17,7 +17,7 @@ The backend is a Flask application built around:
 - The broader domain model exists in SQLAlchemy and SQL migration form.
 - The initial RBAC foundation now exists as a feature package with campaign role persistence, a capability matrix, an authorization service, and reusable enforcement decorators.
 - The first campaign business routes now exist as a feature package with protected list, detail, access, summary, create, and update endpoints.
-- Campaign Studio backend support now exists for team assignments, communication templates/schedules, milestone dates, readiness evaluation, and aggregate studio payloads.
+- Campaign Studio backend support now exists for team assignments, communication templates/schedules, milestone dates, readiness evaluation, aggregate studio payloads, manual campaign events, and unified schedule reads.
 - Campaign Studio now also exposes a campaign-scoped active-user directory search endpoint to support assignment creation from the frontend.
 - Dependency manifests now exist as `requirements.txt` and `requirements-dev.txt`.
 - Backend build version now lives in `version.json`.
@@ -123,6 +123,7 @@ Core DDL lives in:
 - `db/migration/V003__Campaign_User_Roles.sql`
 - `db/migration/V004__Campaign_Metadata.sql`
 - `db/migration/V005__Campaign_Studio_Support.sql`
+- `db/migration/V006__Campaign_Schedule.sql`
 
 ## Campaign Routes
 
@@ -145,6 +146,11 @@ Current routes under `/api/v1/campaigns`:
 - `GET /<campaign_id>/communications/schedules`
 - `POST /<campaign_id>/communications/schedules`
 - `PATCH /<campaign_id>/communications/schedules/<schedule_id>`
+- `GET /<campaign_id>/schedule`
+- `GET /<campaign_id>/events`
+- `POST /<campaign_id>/events`
+- `PATCH /<campaign_id>/events/<event_id>`
+- `DELETE /<campaign_id>/events/<event_id>`
 - `GET /<campaign_id>/milestones`
 - `PUT /<campaign_id>/milestones`
 - `GET /<campaign_id>/readiness`
@@ -156,9 +162,12 @@ Current behavior:
 - detail, access, and summary require campaign visibility via RBAC
 - update requires the `campaign.admin` capability
 - directory-user search requires the `campaign.admin` capability and returns active users plus current/inactive role context for that campaign
+- unified schedule reads require `campaign.view`
+- manual schedule event CRUD requires `campaign.admin`
 - campaign metadata now includes `description`
 - multiple campaigns per year are allowed
 - Campaign Studio aggregate and section endpoints now power team, communications, milestone, and readiness cards in the frontend studio shell
+- schedule APIs now unify manual events with milestone-derived and communication-derived items for the upcoming Studio `Schedule` section
 
 ## Local Commands
 

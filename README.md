@@ -4,7 +4,7 @@ Blessing Tree is a split frontend/backend application for managing a church gift
 
 ## Current Status
 
-- `blessing-tree-api/` is a Flask API with authentication, SQLAlchemy models, MySQL migrations, Celery wiring, Valkey-backed audit logging, the RBAC foundation, and Campaign Studio backend APIs for assignments, communications, milestones, and readiness.
+- `blessing-tree-api/` is a Flask API with authentication, SQLAlchemy models, MySQL migrations, Celery wiring, Valkey-backed audit logging, the RBAC foundation, and Campaign Studio backend APIs for assignments, communications, milestones, schedule events, and readiness.
 - `blessing-tree-ui/` is a React 19 + TypeScript + Vite frontend with a protected app shell and placeholder pages for dashboard, families, donations, reports, and admin.
 - `files/` is legacy/reference material and is not part of the active application surface. Ignore it for normal development work.
 
@@ -21,6 +21,7 @@ Blessing Tree is a split frontend/backend application for managing a church gift
 - The Team section in Campaign Studio can now search active users and create campaign assignments without raw user IDs.
 - The frontend now also has campaign admin create/update UI on top of the existing campaign backend routes.
 - The frontend now has a Vitest + Testing Library harness, and automated frontend tests are required for new UI behavior.
+- The backend now also supports manual campaign events and unified schedule reads for the next Campaign Studio `Schedule` phase.
 - The backend now has checked-in dependency manifests, an `.env.example`, the RBAC foundation layer, reusable RBAC enforcement helpers, and Campaign Studio backend support, but the broader app is still in stabilization rather than feature delivery.
 
 ## Project Layout

@@ -5,6 +5,24 @@ COMMUNICATION_AUDIENCES = frozenset(
 )
 COMMUNICATION_CHANNELS = frozenset({"EMAIL"})
 COMMUNICATION_SCHEDULE_STATUSES = frozenset({"DRAFT", "SCHEDULED", "DISABLED"})
+CAMPAIGN_EVENT_TYPES = frozenset(
+    {
+        "GENERAL",
+        "VOLUNTEER",
+        "SPONSOR",
+        "DONATION",
+        "RECIPIENT",
+        "GIFT",
+        "PICKUP",
+        "COMMUNICATION",
+        "MILESTONE",
+    }
+)
+CAMPAIGN_EVENT_SOURCE_TYPES = frozenset({"manual", "milestone", "communication"})
+
+CAMPAIGN_EVENT_SOURCE_MANUAL = "manual"
+CAMPAIGN_EVENT_SOURCE_MILESTONE = "milestone"
+CAMPAIGN_EVENT_SOURCE_COMMUNICATION = "communication"
 
 MILESTONE_DEFINITIONS = {
     "registration_open": "Registration Opens",

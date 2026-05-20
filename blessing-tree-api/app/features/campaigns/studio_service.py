@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns.service import CampaignService
 from app.features.campaigns.studio_readiness import build_campaign_readiness
+from app.features.campaigns.studio_schedule_service import CampaignStudioScheduleService
 from app.features.campaigns.studio_team_service import CampaignStudioTeamService
 from app.features.campaigns.studio_validation import (
     parse_bool,
@@ -28,6 +29,7 @@ from app.models.communication_template import CommunicationTemplate
 class CampaignStudioService:
     def __init__(self, campaign_service: CampaignService | None = None) -> None:
         self.campaigns = campaign_service or CampaignService()
+        self.schedule = CampaignStudioScheduleService(self.campaigns)
         self.team = CampaignStudioTeamService(self.campaigns)
 
     def get_studio_payload(self, db: Session, user_id: str, campaign_id: str) -> dict[str, object]:
@@ -38,6 +40,7 @@ class CampaignStudioService:
         templates = self.list_templates(db)
         schedules = self.list_schedules(db, campaign_id)
         milestones = self.list_milestones(db, campaign_id)
+        schedule_items = self.schedule.list_schedule_items(db, campaign_id)
         readiness = self.get_readiness(db, campaign_id)
         return {
             "campaign": campaign,
@@ -47,6 +50,7 @@ class CampaignStudioService:
             "templates": templates,
             "schedules": schedules,
             "milestones": milestones,
+            "schedule_items": schedule_items,
             "readiness": readiness,
         }
 
