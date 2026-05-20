@@ -335,23 +335,22 @@ Contains:
 
 Team setup is a first-class campaign-building concern, not a hidden admin task.
 
-### V1 Team Model
+### Team Workspace Direction
 
-Team management should be based on campaign role assignments.
+The original role-assignment-only Team model is no longer sufficient.
 
-Initial cards/actions should support:
+Campaign Team is now further specified in:
 
-- add campaign manager
-- add coordinator
-- add volunteer
-- view assigned role bundles
+- `docs/engineering/campaign-team-design.md`
 
-Recommendation:
+Studio should treat Team as:
 
-- use role assignments first
-- defer richer volunteer profile management until later
+- a campaign roster workspace
+- optional app-access management
+- access-role management
+- team/group management
 
-That keeps V1 aligned with the RBAC work already underway.
+not just a thin assignment form.
 
 ## Communication Design
 
@@ -471,10 +470,12 @@ Additional backend support will be needed.
 
 #### Team Management
 
-- list campaign assignments
-- create campaign assignment
-- update campaign assignment
-- deactivate campaign assignment
+- member list and member detail
+- member create and update
+- team list and team create/update
+- team membership create/remove
+- member access-role assignment management
+- app-access linking and invitation flows
 
 #### Communication Templates
 
@@ -567,7 +568,7 @@ Add AI structured drafting:
 - Milestones use fixed named fields in v1.
 - AI proposes structured campaign changes and humans approve apply.
 - Mail templates should be global templates with campaign bindings.
-- Volunteers should be managed through role assignments first.
+- Team should evolve into a roster-plus-access-plus-teams workspace, not stay a role-assignment-only editor.
 
 ## Recommended Next Step
 

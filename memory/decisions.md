@@ -77,6 +77,13 @@
 - Rationale: campaign operators need one clear place to design reusable email content and another clear place to place that content on the calendar. Mixing template authoring and scheduling on the same Studio page duplicates responsibility and makes the communications surface less focused.
 - Consequence: the Communications section should present a saved-template rail, a metadata/content editing workspace, and a rendered email preview; it should support real create/update template persistence; any communication scheduling UI should remain in the schedule calendar modal and related scheduler flows instead of the template builder page; richer heading/text/image blocks should be persisted through a versioned envelope inside the current `bodyTemplate` field until the backend grows a first-class structured template schema; and small uploaded images should be embedded inline as data URLs until dedicated asset storage exists.
 
+## Campaign Team Workspace Direction
+
+- Status: active
+- Decision: redesign Campaign Studio Team around a campaign roster workspace instead of a direct app-user assignment flow. Treat campaign members, app access, fixed access roles, and user-defined teams as separate concepts. Keep access roles fixed for RBAC, but use teams for operational grouping and email targeting.
+- Rationale: the current Team flow assumes every person is an app user and overloads roles as the only grouping mechanism. That does not fit the real operating model where some campaign participants never log in, some people hold multiple responsibilities, and campaign managers need named groups such as Sponsor Callers or Pickup Weekend Team for communication and coordination.
+- Consequence: add a `campaign_member`-centered design, make app access optional, keep RBAC code-defined, add user-defined teams, and move the Team UI toward a table-plus-drawer workspace instead of a one-role-at-a-time search flow.
+
 ## Code Structure Policy
 
 - Status: active

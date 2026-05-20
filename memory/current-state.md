@@ -33,7 +33,7 @@ Last updated: 2026-05-20
   - Campaign Studio now uses a compact icon-only section rail at medium widths, and the schedule calendar/AI draft controls have responsive overflow guards for narrower layouts
   - Campaign Studio AI draft type selection now uses a compact horizontal segmented control in the rail instead of stacked mini-cards
   - Schedule destructive actions now use custom in-app confirmation UI instead of native browser dialogs
-  - Campaign Studio Team can now search active users and create campaign assignments directly from the frontend
+  - Campaign Studio Team can now search active users and create campaign assignments directly from the frontend, but that flow is now considered transitional and a roster-plus-teams redesign has been documented
   - Campaign Studio Communications now uses a template-only builder with a collapsible tool rail, tighter content editing layout, a builder-side merge-field drawer, a stronger rendered-email preview surface, a lightweight persisted block model for heading, text, and image content, and inline uploads for small embedded images such as maps; the Studio AI panel is now hidden by default and opens as a right-side drawer
   - Campaign Studio can now save milestone dates from the frontend
   - a Vitest + Testing Library harness now exists for automated frontend tests
@@ -57,6 +57,7 @@ Last updated: 2026-05-20
   - `ROADMAP.md`
   - `blessing-tree-api/README.md`
   - `blessing-tree-ui/README.md`
+  - `docs/engineering/campaign-team-design.md`
   - `docs/engineering/rbac-design.md`
   - `docs/engineering/rbac-implementation-plan.md`
   - `docs/engineering/campaign-schedule-design.md`

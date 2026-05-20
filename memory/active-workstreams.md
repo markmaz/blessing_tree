@@ -64,6 +64,7 @@ Last updated: 2026-05-20
 - Tightened the Communications builder workspace spacing and added inline upload support for small embedded images inside email templates
 - Reworked the Communications preview into a stronger rendered surface and moved merge fields into a slide-out drawer so the preview column has more room
 - Reworked Communications again so merge fields now open from the builder side, the saved-template rail behaves more like a tool rail, and the Studio AI panel opens as a hidden right drawer instead of staying permanently visible
+- Documented the Campaign Team redesign: campaign roster separate from app users, fixed access roles for RBAC, user-defined teams for operations/email targeting, and a table-plus-drawer Team workspace
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Fixed backend runtime gaps discovered during live stack verification:
@@ -76,7 +77,7 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Decide whether Studio section navigation should become route-based child navigation under campaigns
+1. Decide whether to implement the Campaign Team redesign before returning to recipient/roster domain work
 2. If we stay on the Studio track, deepen the AI schedule flow beyond heuristic prompt drafting
 3. If we return to the broader roadmap, expand the first real domain slice into recipient groups, recipients, and wishlists
 
