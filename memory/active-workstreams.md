@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Team phase 2 is implemented with `campaign_member_access_role` and member-first authorization resolution; the next step is the operational team model foundation
+- Current step: Team phase 3 is implemented with `campaign_team` and `campaign_team_member`; the next step is member/team aggregate APIs for the Team workspace rewrite
 
 ## Recently Completed
 
@@ -69,6 +69,7 @@ Last updated: 2026-05-20
 - Documented the Campaign Team implementation plan, including the incremental migration path from direct `campaign_user_role` assignments to a member-centric roster, team, and access-role model
 - Implemented Team redesign phase 1 with the `campaign_member` model, relationships, migration, backend tests, and local MySQL verification against `blessing_tree`
 - Implemented Team redesign phase 2 with the `campaign_member_access_role` model, member-first authorization resolution, backend tests, and local MySQL verification against `blessing_tree`
+- Implemented Team redesign phase 3 with `campaign_team`, `campaign_team_member`, a backend team service, backend tests, and local MySQL verification against `blessing_tree`
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Fixed backend runtime gaps discovered during live stack verification:
@@ -81,8 +82,8 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Add `campaign_team` and `campaign_team_member` as the operational grouping model
-2. Then expose member/team aggregate APIs before rewriting the Team Studio UI around the new workspace contract
+1. Expose member/team aggregate APIs before rewriting the Team Studio UI around the new workspace contract
+2. Build the Team workspace rewrite around the new member, access-role, and team model
 3. After the Team write paths move over, retire the temporary legacy `campaign_user_role` fallback in authorization resolution
 
 ## Blockers Or Ambiguities

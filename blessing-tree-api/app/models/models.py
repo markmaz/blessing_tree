@@ -20,6 +20,8 @@ from .campaign_event import CampaignEvent
 from .campaign_member import CampaignMember
 from .campaign_member_access_role import CampaignMemberAccessRole
 from .campaign_milestone import CampaignMilestone
+from .campaign_team import CampaignTeam
+from .campaign_team_member import CampaignTeamMember
 from .communication_template import CommunicationTemplate
 from .donation import Donation
 from .donation_line import DonationLine
@@ -54,6 +56,8 @@ __all__ = [
     "CampaignMember",
     "CampaignMemberAccessRole",
     "CampaignMilestone",
+    "CampaignTeam",
+    "CampaignTeamMember",
     "CommunicationTemplate",
     "Donation",
     "DonationLine",

@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from .app_user import AppUser
     from .campaign import Campaign
     from .campaign_member_access_role import CampaignMemberAccessRole
+    from .campaign_team_member import CampaignTeamMember
 
 
 class CampaignMember(Base):
@@ -58,6 +59,11 @@ class CampaignMember(Base):
     campaign: Mapped["Campaign"] = relationship(back_populates="campaign_members")
     app_user: Mapped[Optional["AppUser"]] = relationship(back_populates="campaign_members")
     access_roles: Mapped[list["CampaignMemberAccessRole"]] = relationship(
+        back_populates="campaign_member",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    team_memberships: Mapped[list["CampaignTeamMember"]] = relationship(
         back_populates="campaign_member",
         cascade="all, delete-orphan",
         passive_deletes=True,

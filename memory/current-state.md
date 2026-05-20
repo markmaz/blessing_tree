@@ -16,6 +16,7 @@ Last updated: 2026-05-20
   - RBAC foundation now exists with campaign role persistence, capability bundles, and an authorization service
   - campaign roster foundation now exists with a new `campaign_member` model and migration
   - member-centric RBAC transition now exists with a new `campaign_member_access_role` model and member-first authorization resolution
+  - operational team foundation now exists with `campaign_team`, `campaign_team_member`, and a backend team service
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
   - Campaign Studio backend support now exists for assignments, communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, and aggregate studio payloads
   - backend startup now imports the full SQLAlchemy model registry during app creation
@@ -97,6 +98,11 @@ Last updated: 2026-05-20
   - `app/models/campaign_member_access_role.py`
   - `app/models/campaign_member.py`
   - member-first authorization resolution with legacy fallback in `app/features/rbac/services/authorization_service.py`
+- Team foundation now exists:
+  - `db/migration/V009__Campaign_Teams.sql`
+  - `app/models/campaign_team.py`
+  - `app/models/campaign_team_member.py`
+  - `app/features/campaigns/team_service.py`
 - Local MySQL verification:
   - `V003__Campaign_User_Roles.sql` has been applied to the local `blessing_tree` database
   - verified columns, indexes, and foreign keys for `campaign_user_role`
@@ -134,6 +140,10 @@ Last updated: 2026-05-20
   - `V008__Campaign_Member_Access_Roles.sql` has been applied to the local `blessing_tree` database
   - verified `campaign_member_access_role`
   - verified member-role unique scope, indexes, and foreign keys
+  - `V009__Campaign_Teams.sql` has been applied to the local `blessing_tree` database
+  - verified `campaign_team`
+  - verified `campaign_team_member`
+  - verified team/team-member unique scopes, indexes, and foreign keys
 - Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
 - Frontend campaign routes now exist:
   - `/campaigns`
