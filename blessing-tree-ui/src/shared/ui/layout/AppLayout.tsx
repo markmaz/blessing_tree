@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { AppFooter } from './AppFooter';
 import { SidebarNav } from './SidebarNav';
 import { TopBar } from './TopBar';
 
@@ -79,6 +80,8 @@ export function AppLayout() {
             <Outlet />
           </div>
         </main>
+
+        <AppFooter />
       </div>
 
       <button

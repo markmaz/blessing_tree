@@ -24,6 +24,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - The communications section is now a template-only builder with a collapsible tool rail, metadata/content editing, a stronger rendered preview surface, a builder-side merge-field drawer, heading/text/image content blocks, and inline uploads for small embedded images; the Studio AI panel now opens as a hidden right drawer instead of taking permanent page width.
 - The dates section now saves campaign milestone dates through the studio.
 - A Vitest + Testing Library harness now exists for automated frontend tests.
+- The protected app shell footer now shows `QueryForge, LLC` copyright plus frontend and backend version numbers.
 - App admins can now create campaigns from the campaign library UI.
 - Campaign managers and app admins can now update campaign metadata, dates, and status from the detail page and Studio settings section.
 - Several older UI docs were delivery-era summaries and have been consolidated.

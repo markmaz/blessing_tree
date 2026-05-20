@@ -25,6 +25,7 @@ Last updated: 2026-05-20
 - Frontend:
   - React + TypeScript + Vite
   - protected shell exists
+  - the protected app shell now includes a footer with `QueryForge, LLC` copyright plus frontend/backend version display
   - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
   - dashboard is now campaign-aware and loads live summary/access data from the backend
   - Campaign Studio now has live Team, Communications, Schedule, Readiness, and Settings sections backed by the backend studio APIs
@@ -130,6 +131,8 @@ Last updated: 2026-05-20
   - `npm run lint`
   - `npm run build`
   - `npm run test`
+- A backend metadata endpoint now exists:
+  - `GET /api/v1/meta/version`
 - Live frontend verification on 2026-05-20 now includes:
   - Studio Team section rendering real assignments
   - Studio Team assignment creation now verified against the running backend through the new directory search + assignment flow

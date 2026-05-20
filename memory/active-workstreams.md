@@ -64,6 +64,7 @@ Last updated: 2026-05-20
 - Tightened the Communications builder workspace spacing and added inline upload support for small embedded images inside email templates
 - Reworked the Communications preview into a stronger rendered surface and moved merge fields into a slide-out drawer so the preview column has more room
 - Reworked Communications again so merge fields now open from the builder side, the saved-template rail behaves more like a tool rail, and the Studio AI panel opens as a hidden right drawer instead of staying permanently visible
+- Added a protected-app footer that displays `QueryForge, LLC` copyright plus live frontend/backend versions, backed by a new `/api/v1/meta/version` endpoint
 - Documented the Campaign Team redesign: campaign roster separate from app users, fixed access roles for RBAC, user-defined teams for operations/email targeting, and a table-plus-drawer Team workspace
 - Documented the Campaign Team implementation plan, including the incremental migration path from direct `campaign_user_role` assignments to a member-centric roster, team, and access-role model
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
