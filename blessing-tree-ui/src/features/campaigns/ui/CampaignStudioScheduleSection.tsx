@@ -117,7 +117,7 @@ export function CampaignStudioScheduleSection({
       <CampaignStudioSectionCard
         eyebrow="Schedule"
         title="Campaign Calendar"
-        description="Use the calendar as the primary planning tool for milestones, communications, and campaign work."
+        description="Click a date to add something new. Click any item on the calendar to edit it. Use the month and year selectors to move through the campaign plan."
       >
         <div className="campaign-studio__schedule-header">
           <div>

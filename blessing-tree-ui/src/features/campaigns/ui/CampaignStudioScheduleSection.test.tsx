@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CampaignStudioScheduleSection } from '@/features/campaigns/ui/CampaignStudioScheduleSection';
@@ -150,10 +150,9 @@ describe('CampaignStudioScheduleSection', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /registration opens, nov 15, 2026/i }));
-    expect(
-      screen.getByRole('heading', { name: /edit milestone/i })
-    ).toBeInTheDocument();
-    expect(screen.getByRole('combobox')).toHaveValue('registration_open');
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: /edit milestone/i })).toBeInTheDocument();
+    expect(within(dialog).getByDisplayValue('Registration Opens')).toBeInTheDocument();
   });
 
   it('shows read-only schedule messaging without admin capability', () => {

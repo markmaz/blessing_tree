@@ -6,6 +6,7 @@ interface CampaignStudioSectionCardProps {
   description?: string;
   children: ReactNode;
   action?: ReactNode;
+  showHeader?: boolean;
 }
 
 export function CampaignStudioSectionCard({
@@ -14,17 +15,20 @@ export function CampaignStudioSectionCard({
   description,
   children,
   action,
+  showHeader = true,
 }: CampaignStudioSectionCardProps) {
   return (
     <section className="campaign-surface-card">
-      <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
-        <div>
-          <div className="campaign-studio__card-eyebrow">{eyebrow}</div>
-          <h2 className="h5 mb-1">{title}</h2>
-          {description ? <p className="text-muted mb-0">{description}</p> : null}
+      {showHeader ? (
+        <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+          <div>
+            <div className="campaign-studio__card-eyebrow">{eyebrow}</div>
+            <h2 className="h5 mb-1">{title}</h2>
+            {description ? <p className="text-muted mb-0">{description}</p> : null}
+          </div>
+          {action}
         </div>
-        {action}
-      </div>
+      ) : null}
       {children}
     </section>
   );

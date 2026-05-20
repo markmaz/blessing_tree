@@ -15,9 +15,35 @@
 .campaign-studio__calendar-header {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 1rem;
+}
+
+.campaign-studio__calendar-period-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.campaign-studio__calendar-period-field {
+  margin: 0;
+}
+
+.campaign-studio__calendar-period-field .form-select {
+  min-width: 14rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(214, 205, 189, 0.92);
+  background: rgba(255, 251, 245, 0.98);
+  color: var(--blessing-text-dark);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 10px 18px rgba(67, 41, 18, 0.06);
+}
+
+.campaign-studio__calendar-period-field.year-field .form-select {
+  min-width: 8.5rem;
 }
 
 .campaign-studio__calendar-legend {
@@ -257,6 +283,12 @@
   .campaign-studio__modal-type-switch,
   .campaign-studio__modal-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .campaign-studio__calendar-period-picker,
+  .campaign-studio__calendar-period-field,
+  .campaign-studio__calendar-period-field .form-select {
+    width: 100%;
   }
 
   .campaign-studio__calendar-day {
