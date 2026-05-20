@@ -9,6 +9,7 @@ import { CampaignEditorForm } from '@/features/campaigns/ui/CampaignEditorForm';
 import { useCampaignOverview } from '@/features/campaigns/model/useCampaignOverview';
 import { CampaignStatusBadge } from '@/features/campaigns/ui/CampaignStatusBadge';
 import { CampaignSummaryGrid } from '@/features/campaigns/ui/CampaignSummaryGrid';
+import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 
 function metadataValue(value: string | null): string {
   return value || 'Not set';
@@ -131,9 +132,11 @@ export function CampaignDetailPage() {
             </div>
           ) : null}
           {saveMessage ? (
-            <div className="alert alert-success" role="alert">
-              {saveMessage}
-            </div>
+            <AutoDismissAlert
+              key={saveMessage}
+              message={saveMessage}
+              onDismiss={() => setSaveMessage(null)}
+            />
           ) : null}
           <CampaignEditorForm
             campaign={campaign}

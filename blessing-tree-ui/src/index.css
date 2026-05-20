@@ -11,3 +11,16 @@ body,
 body {
   margin: 0;
 }
+
+.app-auto-dismiss-alert {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
+}
+
+.app-auto-dismiss-alert.is-exiting {
+  opacity: 0;
+  transform: translateY(-0.35rem);
+}

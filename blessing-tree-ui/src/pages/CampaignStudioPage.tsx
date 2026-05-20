@@ -19,6 +19,7 @@ import { CampaignStudioTeamSection } from '@/features/campaigns/ui/CampaignStudi
 import { useCampaignStudio } from '@/features/campaigns/model/useCampaignStudio';
 import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudioSectionCard';
 import { CampaignEditorForm } from '@/features/campaigns/ui/CampaignEditorForm';
+import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 
 export function CampaignStudioPage() {
   const { campaignId = null } = useParams();
@@ -105,32 +106,18 @@ export function CampaignStudioPage() {
 
         <main className="campaign-studio__canvas" aria-label="Campaign Studio canvas">
           {saveMessage ? (
-            <div className="alert alert-success" role="alert">
-              <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <span>{saveMessage}</span>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-success"
-                  onClick={clearSaveMessage}
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
+            <AutoDismissAlert
+              key={saveMessage}
+              message={saveMessage}
+              onDismiss={clearSaveMessage}
+            />
           ) : null}
           {updateMessage ? (
-            <div className="alert alert-success" role="alert">
-              <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <span>{updateMessage}</span>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-success"
-                  onClick={() => setUpdateMessage(null)}
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
+            <AutoDismissAlert
+              key={updateMessage}
+              message={updateMessage}
+              onDismiss={() => setUpdateMessage(null)}
+            />
           ) : null}
           {updateError ? (
             <div className="alert alert-danger" role="alert">

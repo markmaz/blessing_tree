@@ -18,6 +18,7 @@ import type {
   SaveCampaignMilestoneInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import type { Campaign } from '@/features/campaigns/model/campaignTypes';
+import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 
 interface CampaignStudioAiRailProps {
   campaign: Campaign;
@@ -198,9 +199,13 @@ export function CampaignStudioAiRail({
         </div>
       ) : null}
       {draftMessage ? (
-        <div className="alert alert-success py-2 small" role="alert">
-          {draftMessage}
-        </div>
+        <AutoDismissAlert
+          key={draftMessage}
+          message={draftMessage}
+          onDismiss={() => setDraftMessage(null)}
+          className="py-2 small"
+          showDismissButton={false}
+        />
       ) : null}
 
       {draftPreview ? (
