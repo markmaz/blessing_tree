@@ -6,6 +6,7 @@ import type {
   CreateCommunicationScheduleInput,
   UpdateCommunicationScheduleInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
+import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
 
 interface CommunicationFormState {
   templateId: string;
@@ -80,10 +81,6 @@ export function CampaignStudioScheduleCommunicationEditor({
 
   const handleDelete = async () => {
     if (!editingSchedule) {
-      return;
-    }
-    const confirmed = window.confirm(`Delete "${editingSchedule.template.name}" from the calendar?`);
-    if (!confirmed) {
       return;
     }
     const didDelete = await onDeleteSchedule(editingSchedule.id);
@@ -196,14 +193,13 @@ export function CampaignStudioScheduleCommunicationEditor({
       <div className="campaign-studio__modal-actions">
         <div className="d-flex gap-2">
           {editingSchedule ? (
-            <button
-              type="button"
-              className="btn btn-outline-danger btn-sm"
-              onClick={handleDelete}
+            <InlineConfirmAction
+              buttonLabel="Delete Communication"
+              confirmLabel="Delete Communication"
+              message={`Delete "${editingSchedule.template.name}" from the calendar?`}
               disabled={isSaving}
-            >
-              Delete Communication
-            </button>
+              onConfirm={handleDelete}
+            />
           ) : null}
         </div>
         <div className="d-flex gap-2">

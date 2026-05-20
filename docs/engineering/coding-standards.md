@@ -30,6 +30,7 @@
 - Do not describe transitional UI behavior as final production design in docs.
 - Frontend behavior changes must ship with automated tests unless explicitly deferred and documented.
 - Frontend verification for code changes now includes `npm run test` in addition to lint/build.
+- Do not use native browser dialogs such as `window.confirm`, `window.alert`, or `window.prompt` in product UI. Confirmation and notice flows must use custom application UI.
 
 ## APIs And Shared Code
 

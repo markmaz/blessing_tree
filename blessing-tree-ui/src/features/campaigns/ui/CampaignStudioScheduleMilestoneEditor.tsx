@@ -5,6 +5,7 @@ import type {
   CampaignScheduleItem,
   SaveCampaignMilestoneInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
+import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
 
 interface MilestoneFormState {
   milestoneKey: string;
@@ -125,14 +126,13 @@ export function CampaignStudioScheduleMilestoneEditor({
       <div className="campaign-studio__modal-actions">
         <div className="d-flex gap-2">
           {editingMilestone ? (
-            <button
-              type="button"
-              className="btn btn-outline-danger btn-sm"
-              onClick={handleDelete}
+            <InlineConfirmAction
+              buttonLabel="Clear Milestone"
+              confirmLabel="Clear Milestone"
+              message={`Clear the date for "${editingMilestone.label}"?`}
               disabled={isSaving}
-            >
-              Clear Milestone
-            </button>
+              onConfirm={handleDelete}
+            />
           ) : null}
         </div>
         <div className="d-flex gap-2">

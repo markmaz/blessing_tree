@@ -179,4 +179,40 @@ describe('CampaignStudioScheduleSection', () => {
       screen.queryByLabelText(/add a calendar item on 2026-11-02/i)
     ).not.toBeInTheDocument();
   });
+
+  it('uses custom inline confirmation before deleting an event', async () => {
+    const user = userEvent.setup();
+    const onDeleteEvent = vi.fn().mockResolvedValue(true);
+
+    render(
+      <CampaignStudioScheduleSection
+        access={managerAccess}
+        items={scheduleItems}
+        milestones={milestones}
+        schedules={schedules}
+        templates={templates}
+        isSaving={false}
+        onSaveMilestones={vi.fn().mockResolvedValue(true)}
+        onCreateEvent={vi.fn().mockResolvedValue(true)}
+        onUpdateEvent={vi.fn().mockResolvedValue(true)}
+        onDeleteEvent={onDeleteEvent}
+        onCreateSchedule={vi.fn().mockResolvedValue(true)}
+        onUpdateSchedule={vi.fn().mockResolvedValue(true)}
+        onDeleteSchedule={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: /volunteer orientation, nov 1, 2026, 9:00 am - 11:00 am/i })
+    );
+
+    const dialog = screen.getByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: /^delete event$/i }));
+    expect(
+      within(dialog).getByText(/delete "volunteer orientation" from the calendar\?/i)
+    ).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', { name: /^delete event$/i }));
+    expect(onDeleteEvent).toHaveBeenCalledWith('manual-event-1');
+  });
 });

@@ -274,6 +274,15 @@
   margin-top: 0.5rem;
 }
 
+.campaign-studio__inline-confirm {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgba(214, 205, 189, 0.92);
+  border-radius: 0.9rem;
+  background: rgba(255, 248, 245, 0.96);
+}
+
 .campaign-studio__ai-inline-stats {
   margin-bottom: 1rem;
 }

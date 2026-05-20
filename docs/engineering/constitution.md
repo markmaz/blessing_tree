@@ -14,6 +14,7 @@
 - Bump frontend and backend version files for code changes, but not for docs-only changes.
 - Use snake_case on the backend and camelCase on the frontend, with normal React component PascalCase conventions.
 - Backend implementation should move toward feature-driven organization rather than global route/service dumping grounds.
+- Do not use native browser dialogs in the product UI. All confirmations and notices must use custom in-app UI.
 - Ship migrations with the schema changes they belong to.
 - Apply and verify backend schema migrations against the local MySQL `blessing_tree` database when local DB access is available.
 - Backend authorization is authoritative; frontend access gating is advisory only.
