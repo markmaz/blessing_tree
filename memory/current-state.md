@@ -15,6 +15,7 @@ Last updated: 2026-05-20
   - domain models and migrations exist
   - RBAC foundation now exists with campaign role persistence, capability bundles, and an authorization service
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
+  - Campaign Studio backend support now exists for assignments, communication templates, communication schedules, milestone dates, readiness output, and aggregate studio payloads
   - backend startup now imports the full SQLAlchemy model registry during app creation
   - local auth compatibility now depends on `bcrypt 4.1.3` with `passlib 1.7.4`
   - runtime and dev dependency manifests now exist
@@ -84,17 +85,35 @@ Last updated: 2026-05-20
   - `app/features/campaigns/serializers.py`
   - `app/features/campaigns/validation.py`
   - `app/features/campaigns/constants.py`
+- Campaign Studio backend support now exists:
+  - `db/migration/V005__Campaign_Studio_Support.sql`
+  - `app/features/campaigns/studio_api.py`
+  - `app/features/campaigns/studio_service.py`
+  - `app/features/campaigns/studio_serializers.py`
+  - `app/features/campaigns/studio_validation.py`
+  - `app/features/campaigns/studio_constants.py`
 - Local MySQL verification:
   - `V004__Campaign_Metadata.sql` has been applied to the local `blessing_tree` database
   - verified `campaign.description`
   - verified unique year constraint removal
   - verified non-unique `idx_campaign_year`
+  - `V005__Campaign_Studio_Support.sql` has been applied to the local `blessing_tree` database
+  - verified `communication_template`
+  - verified `campaign_milestone`
+  - verified `campaign_communication_schedule`
 - Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
 - Frontend campaign routes now exist:
   - `/campaigns`
   - `/campaigns/:campaignId`
   - `/campaigns/:campaignId/studio`
   - selected campaign is persisted in local storage per user
+- Live stack verification on 2026-05-20 now also includes:
+  - `GET /api/v1/campaigns/<campaign_id>/studio`
+  - `GET /api/v1/campaigns/<campaign_id>/assignments`
+  - `GET /api/v1/campaigns/<campaign_id>/communications/templates`
+  - `GET /api/v1/campaigns/<campaign_id>/communications/schedules`
+  - `GET /api/v1/campaigns/<campaign_id>/milestones`
+  - `GET /api/v1/campaigns/<campaign_id>/readiness`
 
 ## Knowledge Graph
 

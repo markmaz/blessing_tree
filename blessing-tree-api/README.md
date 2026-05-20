@@ -17,6 +17,7 @@ The backend is a Flask application built around:
 - The broader domain model exists in SQLAlchemy and SQL migration form.
 - The initial RBAC foundation now exists as a feature package with campaign role persistence, a capability matrix, an authorization service, and reusable enforcement decorators.
 - The first campaign business routes now exist as a feature package with protected list, detail, access, summary, create, and update endpoints.
+- Campaign Studio backend support now exists for team assignments, communication templates/schedules, milestone dates, readiness evaluation, and aggregate studio payloads.
 - Dependency manifests now exist as `requirements.txt` and `requirements-dev.txt`.
 - Backend build version now lives in `version.json`.
 
@@ -120,6 +121,7 @@ Core DDL lives in:
 - `db/migration/V002__Auth_Identity.sql`
 - `db/migration/V003__Campaign_User_Roles.sql`
 - `db/migration/V004__Campaign_Metadata.sql`
+- `db/migration/V005__Campaign_Studio_Support.sql`
 
 ## Campaign Routes
 
@@ -131,6 +133,19 @@ Current routes under `/api/v1/campaigns`:
 - `PATCH /<campaign_id>`
 - `GET /<campaign_id>/access`
 - `GET /<campaign_id>/summary`
+- `GET /<campaign_id>/studio`
+- `GET /<campaign_id>/assignments`
+- `POST /<campaign_id>/assignments`
+- `PATCH /<campaign_id>/assignments/<assignment_id>`
+- `GET /<campaign_id>/communications/templates`
+- `POST /<campaign_id>/communications/templates`
+- `PATCH /<campaign_id>/communications/templates/<template_id>`
+- `GET /<campaign_id>/communications/schedules`
+- `POST /<campaign_id>/communications/schedules`
+- `PATCH /<campaign_id>/communications/schedules/<schedule_id>`
+- `GET /<campaign_id>/milestones`
+- `PUT /<campaign_id>/milestones`
+- `GET /<campaign_id>/readiness`
 
 Current behavior:
 
@@ -140,6 +155,7 @@ Current behavior:
 - update requires the `campaign.admin` capability
 - campaign metadata now includes `description`
 - multiple campaigns per year are allowed
+- Campaign Studio aggregate and section endpoints now power team, communications, milestone, and readiness cards in the frontend studio shell
 
 ## Local Commands
 

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from flask import g, request
-from flask_restx import Namespace, Resource
+from flask_restx import Resource
 
 from app.db import SessionLocal
 from app.decorators.security import token_required
+from app.features.campaigns import campaign_ns
 from app.features.campaigns.serializers import (
     serialize_campaign,
     serialize_campaign_access,
@@ -13,8 +14,6 @@ from app.features.campaigns.serializers import (
 )
 from app.features.campaigns.service import CampaignService
 from app.features.rbac.decorators import require_app_admin, require_campaign_capability
-
-campaign_ns = Namespace("campaigns", description="Campaign operations")
 
 _campaign_service = CampaignService()
 

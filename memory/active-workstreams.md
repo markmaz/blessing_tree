@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Campaign Studio phase 1 shell implemented; next step is team/communications/milestone backend support and deeper studio wiring
+- Current step: Campaign Studio backend support is implemented; next step is deeper frontend wiring for Team, Communications, Dates, and Readiness
 
 ## Recently Completed
 
@@ -29,6 +29,9 @@ Last updated: 2026-05-20
 - Exposed the first campaign APIs in the frontend through a campaign provider, campaign switcher, campaign list/detail routes, and a campaign-aware dashboard
 - Documented Campaign Studio as a concrete card-based campaign-building surface with a persistent AI builder rail, team/communications/milestone/readiness cards, and a `/campaigns/:campaignId/studio` primary route
 - Implemented Campaign Studio phase 1 with the primary studio route, left-rail section navigation, overview cards driven by existing campaign/access/summary data, placeholder section canvases, and a non-destructive AI builder rail
+- Implemented Campaign Studio backend support with protected assignment, communication template/schedule, milestone, readiness, and aggregate studio endpoints
+- Applied and verified the Campaign Studio support migration against the local MySQL `blessing_tree` database
+- Live-smoke-tested the new Campaign Studio backend routes against the running Blessing Tree API
 - Fixed backend runtime gaps discovered during live stack verification:
   - removed the RBAC package import cycle at app startup
   - loaded the full SQLAlchemy model registry during app creation
@@ -39,9 +42,9 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Add backend APIs for campaign assignments, communication templates/schedules, milestone fields, and readiness output
-2. Wire the Team, Communications, Dates, and Readiness studio sections to those APIs
-3. Add create/update campaign UI for admins on top of the existing backend routes
+1. Wire the Team, Communications, Dates, and Readiness studio sections to the new backend APIs
+2. Add create/update campaign UI for admins on top of the existing backend routes
+3. Expand the next real domain slice into recipient groups, recipients, and wishlists
 
 ## Blockers Or Ambiguities
 

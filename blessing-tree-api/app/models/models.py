@@ -15,6 +15,9 @@ from .app_user import AppUser
 from .auth import AuthIdentity
 from .base import Base
 from .campaign import Campaign
+from .campaign_communication_schedule import CampaignCommunicationSchedule
+from .campaign_milestone import CampaignMilestone
+from .communication_template import CommunicationTemplate
 from .donation import Donation
 from .donation_line import DonationLine
 from .fulfillment import Fulfillment
@@ -43,6 +46,9 @@ __all__ = [
     "Base",
     "CampaignUserRole",
     "Campaign",
+    "CampaignCommunicationSchedule",
+    "CampaignMilestone",
+    "CommunicationTemplate",
     "Donation",
     "DonationLine",
     "Fulfillment",

@@ -11,6 +11,8 @@ from .base import Base
 from .uuid_bin import UUIDBin
 
 if TYPE_CHECKING:
+    from .campaign_communication_schedule import CampaignCommunicationSchedule
+    from .campaign_milestone import CampaignMilestone
     from app.features.rbac.models.campaign_user_role import CampaignUserRole
     from .donation import Donation
     from .label_print_job import LabelPrintJob
@@ -94,6 +96,16 @@ class Campaign(Base):
         passive_deletes=True,
     )
     sponsor_reminders: Mapped[List["SponsorReminder"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    milestones: Mapped[List["CampaignMilestone"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    communication_schedules: Mapped[List["CampaignCommunicationSchedule"]] = relationship(
         back_populates="campaign",
         cascade="all, delete-orphan",
         passive_deletes=True,

@@ -76,8 +76,8 @@ Goal: make the project safer to evolve.
 
 If momentum matters, start here:
 
-1. Apply RBAC to the first campaign-scoped APIs.
-2. Implement campaign/recipient/wishlist read APIs.
-3. Add frontend capability consumption for the first protected screens.
+1. Wire the Campaign Studio Team, Communications, Dates, and Readiness sections to the new backend APIs.
+2. Add create/update campaign UI for admins on top of the current campaign routes.
+3. Expand the next real domain slice into recipient groups, recipients, and wishlists.
 
 That sequence clears the largest current ambiguity and opens the path to real application work.
