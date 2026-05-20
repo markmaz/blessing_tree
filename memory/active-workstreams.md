@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: the Team redesign now has both a concrete design and a concrete implementation plan; the next step is Phase 1 backend roster foundation with `campaign_member`
+- Current step: Team phase 1 is implemented with the `campaign_member` backend foundation; the next step is the member-access-role transition layer
 
 ## Recently Completed
 
@@ -67,6 +67,7 @@ Last updated: 2026-05-20
 - Added a protected-app footer that displays `QueryForge, LLC` copyright plus live frontend/backend versions, backed by a new `/api/v1/meta/version` endpoint
 - Documented the Campaign Team redesign: campaign roster separate from app users, fixed access roles for RBAC, user-defined teams for operations/email targeting, and a table-plus-drawer Team workspace
 - Documented the Campaign Team implementation plan, including the incremental migration path from direct `campaign_user_role` assignments to a member-centric roster, team, and access-role model
+- Implemented Team redesign phase 1 with the `campaign_member` model, relationships, migration, backend tests, and local MySQL verification against `blessing_tree`
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Fixed backend runtime gaps discovered during live stack verification:
@@ -79,9 +80,9 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Implement Campaign Team phase 1 by adding the `campaign_member` backend foundation
-2. After `campaign_member`, add the member-access-role transition layer so RBAC can move off direct `campaign_user_role` reads safely
-3. Then add `campaign_team` and `campaign_team_member` before rewriting the Team Studio UI around the new aggregate APIs
+1. Add the member-access-role transition layer so RBAC can move off direct `campaign_user_role` reads safely
+2. Add `campaign_team` and `campaign_team_member` as the operational grouping model
+3. Then expose member/team aggregate APIs before rewriting the Team Studio UI around the new workspace contract
 
 ## Blockers Or Ambiguities
 

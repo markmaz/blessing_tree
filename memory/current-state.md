@@ -14,6 +14,7 @@ Last updated: 2026-05-20
   - auth routes live
   - domain models and migrations exist
   - RBAC foundation now exists with campaign role persistence, capability bundles, and an authorization service
+  - campaign roster foundation now exists with a new `campaign_member` model and migration
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
   - Campaign Studio backend support now exists for assignments, communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, and aggregate studio payloads
   - backend startup now imports the full SQLAlchemy model registry during app creation
@@ -121,6 +122,9 @@ Last updated: 2026-05-20
   - `V006__Campaign_Schedule.sql` has been applied to the local `blessing_tree` database
   - verified `campaign_event`
   - verified schedule indexes and foreign keys
+  - `V007__Campaign_Members.sql` has been applied to the local `blessing_tree` database
+  - verified `campaign_member`
+  - verified campaign/app-user unique scope, indexes, and foreign keys
 - Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
 - Frontend campaign routes now exist:
   - `/campaigns`
@@ -133,6 +137,8 @@ Last updated: 2026-05-20
   - `npm run test`
 - A backend metadata endpoint now exists:
   - `GET /api/v1/meta/version`
+- Local backend env note:
+  - the ignored local `blessing-tree-api/.env` is still pointed at `query_forge`, so local Blessing Tree migration verification currently has to target the `blessing_tree` database explicitly
 - Live frontend verification on 2026-05-20 now includes:
   - Studio Team section rendering real assignments
   - Studio Team assignment creation now verified against the running backend through the new directory search + assignment flow
