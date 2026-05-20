@@ -1,0 +1,22 @@
+# Constitution
+
+## Non-Negotiable Rules
+
+- Read the memory system at session start and keep it updated.
+- Treat `README.md`, `ROADMAP.md`, and the backend/frontend READMEs as canonical docs.
+- Ignore `files/` unless the user explicitly says otherwise.
+- Do not document fake behavior as if it were production behavior.
+- Prefer code and docs that reflect the current system over aspirational or delivery-era summaries.
+
+## Invariants
+
+- Backend is a Flask application under `blessing-tree-api/`.
+- Frontend is a React + TypeScript + Vite application under `blessing-tree-ui/`.
+- Auth currently centers on `/api/v1/auth/*` routes and frontend auth state in `src/features/auth/model/authContext.tsx`.
+- Environment-driven configuration is loaded from `blessing-tree-api/app/config/__init__.py`.
+
+## Definition Of Done
+
+- Code changes are reflected in the canonical docs when relevant.
+- Project memory is updated when priorities, rules, or notable findings change.
+- Verification is run when practical, or the lack of verification is stated explicitly.

@@ -1,0 +1,43 @@
+# Decisions
+
+## Ignore `files/`
+
+- Status: active
+- Decision: `files/` is out of scope for active project work.
+- Rationale: user explicitly said it can be ignored completely.
+- Consequence: do not plan roadmap or implementation work around those artifacts unless the user reintroduces them.
+
+## Canonical Documentation Set
+
+- Status: active
+- Decision: keep a small canonical doc set and replace stale UI delivery docs with redirect stubs.
+- Rationale: the earlier docs were duplicated and no longer reflected the real codebase.
+- Consequence: update root/backend/frontend READMEs and roadmap instead of reviving the old summary files.
+
+## Split Memory System
+
+- Status: active
+- Decision: Blessing Tree now follows the same split-memory pattern used in `../query_forge`.
+- Rationale: durable guidance and operational memory should not live in one growing file.
+- Consequence: keep `memory.md` as the index and use `docs/engineering/` plus `memory/` for future updates.
+
+## Auth Description Policy
+
+- Status: active
+- Decision: keep local login as a direct one-step flow unless a real second-factor requirement is introduced.
+- Rationale: the fake OTP bridge has been removed and the backend still does not expose a real OTP verification API.
+- Consequence: future docs and planning should treat second-factor auth as a separate future feature, not as current behavior.
+
+## Query Forge Reuse Policy
+
+- Status: active
+- Decision: reuse Query Forge patterns selectively for backend auth, setup, and configuration, but do not copy unrelated runtime features wholesale.
+- Rationale: the two projects share the same Flask/JWT/refresh-cookie/Valkey setup shape, while Query Forge also carries broader product concerns that Blessing Tree does not need.
+- Consequence: prefer Query Forge-style env naming, bootstrap conventions, and cookie/auth handling where they fit, while keeping Blessing Tree's config surface intentionally smaller.
+
+## RBAC Strategy
+
+- Status: active
+- Decision: use minimal global app roles, campaign-scoped role assignments, and code-defined capability bundles instead of a fully dynamic RBAC framework.
+- Rationale: Blessing Tree needs feature-level authorization soon, but the likely operational roles are stable enough that dynamic permission administration would add more complexity than value right now.
+- Consequence: implement campaign RBAC and explicit capability checks now; defer admin-defined custom roles and database-managed permission graphs until there is real product pressure for them.

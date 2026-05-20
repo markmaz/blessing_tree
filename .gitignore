@@ -1,0 +1,67 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+default_log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Backend-specific
+blessing-tree-api/.env
+blessing-tree-api/.coverage
+blessing-tree-api/htmlcov/
+blessing-tree-api/.pytest_cache/
+blessing-tree-api/.ruff_cache/
+blessing-tree-api/.hypothesis/
+blessing-tree-api/.venv/
+blessing-tree-api/default_log
+
+# Frontend
+node_modules/
+dist/
+.vite/
+coverage/
+
+# Frontend-specific
+blessing-tree-ui/node_modules/
+blessing-tree-ui/dist/
+blessing-tree-ui/.vite/
+blessing-tree-ui/coverage/
+
+# Build / cache artifacts
+.cache/
+tmp/
+temp/
+
+# Generated project artifacts
+graphify-out/
+.graphify_chunks.json
+.graphify_python
+
+# Legacy reference material kept out of active repo scope
+files/

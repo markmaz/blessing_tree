@@ -1,0 +1,7 @@
+This file has been consolidated.
+
+Current canonical docs:
+- /Users/mmaslak/Local Documents/projects/blessing_tree/README.md
+- /Users/mmaslak/Local Documents/projects/blessing_tree/blessing-tree-ui/README.md
+- /Users/mmaslak/Local Documents/projects/blessing_tree/blessing-tree-api/README.md
+- /Users/mmaslak/Local Documents/projects/blessing_tree/ROADMAP.md
