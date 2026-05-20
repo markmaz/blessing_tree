@@ -30,6 +30,11 @@ This design intentionally uses:
 - path-first campaign scope in APIs
 - archival instead of normal deletes
 
+Related design:
+
+- `docs/engineering/campaign-studio-design.md`
+- `docs/engineering/campaign-schedule-design.md`
+
 ## Locked Decisions
 
 ### Campaign Cardinality

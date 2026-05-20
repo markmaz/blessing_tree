@@ -54,6 +54,7 @@ Last updated: 2026-05-20
   - `blessing-tree-ui/README.md`
   - `docs/engineering/rbac-design.md`
   - `docs/engineering/rbac-implementation-plan.md`
+  - `docs/engineering/campaign-schedule-design.md`
 
 ## Auth Reality
 

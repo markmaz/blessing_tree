@@ -122,7 +122,7 @@ Recommended sections:
 - Overview
 - Team
 - Communications
-- Dates
+- Schedule
 - Readiness
 - Settings
 
@@ -135,6 +135,10 @@ Future sections may expand into:
 - Gifts
 - Pickups
 - Reports
+
+Schedule is now further specified in:
+
+- `docs/engineering/campaign-schedule-design.md`
 
 ### Center Work Surface
 

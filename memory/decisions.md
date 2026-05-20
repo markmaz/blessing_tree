@@ -63,6 +63,13 @@
 - Rationale: the project needs a visible “build the campaign” cockpit rather than another settings form, and the Query Forge Workflow Studio interaction model is a strong reference for keeping overview, detail, and AI assistance in one operator-facing workspace.
 - Consequence: the next frontend step should be the Campaign Studio shell and overview cards, while the next backend steps should add campaign assignment, communication template binding, schedule, milestone, and readiness APIs to support that shell.
 
+## Campaign Schedule Direction
+
+- Status: active
+- Decision: replace the current Studio `Dates` section with a first-class `Schedule` section, add a real `campaign_event` backend model now, and unify milestone-derived events, communication-derived events, and manual campaign planning events into one schedule surface with `Timeline`, `Calendar`, and `Milestones` views.
+- Rationale: campaign managers already need a real planning surface for orientation, intake, sponsor, pickup, and other operator-defined events, so deferring manual event support would force an immediate redesign after the next milestone-only pass.
+- Consequence: the next schedule implementation should add a `campaign_event` migration/model/API, keep milestones and communications as their own source-of-truth records, expose a unified schedule read model for Studio, and route edits for derived items back to their source forms instead of duplicating editable state.
+
 ## Code Structure Policy
 
 - Status: active
