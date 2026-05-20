@@ -7,6 +7,14 @@
 - Ignore `files/` unless the user explicitly says otherwise.
 - Do not document fake behavior as if it were production behavior.
 - Prefer code and docs that reflect the current system over aspirational or delivery-era summaries.
+- No god files. Keep file size around 400 lines unless there is a defensible reason to exceed it.
+- Do not mix unrelated responsibilities in a single file.
+- Break code into the smallest reusable components/services/helpers that still preserve clarity.
+- Run a code review before a task is considered done.
+- Bump frontend and backend version files for code changes, but not for docs-only changes.
+- Use snake_case on the backend and camelCase on the frontend, with normal React component PascalCase conventions.
+- Backend implementation should move toward feature-driven organization rather than global route/service dumping grounds.
+- Check in completed code work after verification.
 
 ## Invariants
 
@@ -20,3 +28,4 @@
 - Code changes are reflected in the canonical docs when relevant.
 - Project memory is updated when priorities, rules, or notable findings change.
 - Verification is run when practical, or the lack of verification is stated explicitly.
+- A code review has been performed before the task is marked complete.

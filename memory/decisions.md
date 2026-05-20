@@ -41,3 +41,10 @@
 - Decision: use minimal global app roles, campaign-scoped role assignments, and code-defined capability bundles instead of a fully dynamic RBAC framework.
 - Rationale: Blessing Tree needs feature-level authorization soon, but the likely operational roles are stable enough that dynamic permission administration would add more complexity than value right now.
 - Consequence: implement campaign RBAC and explicit capability checks now; defer admin-defined custom roles and database-managed permission graphs until there is real product pressure for them.
+
+## Code Structure Policy
+
+- Status: active
+- Decision: enforce small files, single responsibility, reusable components, feature-driven backend structure, version bumps for code changes, and mandatory code review before completion.
+- Rationale: the project is still early enough to avoid structural drift, and these rules reduce the chance of god files, mixed concerns, and invisible regressions becoming normal.
+- Consequence: future implementation should split oversized files proactively, organize backend work by feature, bump version files for real code changes, and treat review plus commit as part of task completion.
