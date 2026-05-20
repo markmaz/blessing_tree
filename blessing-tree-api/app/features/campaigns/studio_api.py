@@ -127,6 +127,12 @@ class CommunicationScheduleDetailResource(Resource):
             schedule = _studio_service.update_schedule(db, campaign_id, schedule_id, payload)
         return serialize_communication_schedule(schedule)
 
+    @require_campaign_capability("campaign.admin")
+    def delete(self, campaign_id: str, schedule_id: str):
+        with SessionLocal() as db:
+            _studio_service.delete_schedule(db, campaign_id, schedule_id)
+        return "", 204
+
 
 @campaign_ns.route("/<string:campaign_id>/schedule")
 class CampaignScheduleResource(Resource):

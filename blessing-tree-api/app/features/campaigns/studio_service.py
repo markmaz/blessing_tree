@@ -161,6 +161,11 @@ class CampaignStudioService:
         db.commit()
         return self._get_schedule(db, campaign_id, schedule_id)
 
+    def delete_schedule(self, db: Session, campaign_id: str, schedule_id: str) -> None:
+        schedule = self._get_schedule(db, campaign_id, schedule_id)
+        db.delete(schedule)
+        db.commit()
+
     def list_milestones(self, db: Session, campaign_id: str) -> list[CampaignMilestone]:
         return (
             db.query(CampaignMilestone)

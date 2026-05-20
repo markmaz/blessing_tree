@@ -7,8 +7,10 @@ import {
 import {
   createCommunicationSchedule,
   createCommunicationTemplate,
+  deleteCommunicationSchedule,
   getCampaignStudio,
   saveCampaignMilestones,
+  updateCommunicationSchedule,
 } from '@/features/campaigns/api/campaignStudioApi';
 import { createCampaignAssignment } from '@/features/campaigns/api/campaignStudioTeamApi';
 import type {
@@ -18,6 +20,7 @@ import type {
   CreateCommunicationScheduleInput,
   CreateCommunicationTemplateInput,
   SaveCampaignMilestoneInput,
+  UpdateCommunicationScheduleInput,
   UpdateCampaignEventInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
 
@@ -202,6 +205,33 @@ export function useCampaignStudio(campaignId: string | null) {
     );
   };
 
+  const patchCommunicationSchedule = async (
+    scheduleId: string,
+    input: UpdateCommunicationScheduleInput
+  ) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await updateCommunicationSchedule(campaignId, scheduleId, input);
+      },
+      'Communication schedule updated.'
+    );
+  };
+
+  const removeCommunicationSchedule = async (scheduleId: string) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await deleteCommunicationSchedule(campaignId, scheduleId);
+      },
+      'Communication schedule removed.'
+    );
+  };
+
   const clearSaveMessage = () => {
     setState((currentState) => ({
       ...currentState,
@@ -248,6 +278,8 @@ export function useCampaignStudio(campaignId: string | null) {
     addAssignment,
     addCommunicationTemplate,
     addCommunicationSchedule,
+    patchCommunicationSchedule,
+    removeCommunicationSchedule,
     persistMilestones,
     addScheduleEvent,
     updateScheduleEvent,

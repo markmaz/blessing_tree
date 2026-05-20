@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: schedule phase 3 is implemented; next step depends on whether we continue deeper Studio AI work or return to the roadmap’s first operating domain slice
+- Current step: the calendar-first schedule refactor is implemented; next step depends on whether we continue deeper Studio navigation/AI work or return to the roadmap’s first operating domain slice
 
 ## Recently Completed
 
@@ -54,6 +54,10 @@ Last updated: 2026-05-20
 - Added frontend automated test coverage for the new Schedule section behavior
 - Connected schedule quality into backend readiness with warnings for missing manual planning events and missing milestone-linked communication timing
 - Connected the Studio AI rail to schedule readiness so schedule prompts are now contextual instead of generic
+- Reworked Studio Schedule into a calendar-first planner with direct date-click and item-click modal editing
+- Added shared modal editing for manual events, milestones, and communication schedules from the calendar surface
+- Added a prompt-driven AI draft/apply path for schedule events, milestones, and communications
+- Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
 - Fixed backend runtime gaps discovered during live stack verification:
   - removed the RBAC package import cycle at app startup
   - loaded the full SQLAlchemy model registry during app creation
@@ -64,9 +68,9 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. If we stay on the Studio track, add structured draft/apply endpoints for AI-generated schedule proposals
-2. If we return to the broader roadmap, expand the first real domain slice into recipient groups, recipients, and wishlists
-3. Add deeper edit/deactivate flows for campaign team and communications records
+1. Decide whether Studio section navigation should become route-based child navigation under campaigns
+2. If we stay on the Studio track, deepen the AI schedule flow beyond heuristic prompt drafting
+3. If we return to the broader roadmap, expand the first real domain slice into recipient groups, recipients, and wishlists
 
 ## Blockers Or Ambiguities
 

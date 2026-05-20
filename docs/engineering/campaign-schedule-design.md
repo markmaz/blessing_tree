@@ -22,11 +22,9 @@ This design makes `Schedule` a first-class Campaign Studio section and introduce
 
 Campaign Studio should replace the current `Dates` section with `Schedule`.
 
-The `Schedule` section should provide three coordinated views:
+The `Schedule` section should use a calendar-first interaction model.
 
-- `Timeline`
-- `Calendar`
-- `Milestones`
+The month calendar is the primary planning surface.
 
 The first implementation should also add a new `campaign_event` model so campaign managers can plan manual events now rather than waiting for a later phase.
 
@@ -66,7 +64,9 @@ The schedule should display them together with manual events so the campaign pla
 
 Manual events should be directly editable in the schedule.
 
-Milestone-derived and communication-derived events should be visible there, but edits to them should route back to their source forms rather than duplicating state.
+Milestones and communications should also be editable from the shared calendar
+modal, but those edits should still persist through their own source records
+rather than a duplicated generic event layer.
 
 ### Campaign Manager Oriented
 
@@ -91,46 +91,18 @@ Recommended left-rail order:
 
 ### Section Layout
 
-The `Schedule` section should include a top-level tab or segmented control:
+The `Schedule` section should render:
 
-- `Timeline`
-- `Calendar`
-- `Milestones`
+- summary header with next-up context and counts
+- one navigable month calendar
+- a shared modal for create/edit/delete actions
 
-Recommended default tab:
+Do not keep top-level `Timeline`, `Calendar`, and `Milestones` links in the
+header.
 
-- `Timeline`
+### Calendar Surface
 
-### Timeline View
-
-This is the primary planning surface.
-
-It should show events in chronological order with:
-
-- title
-- date or date range
-- event type
-- source badge
-- short notes if present
-
-Recommended event/source badges:
-
-- `Milestone`
-- `Communication`
-- `Manual`
-
-The timeline should make it easy to spot:
-
-- missing milestone coverage
-- clustered deadlines
-- upcoming tasks
-- long gaps
-
-### Calendar View
-
-This is the spatial date-planning surface.
-
-V1 should use a month-style calendar.
+The month calendar is the main operator tool.
 
 It should show:
 
@@ -138,20 +110,32 @@ It should show:
 - scheduled communications
 - manual events
 
-Clicking an event should open lightweight detail in place.
+It should visually separate those sources with distinct colors and icons.
 
-Manual events should expose edit/delete actions.
+Clicking a date should open a modal for adding:
 
-Derived events should expose an action like:
+- manual event
+- milestone
+- communication
 
-- `Edit milestone`
-- `Edit communication`
+Clicking an existing item should open the same modal in edit mode.
 
-### Milestones View
+Expected edit behavior:
 
-This remains the structured edit surface for named campaign milestones.
+- manual events: edit and delete directly
+- milestones: edit or clear the milestone date
+- communications: edit and delete the communication schedule
 
-The existing milestone form can stay as the authoritative edit UI in v1.
+### AI Builder
+
+The Schedule section should support prompt-driven adds from the Studio AI rail.
+
+V1 expectation:
+
+- AI rail drafts a structured calendar action from a prompt
+- user reviews the preview
+- apply writes the resulting event, milestone, or communication through the
+  existing save paths
 
 ## Data Model
 
@@ -235,7 +219,7 @@ That avoids synchronization problems and duplicated truth.
 
 Only manual events are stored in `campaign_event`.
 
-Only manual events are editable through the schedule event CRUD endpoints.
+Only manual events are editable through the event CRUD endpoints.
 
 ## Persistence Decision
 
@@ -414,10 +398,11 @@ Behavior:
 
 Derived schedule items should not be editable through event endpoints.
 
-Instead:
+Instead, the shared calendar modal should persist them through their native save
+paths:
 
-- milestone-derived items route back to milestone editing
-- communication-derived items route back to communication editing
+- milestone items -> milestone save flow
+- communication items -> communication schedule save flow
 
 ## Frontend Design
 
@@ -432,39 +417,21 @@ Rename:
 Add a unified schedule data shape for:
 
 - `items`
-- active schedule view
-- selected event
-
-### Timeline Rendering
-
-Recommended v1 rendering:
-
-- vertical grouped list by month
-- event rows/cards with source badges
-- highlight the next upcoming event
+- active month
+- modal editor state
 
 ### Calendar Rendering
 
 Recommended v1 rendering:
 
 - month grid
-- compact event chips per day
-- overflow indicator when a day has many entries
-
-### Milestone Editor
-
-Reuse the current milestone form under the `Milestones` tab.
-
-### Manual Event Creation UI
-
-V1 should support a simple inline or modal form with:
-
-- title
-- type
-- start date/time
-- end date/time
-- all-day
-- notes
+- color-coded event chips per day
+- direct add button on each in-month date cell
+- item click to open edit modal
+- one shared modal that can create/edit:
+  - event
+  - milestone
+  - communication
 
 ## Readiness Interaction
 
@@ -480,7 +447,7 @@ Readiness can initially continue using milestone/schedule data, but later may al
 
 ## AI Interaction
 
-The AI rail should eventually be able to suggest schedule entries such as:
+The AI rail should be able to suggest and apply schedule entries such as:
 
 - “Add volunteer orientation two weeks before gift intake”
 - “Place sponsor reminder three days before outreach start”
@@ -500,15 +467,14 @@ AI-generated schedule suggestions should remain draft proposals until approved b
 
 ### Phase 2
 
-- rename Studio `Dates` section to `Schedule`
-- add `Timeline | Calendar | Milestones` tabs
-- render unified schedule from milestone + communication + manual event data
-- keep current milestone editor as the `Milestones` tab
+- render the unified schedule in Studio
+- make the calendar the primary planning surface
+- add shared modal editing for events, milestones, and communications
 
 ### Phase 3
 
-- add manual event create/edit/delete UI
 - connect schedule items to readiness and AI suggestions
+- add prompt-driven draft/apply support from the Studio AI rail
 
 ## Non-Goals For V1
 
@@ -529,6 +495,6 @@ That means:
 
 - add `campaign_event` now
 - unify derived and manual schedule items in one read model
-- make `Timeline` the primary view
-- make `Calendar` the secondary visual view
-- keep `Milestones` as the structured source edit view
+- make the calendar the primary view
+- use a shared modal for all schedule edits
+- keep milestones and communications as source-specific records behind that modal

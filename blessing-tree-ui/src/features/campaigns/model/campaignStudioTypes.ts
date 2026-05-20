@@ -168,6 +168,14 @@ export interface CreateCommunicationScheduleInput {
   notes?: string | null;
 }
 
+export interface UpdateCommunicationScheduleInput {
+  templateId?: string;
+  milestoneKey?: string | null;
+  scheduledFor?: string | null;
+  status?: 'DRAFT' | 'SCHEDULED' | 'DISABLED';
+  notes?: string | null;
+}
+
 export interface SaveCampaignMilestoneInput {
   milestoneKey: string;
   label: string;

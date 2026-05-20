@@ -17,8 +17,8 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - The frontend now completes local login directly on `/login` and includes backend refresh-cookie handling.
 - The frontend now consumes the protected campaign APIs through a campaign provider, top-bar switcher, campaign list, campaign detail page, and a campaign-aware dashboard.
 - Campaign Studio now has real Team, Communications, Schedule, Readiness, and Settings sections backed by the new backend studio APIs.
-- The Schedule surface now includes `Timeline`, `Calendar`, and `Milestones` views plus manager-driven manual event planning on top of the campaign schedule APIs.
-- The Studio AI rail now adapts its prompt starters to schedule readiness gaps, and the readiness surface now includes schedule-specific warnings from the backend.
+- The Schedule surface is now calendar-first, with a navigable month view, color-coded milestones/communications/events, and modal editing directly from the calendar grid.
+- The Studio AI rail can now draft and apply new schedule events, milestones, and communication schedules from prompt input, and the readiness surface still includes schedule-specific warnings from the backend.
 - The Team section can now search the active user directory and create campaign role assignments directly from Studio.
 - The communications section can now create templates and schedules against the running backend.
 - The dates section now saves campaign milestone dates through the studio.

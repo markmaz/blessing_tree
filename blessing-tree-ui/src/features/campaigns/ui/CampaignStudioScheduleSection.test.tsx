@@ -5,6 +5,8 @@ import { CampaignStudioScheduleSection } from '@/features/campaigns/ui/CampaignS
 import type {
   CampaignMilestone,
   CampaignScheduleItem,
+  CommunicationSchedule,
+  CommunicationTemplate,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import type { CampaignAccess } from '@/features/campaigns/model/campaignTypes';
 
@@ -39,7 +41,7 @@ const scheduleItems: CampaignScheduleItem[] = [
     eventType: 'MILESTONE',
     sourceType: 'milestone',
     sourceId: 'milestone-source-1',
-    startAt: '2026-10-15T00:00:00',
+    startAt: '2026-11-15T00:00:00',
     endAt: null,
     allDay: true,
     notes: null,
@@ -53,7 +55,7 @@ const milestones: CampaignMilestone[] = [
     campaignId: 'campaign-123',
     milestoneKey: 'registration_open',
     label: 'Registration Opens',
-    occursOn: '2026-10-15',
+    occursOn: '2026-11-15',
     notes: null,
     sortOrder: 1,
     createdAt: null,
@@ -61,36 +63,26 @@ const milestones: CampaignMilestone[] = [
   },
 ];
 
+const templates: CommunicationTemplate[] = [
+  {
+    id: 'template-1',
+    templateKey: 'volunteer_reminder',
+    name: 'Volunteer Reminder',
+    audience: 'VOLUNTEER',
+    channel: 'EMAIL',
+    subjectTemplate: 'Reminder',
+    bodyTemplate: 'Please join us.',
+    isActive: true,
+    createdByUserId: null,
+    createdAt: null,
+    updatedAt: null,
+  },
+];
+
+const schedules: CommunicationSchedule[] = [];
+
 describe('CampaignStudioScheduleSection', () => {
-  it('switches between timeline, calendar, and milestone views', async () => {
-    const user = userEvent.setup();
-
-    render(
-      <CampaignStudioScheduleSection
-        access={managerAccess}
-        items={scheduleItems}
-        milestones={milestones}
-        isSaving={false}
-        onSaveMilestones={vi.fn().mockResolvedValue(true)}
-        onCreateEvent={vi.fn().mockResolvedValue(true)}
-        onUpdateEvent={vi.fn().mockResolvedValue(true)}
-        onDeleteEvent={vi.fn().mockResolvedValue(true)}
-        onOpenCommunications={vi.fn()}
-      />
-    );
-
-    expect(screen.getByRole('heading', { name: /timeline/i })).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', { name: /calendar/i }));
-    expect(screen.getByRole('heading', { name: /calendar/i })).toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole('tab', { name: /MilestonesStructured editing/i })
-    );
-    expect(screen.getByRole('heading', { name: /^milestones$/i })).toBeInTheDocument();
-  });
-
-  it('creates a manual schedule event', async () => {
+  it('opens a create modal from a calendar day and creates a manual event', async () => {
     const user = userEvent.setup();
     const onCreateEvent = vi.fn().mockResolvedValue(true);
 
@@ -99,18 +91,29 @@ describe('CampaignStudioScheduleSection', () => {
         access={managerAccess}
         items={scheduleItems}
         milestones={milestones}
+        schedules={schedules}
+        templates={templates}
         isSaving={false}
         onSaveMilestones={vi.fn().mockResolvedValue(true)}
         onCreateEvent={onCreateEvent}
         onUpdateEvent={vi.fn().mockResolvedValue(true)}
         onDeleteEvent={vi.fn().mockResolvedValue(true)}
-        onOpenCommunications={vi.fn()}
+        onCreateSchedule={vi.fn().mockResolvedValue(true)}
+        onUpdateSchedule={vi.fn().mockResolvedValue(true)}
+        onDeleteSchedule={vi.fn().mockResolvedValue(true)}
       />
     );
 
+    await user.click(screen.getByLabelText(/add a calendar item on 2026-11-02/i));
+    expect(
+      screen.getByRole('heading', { name: /add calendar event/i })
+    ).toBeInTheDocument();
+
     await user.type(screen.getByLabelText(/^title$/i), 'Pickup Weekend');
     await user.selectOptions(screen.getByLabelText(/event type/i), 'PICKUP');
+    await user.clear(screen.getByLabelText(/start date/i));
     await user.type(screen.getByLabelText(/start date/i), '2026-12-19');
+    await user.clear(screen.getByLabelText(/end date/i));
     await user.type(screen.getByLabelText(/end date/i), '2026-12-20');
     await user.type(screen.getByLabelText(/notes/i), 'Family pickup starts here.');
     await user.click(screen.getByRole('button', { name: /add event/i }));
@@ -125,26 +128,56 @@ describe('CampaignStudioScheduleSection', () => {
     });
   });
 
+  it('opens milestone details from a calendar item', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CampaignStudioScheduleSection
+        access={managerAccess}
+        items={scheduleItems}
+        milestones={milestones}
+        schedules={schedules}
+        templates={templates}
+        isSaving={false}
+        onSaveMilestones={vi.fn().mockResolvedValue(true)}
+        onCreateEvent={vi.fn().mockResolvedValue(true)}
+        onUpdateEvent={vi.fn().mockResolvedValue(true)}
+        onDeleteEvent={vi.fn().mockResolvedValue(true)}
+        onCreateSchedule={vi.fn().mockResolvedValue(true)}
+        onUpdateSchedule={vi.fn().mockResolvedValue(true)}
+        onDeleteSchedule={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /registration opens, nov 15, 2026/i }));
+    expect(
+      screen.getByRole('heading', { name: /edit milestone/i })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toHaveValue('registration_open');
+  });
+
   it('shows read-only schedule messaging without admin capability', () => {
     render(
       <CampaignStudioScheduleSection
         access={viewerAccess}
         items={scheduleItems}
         milestones={milestones}
+        schedules={schedules}
+        templates={templates}
         isSaving={false}
         onSaveMilestones={vi.fn().mockResolvedValue(true)}
         onCreateEvent={vi.fn().mockResolvedValue(true)}
         onUpdateEvent={vi.fn().mockResolvedValue(true)}
         onDeleteEvent={vi.fn().mockResolvedValue(true)}
-        onOpenCommunications={vi.fn()}
+        onCreateSchedule={vi.fn().mockResolvedValue(true)}
+        onUpdateSchedule={vi.fn().mockResolvedValue(true)}
+        onDeleteSchedule={vi.fn().mockResolvedValue(true)}
       />
     );
 
+    expect(screen.getByText(/read-only calendar/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/read-only schedule access/i)
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /add event/i })
+      screen.queryByLabelText(/add a calendar item on 2026-11-02/i)
     ).not.toBeInTheDocument();
   });
 });

@@ -66,9 +66,9 @@
 ## Campaign Schedule Direction
 
 - Status: active
-- Decision: replace the current Studio `Dates` section with a first-class `Schedule` section, add a real `campaign_event` backend model now, and unify milestone-derived events, communication-derived events, and manual campaign planning events into one schedule surface with `Timeline`, `Calendar`, and `Milestones` views.
-- Rationale: campaign managers already need a real planning surface for orientation, intake, sponsor, pickup, and other operator-defined events, so deferring manual event support would force an immediate redesign after the next milestone-only pass.
-- Consequence: the next schedule implementation should add a `campaign_event` migration/model/API, keep milestones and communications as their own source-of-truth records, expose a unified schedule read model for Studio, and route edits for derived items back to their source forms instead of duplicating editable state.
+- Decision: replace the current Studio `Dates` section with a first-class `Schedule` section, add a real `campaign_event` backend model, and make the calendar the primary planning surface. Milestones, communications, and manual campaign events should all appear on that calendar, and a shared modal should create/edit/delete them directly from the grid. The Studio AI rail should be able to draft and apply new schedule events, milestones, and communications from prompts.
+- Rationale: campaign managers need the schedule to behave more like a real calendar than a collection of alternate views, and the old `Timeline | Calendar | Milestones` split still made the calendar feel secondary. Prompt-driven add flows are also most useful when they land directly on the primary planning surface instead of generating disconnected suggestions.
+- Consequence: keep milestones and communications as their own source-of-truth records, but allow them to be edited through the shared calendar modal; maintain distinct visual treatment for each source type; support deleting communication schedules from the backend; and treat deeper AI/model-backed schedule drafting as an enhancement on top of the now-functional prompt-to-calendar path.
 
 ## Code Structure Policy
 

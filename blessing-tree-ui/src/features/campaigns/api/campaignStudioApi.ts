@@ -12,6 +12,7 @@ import {
   type CreateCommunicationScheduleInput,
   type CreateCommunicationTemplateInput,
   type SaveCampaignMilestoneInput,
+  type UpdateCommunicationScheduleInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import {
   type Campaign,
@@ -225,6 +226,49 @@ export async function createCommunicationSchedule(
   );
 
   return mapCommunicationSchedule(response);
+}
+
+export async function updateCommunicationSchedule(
+  campaignId: string,
+  scheduleId: string,
+  input: UpdateCommunicationScheduleInput
+): Promise<CommunicationSchedule> {
+  const payload: Record<string, unknown> = {};
+  if ('templateId' in input) {
+    payload.template_id = input.templateId;
+  }
+  if ('milestoneKey' in input) {
+    payload.milestone_key = input.milestoneKey ?? null;
+  }
+  if ('scheduledFor' in input) {
+    payload.scheduled_for = input.scheduledFor ?? null;
+  }
+  if ('status' in input) {
+    payload.status = input.status;
+  }
+  if ('notes' in input) {
+    payload.notes = input.notes ?? null;
+  }
+
+  const response = await apiFetchJson<CommunicationScheduleResponse>(
+    `/api/v1/campaigns/${campaignId}/communications/schedules/${scheduleId}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  return mapCommunicationSchedule(response);
+}
+
+export async function deleteCommunicationSchedule(
+  campaignId: string,
+  scheduleId: string
+): Promise<void> {
+  await apiFetchJson(`/api/v1/campaigns/${campaignId}/communications/schedules/${scheduleId}`, {
+    method: 'DELETE',
+  });
 }
 
 export async function saveCampaignMilestones(

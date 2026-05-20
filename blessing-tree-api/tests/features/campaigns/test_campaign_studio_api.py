@@ -225,6 +225,55 @@ def test_create_template_and_schedule_then_readiness_reflects_changes(
     assert "missing_schedules" not in {item["code"] for item in readiness["items"]}
 
 
+def test_delete_communication_schedule_removes_schedule(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    template = CommunicationTemplate(
+        id=uuid.uuid4(),
+        template_key="volunteer_reminder",
+        name="Volunteer Reminder",
+        audience="VOLUNTEER",
+        channel="EMAIL",
+        subject_template="Reminder",
+        body_template="Show up on time.",
+        is_active=True,
+        created_by_user_id=manager.id,
+    )
+    session.add(template)
+    session.flush()
+    schedule = CampaignCommunicationSchedule(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        template_id=template.id,
+        milestone_key="registration_open",
+        status="SCHEDULED",
+    )
+    session.add(schedule)
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    schedule_id = str(schedule.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.delete(
+        f"/api/v1/campaigns/{campaign_id}/communications/schedules/{schedule_id}",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 204
+    session = campaign_api_module.SessionLocal()
+    remaining = session.get(CampaignCommunicationSchedule, uuid.UUID(schedule_id))
+    session.close()
+    assert remaining is None
+
+
 def test_readiness_flags_missing_manual_schedule_and_missing_schedule_messaging(
     app: Flask,
     monkeypatch: pytest.MonkeyPatch,

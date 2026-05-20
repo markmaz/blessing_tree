@@ -33,6 +33,8 @@ export function CampaignStudioPage() {
     addAssignment,
     addCommunicationTemplate,
     addCommunicationSchedule,
+    patchCommunicationSchedule,
+    removeCommunicationSchedule,
     persistMilestones,
     addScheduleEvent,
     updateScheduleEvent,
@@ -165,6 +167,8 @@ export function CampaignStudioPage() {
             addAssignment,
             addCommunicationTemplate,
             addCommunicationSchedule,
+            patchCommunicationSchedule,
+            removeCommunicationSchedule,
             persistMilestones,
             addScheduleEvent,
             updateScheduleEvent,
@@ -177,6 +181,12 @@ export function CampaignStudioPage() {
           selectedSection={selectedSection}
           readiness={studio.readiness}
           scheduleItems={studio.schedule.items}
+          templates={studio.communications.templates}
+          milestones={studio.milestones}
+          isSaving={isSaving || isUpdatingCampaign}
+          onCreateScheduleEvent={addScheduleEvent}
+          onCreateCommunicationSchedule={addCommunicationSchedule}
+          onSaveMilestones={persistMilestones}
         />
       </div>
     </section>
@@ -192,6 +202,8 @@ function renderStudioSection({
   addAssignment,
   addCommunicationTemplate,
   addCommunicationSchedule,
+  patchCommunicationSchedule,
+  removeCommunicationSchedule,
   persistMilestones,
   addScheduleEvent,
   updateScheduleEvent,
@@ -205,6 +217,8 @@ function renderStudioSection({
   addAssignment: ReturnType<typeof useCampaignStudio>['addAssignment'];
   addCommunicationTemplate: ReturnType<typeof useCampaignStudio>['addCommunicationTemplate'];
   addCommunicationSchedule: ReturnType<typeof useCampaignStudio>['addCommunicationSchedule'];
+  patchCommunicationSchedule: ReturnType<typeof useCampaignStudio>['patchCommunicationSchedule'];
+  removeCommunicationSchedule: ReturnType<typeof useCampaignStudio>['removeCommunicationSchedule'];
   persistMilestones: ReturnType<typeof useCampaignStudio>['persistMilestones'];
   addScheduleEvent: ReturnType<typeof useCampaignStudio>['addScheduleEvent'];
   updateScheduleEvent: ReturnType<typeof useCampaignStudio>['updateScheduleEvent'];
@@ -249,12 +263,16 @@ function renderStudioSection({
         access={studio.access}
         items={studio.schedule.items}
         milestones={studio.milestones}
+        schedules={studio.communications.schedules}
+        templates={studio.communications.templates}
         isSaving={isSaving}
         onSaveMilestones={persistMilestones}
         onCreateEvent={addScheduleEvent}
         onUpdateEvent={updateScheduleEvent}
         onDeleteEvent={removeScheduleEvent}
-        onOpenCommunications={() => setSelectedSection('communications')}
+        onCreateSchedule={addCommunicationSchedule}
+        onUpdateSchedule={patchCommunicationSchedule}
+        onDeleteSchedule={removeCommunicationSchedule}
       />
     );
   }

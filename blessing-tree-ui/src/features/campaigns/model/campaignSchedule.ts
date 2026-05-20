@@ -3,30 +3,6 @@ import type {
   CampaignScheduleItem,
 } from '@/features/campaigns/model/campaignStudioTypes';
 
-export type CampaignScheduleViewId = 'timeline' | 'calendar' | 'milestones';
-
-export const campaignScheduleViewOptions: Array<{
-  id: CampaignScheduleViewId;
-  label: string;
-  description: string;
-}> = [
-  {
-    id: 'timeline',
-    label: 'Timeline',
-    description: 'Chronological view of milestones, communications, and manual planning events.',
-  },
-  {
-    id: 'calendar',
-    label: 'Calendar',
-    description: 'Month layout for spotting clusters, gaps, and overlaps.',
-  },
-  {
-    id: 'milestones',
-    label: 'Milestones',
-    description: 'Structured editing for named campaign checkpoints.',
-  },
-];
-
 export const manualCampaignEventTypeOptions: Array<{
   value: CampaignScheduleEventType;
   label: string;
@@ -135,6 +111,26 @@ export function sourceLabel(sourceType: CampaignScheduleItem['sourceType']): str
     return 'Milestone';
   }
   return 'Communication';
+}
+
+export function sourceIcon(sourceType: CampaignScheduleItem['sourceType']): string {
+  if (sourceType === 'manual') {
+    return 'bi-calendar2-plus';
+  }
+  if (sourceType === 'milestone') {
+    return 'bi-signpost-2';
+  }
+  return 'bi-envelope-paper';
+}
+
+export function sourceTone(sourceType: CampaignScheduleItem['sourceType']): string {
+  if (sourceType === 'manual') {
+    return 'manual';
+  }
+  if (sourceType === 'milestone') {
+    return 'milestone';
+  }
+  return 'communication';
 }
 
 export function eventTypeLabel(eventType: CampaignScheduleEventType): string {

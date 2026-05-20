@@ -1,14 +1,21 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { type CampaignStudioSectionId } from '@/features/campaigns/model/campaignStudio';
 import {
-  type CampaignStudioSectionId,
-} from '@/features/campaigns/model/campaignStudio';
+  buildScheduleAiDraft,
+  type ScheduleAiDraftType,
+} from '@/features/campaigns/model/campaignStudioAiDraft';
 import {
   getAiPromptStarters,
   getAiReadinessSignals,
 } from '@/features/campaigns/model/campaignStudioAi';
 import type {
+  CampaignMilestone,
   CampaignReadiness,
   CampaignScheduleItem,
+  CommunicationTemplate,
+  CreateCampaignEventInput,
+  CreateCommunicationScheduleInput,
+  SaveCampaignMilestoneInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import type { Campaign } from '@/features/campaigns/model/campaignTypes';
 
@@ -17,6 +24,14 @@ interface CampaignStudioAiRailProps {
   selectedSection: CampaignStudioSectionId;
   readiness: CampaignReadiness;
   scheduleItems: CampaignScheduleItem[];
+  templates: CommunicationTemplate[];
+  milestones: CampaignMilestone[];
+  isSaving: boolean;
+  onCreateScheduleEvent: (input: CreateCampaignEventInput) => Promise<boolean>;
+  onCreateCommunicationSchedule: (
+    input: CreateCommunicationScheduleInput
+  ) => Promise<boolean>;
+  onSaveMilestones: (milestones: SaveCampaignMilestoneInput[]) => Promise<boolean>;
 }
 
 export function CampaignStudioAiRail({
@@ -24,20 +39,127 @@ export function CampaignStudioAiRail({
   selectedSection,
   readiness,
   scheduleItems,
+  templates,
+  milestones,
+  isSaving,
+  onCreateScheduleEvent,
+  onCreateCommunicationSchedule,
+  onSaveMilestones,
 }: CampaignStudioAiRailProps) {
   const [draftPrompt, setDraftPrompt] = useState('');
+  const [draftType, setDraftType] = useState<ScheduleAiDraftType>('event');
+  const [draftError, setDraftError] = useState<string | null>(null);
+  const [draftMessage, setDraftMessage] = useState<string | null>(null);
+  const [draftPreview, setDraftPreview] = useState<ReturnType<typeof buildScheduleAiDraft> | null>(
+    null
+  );
   const promptStarters = getAiPromptStarters(selectedSection, readiness, scheduleItems);
   const readinessSignals = getAiReadinessSignals(selectedSection, readiness);
+  const scheduleSummary = useMemo(
+    () => ({
+      hasTemplates: templates.length > 0,
+      nextMilestone: milestones.find((milestone) => milestone.occursOn) ?? null,
+    }),
+    [milestones, templates]
+  );
+
+  const handleDraft = () => {
+    try {
+      const nextDraft = buildScheduleAiDraft({
+        prompt: draftPrompt,
+        requestedType: draftType,
+        milestones,
+        templates,
+      });
+      setDraftPreview(nextDraft);
+      setDraftError(null);
+      setDraftMessage(null);
+    } catch (error) {
+      setDraftPreview(null);
+      setDraftError(error instanceof Error ? error.message : 'Unable to draft a calendar change.');
+      setDraftMessage(null);
+    }
+  };
+
+  const handleApply = async () => {
+    if (!draftPreview) {
+      return;
+    }
+
+    let didSave = false;
+    if (draftPreview.eventInput) {
+      didSave = await onCreateScheduleEvent(draftPreview.eventInput);
+    } else if (draftPreview.communicationInput) {
+      didSave = await onCreateCommunicationSchedule(draftPreview.communicationInput);
+    } else if (draftPreview.milestoneInput) {
+      const nextMilestones: SaveCampaignMilestoneInput[] = milestones
+        .filter((milestone) => milestone.milestoneKey !== draftPreview.milestoneInput?.milestoneKey)
+        .map((milestone) => ({
+          milestoneKey: milestone.milestoneKey,
+          label: milestone.label,
+          occursOn: milestone.occursOn ?? '',
+          notes: milestone.notes ?? null,
+          sortOrder: milestone.sortOrder,
+        }));
+      nextMilestones.push(draftPreview.milestoneInput);
+      nextMilestones.sort((left, right) => left.sortOrder - right.sortOrder);
+      didSave = await onSaveMilestones(nextMilestones);
+    }
+
+    if (didSave) {
+      setDraftMessage(`${draftPreview.summary} added to ${campaign.name}.`);
+      setDraftError(null);
+      setDraftPreview(null);
+      setDraftPrompt('');
+    }
+  };
 
   return (
     <aside className="campaign-studio__ai-rail" aria-label="Campaign Studio AI builder">
       <div className="campaign-studio__eyebrow">AI Builder</div>
       <h2 className="h5 mb-2">Shape {campaign.name}</h2>
       <p className="text-muted small mb-4">
-        Draft structured changes for the <strong>{selectedSection}</strong>{' '}
-        section. Apply actions will activate once the backend draft endpoints
-        exist.
+        {selectedSection === 'schedule'
+          ? 'Draft and apply new calendar items directly from a prompt.'
+          : `Draft structured changes for the ${selectedSection} section.`}
       </p>
+
+      {selectedSection === 'schedule' ? (
+        <>
+          <div className="campaign-studio__ai-inline-stats">
+            <div className="campaign-studio__inline-note">
+              <div className="fw-semibold small mb-1">Calendar Context</div>
+              <div className="small text-muted">
+                {scheduleSummary.hasTemplates
+                  ? `${templates.length} templates available for scheduling.`
+                  : 'No communication templates yet.'}
+              </div>
+              <div className="small text-muted">
+                {scheduleSummary.nextMilestone
+                  ? `Next milestone: ${scheduleSummary.nextMilestone.label} on ${scheduleSummary.nextMilestone.occursOn}`
+                  : 'No milestone dates have been placed yet.'}
+              </div>
+            </div>
+          </div>
+
+          <label className="form-label small fw-semibold">AI Draft Type</label>
+          <div className="campaign-studio__modal-type-switch mb-3">
+            {scheduleDraftTypeOptions.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={`campaign-studio__modal-type-button ${
+                  draftType === option.id ? 'is-selected' : ''
+                }`}
+                onClick={() => setDraftType(option.id)}
+              >
+                <span className="fw-semibold">{option.label}</span>
+                <span className="small text-muted">{option.description}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
 
       <label className="form-label small fw-semibold" htmlFor="campaign-studio-prompt">
         Campaign Prompt
@@ -52,13 +174,50 @@ export function CampaignStudioAiRail({
       />
 
       <div className="d-grid gap-2 mb-4">
-        <button type="button" className="btn btn-secondary btn-sm" disabled>
-          Draft Studio Changes
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          disabled={selectedSection !== 'schedule' || isSaving}
+          onClick={handleDraft}
+        >
+          Draft Calendar Change
         </button>
-        <button type="button" className="btn btn-outline-secondary btn-sm" disabled>
-          Apply Accepted Changes
+        <button
+          type="button"
+          className="btn btn-outline-secondary btn-sm"
+          disabled={!draftPreview || isSaving}
+          onClick={handleApply}
+        >
+          Apply Draft
         </button>
       </div>
+
+      {draftError ? (
+        <div className="alert alert-warning py-2 small" role="alert">
+          {draftError}
+        </div>
+      ) : null}
+      {draftMessage ? (
+        <div className="alert alert-success py-2 small" role="alert">
+          {draftMessage}
+        </div>
+      ) : null}
+
+      {draftPreview ? (
+        <div className="campaign-studio__suggestions">
+          <div className="small fw-semibold mb-2">Draft Preview</div>
+          <div className="campaign-studio__inline-note">
+            <div className="fw-semibold small mb-1">{draftPreview.summary}</div>
+            <div className="small text-muted">
+              {draftPreview.type === 'communication'
+                ? 'This will create a communication schedule.'
+                : draftPreview.type === 'milestone'
+                  ? 'This will place or update a milestone date.'
+                  : 'This will create a manual calendar event.'}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="campaign-studio__suggestions">
         <div className="small fw-semibold mb-2">Prompt Starters</div>
@@ -84,21 +243,35 @@ export function CampaignStudioAiRail({
               <div key={item.code} className="campaign-studio__inline-note">
                 <div className="fw-semibold small mb-1">{item.message}</div>
                 <div className="small text-muted">
-                  Use the prompt panel to draft a response for this {item.section} gap.
+                  Use the prompt panel to turn this signal into a concrete calendar action.
                 </div>
               </div>
             ))}
           </div>
         </div>
       ) : null}
-
-      <div className="campaign-studio__ai-note mt-4">
-        <div className="small fw-semibold mb-1">Phase 1 Note</div>
-        <p className="small mb-0 text-muted">
-          This rail is intentionally non-destructive right now. The next backend
-          slice will add structured draft and apply endpoints.
-        </p>
-      </div>
     </aside>
   );
 }
+
+const scheduleDraftTypeOptions: Array<{
+  id: ScheduleAiDraftType;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: 'event',
+    label: 'Event',
+    description: 'Volunteer days, sorting blocks, pickup staffing, and other manual work.',
+  },
+  {
+    id: 'milestone',
+    label: 'Milestone',
+    description: 'Named checkpoints like registration opening or pickup weekend.',
+  },
+  {
+    id: 'communication',
+    label: 'Communication',
+    description: 'Emails and reminders using one of the campaign templates.',
+  },
+];

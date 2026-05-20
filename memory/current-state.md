@@ -28,8 +28,8 @@ Last updated: 2026-05-20
   - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
   - dashboard is now campaign-aware and loads live summary/access data from the backend
   - Campaign Studio now has live Team, Communications, Schedule, Readiness, and Settings sections backed by the backend studio APIs
-  - Campaign Studio Schedule now includes `Timeline`, `Calendar`, and `Milestones` views plus manual planning event create/edit/delete
-  - Campaign Studio AI rail now adapts prompt starters to schedule readiness gaps
+  - Campaign Studio Schedule is now calendar-first, with modal create/edit/delete for events, milestones, and communication schedules directly from the month grid
+  - Campaign Studio AI rail can now draft and apply schedule events, milestones, and communications from prompt input
   - Campaign Studio Team can now search active users and create campaign assignments directly from the frontend
   - Campaign Studio can now create communication templates and schedules from the frontend
   - Campaign Studio can now save milestone dates from the frontend
@@ -131,7 +131,8 @@ Last updated: 2026-05-20
   - Studio Communications section rendering real template/schedule state
   - Studio Communications section creating a template and schedule in-browser against the running backend
   - Studio Schedule section wiring to the unified schedule read APIs and milestone save path
-  - Studio Schedule manual event create/edit/delete wiring to the new campaign event endpoints
+  - Studio Schedule now uses the calendar as the primary planning tool and can create/edit/delete schedule records from the shared modal
+  - Studio AI rail now drafts and applies schedule records through the real campaign event, milestone, and communication save paths
   - Studio readiness now includes schedule-specific warnings for missing manual planning coverage and missing milestone-linked communication timing
   - Studio Readiness section rendering backend readiness findings
   - campaign create/update UI wiring against the existing backend campaign routes
