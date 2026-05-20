@@ -11,6 +11,7 @@ from .base import Base
 from .uuid_bin import UUIDBin
 
 if TYPE_CHECKING:
+    from app.features.rbac.models.campaign_user_role import CampaignUserRole
     from .donation import Donation
     from .label_print_job import LabelPrintJob
     from .pickup import Pickup
@@ -43,6 +44,12 @@ class Campaign(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     storage_locations: Mapped[List["StorageLocation"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    campaign_user_roles: Mapped[List["CampaignUserRole"]] = relationship(
         back_populates="campaign",
         cascade="all, delete-orphan",
         passive_deletes=True,

@@ -17,6 +17,7 @@ from app.exceptions.service_error import ServiceError
 from app.routes.auth_routes import auth_ns, init_oauth
 from app.services.auth import AuthService
 from app.utils import build_url
+from app.versioning import get_backend_version
 from app.config.mail_config import MailConfig
 from app.config.logging_config import configure_logging
 
@@ -25,6 +26,7 @@ VERSION = "v1"
 
 mail = Mail()
 auth_service = AuthService()
+BACKEND_VERSION = get_backend_version()
 
 def try_get_json_body(req):
     try:
@@ -66,9 +68,9 @@ def create_app():
 
     api = Api(
         app,
-        version="1.0",
-        title="Wayfinder API",
-        description="The Wayfinder API",
+        version=BACKEND_VERSION,
+        title="Blessing Tree API",
+        description="The Blessing Tree API",
         doc="/swagger-ui",
         mask_swagger=False,
         security="BearerAuth",

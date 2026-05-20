@@ -42,6 +42,13 @@
 - Rationale: Blessing Tree needs feature-level authorization soon, but the likely operational roles are stable enough that dynamic permission administration would add more complexity than value right now.
 - Consequence: implement campaign RBAC and explicit capability checks now; defer admin-defined custom roles and database-managed permission graphs until there is real product pressure for them.
 
+## App Role Compatibility
+
+- Status: active
+- Decision: keep `app_user.role` in its legacy enum for now, but normalize it at runtime into app-level semantics where `ADMIN -> APP_ADMIN` and non-admin legacy values resolve to `APP_USER`.
+- Rationale: the existing schema and auth flow already depend on the legacy role field, but RBAC needs cleaner global-role meaning immediately without blocking on a data migration.
+- Consequence: authorization code should treat `app_user.role` as a compatibility source until a later schema migration narrows the stored values to app-level roles only.
+
 ## Code Structure Policy
 
 - Status: active

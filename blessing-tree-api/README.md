@@ -15,8 +15,10 @@ The backend is a Flask application built around:
 
 - Authentication routes are implemented.
 - The broader domain model exists in SQLAlchemy and SQL migration form.
+- The initial RBAC foundation now exists as a feature package with campaign role persistence, a capability matrix, and an authorization service.
 - Most non-auth business routes are not yet exposed as API endpoints.
 - Dependency manifests now exist as `requirements.txt` and `requirements-dev.txt`.
+- Backend build version now lives in `version.json`.
 
 ## Entry Point
 
@@ -106,7 +108,12 @@ The current schema covers:
 - scan and audit events
 
 Core model files live in `app/models/`.
-Core DDL lives in `db/migration/V001__Initial_DB.sql` and `db/migration/V002__Auth_Identity.sql`.
+RBAC feature code lives in `app/features/rbac/`.
+Core DDL lives in:
+
+- `db/migration/V001__Initial_DB.sql`
+- `db/migration/V002__Auth_Identity.sql`
+- `db/migration/V003__Campaign_User_Roles.sql`
 
 ## Local Commands
 
@@ -135,3 +142,8 @@ Config cleanup notes:
 
 - `SMTP_PORT` is the canonical mail port variable; the app still accepts legacy `SMPT_PORT` for compatibility.
 - `VALKEY_ADDRESS` is the canonical cache/broker host variable; `VALKEY_HOST` is also accepted for compatibility.
+
+## Versioning
+
+- Backend build version is stored in `version.json`.
+- API route versioning remains in `app/factory.py` as `v1` path construction and should not be used as the backend build version.

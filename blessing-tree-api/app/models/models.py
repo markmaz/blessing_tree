@@ -9,6 +9,8 @@ Key points:
 Works with SQLAlchemy 2.x.
 """
 
+from app.features.rbac.models import CampaignUserRole
+
 from .app_user import AppUser
 from .auth import AuthIdentity
 from .base import Base
@@ -39,6 +41,7 @@ __all__ = [
     "AppUser",
     "AuthIdentity",
     "Base",
+    "CampaignUserRole",
     "Campaign",
     "Donation",
     "DonationLine",

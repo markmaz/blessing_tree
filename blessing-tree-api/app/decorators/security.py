@@ -6,6 +6,7 @@ from typing import Any, Iterable
 from flask import g, make_response, request
 
 from app.exceptions.service_error import ServiceError
+from app.features.rbac.constants import APP_ADMIN_ROLE, normalize_app_role
 from app.services.auth import AuthService
 
 _auth_service = AuthService()
@@ -38,7 +39,7 @@ def _as_str_list(value: Any) -> list[str]:
 
 
 def _has_admin(values: Iterable[str]) -> bool:
-    return any(v.strip().upper() == "ADMIN" for v in values)
+    return any(normalize_app_role(v) == APP_ADMIN_ROLE for v in values)
 
 
 def _extract_user_context(payload: dict) -> tuple[str, str, str, bool]:
@@ -65,7 +66,7 @@ def _extract_user_context(payload: dict) -> tuple[str, str, str, bool]:
     roles = _as_str_list(payload.get("roles"))
     groups = _as_str_list(payload.get("groups"))
 
-    is_admin = role == "ADMIN" or _has_admin(roles) or _has_admin(groups) or bool(payload.get("is_admin") or payload.get("admin"))
+    is_admin = normalize_app_role(role) == APP_ADMIN_ROLE or _has_admin(roles) or _has_admin(groups) or bool(payload.get("is_admin") or payload.get("admin"))
 
     if not role:
         if is_admin:

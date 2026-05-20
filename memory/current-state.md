@@ -13,8 +13,10 @@ Last updated: 2026-05-20
   - Flask API
   - auth routes live
   - domain models and migrations exist
+  - RBAC foundation now exists with campaign role persistence, capability bundles, and an authorization service
   - runtime and dev dependency manifests now exist
   - checked-in `.env.example` now exists for local bootstrap
+  - checked-in `version.json` now exists for backend build versioning
   - env/config naming is now aligned more closely with Query Forge for auth, Valkey, pool settings, and frontend base URL
 - Frontend:
   - React + TypeScript + Vite
@@ -28,6 +30,8 @@ Last updated: 2026-05-20
 - Backend dependency manifests:
   - `blessing-tree-api/requirements.txt`
   - `blessing-tree-api/requirements-dev.txt`
+- Backend build version file:
+  - `blessing-tree-api/version.json`
 - Backend env bootstrap:
   - `blessing-tree-api/.env.example`
 - Canonical docs:
@@ -53,7 +57,12 @@ Last updated: 2026-05-20
   - refresh
   - logout
 - Active-session automatic token refresh on 401 is now available through the shared frontend API client.
-- RBAC direction is now documented: minimal app roles, campaign-scoped assignments, and code-defined capability bundles.
+- RBAC foundation now exists:
+  - `db/migration/V003__Campaign_User_Roles.sql`
+  - `app/features/rbac/constants.py`
+  - `app/features/rbac/models/campaign_user_role.py`
+  - `app/features/rbac/services/authorization_service.py`
+- Current RBAC direction remains: minimal app roles, campaign-scoped assignments, and code-defined capability bundles.
 
 ## Knowledge Graph
 

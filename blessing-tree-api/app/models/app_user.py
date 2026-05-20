@@ -13,6 +13,7 @@ from .uuid_bin import UUIDBin
 
 if TYPE_CHECKING:
     from .auth import AuthIdentity
+    from app.features.rbac.models.campaign_user_role import CampaignUserRole
 
 
 class AppUser(Base):
@@ -36,6 +37,12 @@ class AppUser(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     auth_identities: Mapped[List["AuthIdentity"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    campaign_user_roles: Mapped[List["CampaignUserRole"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,
