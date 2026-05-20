@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { parseStoredTemplateBlocks } from '@/features/campaigns/model/campaignCommunicationTemplateBuilder';
@@ -38,6 +38,7 @@ const templates: CommunicationTemplate[] = [
 describe('CampaignStudioCommunicationsSection', () => {
   it('creates a new template from the builder workspace', async () => {
     const user = userEvent.setup();
+    const imageFile = new File(['map'], 'pickup-map.png', { type: 'image/png' });
     const onCreateTemplate = vi.fn().mockResolvedValue({
       ...templates[0],
       id: 'template-2',
@@ -66,9 +67,12 @@ describe('CampaignStudioCommunicationsSection', () => {
     await user.click(screen.getByLabelText(/^Text$/i));
     await user.paste('Hi {{sponsor.first_name}},\n\nThank you for joining.');
     await user.click(screen.getByRole('button', { name: /add image/i }));
-    await user.click(screen.getByLabelText(/image url/i));
-    await user.paste('{{location.map_url}}');
-    await user.type(screen.getByLabelText(/alt text/i), 'Pickup location map');
+    await user.upload(screen.getByLabelText(/upload image/i), imageFile);
+    await waitFor(() =>
+      expect(screen.getByLabelText(/image url/i)).toHaveValue(
+        'data:image/png;base64,bWFw'
+      )
+    );
     await user.click(screen.getByRole('button', { name: /create template/i }));
 
     expect(onCreateTemplate).toHaveBeenCalledTimes(1);
@@ -87,8 +91,8 @@ describe('CampaignStudioCommunicationsSection', () => {
       }),
       expect.objectContaining({
         type: 'image',
-        src: '{{location.map_url}}',
-        altText: 'Pickup location map',
+        src: 'data:image/png;base64,bWFw',
+        altText: 'pickup map',
         caption: '',
       }),
     ]);

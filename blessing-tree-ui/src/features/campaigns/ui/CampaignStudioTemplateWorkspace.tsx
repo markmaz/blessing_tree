@@ -141,7 +141,7 @@ export function CampaignStudioTemplateWorkspace({
       ) : (
         <div className="campaign-template-workspace__content">
           <div className="campaign-template-workspace__editor-column">
-            <label className="form-label">
+            <label className="form-label campaign-template-workspace__subject-field">
               Subject
               <input
                 className="form-control"

@@ -5,6 +5,7 @@ import {
   type CommunicationTemplateBlock,
   type CommunicationTemplateBlockType,
 } from '@/features/campaigns/model/campaignCommunicationTemplateBuilder';
+import { CampaignStudioTemplateImageUploadControl } from '@/features/campaigns/ui/CampaignStudioTemplateImageUploadControl';
 
 interface CampaignStudioTemplateBlockEditorProps {
   blocks: CommunicationTemplateBlock[];
@@ -84,6 +85,22 @@ export function CampaignStudioTemplateBlockEditor({
 
             {block.type === 'image' ? (
               <div className="campaign-template-block-card__field-stack">
+                <CampaignStudioTemplateImageUploadControl
+                  isSaving={isSaving}
+                  onImageLoaded={({ src, suggestedAltText }) =>
+                    onChangeBlocks(
+                      blocks.map((entry) =>
+                        entry.id === block.id && entry.type === 'image'
+                          ? {
+                              ...entry,
+                              src,
+                              altText: entry.altText.trim() || suggestedAltText,
+                            }
+                          : entry
+                      )
+                    )
+                  }
+                />
                 <label className="form-label">
                   Image URL
                   <input
