@@ -45,6 +45,6 @@
 ## Code Structure Policy
 
 - Status: active
-- Decision: enforce small files, single responsibility, reusable components, feature-driven backend structure, version bumps for code changes, and mandatory code review before completion.
-- Rationale: the project is still early enough to avoid structural drift, and these rules reduce the chance of god files, mixed concerns, and invisible regressions becoming normal.
-- Consequence: future implementation should split oversized files proactively, organize backend work by feature, bump version files for real code changes, and treat review plus commit as part of task completion.
+- Decision: enforce small files, single responsibility, reusable components, feature-driven backend structure, version bumps for code changes, schema-plus-migration discipline, backend-enforced authorization, additive API changes by default, narrow shared modules, and mandatory review/tests/doc updates before completion.
+- Rationale: the project is still early enough to avoid structural drift, and these rules reduce the chance of god files, mixed concerns, silent contract breakage, weak auth enforcement, and invisible regressions becoming normal.
+- Consequence: future implementation should split oversized files proactively, organize backend work by feature, ship migrations with schema changes, treat frontend access control as advisory only, avoid casual API breakage, keep shared modules intentionally small, bump version files for real code changes, and treat review, tests, docs, and commit as part of task completion.

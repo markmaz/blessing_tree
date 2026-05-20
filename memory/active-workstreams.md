@@ -20,6 +20,7 @@ Last updated: 2026-05-20
 - Fixed the backend `python app/main.py` entrypoint so it no longer fails on the local `app/celery.py` import shadowing issue
 - Added RBAC design and implementation planning docs for campaign-scoped roles plus capability-based feature access
 - Promoted additional coding rules into engineering policy for file size, single responsibility, version bumps, review, commit discipline, naming, and feature-driven backend structure
+- Promoted additional delivery rules into engineering policy for migrations, backend-authoritative authz, additive APIs, shared-module scope, tests, and doc updates
 - Initialized a single top-level Git repository with root `.gitignore` and `.gitattributes`
 
 ## Immediate Next Steps

@@ -14,6 +14,11 @@
 - Bump frontend and backend version files for code changes, but not for docs-only changes.
 - Use snake_case on the backend and camelCase on the frontend, with normal React component PascalCase conventions.
 - Backend implementation should move toward feature-driven organization rather than global route/service dumping grounds.
+- Ship migrations with the schema changes they belong to.
+- Backend authorization is authoritative; frontend access gating is advisory only.
+- Prefer additive API changes unless an explicit breaking-change decision is made.
+- Shared modules must stay narrowly scoped and must not become dumping grounds.
+- New behavior should ship with tests unless deferred explicitly.
 - Check in completed code work after verification.
 
 ## Invariants
@@ -29,3 +34,4 @@
 - Project memory is updated when priorities, rules, or notable findings change.
 - Verification is run when practical, or the lack of verification is stated explicitly.
 - A code review has been performed before the task is marked complete.
+- Canonical docs are updated in the same change when behavior changes.
