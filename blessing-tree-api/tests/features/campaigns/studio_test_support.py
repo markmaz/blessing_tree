@@ -41,6 +41,7 @@ def app(monkeypatch: pytest.MonkeyPatch) -> Generator[Flask, None, None]:
 
     monkeypatch.setattr("app.features.campaigns.api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.campaigns.studio_api.SessionLocal", session_manager)
+    monkeypatch.setattr("app.features.campaigns.team_api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.rbac.decorators.SessionLocal", session_manager)
 
     app = Flask(__name__)

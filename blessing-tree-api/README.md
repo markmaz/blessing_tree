@@ -19,6 +19,7 @@ The backend is a Flask application built around:
 - The first campaign business routes now exist as a feature package with protected list, detail, access, summary, create, and update endpoints.
 - Campaign Studio backend support now exists for team assignments, communication templates/schedules, milestone dates, readiness evaluation, aggregate studio payloads, manual campaign events, and unified schedule reads.
 - Campaign Studio now also exposes a campaign-scoped active-user directory search endpoint to support assignment creation from the frontend.
+- The Team redesign backend now also exposes member, access-role, team, membership, and aggregate Team workspace APIs alongside the older transitional assignment endpoints.
 - Dependency manifests now exist as `requirements.txt` and `requirements-dev.txt`.
 - Backend build version now lives in `version.json`.
 
@@ -143,6 +144,22 @@ Current routes under `/api/v1/campaigns`:
 - `GET /<campaign_id>/communications/templates`
 - `POST /<campaign_id>/communications/templates`
 - `PATCH /<campaign_id>/communications/templates/<template_id>`
+- `GET /<campaign_id>/team-workspace`
+- `GET /<campaign_id>/members`
+- `POST /<campaign_id>/members`
+- `GET /<campaign_id>/members/<member_id>`
+- `PATCH /<campaign_id>/members/<member_id>`
+- `GET /<campaign_id>/member-access-roles`
+- `POST /<campaign_id>/members/<member_id>/access-roles`
+- `PATCH /<campaign_id>/members/<member_id>/access-roles/<assignment_id>`
+- `GET /<campaign_id>/teams`
+- `POST /<campaign_id>/teams`
+- `PATCH /<campaign_id>/teams/<team_id>`
+- `POST /<campaign_id>/teams/<team_id>/members`
+- `DELETE /<campaign_id>/teams/<team_id>/members/<member_id>`
+- `POST /<campaign_id>/members/<member_id>/link-app-user`
+- `POST /<campaign_id>/members/<member_id>/invite-app-access`
+- `DELETE /<campaign_id>/members/<member_id>/app-access`
 - `GET /<campaign_id>/communications/schedules`
 - `POST /<campaign_id>/communications/schedules`
 - `PATCH /<campaign_id>/communications/schedules/<schedule_id>`
@@ -162,6 +179,7 @@ Current behavior:
 - detail, access, and summary require campaign visibility via RBAC
 - update requires the `campaign.admin` capability
 - directory-user search requires the `campaign.admin` capability and returns active users plus current/inactive role context for that campaign
+- Team workspace APIs now expose the member-centric roster, access-role, and team model that will replace the older assignment-first Team Studio flow
 - unified schedule reads require `campaign.view`
 - manual schedule event CRUD requires `campaign.admin`
 - campaign metadata now includes `description`

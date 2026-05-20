@@ -17,6 +17,7 @@ Last updated: 2026-05-20
   - campaign roster foundation now exists with a new `campaign_member` model and migration
   - member-centric RBAC transition now exists with a new `campaign_member_access_role` model and member-first authorization resolution
   - operational team foundation now exists with `campaign_team`, `campaign_team_member`, and a backend team service
+  - Team workspace API foundation now exists with member, access-role, team, membership, app-access, and aggregate workspace endpoints
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
   - Campaign Studio backend support now exists for assignments, communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, and aggregate studio payloads
   - backend startup now imports the full SQLAlchemy model registry during app creation
@@ -103,6 +104,12 @@ Last updated: 2026-05-20
   - `app/models/campaign_team.py`
   - `app/models/campaign_team_member.py`
   - `app/features/campaigns/team_service.py`
+- Team workspace API now exists:
+  - `app/features/campaigns/team_api.py`
+  - `app/features/campaigns/member_service.py`
+  - `app/features/campaigns/team_workspace_service.py`
+  - `app/features/campaigns/team_serializers.py`
+  - `app/features/campaigns/team_validation.py`
 - Local MySQL verification:
   - `V003__Campaign_User_Roles.sql` has been applied to the local `blessing_tree` database
   - verified columns, indexes, and foreign keys for `campaign_user_role`
@@ -175,6 +182,17 @@ Last updated: 2026-05-20
   - `GET /api/v1/campaigns/<campaign_id>/studio`
   - `GET /api/v1/campaigns/<campaign_id>/assignments`
   - `GET /api/v1/campaigns/<campaign_id>/directory-users`
+  - backend test coverage now includes `GET /api/v1/campaigns/<campaign_id>/team-workspace`
+  - backend test coverage now includes `GET|POST /api/v1/campaigns/<campaign_id>/members`
+  - backend test coverage now includes `GET|PATCH /api/v1/campaigns/<campaign_id>/members/<member_id>`
+  - backend test coverage now includes `GET /api/v1/campaigns/<campaign_id>/member-access-roles`
+  - backend test coverage now includes `POST|PATCH /api/v1/campaigns/<campaign_id>/members/<member_id>/access-roles`
+  - backend test coverage now includes `GET|POST /api/v1/campaigns/<campaign_id>/teams`
+  - backend test coverage now includes `PATCH /api/v1/campaigns/<campaign_id>/teams/<team_id>`
+  - backend test coverage now includes `POST|DELETE /api/v1/campaigns/<campaign_id>/teams/<team_id>/members`
+  - backend test coverage now includes `POST /api/v1/campaigns/<campaign_id>/members/<member_id>/link-app-user`
+  - backend test coverage now includes `POST /api/v1/campaigns/<campaign_id>/members/<member_id>/invite-app-access`
+  - backend test coverage now includes `DELETE /api/v1/campaigns/<campaign_id>/members/<member_id>/app-access`
   - `GET /api/v1/campaigns/<campaign_id>/communications/templates`
   - `GET /api/v1/campaigns/<campaign_id>/communications/schedules`
   - backend test coverage now includes `GET /api/v1/campaigns/<campaign_id>/schedule`
