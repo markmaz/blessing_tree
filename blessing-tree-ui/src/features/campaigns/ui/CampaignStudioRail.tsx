@@ -34,12 +34,14 @@ export function CampaignStudioRail({
               type="button"
               className={`campaign-studio__nav-item ${isSelected ? 'is-selected' : ''}`}
               onClick={() => onSelectSection(section.id)}
+              aria-label={section.label}
+              title={section.label}
             >
-              <div className="d-flex align-items-start gap-3">
+              <div className="campaign-studio__nav-item-content">
                 <span className="campaign-studio__nav-icon" aria-hidden="true">
                   <i className={`bi ${section.icon}`} />
                 </span>
-                <span className="text-start">
+                <span className="campaign-studio__nav-copy text-start">
                   <span className="campaign-studio__nav-label">{section.label}</span>
                   <span className="campaign-studio__nav-description">
                     {section.description}

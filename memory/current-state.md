@@ -30,6 +30,7 @@ Last updated: 2026-05-20
   - Campaign Studio now has live Team, Communications, Schedule, Readiness, and Settings sections backed by the backend studio APIs
   - Campaign Studio Schedule is now calendar-first, with modal create/edit/delete for events, milestones, and communication schedules directly from the month grid
   - Campaign Studio AI rail can now draft and apply schedule events, milestones, and communications from prompt input
+  - Campaign Studio now uses a compact icon-only section rail at medium widths, and the schedule calendar/AI draft controls have responsive overflow guards for narrower layouts
   - Schedule destructive actions now use custom in-app confirmation UI instead of native browser dialogs
   - Campaign Studio Team can now search active users and create campaign assignments directly from the frontend
   - Campaign Studio can now create communication templates and schedules from the frontend

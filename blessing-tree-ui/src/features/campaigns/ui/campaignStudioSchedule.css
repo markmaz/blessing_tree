@@ -25,13 +25,16 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.85rem;
+  min-width: 0;
 }
 
 .campaign-studio__calendar-period-field {
   margin: 0;
+  min-width: 0;
 }
 
 .campaign-studio__calendar-period-field .form-select {
+  width: 100%;
   min-width: 14rem;
   border-radius: 1rem;
   border: 1px solid rgba(214, 205, 189, 0.92);
@@ -90,6 +93,8 @@
 
 .campaign-studio__calendar-day {
   min-height: 12rem;
+  min-width: 0;
+  overflow: hidden;
   border: 1px solid rgba(226, 218, 205, 0.9);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.92);
@@ -127,10 +132,13 @@
 .campaign-studio__calendar-items {
   display: grid;
   gap: 0.45rem;
+  min-width: 0;
 }
 
 .campaign-studio__calendar-item {
   width: 100%;
+  min-width: 0;
+  overflow: hidden;
   border: 1px solid transparent;
   border-radius: 0.9rem;
   padding: 0.6rem 0.7rem;
@@ -150,7 +158,13 @@
   display: flex;
   align-items: center;
   gap: 0.45rem;
+  min-width: 0;
   font-weight: 700;
+}
+
+.campaign-studio__calendar-item-title span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .campaign-studio__calendar-item-meta {
@@ -158,10 +172,12 @@
   margin-top: 0.25rem;
   color: var(--blessing-text-light);
   font-size: 0.72rem;
+  overflow-wrap: anywhere;
 }
 
 .campaign-studio__calendar-empty-slot {
   width: 100%;
+  min-width: 0;
   border: 1px dashed rgba(214, 205, 189, 0.92);
   border-radius: 0.9rem;
   background: rgba(249, 245, 238, 0.72);
@@ -169,6 +185,7 @@
   padding: 0.8rem 0.75rem;
   text-align: left;
   font-size: 0.78rem;
+  overflow-wrap: anywhere;
 }
 
 .campaign-studio__calendar-empty-slot:disabled {
@@ -242,11 +259,18 @@
 .campaign-studio__modal-type-button {
   display: grid;
   gap: 0.25rem;
+  min-width: 0;
+  overflow: hidden;
   border: 1px solid rgba(223, 214, 202, 0.92);
   border-radius: 1rem;
   padding: 0.85rem 0.95rem;
   background: rgba(250, 246, 239, 0.92);
   text-align: left;
+}
+
+.campaign-studio__modal-type-button > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .campaign-studio__modal-type-button.is-selected {
@@ -285,6 +309,31 @@
 
 .campaign-studio__ai-inline-stats {
   margin-bottom: 1rem;
+}
+
+@media (max-width: 1320px) {
+  .campaign-studio__calendar-grid {
+    gap: 0.55rem;
+  }
+
+  .campaign-studio__calendar-day {
+    min-height: 9.75rem;
+    padding: 0.65rem;
+    gap: 0.6rem;
+  }
+
+  .campaign-studio__calendar-item {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  .campaign-studio__calendar-item-meta {
+    font-size: 0.68rem;
+  }
+
+  .campaign-studio__modal-type-switch {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 991px) {
