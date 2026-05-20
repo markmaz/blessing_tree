@@ -22,6 +22,7 @@ Last updated: 2026-05-20
 - Implemented RBAC foundation with campaign role persistence, a capability matrix, an authorization service, backend version.json, and backend tests
 - Applied and verified the RBAC migration against the local MySQL `blessing_tree` database
 - Implemented RBAC enforcement helpers for app-admin gating, campaign capability gating, and campaign scope resolution, with backend tests
+- Documented the concrete campaign API design, AI-assisted campaign draft flow, and Campaign Studio direction
 - Promoted additional coding rules into engineering policy for file size, single responsibility, version bumps, review, commit discipline, naming, and feature-driven backend structure
 - Promoted additional delivery rules into engineering policy for migrations, backend-authoritative authz, additive APIs, shared-module scope, tests, and doc updates
 - Initialized a single top-level Git repository with root `.gitignore` and `.gitattributes`

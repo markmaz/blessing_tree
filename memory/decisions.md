@@ -49,6 +49,13 @@
 - Rationale: the existing schema and auth flow already depend on the legacy role field, but RBAC needs cleaner global-role meaning immediately without blocking on a data migration.
 - Consequence: authorization code should treat `app_user.role` as a compatibility source until a later schema migration narrows the stored values to app-level roles only.
 
+## Campaign Product Direction
+
+- Status: active
+- Decision: treat campaign as the primary operating container, allow multiple campaigns per year, use one selected active campaign in the UI, default to archival rather than delete, support AI-assisted campaign draft creation, and design a Campaign Studio surface inspired by Query Forge Workflow Studio's rail/work-area/inspector interaction model.
+- Rationale: the existing data model is already campaign-centered, operational users will likely move across multiple campaigns, and the app needs a structured control surface that is richer than plain CRUD forms.
+- Consequence: campaign APIs should be path-scoped and capability-aware, campaign creation should support both structured input and prompt-driven draft generation, and the frontend should evolve toward a studio-style campaign surface rather than only list/detail forms.
+
 ## Code Structure Policy
 
 - Status: active
