@@ -102,6 +102,7 @@ Last updated: 2026-05-21
   - global LLM configuration storage and health testing
   - runtime health visibility for database, Celery, and the configured LLM
   - app feature flag reads/toggles for frontend route and UI gating
+- Split the admin frontend into child pages under `/admin` so user management, LLM configuration, and health checks are no longer stacked on one screen
 - Applied and verified the automation runtime migration against local MySQL `blessing_tree`
 - Live-smoke-tested worker/beat startup plus a real queued communication dispatch against the local Blessing Tree stack
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records

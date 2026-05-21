@@ -21,6 +21,9 @@ import { FamiliesPage } from '@/pages/FamiliesPage';
 import { DonationsPage } from '@/pages/DonationsPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { AdminPage } from '@/pages/AdminPage';
+import { AdminUsersPage } from '@/pages/AdminUsersPage';
+import { AdminLlmPage } from '@/pages/AdminLlmPage';
+import { AdminHealthPage } from '@/pages/AdminHealthPage';
 import { routes } from './routes';
 
 export function App() {
@@ -78,7 +81,12 @@ export function App() {
                     </FeatureGate>
                   }
                 />
-                <Route path={routes.ADMIN.slice(1)} element={<AdminPage />} />
+                <Route path={routes.ADMIN.slice(1)} element={<AdminPage />}>
+                  <Route index element={<Navigate to={routes.ADMIN_USERS} replace />} />
+                  <Route path="users" element={<AdminUsersPage />} />
+                  <Route path="llm" element={<AdminLlmPage />} />
+                  <Route path="health" element={<AdminHealthPage />} />
+                </Route>
               </Route>
 
               {/* Fallback */}

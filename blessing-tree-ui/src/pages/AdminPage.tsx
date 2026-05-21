@@ -1,37 +1,28 @@
-import { useEffect, useState } from 'react';
-import { fetchAdminUsers } from '@/features/admin/api/adminApi';
-import type { AdminUsersPayload } from '@/features/admin/model/adminTypes';
-import { AdminUserInvitesCard } from '@/features/admin/ui/AdminUserInvitesCard';
-import { AdminLlmConfigCard } from '@/features/admin/ui/AdminLlmConfigCard';
-import { AdminHealthCard } from '@/features/admin/ui/AdminHealthCard';
-import { AdminFeatureFlagsCard } from '@/features/admin/ui/AdminFeatureFlagsCard';
+import { NavLink, Outlet } from 'react-router-dom';
+import { routes } from '@/app/routes';
 import { useAuth } from '@/features/auth/model/authContext';
 import { isAppAdminRole } from '@/features/campaigns/model/campaignPermissions';
 
+const adminNavItems = [
+  {
+    label: 'User Management',
+    to: routes.ADMIN_USERS,
+    icon: 'bi-people',
+  },
+  {
+    label: 'LLM Configuration',
+    to: routes.ADMIN_LLM,
+    icon: 'bi-cpu',
+  },
+  {
+    label: 'Health Check',
+    to: routes.ADMIN_HEALTH,
+    icon: 'bi-heart-pulse',
+  },
+];
+
 export function AdminPage() {
   const { role } = useAuth();
-  const [usersPayload, setUsersPayload] = useState<AdminUsersPayload | null>(null);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
-  const [usersError, setUsersError] = useState<string | null>(null);
-
-  const loadUsers = async () => {
-    setUsersError(null);
-    try {
-      setUsersPayload(await fetchAdminUsers());
-    } catch (loadError) {
-      setUsersError(loadError instanceof Error ? loadError.message : 'Unable to load admin users.');
-    } finally {
-      setIsLoadingUsers(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!isAppAdminRole(role)) {
-      setIsLoadingUsers(false);
-      return;
-    }
-    void loadUsers();
-  }, [role]);
 
   if (!isAppAdminRole(role)) {
     return (
@@ -45,43 +36,34 @@ export function AdminPage() {
   }
 
   return (
-    <div>
-      <div className="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+    <div className="vstack gap-4">
+      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div>
           <h1 className="h3 mb-1">Admin</h1>
           <p className="text-muted mb-0">
-            Manage onboarding, runtime health, LLM configuration, and application features.
+            Manage users, LLM runtime settings, and system health from focused admin sections.
           </p>
         </div>
       </div>
 
-      <div className="row g-4">
-        <div className="col-12">
-          {isLoadingUsers ? (
-            <div className="content-card">Loading users…</div>
-          ) : usersError ? (
-            <div className="content-card">
-              <div className="alert alert-danger mb-0">{usersError}</div>
-            </div>
-          ) : usersPayload ? (
-            <AdminUserInvitesCard
-              users={usersPayload.users}
-              invitations={usersPayload.invitations}
-              roleCatalog={usersPayload.roleCatalog}
-              onDataChanged={loadUsers}
-            />
-          ) : null}
-        </div>
-        <div className="col-12 col-xl-6">
-          <AdminLlmConfigCard />
-        </div>
-        <div className="col-12 col-xl-6">
-          <AdminHealthCard />
-        </div>
-        <div className="col-12">
-          <AdminFeatureFlagsCard />
+      <div className="content-card">
+        <div className="d-flex flex-wrap gap-2">
+          {adminNavItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `btn ${isActive ? 'btn-primary' : 'btn-outline-secondary'}`
+              }
+            >
+              <i className={`bi ${item.icon} me-2`} aria-hidden="true" />
+              {item.label}
+            </NavLink>
+          ))}
         </div>
       </div>
+
+      <Outlet />
     </div>
   );
 }

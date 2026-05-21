@@ -38,7 +38,7 @@ const navItems = [
   },
   {
     label: 'Admin',
-    to: routes.ADMIN,
+    to: routes.ADMIN_USERS,
     icon: 'bi-gear',
   },
 ];
@@ -50,7 +50,7 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
     if (item.to === routes.FAMILIES) return isFeatureEnabled('families');
     if (item.to === routes.DONATIONS) return isFeatureEnabled('donations');
     if (item.to === routes.REPORTS) return isFeatureEnabled('reports');
-    if (item.to === routes.ADMIN) return isAppAdminRole(role);
+    if (item.to === routes.ADMIN_USERS) return isAppAdminRole(role);
     return true;
   });
 

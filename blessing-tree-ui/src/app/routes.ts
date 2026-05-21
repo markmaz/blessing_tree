@@ -16,6 +16,9 @@ export const routes = {
   DONATIONS: '/donations',
   REPORTS: '/reports',
   ADMIN: '/admin',
+  ADMIN_USERS: '/admin/users',
+  ADMIN_LLM: '/admin/llm',
+  ADMIN_HEALTH: '/admin/health',
 } as const;
 
 export function buildCampaignDetailPath(campaignId: string): string {
