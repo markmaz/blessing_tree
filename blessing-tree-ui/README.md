@@ -29,6 +29,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - The Team section now also includes inline concept help for roster terms such as `Member Type`, `App Access`, `App Access Roles`, and `Teams`, and the Studio AI drawer now exposes the same Team glossary when the Team section is active.
 - The Team workspace now consumes the backend-provided app access role catalog, so role labels and descriptions are no longer duplicated in the frontend.
 - The Admin area now uses left-sidebar child navigation under `Admin` for user management, LLM configuration, health checks, and app capabilities.
+- The User Management child page now uses a Query Forge-style workspace with a searchable/sortable table, row action menu, invite drawer, and user detail drawer.
 - The communications section is now a template-only builder with a collapsible tool rail, metadata/content editing, a stronger rendered preview surface, a builder-side merge-field drawer, heading/text/image content blocks, and inline uploads for small embedded images; the Studio AI panel now opens as a hidden right drawer instead of taking permanent page width.
 - The dates section now saves campaign milestone dates through the studio.
 - A Vitest + Testing Library harness now exists for automated frontend tests.

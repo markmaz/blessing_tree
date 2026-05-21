@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchAdminUsers } from '@/features/admin/api/adminApi';
 import type { AdminUsersPayload } from '@/features/admin/model/adminTypes';
-import { AdminUserInvitesCard } from '@/features/admin/ui/AdminUserInvitesCard';
+import { AdminUsersWorkspace } from '@/features/admin/ui/AdminUsersWorkspace';
 
 export function AdminUsersPage() {
   const [usersPayload, setUsersPayload] = useState<AdminUsersPayload | null>(null);
@@ -40,7 +40,7 @@ export function AdminUsersPage() {
   }
 
   return (
-    <AdminUserInvitesCard
+    <AdminUsersWorkspace
       users={usersPayload.users}
       invitations={usersPayload.invitations}
       roleCatalog={usersPayload.roleCatalog}
