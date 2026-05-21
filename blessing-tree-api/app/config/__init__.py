@@ -1,4 +1,5 @@
 import os
+import platform
 
 from dotenv import load_dotenv
 
@@ -59,6 +60,16 @@ DEFAULT_MAIL_SENDER = os.getenv("DEFAULT_MAIL_SENDER")
 INVITE_URL = os.getenv("INVITE_URL")
 PASSWORD_RESET_URL = os.getenv("PASSWORD_RESET_URL")
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+ORGANIZATION_NAME = os.getenv("ORGANIZATION_NAME", "Blessing Tree")
+
+IS_DARWIN = platform.system().lower() == "darwin"
+BT_CELERY_WORKER_POOL = os.getenv("BT_CELERY_WORKER_POOL", "solo" if IS_DARWIN else "prefork")
+BT_CELERY_WORKER_CONCURRENCY = int(os.getenv("BT_CELERY_WORKER_CONCURRENCY", "1"))
+BT_CAMPAIGN_AUTOMATION_POLL_SECONDS = int(os.getenv("BT_CAMPAIGN_AUTOMATION_POLL_SECONDS", "60"))
+BT_CAMPAIGN_LIFECYCLE_POLL_SECONDS = int(os.getenv("BT_CAMPAIGN_LIFECYCLE_POLL_SECONDS", "300"))
+BT_CAMPAIGN_AUTOMATION_HEARTBEAT_TTL_SECONDS = int(
+    os.getenv("BT_CAMPAIGN_AUTOMATION_HEARTBEAT_TTL_SECONDS", "180")
+)
 
 # Qdrant
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")

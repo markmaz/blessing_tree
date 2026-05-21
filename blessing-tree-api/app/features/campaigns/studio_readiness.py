@@ -36,13 +36,14 @@ def build_campaign_readiness(
     schedules,
     templates,
     manual_events,
+    automation_snapshot: dict[str, object] | None = None,
 ) -> dict[str, object]:
     items = [
         *build_metadata_rules(campaign),
         *build_team_rules(assignments, role_counts),
         *build_schedule_rules(milestones, schedules, manual_events),
         *build_communications_rules(templates, schedules),
-        *build_automation_rules(campaign, schedules),
+        *build_automation_rules(campaign, schedules, automation_snapshot or {}),
         *build_lifecycle_rules(campaign),
     ]
 

@@ -20,6 +20,7 @@ Last updated: 2026-05-21
   - Team workspace API foundation now exists with member, access-role, team, membership, app-access, and aggregate workspace endpoints
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
   - Campaign Studio backend support now exists for assignments, communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, and aggregate studio payloads
+  - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
   - backend startup now imports the full SQLAlchemy model registry during app creation
   - local auth compatibility now depends on `bcrypt 4.1.3` with `passlib 1.7.4`
   - runtime and dev dependency manifests now exist
@@ -190,7 +191,28 @@ Last updated: 2026-05-21
   - grouped categories instead of one flat finding list
   - phase-aware gating for `draft`, `activate`, `operations`, and `close`
   - readiness items should carry `category`, `action_label`, and `blocking_for`
-  - current readiness now explicitly surfaces the missing scheduled-communication automation layer when communication schedules exist
+  - current readiness now reflects real automation health through worker heartbeat and recent execution-issue checks instead of the older placeholder warning
+- Campaign automation runtime now exists:
+  - `db/migration/V011__Campaign_Automation_Runtime.sql`
+  - `app/tasks/campaign_tasks.py`
+  - `app/features/campaigns/automation_dispatch_service.py`
+  - `app/features/campaigns/automation_lifecycle_service.py`
+  - `app/features/campaigns/automation_readiness_service.py`
+  - `app/features/campaigns/automation_repository.py`
+  - `app/features/campaigns/runtime_health.py`
+  - `app/features/campaigns/template_renderer.py`
+  - `app/features/campaigns/recipient_resolver.py`
+- Local MySQL verification:
+  - `V011__Campaign_Automation_Runtime.sql` has been applied to the local `blessing_tree` database
+  - verified campaign communication delivery metadata columns
+  - verified `campaign_automation_execution`
+  - verified execution indexes and foreign keys
+- Local automation smoke on 2026-05-21:
+  - Blessing Tree worker and beat both boot successfully through `./.venv/bin/python -m celery -A app.celery ...`
+  - a due communication schedule was processed through the live worker
+  - execution records and schedule delivery-attempt metadata were written to MySQL
+  - worker heartbeat now reports healthy through the readiness/runtime health path
+  - the backend now uses a dedicated Celery queue named `bt` to avoid cross-talk with Query Forge tasks on shared local Valkey
 - Frontend campaign routes now exist:
   - `/campaigns`
   - `/campaigns/:campaignId`

@@ -183,6 +183,10 @@ def test_create_template_and_schedule_then_readiness_reflects_changes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     install_auth(monkeypatch)
+    monkeypatch.setattr(
+        "app.features.campaigns.automation_readiness_service.campaign_worker_is_healthy",
+        lambda: False,
+    )
     session = campaign_api_module.SessionLocal()
     manager = seed_user(session)
     campaign = seed_campaign(session)
@@ -229,11 +233,11 @@ def test_create_template_and_schedule_then_readiness_reflects_changes(
     readiness_codes = {item["code"] for item in readiness["items"]}
     assert "missing_templates" not in readiness_codes
     assert "missing_schedules" not in readiness_codes
-    assert "automation_delivery_unavailable" in readiness_codes
+    assert "automation_worker_unavailable" in readiness_codes
     automation_item = next(
         item
         for item in readiness["items"]
-        if item["code"] == "automation_delivery_unavailable"
+        if item["code"] == "automation_worker_unavailable"
     )
     assert automation_item["category"] == "operational_health"
     assert automation_item["action_label"] == "Open Readiness"

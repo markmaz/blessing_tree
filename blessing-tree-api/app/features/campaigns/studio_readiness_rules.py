@@ -170,34 +170,56 @@ def build_communications_rules(templates, schedules) -> list[dict[str, object]]:
     return items
 
 
-def build_automation_rules(campaign, schedules) -> list[dict[str, object]]:
+def build_automation_rules(campaign, schedules, automation_snapshot: dict[str, object]) -> list[dict[str, object]]:
     active_schedules = [schedule for schedule in schedules if schedule.status != "DISABLED"]
     if not active_schedules:
         return []
 
     is_active_campaign = campaign.status == "ACTIVE"
-    return [
-        readiness_item(
-            severity="warning",
-            category=(
-                READINESS_CATEGORY_OPERATIONAL_HEALTH
-                if is_active_campaign
-                else READINESS_CATEGORY_LAUNCH_CHECKS
-            ),
-            code="automation_delivery_unavailable",
-            section="readiness",
-            message=(
-                "Scheduled communications exist, but automated delivery is not wired yet."
-                if is_active_campaign
-                else "Scheduled communications will not deliver automatically until the automation worker is implemented."
-            ),
-            blocking_for=(
-                [READINESS_PHASE_OPERATIONS]
-                if is_active_campaign
-                else [READINESS_PHASE_ACTIVATE]
-            ),
+    worker_healthy = bool(automation_snapshot.get("worker_healthy"))
+    recent_issue_count = int(automation_snapshot.get("recent_issue_count") or 0)
+    category = (
+        READINESS_CATEGORY_OPERATIONAL_HEALTH
+        if is_active_campaign
+        else READINESS_CATEGORY_LAUNCH_CHECKS
+    )
+    blocking_for = (
+        [READINESS_PHASE_OPERATIONS]
+        if is_active_campaign
+        else [READINESS_PHASE_ACTIVATE]
+    )
+
+    items: list[dict[str, object]] = []
+    if not worker_healthy:
+        items.append(
+            readiness_item(
+                severity="warning",
+                category=category,
+                code="automation_worker_unavailable",
+                section="readiness",
+                message=(
+                    "Scheduled communications exist, but the automation worker is not currently healthy."
+                    if is_active_campaign
+                    else "Scheduled communications will not deliver automatically until the automation worker is running."
+                ),
+                blocking_for=blocking_for,
+            )
         )
-    ]
+
+    if recent_issue_count > 0:
+        items.append(
+            readiness_item(
+                severity="warning",
+                category=READINESS_CATEGORY_OPERATIONAL_HEALTH,
+                code="automation_recent_failures",
+                section="readiness",
+                message="Automation has recent blocked or failed executions that should be reviewed.",
+                blocking_for=[READINESS_PHASE_OPERATIONS],
+                details={"issue_count": recent_issue_count},
+            )
+        )
+
+    return items
 
 
 def build_lifecycle_rules(campaign) -> list[dict[str, object]]:

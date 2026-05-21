@@ -15,6 +15,7 @@ from .app_user import AppUser
 from .auth import AuthIdentity
 from .base import Base
 from .campaign import Campaign
+from .campaign_automation_execution import CampaignAutomationExecution
 from .campaign_communication_schedule import CampaignCommunicationSchedule
 from .campaign_event import CampaignEvent
 from .campaign_member import CampaignMember
@@ -52,6 +53,7 @@ __all__ = [
     "Base",
     "CampaignUserRole",
     "Campaign",
+    "CampaignAutomationExecution",
     "CampaignCommunicationSchedule",
     "CampaignEvent",
     "CampaignMember",

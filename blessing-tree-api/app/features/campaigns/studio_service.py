@@ -6,6 +6,9 @@ from collections.abc import Mapping
 from sqlalchemy.orm import Session, joinedload
 
 from app.exceptions.service_error import ServiceError
+from app.features.campaigns.automation_readiness_service import (
+    CampaignAutomationReadinessService,
+)
 from app.features.campaigns.service import CampaignService
 from app.features.campaigns.studio_readiness import build_campaign_readiness
 from app.features.campaigns.studio_schedule_service import CampaignStudioScheduleService
@@ -31,6 +34,7 @@ class CampaignStudioService:
         self.campaigns = campaign_service or CampaignService()
         self.schedule = CampaignStudioScheduleService(self.campaigns)
         self.team = CampaignStudioTeamService(self.campaigns)
+        self.automation_readiness = CampaignAutomationReadinessService()
 
     def get_studio_payload(self, db: Session, user_id: str, campaign_id: str) -> dict[str, object]:
         campaign = self.campaigns.get_campaign(db, campaign_id)
@@ -211,6 +215,11 @@ class CampaignStudioService:
         schedules = self.list_schedules(db, campaign_id)
         templates = self.list_templates(db)
         manual_events = self.schedule.list_events(db, campaign_id)
+        automation_snapshot = self.automation_readiness.build_snapshot(
+            db,
+            campaign_id=campaign_id,
+            schedules=schedules,
+        )
         return build_campaign_readiness(
             campaign,
             assignments=team["assignments"],
@@ -219,6 +228,7 @@ class CampaignStudioService:
             schedules=schedules,
             templates=templates,
             manual_events=manual_events,
+            automation_snapshot=automation_snapshot,
         )
 
     @staticmethod

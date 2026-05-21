@@ -18,6 +18,7 @@ The backend is a Flask application built around:
 - The initial RBAC foundation now exists as a feature package with campaign role persistence, a capability matrix, an authorization service, and reusable enforcement decorators.
 - The first campaign business routes now exist as a feature package with protected list, detail, access, summary, create, and update endpoints.
 - Campaign Studio backend support now exists for team assignments, communication templates/schedules, milestone dates, readiness evaluation, aggregate studio payloads, manual campaign events, and unified schedule reads.
+- Campaign automation runtime now exists for scheduled communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness health checks.
 - Campaign Studio now also exposes a campaign-scoped active-user directory search endpoint to support assignment creation from the frontend.
 - The Team redesign backend now also exposes member, access-role, team, membership, and aggregate Team workspace APIs alongside the older transitional assignment endpoints.
 - Dependency manifests now exist as `requirements.txt` and `requirements-dev.txt`.
@@ -125,6 +126,11 @@ Core DDL lives in:
 - `db/migration/V004__Campaign_Metadata.sql`
 - `db/migration/V005__Campaign_Studio_Support.sql`
 - `db/migration/V006__Campaign_Schedule.sql`
+- `db/migration/V007__Campaign_Members.sql`
+- `db/migration/V008__Campaign_Member_Access_Roles.sql`
+- `db/migration/V009__Campaign_Teams.sql`
+- `db/migration/V010__Campaign_Team_Roles.sql`
+- `db/migration/V011__Campaign_Automation_Runtime.sql`
 
 ## Campaign Routes
 
@@ -195,6 +201,8 @@ From `blessing-tree-api/`:
 scripts/test.sh
 scripts/lint.sh
 scripts/coverage.sh
+./.venv/bin/python -m celery -A app.celery worker --loglevel=INFO
+./.venv/bin/python -m celery -A app.celery beat --loglevel=INFO --schedule=/tmp/blessing-tree-celerybeat-schedule
 ```
 
 ## Environment Notes
@@ -214,6 +222,8 @@ Config cleanup notes:
 
 - `SMTP_PORT` is the canonical mail port variable; the app still accepts legacy `SMPT_PORT` for compatibility.
 - `VALKEY_ADDRESS` is the canonical cache/broker host variable; `VALKEY_HOST` is also accepted for compatibility.
+- Celery now uses a dedicated default queue named `bt`, even when sharing the same local Valkey broker with other projects.
+- Scheduled communication delivery requires working SMTP settings; otherwise the worker will still execute schedules, but it will log failed delivery attempts instead of sending mail.
 
 ## Versioning
 

@@ -9,7 +9,6 @@ from urllib.parse import urlsplit, urlunsplit
 import valkey
 from flask import Flask, g, jsonify, request
 from flask_cors import CORS
-from flask_mail import Mail
 from flask_restx import Api
 
 import app.models.models  # noqa: F401
@@ -17,19 +16,18 @@ import app.models.models  # noqa: F401
 from app.celery import celery, init_celery
 from app.config import FRONTEND_BASE_URL, LOG_QUEUE, VALKEY_ADDRESS, VALKEY_CONFIG, VALKEY_PORT
 from app.exceptions.service_error import ServiceError
+from app.extensions import mail
 from app.features.campaigns import campaign_ns
 from app.features.meta import meta_ns
 from app.routes.auth_routes import auth_ns, init_oauth
 from app.services.auth import AuthService
 from app.utils import build_url
 from app.versioning import get_backend_version
-from app.config.mail_config import MailConfig
 from app.config.logging_config import configure_logging
+from app.config.mail_config import MailConfig
 
 NAME = "api"
 VERSION = "v1"
-
-mail = Mail()
 auth_service = AuthService()
 BACKEND_VERSION = get_backend_version()
 

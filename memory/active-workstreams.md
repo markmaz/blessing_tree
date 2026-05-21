@@ -5,7 +5,7 @@ Last updated: 2026-05-21
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Campaign Studio AI phases 1 through 5 are now implemented with a backend draft endpoint, normalized schedule action cards, Communications template-plus-schedule bundles, Team team/role/member assignment bundles, Readiness cross-section fix bundles, and Settings/status drafts with inline edit-before-apply; the next focus is audiences based on teams/team roles/member filters, then real scheduling automation
+- Current step: real scheduling automation is now implemented for communication dispatch and lifecycle transitions, including Celery worker/beat entry points, execution logging, worker heartbeat, dedicated queue isolation, and readiness health checks; the next focus is audiences based on teams/team roles/member filters plus deeper automation polish
 
 ## Recently Completed
 
@@ -90,7 +90,15 @@ Last updated: 2026-05-21
 - Implemented Campaign Studio AI phase 5 with real Settings drafts, readiness-aware lifecycle/status suggestions, and inline edit-before-apply for scalar campaign setting changes in the AI drawer
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
-- Added an explicit readiness warning when scheduled communications exist but automated delivery is not wired yet
+- Replaced the old placeholder automation warning with a real execution layer:
+  - Celery task package
+  - due communication dispatch
+  - lifecycle advancement
+  - execution logging in `campaign_automation_execution`
+  - worker heartbeat-backed readiness health
+  - a dedicated `bt` queue to isolate Blessing Tree from Query Forge on shared local Valkey
+- Applied and verified the automation runtime migration against local MySQL `blessing_tree`
+- Live-smoke-tested worker/beat startup plus a real queued communication dispatch against the local Blessing Tree stack
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Fixed backend runtime gaps discovered during live stack verification:
@@ -104,8 +112,8 @@ Last updated: 2026-05-21
 ## Immediate Next Steps
 
 1. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
-2. Design and implement the actual scheduling execution layer for communications and lifecycle events
-3. Feed real automation health and execution failures back into Campaign Readiness
+2. Expand communications audiences to use teams, team roles, and member filters as first-class targets
+3. Improve automation ergonomics around retries, SMTP configuration visibility, and richer execution diagnostics
 4. Extend AI editing-before-apply into higher-complexity bundles beyond the new Settings/status scalar editor
 5. After the Team write paths move over, retire the temporary legacy `campaign_user_role` fallback in authorization resolution
 
