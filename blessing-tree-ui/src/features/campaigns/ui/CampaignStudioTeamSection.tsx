@@ -152,14 +152,15 @@ export function CampaignStudioTeamSection({
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm campaign-team-workspace__section-action"
-                      aria-label="Add person"
-                      title="Add person"
+                      aria-label="Add member"
+                      title="Add member"
                       onClick={() => {
                         setSelectedMemberId(null);
                         setIsCreateMemberOpen(true);
                       }}
                     >
                       <i className="bi bi-person-plus" aria-hidden="true" />
+                      <span>Add Member</span>
                     </button>
                   ) : null}
                 </div>
@@ -201,6 +202,7 @@ export function CampaignStudioTeamSection({
                       }}
                     >
                       <i className="bi bi-plus-lg" aria-hidden="true" />
+                      <span>Add Team</span>
                     </button>
                   ) : null}
                 </div>

@@ -263,7 +263,7 @@ describe('CampaignStudioTeamSection', () => {
       />
     );
 
-    expect(screen.queryByRole('button', { name: /add person/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add member/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /add team/i })).not.toBeInTheDocument();
     expect(screen.getAllByText('Phone Bank').length).toBeGreaterThan(0);
   });
