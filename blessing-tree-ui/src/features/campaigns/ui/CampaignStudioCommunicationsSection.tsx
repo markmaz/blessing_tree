@@ -22,6 +22,8 @@ import { CampaignStudioTemplateWorkspace } from '@/features/campaigns/ui/Campaig
 interface CampaignStudioCommunicationsSectionProps {
   templates: CommunicationTemplate[];
   isSaving: boolean;
+  requestedTemplateId?: string | null;
+  onConsumeRequestedTemplate?: () => void;
   onCreateTemplate: (
     input: CreateCommunicationTemplateInput
   ) => Promise<CommunicationTemplate | null>;
@@ -35,6 +37,8 @@ interface CampaignStudioCommunicationsSectionProps {
 export function CampaignStudioCommunicationsSection({
   templates,
   isSaving,
+  requestedTemplateId = null,
+  onConsumeRequestedTemplate,
   onCreateTemplate,
   onUpdateTemplate,
   onDeleteTemplate,
@@ -68,6 +72,24 @@ export function CampaignStudioCommunicationsSection({
       });
     }
   }, [selectedTemplateId, templates]);
+
+  useEffect(() => {
+    if (!requestedTemplateId) {
+      return;
+    }
+
+    const requestedTemplate = templates.find((template) => template.id === requestedTemplateId);
+    if (!requestedTemplate) {
+      return;
+    }
+
+    startTransition(() => {
+      setSelectedTemplateId(requestedTemplate.id);
+      setDraft(draftFromCommunicationTemplate(requestedTemplate));
+      setActiveTab('metadata');
+      onConsumeRequestedTemplate?.();
+    });
+  }, [onConsumeRequestedTemplate, requestedTemplateId, templates]);
 
   const handleCreateNew = () => {
     setSelectedTemplateId(null);

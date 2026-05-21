@@ -11,9 +11,11 @@ import { Link } from 'react-router-dom';
 export function CampaignStudioOverview({
   studio,
   onEditCampaign,
+  onOpenCommunication,
 }: {
   studio: CampaignStudioData;
   onEditCampaign: () => void;
+  onOpenCommunication: (templateId: string) => void;
 }) {
   const {
     campaign,
@@ -111,14 +113,29 @@ export function CampaignStudioOverview({
 
         <article className="campaign-surface-card">
           <div className="campaign-studio__card-eyebrow">Communications</div>
-          <h2 className="h5 mb-3">Templates and Scheduled Touchpoints</h2>
-          <div className="campaign-chip-row">
-            <span className="campaign-chip">
-              {communications.templates.length} templates
-            </span>
-            <span className="campaign-chip campaign-chip-muted">
-              {communications.schedules.length} schedules
-            </span>
+          <h2 className="h5 mb-3">Saved Templates</h2>
+          <div className="campaign-studio__overview-communication-group">
+            <div className="campaign-studio__overview-link-list">
+              {communications.templates.length === 0 ? (
+                <div className="small text-muted">No templates saved yet.</div>
+              ) : (
+                communications.templates.map((template) => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    className="campaign-studio__overview-link-card"
+                    onClick={() => onOpenCommunication(template.id)}
+                  >
+                    <span className="campaign-studio__overview-link-title">
+                      {template.name}
+                    </span>
+                    <span className="campaign-studio__overview-link-meta">
+                      {template.audience}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         </article>
 

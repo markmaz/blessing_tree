@@ -49,6 +49,7 @@ export function CampaignStudioPage() {
     useState<CampaignStudioSectionId>('overview');
   const [isAiRailOpen, setIsAiRailOpen] = useState(false);
   const [teamWorkspaceRefreshToken, setTeamWorkspaceRefreshToken] = useState(0);
+  const [communicationTemplateFocusId, setCommunicationTemplateFocusId] = useState<string | null>(null);
   const [isUpdatingCampaign, setIsUpdatingCampaign] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
@@ -152,7 +153,9 @@ export function CampaignStudioPage() {
             studio,
             isSaving: isSaving || isUpdatingCampaign,
             teamWorkspaceRefreshToken,
+            communicationTemplateFocusId,
             setSelectedSection,
+            setCommunicationTemplateFocusId,
             onUpdateCampaign: async (input) => {
               setIsUpdatingCampaign(true);
               setUpdateError(null);
@@ -248,7 +251,9 @@ function renderStudioSection({
   studio,
   isSaving,
   teamWorkspaceRefreshToken,
+  communicationTemplateFocusId,
   setSelectedSection,
+  setCommunicationTemplateFocusId,
   onUpdateCampaign,
   addCommunicationTemplate,
   patchCommunicationTemplate,
@@ -265,7 +270,9 @@ function renderStudioSection({
   studio: NonNullable<ReturnType<typeof useCampaignStudio>['studio']>;
   isSaving: boolean;
   teamWorkspaceRefreshToken: number;
+  communicationTemplateFocusId: string | null;
   setSelectedSection: (sectionId: CampaignStudioSectionId) => void;
+  setCommunicationTemplateFocusId: (templateId: string | null) => void;
   onUpdateCampaign: (input: CampaignUpsertInput) => Promise<boolean>;
   addCommunicationTemplate: ReturnType<typeof useCampaignStudio>['addCommunicationTemplate'];
   patchCommunicationTemplate: ReturnType<typeof useCampaignStudio>['patchCommunicationTemplate'];
@@ -283,6 +290,10 @@ function renderStudioSection({
       <CampaignStudioOverview
         studio={studio}
         onEditCampaign={() => setSelectedSection('settings')}
+        onOpenCommunication={(templateId) => {
+          setCommunicationTemplateFocusId(templateId);
+          setSelectedSection('communications');
+        }}
       />
     );
   }
@@ -302,6 +313,8 @@ function renderStudioSection({
       <CampaignStudioCommunicationsSection
         templates={studio.communications.templates}
         isSaving={isSaving}
+        requestedTemplateId={communicationTemplateFocusId}
+        onConsumeRequestedTemplate={() => setCommunicationTemplateFocusId(null)}
         onCreateTemplate={addCommunicationTemplate}
         onUpdateTemplate={patchCommunicationTemplate}
         onDeleteTemplate={removeCommunicationTemplate}
