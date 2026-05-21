@@ -39,6 +39,7 @@ export function DashboardPage() {
         </p>
         <div className="d-flex justify-content-center gap-2">
           <Link to={routes.CAMPAIGNS} className="btn btn-secondary btn-sm">
+            <i className="bi bi-collection me-2" aria-hidden="true" />
             Browse Campaigns
           </Link>
           <div className="campaign-chip campaign-chip-muted align-self-center">
@@ -76,6 +77,7 @@ export function DashboardPage() {
             to={buildCampaignStudioPath(campaign.id)}
             className="btn btn-secondary btn-sm"
           >
+            <i className="bi bi-kanban me-2" aria-hidden="true" />
             Open Campaign Studio
           </Link>
         </div>

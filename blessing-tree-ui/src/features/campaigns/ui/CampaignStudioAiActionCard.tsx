@@ -188,12 +188,13 @@ export function CampaignStudioAiActionCard({
             </button>
             <button
               type="button"
-            className="btn btn-link btn-sm"
+              className="btn btn-link btn-sm"
               onClick={() => {
                 setIsEditing(false);
                 setDraftPayload(null);
               }}
             >
+              <i className="bi bi-x-circle me-2" aria-hidden="true" />
               Cancel
             </button>
           </div>

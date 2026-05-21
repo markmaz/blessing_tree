@@ -104,10 +104,12 @@ export function AdminUserDetailDrawer({
               disabled={isSaving}
               onClick={() => onResendInvite(user.latestInvitation!.id)}
             >
+              <i className="bi bi-send me-2" aria-hidden="true" />
               {isSaving ? 'Sending...' : 'Resend Invite'}
             </button>
           ) : null}
           <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
+            <i className="bi bi-x-lg me-2" aria-hidden="true" />
             Close
           </button>
         </div>

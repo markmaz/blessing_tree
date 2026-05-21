@@ -70,6 +70,7 @@ export function CampaignStudioTemplateWorkspace({
           className={activeTab === 'metadata' ? 'is-active' : ''}
           onClick={() => onChangeTab('metadata')}
         >
+          <i className="bi bi-sliders me-2" aria-hidden="true" />
           Metadata
         </button>
         <button
@@ -77,6 +78,7 @@ export function CampaignStudioTemplateWorkspace({
           className={activeTab === 'content' ? 'is-active' : ''}
           onClick={() => onChangeTab('content')}
         >
+          <i className="bi bi-layout-text-window-reverse me-2" aria-hidden="true" />
           Content Blocks
         </button>
       </div>

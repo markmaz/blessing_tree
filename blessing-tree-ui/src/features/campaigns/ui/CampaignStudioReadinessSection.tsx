@@ -160,6 +160,7 @@ function ReadinessItemRow({
           className="btn btn-link btn-sm px-0"
           onClick={() => onSelectSection(toStudioSectionId(item.section))}
         >
+          <i className="bi bi-arrow-right-circle me-2" aria-hidden="true" />
           {item.actionLabel}
         </button>
       </div>

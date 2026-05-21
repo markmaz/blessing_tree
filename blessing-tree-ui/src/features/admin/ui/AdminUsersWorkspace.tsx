@@ -190,6 +190,7 @@ export function AdminUsersWorkspace({
             className={`admin-users-filter-card ${selectedFilter === 'all' ? 'is-active' : ''}`}
             onClick={() => setSelectedFilter('all')}
           >
+            <i className="bi bi-people" aria-hidden="true" />
             <span className="admin-users-filter-card__label">All</span>
             <span className="admin-users-filter-card__count">{filterCounts.all}</span>
           </button>
@@ -198,6 +199,7 @@ export function AdminUsersWorkspace({
             className={`admin-users-filter-card ${selectedFilter === 'active' ? 'is-active' : ''}`}
             onClick={() => setSelectedFilter('active')}
           >
+            <i className="bi bi-person-check" aria-hidden="true" />
             <span className="admin-users-filter-card__label">Active</span>
             <span className="admin-users-filter-card__count">{filterCounts.active}</span>
           </button>
@@ -206,6 +208,7 @@ export function AdminUsersWorkspace({
             className={`admin-users-filter-card ${selectedFilter === 'invited' ? 'is-active' : ''}`}
             onClick={() => setSelectedFilter('invited')}
           >
+            <i className="bi bi-envelope" aria-hidden="true" />
             <span className="admin-users-filter-card__label">Invited</span>
             <span className="admin-users-filter-card__count">{filterCounts.invited}</span>
           </button>

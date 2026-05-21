@@ -200,9 +200,11 @@ export function CampaignStudioScheduleEventEditor({
         </div>
         <div className="d-flex gap-2">
           <button type="button" className="btn btn-outline-secondary btn-sm" onClick={onClose}>
+            <i className="bi bi-x-lg me-2" aria-hidden="true" />
             Cancel
           </button>
           <button type="submit" className="btn btn-secondary btn-sm" disabled={isSaving}>
+            <i className={`bi ${editingItem ? 'bi-floppy' : 'bi-plus-circle'} me-2`} aria-hidden="true" />
             {editingItem ? 'Save Event' : 'Add Event'}
           </button>
         </div>

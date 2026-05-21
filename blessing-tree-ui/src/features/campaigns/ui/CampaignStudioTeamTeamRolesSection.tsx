@@ -141,6 +141,7 @@ export function CampaignStudioTeamTeamRolesSection({
                 setFormState(emptyRoleForm);
               }}
             >
+              <i className="bi bi-x-circle me-2" aria-hidden="true" />
               Cancel Edit
             </button>
           ) : null}
@@ -153,6 +154,10 @@ export function CampaignStudioTeamTeamRolesSection({
                 void handleSaveRole();
               }}
             >
+              <i
+                className={`bi ${editingRoleId ? 'bi-floppy' : 'bi-plus-circle'} me-2`}
+                aria-hidden="true"
+              />
               {editingRoleId ? 'Save Role' : 'Add Role'}
             </button>
           ) : null}
@@ -196,6 +201,7 @@ export function CampaignStudioTeamTeamRolesSection({
                     });
                   }}
                 >
+                  <i className="bi bi-pencil-square me-2" aria-hidden="true" />
                   Edit Role
                 </button>
               ) : null}

@@ -74,6 +74,7 @@ export function CampaignStudioTeamMemberAccessRolesSection({
             })
           }
         >
+          <i className="bi bi-shield-plus me-2" aria-hidden="true" />
           Add Role
         </button>
       </div>
@@ -109,6 +110,10 @@ export function CampaignStudioTeamMemberAccessRolesSection({
                     )
                   }
                 >
+                  <i
+                    className={`bi ${assignment.isActive ? 'bi-shield-x' : 'bi-shield-check'} me-2`}
+                    aria-hidden="true"
+                  />
                   {assignment.isActive ? 'Deactivate' : 'Reactivate'}
                 </button>
               ) : null}

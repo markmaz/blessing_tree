@@ -146,6 +146,7 @@ export function CampaignStudioTeamMemberAppAccessSection({
             })
           }
         >
+          <i className="bi bi-link-45deg me-2" aria-hidden="true" />
           Link App User
         </button>
         <button
@@ -159,6 +160,7 @@ export function CampaignStudioTeamMemberAppAccessSection({
             })
           }
         >
+          <i className="bi bi-envelope-plus me-2" aria-hidden="true" />
           Prepare Invite
         </button>
         {member.appAccessStatus !== 'none' ? (

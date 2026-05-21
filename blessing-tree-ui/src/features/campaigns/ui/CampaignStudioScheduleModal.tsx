@@ -90,6 +90,7 @@ export function CampaignStudioScheduleModal({
             onClick={onClose}
             aria-label="Close calendar editor"
           >
+            <i className="bi bi-x-lg me-2" aria-hidden="true" />
             Close
           </button>
         </div>
@@ -105,6 +106,7 @@ export function CampaignStudioScheduleModal({
                 }`}
                 onClick={() => onSelectType(type.id)}
               >
+                <i className={`bi ${type.icon}`} aria-hidden="true" />
                 <span className="fw-semibold">{type.label}</span>
                 <span className="small text-muted">{type.description}</span>
               </button>
@@ -171,20 +173,24 @@ const scheduleEditorTypes: Array<{
   id: CampaignScheduleEditorType;
   label: string;
   description: string;
+  icon: string;
 }> = [
   {
     id: 'event',
     label: 'Event',
     description: 'Operator-owned calendar blocks like orientation or sorting.',
+    icon: 'bi-calendar-plus',
   },
   {
     id: 'milestone',
     label: 'Milestone',
     description: 'Named campaign checkpoints like registration open or pickup start.',
+    icon: 'bi-signpost-2',
   },
   {
     id: 'communication',
     label: 'Communication',
     description: 'Emails and reminders tied to a date or milestone.',
+    icon: 'bi-envelope-paper',
   },
 ];

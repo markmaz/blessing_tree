@@ -22,9 +22,9 @@ function headerArrow(
   headerSortKey: AdminUserWorkspaceSortKey
 ) {
   if (currentSortKey !== headerSortKey) {
-    return '↕';
+    return 'bi-arrow-down-up';
   }
-  return currentSortDirection === 'asc' ? '↑' : '↓';
+  return currentSortDirection === 'asc' ? 'bi-sort-down' : 'bi-sort-up';
 }
 
 function statusToneClass(status: AdminUserWorkspaceRow['status']) {
@@ -55,7 +55,10 @@ export function AdminUsersTable({
                 onClick={() => onSort('displayName')}
               >
                 <span>Name</span>
-                <span aria-hidden="true">{headerArrow(sortKey, sortDirection, 'displayName')}</span>
+                <i
+                  className={`bi ${headerArrow(sortKey, sortDirection, 'displayName')}`}
+                  aria-hidden="true"
+                />
               </button>
             </th>
             <th>
@@ -65,7 +68,10 @@ export function AdminUsersTable({
                 onClick={() => onSort('email')}
               >
                 <span>Email</span>
-                <span aria-hidden="true">{headerArrow(sortKey, sortDirection, 'email')}</span>
+                <i
+                  className={`bi ${headerArrow(sortKey, sortDirection, 'email')}`}
+                  aria-hidden="true"
+                />
               </button>
             </th>
             <th>
@@ -75,7 +81,10 @@ export function AdminUsersTable({
                 onClick={() => onSort('roleLabel')}
               >
                 <span>Role</span>
-                <span aria-hidden="true">{headerArrow(sortKey, sortDirection, 'roleLabel')}</span>
+                <i
+                  className={`bi ${headerArrow(sortKey, sortDirection, 'roleLabel')}`}
+                  aria-hidden="true"
+                />
               </button>
             </th>
             <th>
@@ -85,7 +94,10 @@ export function AdminUsersTable({
                 onClick={() => onSort('statusLabel')}
               >
                 <span>Status</span>
-                <span aria-hidden="true">{headerArrow(sortKey, sortDirection, 'statusLabel')}</span>
+                <i
+                  className={`bi ${headerArrow(sortKey, sortDirection, 'statusLabel')}`}
+                  aria-hidden="true"
+                />
               </button>
             </th>
             <th>
@@ -95,7 +107,10 @@ export function AdminUsersTable({
                 onClick={() => onSort('lastActivityAt')}
               >
                 <span>Last Activity</span>
-                <span aria-hidden="true">{headerArrow(sortKey, sortDirection, 'lastActivityAt')}</span>
+                <i
+                  className={`bi ${headerArrow(sortKey, sortDirection, 'lastActivityAt')}`}
+                  aria-hidden="true"
+                />
               </button>
             </th>
             <th className="text-end">Actions</th>
@@ -117,6 +132,7 @@ export function AdminUsersTable({
                     className="admin-users-table__row-link"
                     onClick={() => onOpenDetails(row)}
                   >
+                    <i className="bi bi-person-vcard me-2" aria-hidden="true" />
                     {row.displayName}
                   </button>
                 </td>

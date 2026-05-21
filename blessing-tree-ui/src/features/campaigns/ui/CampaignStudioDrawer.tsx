@@ -29,7 +29,9 @@ export function CampaignStudioDrawer({
         className="campaign-team-drawer__backdrop"
         aria-label="Close drawer backdrop"
         onClick={onClose}
-      />
+      >
+        <i className="bi bi-x-lg visually-hidden" aria-hidden="true" />
+      </button>
       <aside
         className={`campaign-team-drawer campaign-team-drawer--${width}`}
         role="dialog"
@@ -48,6 +50,7 @@ export function CampaignStudioDrawer({
             className="btn btn-outline-secondary btn-sm"
             onClick={onClose}
           >
+            <i className="bi bi-x-lg me-2" aria-hidden="true" />
             Close
           </button>
         </header>

@@ -171,18 +171,24 @@ export function CampaignsPage() {
                 className="btn btn-secondary btn-sm"
                 onClick={() => selectCampaign(campaign.id)}
               >
+                <i
+                  className={`bi ${selectedCampaignId === campaign.id ? 'bi-check2-circle' : 'bi-bullseye'} me-2`}
+                  aria-hidden="true"
+                />
                 {selectedCampaignId === campaign.id ? 'Current Campaign' : 'Make Current'}
               </button>
               <Link
                 to={buildCampaignStudioPath(campaign.id)}
                 className="btn btn-secondary btn-sm"
               >
+                <i className="bi bi-kanban me-2" aria-hidden="true" />
                 Open Studio
               </Link>
               <Link
                 to={buildCampaignDetailPath(campaign.id)}
                 className="btn btn-outline-secondary btn-sm"
               >
+                <i className="bi bi-layout-text-window-reverse me-2" aria-hidden="true" />
                 Open Details
               </Link>
             </div>

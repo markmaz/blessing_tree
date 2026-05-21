@@ -56,6 +56,7 @@ export function TopBar({ pageTitle, onToggleSidebar }: TopBarProps) {
               aria-expanded="false"
               type="button"
             >
+              <i className="bi bi-person-circle text-white-50" aria-hidden="true" />
               <span className="avatar-circle" aria-hidden="true">
                 {initials}
               </span>
@@ -69,11 +70,13 @@ export function TopBar({ pageTitle, onToggleSidebar }: TopBarProps) {
             >
               <li>
                 <button type="button" className="dropdown-item">
+                  <i className="bi bi-person me-2" aria-hidden="true" />
                   Profile
                 </button>
               </li>
               <li>
                 <button type="button" className="dropdown-item">
+                  <i className="bi bi-sliders me-2" aria-hidden="true" />
                   Settings
                 </button>
               </li>
@@ -86,6 +89,7 @@ export function TopBar({ pageTitle, onToggleSidebar }: TopBarProps) {
                   className="dropdown-item text-danger"
                   onClick={handleSignOut}
                 >
+                  <i className="bi bi-box-arrow-right me-2" aria-hidden="true" />
                   Sign out
                 </button>
               </li>

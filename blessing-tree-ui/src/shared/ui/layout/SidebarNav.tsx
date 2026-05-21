@@ -44,18 +44,22 @@ const navItems = [
       {
         label: 'User Management',
         to: routes.ADMIN_USERS,
+        icon: 'bi-people-fill',
       },
       {
         label: 'LLM Configuration',
         to: routes.ADMIN_LLM,
+        icon: 'bi-cpu',
       },
       {
         label: 'Health Check',
         to: routes.ADMIN_HEALTH,
+        icon: 'bi-heart-pulse',
       },
       {
         label: 'App Capabilities',
         to: routes.ADMIN_CAPABILITIES,
+        icon: 'bi-toggles2',
       },
     ],
   },
@@ -116,6 +120,7 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
                     }
                     onClick={onNavigate}
                   >
+                    <i className={`bi ${child.icon} me-2`} aria-hidden="true" />
                     <span>{child.label}</span>
                   </NavLink>
                 ))}

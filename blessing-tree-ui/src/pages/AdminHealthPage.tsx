@@ -25,6 +25,7 @@ export function AdminHealthPage() {
         <div className="alert alert-danger d-flex align-items-center justify-content-between gap-3 mb-0">
           <span>{error}</span>
           <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => void refreshNow()}>
+            <i className="bi bi-arrow-clockwise me-2" aria-hidden="true" />
             Retry
           </button>
         </div>

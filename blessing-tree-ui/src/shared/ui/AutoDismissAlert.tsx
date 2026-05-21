@@ -66,6 +66,7 @@ export function AutoDismissAlert({
             className={`btn btn-sm btn-outline-${variant}`}
             onClick={handleManualDismiss}
           >
+            <i className="bi bi-x-lg me-2" aria-hidden="true" />
             Dismiss
           </button>
         ) : null}

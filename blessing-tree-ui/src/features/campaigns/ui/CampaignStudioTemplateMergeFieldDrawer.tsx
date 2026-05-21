@@ -33,6 +33,7 @@ export function CampaignStudioTemplateMergeFieldDrawer({
                   className="campaign-template-token"
                   onClick={() => onInsertMergeField(field)}
                 >
+                  <i className="bi bi-braces-asterisk me-2" aria-hidden="true" />
                   {field}
                 </button>
               ))}

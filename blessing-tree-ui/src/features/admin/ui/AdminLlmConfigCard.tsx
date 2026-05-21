@@ -275,6 +275,7 @@ export function AdminLlmConfigCard() {
       </div>
       <div className="d-flex flex-wrap gap-2 mt-4">
         <button type="button" className="btn btn-primary btn-sm" disabled={isSaving} onClick={() => void save()}>
+          <i className="bi bi-floppy me-2" aria-hidden="true" />
           Save LLM Settings
         </button>
         <button
@@ -283,6 +284,7 @@ export function AdminLlmConfigCard() {
           disabled={isSaving}
           onClick={() => void test()}
         >
+          <i className="bi bi-cpu me-2" aria-hidden="true" />
           Test Connection
         </button>
       </div>

@@ -130,6 +130,7 @@ export function InviteAcceptPage() {
                 className="btn btn-primary w-100"
                 onClick={() => navigate(routes.LOGIN)}
               >
+                <i className="bi bi-box-arrow-in-right me-2" aria-hidden="true" />
                 Go to Sign In
               </button>
             </div>
@@ -207,6 +208,7 @@ export function InviteAcceptPage() {
                 disabled={isLoading || !token}
                 onClick={() => void submit()}
               >
+                <i className="bi bi-key me-2" aria-hidden="true" />
                 {isLoading ? 'Accepting…' : 'Set Password & Continue'}
               </button>
             </>

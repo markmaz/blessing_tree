@@ -6,7 +6,10 @@ export function DonationsPage() {
           <h1 className="h3 mb-1">Donations</h1>
           <p className="text-muted mb-0">Track gifts and sponsorships with gratitude.</p>
         </div>
-        <button className="btn btn-secondary btn-sm">Record donation</button>
+        <button className="btn btn-secondary btn-sm">
+          <i className="bi bi-cash-coin me-2" aria-hidden="true" />
+          Record donation
+        </button>
       </div>
 
       <div className="row g-4">

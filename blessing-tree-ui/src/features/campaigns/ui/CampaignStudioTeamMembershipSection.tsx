@@ -119,6 +119,7 @@ export function CampaignStudioTeamMembershipSection({
               }
             }}
           >
+            <i className="bi bi-person-plus me-2" aria-hidden="true" />
             Add Member
           </button>
         </div>

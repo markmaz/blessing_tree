@@ -81,6 +81,7 @@ export function CampaignStudioScheduleCalendar({
             className="btn btn-outline-secondary btn-sm"
             onClick={() => setMonthKey((currentKey) => stepMonth(currentKey, -1))}
           >
+            <i className="bi bi-chevron-left me-2" aria-hidden="true" />
             Previous
           </button>
           <button
@@ -88,6 +89,7 @@ export function CampaignStudioScheduleCalendar({
             className="btn btn-outline-secondary btn-sm"
             onClick={() => setMonthKey(getInitialScheduleMonth(items))}
           >
+            <i className="bi bi-calendar-date me-2" aria-hidden="true" />
             Today
           </button>
           <button
@@ -95,6 +97,7 @@ export function CampaignStudioScheduleCalendar({
             className="btn btn-outline-secondary btn-sm"
             onClick={() => setMonthKey((currentKey) => stepMonth(currentKey, 1))}
           >
+            <i className="bi bi-chevron-right me-2" aria-hidden="true" />
             Next
           </button>
         </div>
@@ -169,6 +172,10 @@ export function CampaignStudioScheduleCalendar({
                     onClick={() => onSelectDate(day.key)}
                     disabled={!canManageSchedule}
                   >
+                    <i
+                      className={`bi ${canManageSchedule ? 'bi-plus-circle' : 'bi-calendar-minus'} me-2`}
+                      aria-hidden="true"
+                    />
                     {canManageSchedule ? 'Add to this day' : 'No items'}
                   </button>
                 ) : null}

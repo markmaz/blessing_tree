@@ -58,6 +58,7 @@ export function Layout({ children }: LayoutProps) {
                   className="btn btn-outline-secondary btn-sm"
                   onClick={handleLogout}
                 >
+                  <i className="bi bi-box-arrow-right me-2" aria-hidden="true" />
                   Sign Out
                 </button>
               </li>

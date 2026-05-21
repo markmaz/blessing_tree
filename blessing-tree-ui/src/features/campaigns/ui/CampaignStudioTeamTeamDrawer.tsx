@@ -161,10 +161,15 @@ export function CampaignStudioTeamTeamDrawer({
 
         <div className="campaign-team-drawer__actions">
           <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
+            <i className="bi bi-x-lg me-2" aria-hidden="true" />
             Cancel
           </button>
           {canManageTeam ? (
             <button type="submit" className="btn btn-secondary" disabled={isSaving}>
+              <i
+                className={`bi ${isSaving ? 'bi-arrow-repeat' : team ? 'bi-floppy' : 'bi-people-fill'} me-2`}
+                aria-hidden="true"
+              />
               {isSaving ? 'Saving...' : team ? 'Save Team' : 'Create Team'}
             </button>
           ) : null}

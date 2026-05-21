@@ -40,6 +40,10 @@ export function InlineConfirmAction({
         onClick={() => setIsConfirming(true)}
         disabled={disabled}
       >
+        <i
+          className={`bi ${tone === 'danger' ? 'bi-trash3' : 'bi-exclamation-circle'} me-2`}
+          aria-hidden="true"
+        />
         {buttonLabel}
       </button>
     );
@@ -57,6 +61,10 @@ export function InlineConfirmAction({
           }}
           disabled={disabled || isSubmitting}
         >
+          <i
+            className={`bi ${tone === 'danger' ? 'bi-trash3-fill' : 'bi-check2-circle'} me-2`}
+            aria-hidden="true"
+          />
           {confirmLabel}
         </button>
         <button
@@ -65,6 +73,7 @@ export function InlineConfirmAction({
           onClick={() => setIsConfirming(false)}
           disabled={disabled || isSubmitting}
         >
+          <i className="bi bi-x-lg me-2" aria-hidden="true" />
           {cancelLabel}
         </button>
       </div>

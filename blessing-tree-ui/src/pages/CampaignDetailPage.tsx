@@ -109,15 +109,21 @@ export function CampaignDetailPage() {
               onClick={() => selectCampaign(campaignId)}
               disabled={isCurrentCampaign}
             >
+              <i
+                className={`bi ${isCurrentCampaign ? 'bi-check2-circle' : 'bi-bullseye'} me-2`}
+                aria-hidden="true"
+              />
               {isCurrentCampaign ? 'Current Campaign' : 'Make Current'}
             </button>
             <Link to={routes.CAMPAIGNS} className="btn btn-outline-secondary btn-sm">
+              <i className="bi bi-arrow-left me-2" aria-hidden="true" />
               Back to Campaigns
             </Link>
             <Link
               to={buildCampaignStudioPath(campaignId)}
               className="btn btn-secondary btn-sm"
             >
+              <i className="bi bi-kanban me-2" aria-hidden="true" />
               Open Studio
             </Link>
           </div>

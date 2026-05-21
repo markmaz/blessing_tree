@@ -160,6 +160,7 @@ export function CampaignStudioAiThread({
                   className="campaign-studio__ai-suggestion-card"
                   onClick={() => onSelectPromptStarter(prompt)}
                 >
+                  <i className="bi bi-stars" aria-hidden="true" />
                   <strong>{prompt}</strong>
                   <span>Use this as a starting point in the {selectedSection} workspace.</span>
                 </button>

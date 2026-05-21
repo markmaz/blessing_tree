@@ -53,6 +53,7 @@ export function CampaignSwitcher() {
           onClick={handleOpen}
           disabled={!selectedCampaignId}
         >
+          <i className="bi bi-box-arrow-up-right me-2" aria-hidden="true" />
           Open
         </button>
       </div>

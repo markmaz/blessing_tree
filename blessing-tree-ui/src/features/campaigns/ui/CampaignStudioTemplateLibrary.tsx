@@ -164,6 +164,7 @@ export function CampaignStudioTemplateLibrary({
                     })();
                   }}
                 >
+                  <i className="bi bi-trash3 me-2" aria-hidden="true" />
                   Delete
                 </button>
                 <button
@@ -171,6 +172,7 @@ export function CampaignStudioTemplateLibrary({
                   className="btn btn-outline-secondary btn-sm"
                   onClick={() => setDeleteTargetId(null)}
                 >
+                  <i className="bi bi-x-lg me-2" aria-hidden="true" />
                   Cancel
                 </button>
               </div>

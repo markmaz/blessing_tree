@@ -88,9 +88,11 @@ export function AdminUserInviteDrawer({
         </section>
         <div className="admin-users-drawer__actions">
           <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
+            <i className="bi bi-x-lg me-2" aria-hidden="true" />
             Cancel
           </button>
           <button type="submit" className="btn btn-secondary" disabled={isSaving}>
+            <i className="bi bi-envelope-plus me-2" aria-hidden="true" />
             {isSaving ? 'Sending...' : 'Send Invite'}
           </button>
         </div>

@@ -38,6 +38,7 @@ export function CampaignStudioTeamMemberTeamsSection({
             className="btn btn-outline-secondary btn-sm"
             onClick={onOpenCreateTeam}
           >
+            <i className="bi bi-people-fill me-2" aria-hidden="true" />
             New Team
           </button>
         ) : null}
@@ -64,6 +65,7 @@ export function CampaignStudioTeamMemberTeamsSection({
                   className="btn btn-outline-secondary btn-sm"
                   onClick={() => onOpenTeam(team.id)}
                 >
+                  <i className="bi bi-box-arrow-up-right me-2" aria-hidden="true" />
                   Open Team
                 </button>
               ) : null}

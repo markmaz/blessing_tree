@@ -63,6 +63,7 @@ export function CampaignStudioOverview({
               className="btn btn-outline-secondary btn-sm"
               to={buildCampaignDetailPath(campaign.id)}
             >
+              <i className="bi bi-layout-text-window-reverse me-2" aria-hidden="true" />
               Open Detail View
             </Link>
             <button
@@ -70,6 +71,7 @@ export function CampaignStudioOverview({
               className="btn btn-secondary btn-sm"
               onClick={onEditCampaign}
             >
+              <i className="bi bi-sliders me-2" aria-hidden="true" />
               Edit Campaign Setup
             </button>
           </div>
@@ -126,6 +128,7 @@ export function CampaignStudioOverview({
                     className="campaign-studio__overview-link-card"
                     onClick={() => onOpenCommunication(template.id)}
                   >
+                    <i className="bi bi-file-earmark-text" aria-hidden="true" />
                     <span className="campaign-studio__overview-link-title">
                       {template.name}
                     </span>

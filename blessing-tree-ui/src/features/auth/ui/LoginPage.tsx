@@ -78,9 +78,12 @@ export function LoginPage() {
               {apiError}
               <button
                 type="button"
-                className="btn-close"
+                className="btn btn-link btn-sm text-danger p-0 ms-2 align-baseline"
                 onClick={() => setApiError(null)}
-              />
+                aria-label="Dismiss error"
+              >
+                <i className="bi bi-x-lg" aria-hidden="true" />
+              </button>
             </div>
           )}
 
@@ -172,7 +175,10 @@ export function LoginPage() {
                   Signing in...
                 </>
               ) : (
-                'Sign In'
+                <>
+                  <i className="bi bi-box-arrow-in-right me-2" aria-hidden="true" />
+                  Sign In
+                </>
               )}
             </button>
           </form>

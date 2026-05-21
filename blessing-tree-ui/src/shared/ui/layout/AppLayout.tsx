@@ -89,7 +89,9 @@ export function AppLayout() {
         className={`app-sidebar-backdrop ${sidebarOpen ? 'show' : ''}`}
         onClick={() => setSidebarOpen(false)}
         aria-label="Close sidebar"
-      />
+      >
+        <i className="bi bi-x-lg visually-hidden" aria-hidden="true" />
+      </button>
     </div>
   );
 }

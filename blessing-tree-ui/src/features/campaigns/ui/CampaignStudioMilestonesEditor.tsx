@@ -97,6 +97,7 @@ export function CampaignStudioMilestonesEditor({
           </div>
           <div className="campaign-studio__form-actions mt-4">
             <button type="submit" className="btn btn-secondary btn-sm" disabled={isSaving}>
+              <i className="bi bi-floppy me-2" aria-hidden="true" />
               Save Milestones
             </button>
           </div>

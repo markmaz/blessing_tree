@@ -136,6 +136,7 @@ export function CampaignStudioTeamSection({
                 className="btn btn-outline-danger btn-sm"
                 onClick={clearError}
               >
+                <i className="bi bi-x-circle me-2" aria-hidden="true" />
                 Dismiss
               </button>
             </div>
