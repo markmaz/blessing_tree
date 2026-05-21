@@ -1,7 +1,4 @@
 import { useMemo, useState } from 'react';
-import {
-  getCampaignTeamGlossaryEntry,
-} from '@/features/campaigns/model/campaignTeamWorkspaceGlossary';
 import '@/features/campaigns/ui/campaignStudioTeam.css';
 import { canManageCampaign } from '@/features/campaigns/model/campaignPermissions';
 import type { CampaignAccess } from '@/features/campaigns/model/campaignTypes';
@@ -15,7 +12,6 @@ import { CampaignStudioTeamTable } from '@/features/campaigns/ui/CampaignStudioT
 import { CampaignStudioTeamMemberDrawer } from '@/features/campaigns/ui/CampaignStudioTeamMemberDrawer';
 import { CampaignStudioTeamTeamDrawer } from '@/features/campaigns/ui/CampaignStudioTeamTeamDrawer';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
-import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
 
 interface CampaignStudioTeamSectionProps {
   campaignId: string;
@@ -36,10 +32,6 @@ export function CampaignStudioTeamSection({
   access,
 }: CampaignStudioTeamSectionProps) {
   const canManageTeam = canManageCampaign(access);
-  const memberTypeHelp = getCampaignTeamGlossaryEntry('member_type');
-  const appAccessHelp = getCampaignTeamGlossaryEntry('app_access');
-  const appAccessRolesHelp = getCampaignTeamGlossaryEntry('app_access_roles');
-  const teamsHelp = getCampaignTeamGlossaryEntry('teams');
   const {
     workspace,
     isLoading,
@@ -134,18 +126,6 @@ export function CampaignStudioTeamSection({
           <p className="text-muted mb-0">Loading team workspace...</p>
         ) : (
           <>
-            <div className="campaign-team-glossary">
-              {[memberTypeHelp, appAccessHelp, appAccessRolesHelp, teamsHelp].map((entry) => (
-                <div key={entry.key} className="campaign-team-glossary__item">
-                  <div className="campaign-team-glossary__label">
-                    <span>{entry.label}</span>
-                    <InlineHelpPopover title={entry.label} body={entry.description} />
-                  </div>
-                  <p>{entry.description}</p>
-                </div>
-              ))}
-            </div>
-
             <div className="campaign-studio__stat-grid">
               <StatCard label="Managers" value={workspace.counts.managerCount} />
               <StatCard label="Active Assignments" value={workspace.counts.activeAssignmentCount} />

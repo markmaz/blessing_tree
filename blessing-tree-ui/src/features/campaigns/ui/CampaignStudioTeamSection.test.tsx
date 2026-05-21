@@ -236,12 +236,15 @@ describe('CampaignStudioTeamSection', () => {
 
     render(<CampaignStudioTeamSection campaignId="campaign-123" access={baseAccess} />);
 
+    expect(
+      screen.queryByText(/campaign-level roster label such as staff, volunteer, contact, or external/i)
+    ).not.toBeInTheDocument();
+
     await user.click(screen.getAllByRole('button', { name: /help: member type/i })[0]);
 
     expect(
       screen.getAllByText(/campaign-level roster label such as staff, volunteer, contact, or external/i)
         .length
     ).toBeGreaterThan(0);
-    expect(screen.getByText('App Access Roles')).toBeInTheDocument();
   });
 });
