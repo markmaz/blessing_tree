@@ -78,6 +78,7 @@ Last updated: 2026-05-20
 - Fixed local backend CORS so both `localhost:5173` and `127.0.0.1:5173` can call campaign APIs during development
 - Refined the Team workspace so team setup and membership management now live in the team drawer instead of being duplicated across both person and team flows
 - Reworked the Team workspace layout so People and Teams now render as separate first-class tables instead of a people table plus side team rail
+- Simplified the Team workspace again so the top stats are smaller and the People/Teams cards now rely on search plus click-sort instead of a larger filter bar
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Fixed backend runtime gaps discovered during live stack verification:

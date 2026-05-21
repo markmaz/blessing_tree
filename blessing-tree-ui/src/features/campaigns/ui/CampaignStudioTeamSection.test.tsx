@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CampaignStudioTeamSection } from '@/features/campaigns/ui/CampaignStudioTeamSection';
@@ -222,6 +222,23 @@ describe('CampaignStudioTeamSection', () => {
     expect(screen.queryByText('Manager User')).not.toBeInTheDocument();
   });
 
+  it('sorts the people table when a header is clicked', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <CampaignStudioTeamSection campaignId="campaign-123" access={baseAccess} />
+    );
+
+    const tables = container.querySelectorAll('table');
+    const peopleTable = tables[0];
+    const getPeopleRows = () => Array.from(peopleTable.querySelectorAll('tbody tr'));
+
+    expect(getPeopleRows()[0]?.textContent).toContain('Manager User');
+
+    await user.click(within(peopleTable).getByRole('button', { name: /person/i }));
+
+    expect(getPeopleRows()[0]?.textContent).toContain('Volunteer User');
+  });
+
   it('renders a separate Teams table and opens the team drawer from a team row', async () => {
     const user = userEvent.setup();
 
@@ -247,11 +264,11 @@ describe('CampaignStudioTeamSection', () => {
     );
 
     expect(screen.queryByRole('button', { name: /add person/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /new team/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add team/i })).not.toBeInTheDocument();
     expect(screen.getAllByText('Phone Bank').length).toBeGreaterThan(0);
   });
 
-  it('shows inline Team glossary help for roster concepts', async () => {
+  it('shows inline Team glossary help inside the person drawer', async () => {
     const user = userEvent.setup();
 
     render(<CampaignStudioTeamSection campaignId="campaign-123" access={baseAccess} />);
@@ -260,6 +277,8 @@ describe('CampaignStudioTeamSection', () => {
       screen.queryByText(/campaign-level roster label such as staff, volunteer, contact, or external/i)
     ).not.toBeInTheDocument();
 
+    await user.click(screen.getByRole('button', { name: /volunteer user/i }));
+    await screen.findByRole('dialog');
     await user.click(screen.getAllByRole('button', { name: /help: member type/i })[0]);
 
     expect(

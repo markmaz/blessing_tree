@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import {
   toCampaignAppAccessStatusLabel,
   toCampaignMemberTypeLabel,
@@ -14,15 +15,48 @@ interface CampaignStudioTeamTableProps {
   onSelectMember: (memberId: string) => void;
 }
 
+type MemberSortKey = 'person' | 'access' | 'roles' | 'teams' | 'type' | 'status';
+
 export function CampaignStudioTeamTable({
   members,
   roleCatalog,
   onSelectMember,
 }: CampaignStudioTeamTableProps) {
+  const [sortKey, setSortKey] = useState<MemberSortKey>('person');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const handleSort = (nextKey: MemberSortKey) => {
+    if (sortKey === nextKey) {
+      setSortDirection((currentDirection) => (currentDirection === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+
+    setSortKey(nextKey);
+    setSortDirection('asc');
+  };
+
+  const sortedMembers = useMemo(() => {
+    const sorted = [...members];
+
+    sorted.sort((left, right) => {
+      const leftValue = getMemberSortValue(left, sortKey, roleCatalog);
+      const rightValue = getMemberSortValue(right, sortKey, roleCatalog);
+
+      if (leftValue < rightValue) {
+        return sortDirection === 'asc' ? -1 : 1;
+      }
+      if (leftValue > rightValue) {
+        return sortDirection === 'asc' ? 1 : -1;
+      }
+      return left.displayName.localeCompare(right.displayName);
+    });
+
+    return sorted;
+  }, [members, roleCatalog, sortDirection, sortKey]);
+
   if (members.length === 0) {
     return (
       <div className="campaign-studio__empty-note">
-        No campaign people match the current filters.
+        No campaign people match the current search.
       </div>
     );
   }
@@ -32,16 +66,52 @@ export function CampaignStudioTeamTable({
       <table className="table campaign-team-table mb-0">
         <thead>
           <tr>
-            <th scope="col">Person</th>
-            <th scope="col">Access</th>
-            <th scope="col">Roles</th>
-            <th scope="col">Teams</th>
-            <th scope="col">Type</th>
-            <th scope="col">Status</th>
+            <SortableHeader
+              label="Person"
+              sortKey="person"
+              activeKey={sortKey}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
+            <SortableHeader
+              label="Access"
+              sortKey="access"
+              activeKey={sortKey}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
+            <SortableHeader
+              label="Roles"
+              sortKey="roles"
+              activeKey={sortKey}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
+            <SortableHeader
+              label="Teams"
+              sortKey="teams"
+              activeKey={sortKey}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
+            <SortableHeader
+              label="Type"
+              sortKey="type"
+              activeKey={sortKey}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
+            <SortableHeader
+              label="Status"
+              sortKey="status"
+              activeKey={sortKey}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
           </tr>
         </thead>
         <tbody>
-          {members.map((member) => (
+          {sortedMembers.map((member) => (
             <tr
               key={member.id}
               className="campaign-team-table__row"
@@ -115,4 +185,61 @@ export function CampaignStudioTeamTable({
       </table>
     </div>
   );
+}
+
+function SortableHeader({
+  label,
+  sortKey,
+  activeKey,
+  direction,
+  onSort,
+}: {
+  label: string;
+  sortKey: MemberSortKey;
+  activeKey: MemberSortKey;
+  direction: 'asc' | 'desc';
+  onSort: (sortKey: MemberSortKey) => void;
+}) {
+  const isActive = activeKey === sortKey;
+  const iconClassName = !isActive
+    ? 'bi bi-arrow-down-up'
+    : direction === 'asc'
+      ? 'bi bi-sort-down'
+      : 'bi bi-sort-up';
+
+  return (
+    <th scope="col">
+      <button type="button" className="campaign-team-table__sort" onClick={() => onSort(sortKey)}>
+        <span>{label}</span>
+        <i className={iconClassName} aria-hidden="true" />
+      </button>
+    </th>
+  );
+}
+
+function getMemberSortValue(
+  member: CampaignTeamWorkspaceMember,
+  sortKey: MemberSortKey,
+  roleCatalog: CampaignRoleCatalogEntry[]
+) {
+  switch (sortKey) {
+    case 'access':
+      return `${toCampaignAppAccessStatusLabel(member.appAccessStatus)} ${member.appUser?.appRole ?? ''}`;
+    case 'roles':
+      return member.accessRoles.length === 0
+        ? ''
+        : member.accessRoles
+            .map((role) => toCampaignRoleLabel(role.roleKey, roleCatalog))
+            .sort()
+            .join(', ');
+    case 'teams':
+      return member.teams.length === 0 ? '' : member.teams.map((team) => team.name).sort().join(', ');
+    case 'type':
+      return toCampaignMemberTypeLabel(member.memberType);
+    case 'status':
+      return member.isActive ? 'active' : 'inactive';
+    case 'person':
+    default:
+      return `${member.displayName} ${member.email ?? ''}`.trim();
+  }
 }

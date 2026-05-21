@@ -6,7 +6,7 @@ import { useCampaignTeamWorkspace } from '@/features/campaigns/model/useCampaign
 import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudioSectionCard';
 import {
   CampaignStudioTeamToolbar,
-  type CampaignStudioTeamFiltersState,
+  type CampaignStudioTeamSearchState,
 } from '@/features/campaigns/ui/CampaignStudioTeamToolbar';
 import { CampaignStudioTeamListTable } from '@/features/campaigns/ui/CampaignStudioTeamListTable';
 import { CampaignStudioTeamTable } from '@/features/campaigns/ui/CampaignStudioTeamTable';
@@ -19,13 +19,12 @@ interface CampaignStudioTeamSectionProps {
   access: CampaignAccess;
 }
 
-const defaultFilters: CampaignStudioTeamFiltersState = {
+const defaultPeopleSearch: CampaignStudioTeamSearchState = {
   search: '',
-  roleKey: '',
-  teamId: '',
-  appAccessStatus: '',
-  memberType: '',
-  includeInactive: false,
+};
+
+const defaultTeamSearch: CampaignStudioTeamSearchState = {
+  search: '',
 };
 
 export function CampaignStudioTeamSection({
@@ -50,47 +49,35 @@ export function CampaignStudioTeamSection({
     clearSaveMessage,
     clearError,
   } = useCampaignTeamWorkspace(campaignId);
-  const [filters, setFilters] = useState<CampaignStudioTeamFiltersState>(defaultFilters);
+  const [peopleSearch, setPeopleSearch] = useState<CampaignStudioTeamSearchState>(
+    defaultPeopleSearch
+  );
+  const [teamSearchState, setTeamSearchState] =
+    useState<CampaignStudioTeamSearchState>(defaultTeamSearch);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [isCreateMemberOpen, setIsCreateMemberOpen] = useState(false);
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
-  const [teamSearch, setTeamSearch] = useState('');
 
   const filteredMembers = useMemo(() => {
     if (!workspace) {
       return [];
     }
 
-    const normalizedSearch = filters.search.trim().toLowerCase();
+    const normalizedSearch = peopleSearch.search.trim().toLowerCase();
 
     return workspace.members
       .filter((member) => {
-        if (!filters.includeInactive && !member.isActive) {
-          return false;
-        }
         if (normalizedSearch) {
           const haystack = `${member.displayName} ${member.email ?? ''}`.toLowerCase();
           if (!haystack.includes(normalizedSearch)) {
             return false;
           }
         }
-        if (filters.roleKey && !member.accessRoles.some((role) => role.roleKey === filters.roleKey)) {
-          return false;
-        }
-        if (filters.teamId && !member.teams.some((team) => team.id === filters.teamId)) {
-          return false;
-        }
-        if (filters.appAccessStatus && member.appAccessStatus !== filters.appAccessStatus) {
-          return false;
-        }
-        if (filters.memberType && member.memberType !== filters.memberType) {
-          return false;
-        }
         return true;
       })
       .sort((left, right) => left.displayName.localeCompare(right.displayName));
-  }, [filters, workspace]);
+  }, [peopleSearch, workspace]);
 
   const selectedMember = findById(workspace?.members, selectedMemberId);
   const selectedTeam = findById(workspace?.teams, selectedTeamId);
@@ -99,7 +86,7 @@ export function CampaignStudioTeamSection({
       return [];
     }
 
-    const normalizedSearch = teamSearch.trim().toLowerCase();
+    const normalizedSearch = teamSearchState.search.trim().toLowerCase();
 
     return workspace.teams
       .filter((team) => {
@@ -111,7 +98,7 @@ export function CampaignStudioTeamSection({
         return haystack.includes(normalizedSearch);
       })
       .sort((left, right) => left.name.localeCompare(right.name));
-  }, [teamSearch, workspace]);
+  }, [teamSearchState, workspace]);
 
   return (
     <div className="campaign-studio__canvas-stack">
@@ -146,12 +133,10 @@ export function CampaignStudioTeamSection({
           <p className="text-muted mb-0">Loading team workspace...</p>
         ) : (
           <>
-            <div className="campaign-studio__stat-grid">
-              <StatCard label="Managers" value={workspace.counts.managerCount} />
+            <div className="campaign-studio__stat-grid campaign-team-stats">
               <StatCard label="Active Assignments" value={workspace.counts.activeAssignmentCount} />
-              <StatCard label="Roster" value={workspace.counts.memberCount} />
-              <StatCard label="App Access" value={workspace.counts.membersWithAppAccessCount} />
               <StatCard label="Teams" value={workspace.counts.teamCount} />
+              <StatCard label="Roster Total" value={workspace.counts.memberCount} />
             </div>
 
             <div className="campaign-team-workspace">
@@ -166,15 +151,13 @@ export function CampaignStudioTeamSection({
                 </div>
 
                 <CampaignStudioTeamToolbar
-                  filters={filters}
-                  teamOptions={workspace.teams.map((team) => ({
-                    id: team.id,
-                    name: team.name,
-                  }))}
-                  roleOptions={workspace.roleCatalog}
+                  searchLabel="Search People"
+                  searchPlaceholder="Search name or email"
+                  searchState={peopleSearch}
                   canManageTeam={canManageTeam}
-                  onChange={setFilters}
-                  onAddMember={() => {
+                  addButtonLabel="Add person"
+                  onChange={setPeopleSearch}
+                  onAdd={() => {
                     setSelectedMemberId(null);
                     setIsCreateMemberOpen(true);
                   }}
@@ -198,33 +181,22 @@ export function CampaignStudioTeamSection({
                       Create operational groups here, then manage membership from the team drawer.
                     </p>
                   </div>
-                  {canManageTeam ? (
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm"
-                      onClick={() => {
-                        setSelectedTeamId(null);
-                        setIsCreateTeamOpen(true);
-                      }}
-                    >
-                      New Team
-                    </button>
-                  ) : null}
                 </div>
 
                 <div className="campaign-team-table-toolbar">
-                  <label className="form-label mb-0 campaign-team-table-toolbar__search">
-                    <div>
-                      <span className="text-muted small d-block mb-1">Search teams</span>
-                      <input
-                        type="search"
-                        className="form-control"
-                        placeholder="Search team name or description"
-                        value={teamSearch}
-                        onChange={(event) => setTeamSearch(event.target.value)}
-                      />
-                    </div>
-                  </label>
+                  <CampaignStudioTeamToolbar
+                    searchLabel="Search Teams"
+                    searchPlaceholder="Search team name or description"
+                    searchState={teamSearchState}
+                    canManageTeam={canManageTeam}
+                    addButtonLabel="Add team"
+                    addIconClassName="bi bi-plus-lg"
+                    onChange={setTeamSearchState}
+                    onAdd={() => {
+                      setSelectedTeamId(null);
+                      setIsCreateTeamOpen(true);
+                    }}
+                  />
                 </div>
 
                 <CampaignStudioTeamListTable

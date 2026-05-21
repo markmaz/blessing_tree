@@ -23,6 +23,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - The Team section is now a member-centric workspace with a roster table, filters, team management, and Query Forge-style edit drawers for people, access roles, app access, and operational teams.
 - The Team workspace now separates responsibilities more clearly: person drawers focus on profile and app access, while team drawers own team setup and membership changes.
 - The Team workspace now uses two first-class tables instead of a side rail: a People table for roster/access management and a Teams table for operational group management.
+- The Team workspace is now intentionally reduced to search-plus-sort controls: compact top stats, a People card with search and sortable columns, and a Teams card with the same simpler interaction model.
 - The Team section now also includes inline concept help for roster terms such as `Member Type`, `App Access`, `App Access Roles`, and `Teams`, and the Studio AI drawer now exposes the same Team glossary when the Team section is active.
 - The Team workspace now consumes the backend-provided app access role catalog, so role labels and descriptions are no longer duplicated in the frontend.
 - The communications section is now a template-only builder with a collapsible tool rail, metadata/content editing, a stronger rendered preview surface, a builder-side merge-field drawer, heading/text/image content blocks, and inline uploads for small embedded images; the Studio AI panel now opens as a hidden right drawer instead of taking permanent page width.
