@@ -73,6 +73,7 @@ Last updated: 2026-05-20
 - Implemented Team redesign phase 4 with member, access-role, team, membership, app-access, and aggregate Team workspace APIs plus backend tests
 - Implemented Team redesign phase 5 with a member-centric Team Studio frontend workspace, roster table, team panel, Query Forge-style drawers, and automated frontend tests
 - Revised the Team design and implementation plan so teams can carry their own operational roles separately from app access roles, and so plain team membership without a role is valid
+- Added inline Team glossary help in the workspace and mirrored those definitions into the Studio AI drawer for Team prompts
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Fixed backend runtime gaps discovered during live stack verification:

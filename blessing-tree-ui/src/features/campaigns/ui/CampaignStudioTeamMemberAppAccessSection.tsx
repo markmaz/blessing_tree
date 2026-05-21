@@ -2,12 +2,14 @@ import {
   campaignAppAccessStatusOptions,
   toCampaignAppAccessStatusLabel,
 } from '@/features/campaigns/model/campaignTeamWorkspacePresentation';
+import { getCampaignTeamGlossaryEntry } from '@/features/campaigns/model/campaignTeamWorkspaceGlossary';
 import type {
   CampaignDirectoryUserOption,
   CampaignMemberAppInviteInput,
   CampaignTeamWorkspaceMember,
 } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
+import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
 
 interface CampaignStudioTeamMemberAppAccessSectionProps {
   member: CampaignTeamWorkspaceMember;
@@ -46,13 +48,17 @@ export function CampaignStudioTeamMemberAppAccessSection({
   onInviteAppAccess,
   onRemoveAppAccess,
 }: CampaignStudioTeamMemberAppAccessSectionProps) {
+  const appAccessHelp = getCampaignTeamGlossaryEntry('app_access');
   const selectedDirectoryUser = directoryUsers.find((user) => user.id === selectedDirectoryUserId);
 
   return (
     <section className="campaign-team-drawer__section">
       <div className="campaign-team-drawer__section-header">
         <div>
-          <h4 className="h6 mb-1">App Access</h4>
+          <h4 className="h6 mb-1">
+            App Access
+            <InlineHelpPopover title={appAccessHelp.label} body={appAccessHelp.description} />
+          </h4>
           <p className="text-muted mb-0">
             Link to an app user, prepare an invite, or keep this person roster-only.
           </p>

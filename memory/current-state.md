@@ -40,6 +40,7 @@ Last updated: 2026-05-20
   - Schedule destructive actions now use custom in-app confirmation UI instead of native browser dialogs
   - Campaign Studio Team now uses a member-centric roster workspace with a people table, team panel, and edit drawers for member profiles, fixed access roles, app access, and operational teams
   - the accepted next Team refinement is to separate fixed `App Access Roles` from team-scoped `Team Roles`, and to allow plain team membership with no explicit role
+  - the Team workspace now includes inline glossary help for `Member Type`, `App Access`, `App Access Roles`, and `Teams`, and the Studio AI drawer now exposes the same Team concept definitions when the Team section is selected
   - Campaign Studio Communications now uses a template-only builder with a collapsible tool rail, tighter content editing layout, a builder-side merge-field drawer, a stronger rendered-email preview surface, a lightweight persisted block model for heading, text, and image content, and inline uploads for small embedded images such as maps; the Studio AI panel is now hidden by default and opens as a right-side drawer
   - Campaign Studio can now save milestone dates from the frontend
   - a Vitest + Testing Library harness now exists for automated frontend tests

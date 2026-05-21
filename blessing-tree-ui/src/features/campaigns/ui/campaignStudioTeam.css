@@ -6,6 +6,41 @@
   align-items: end;
 }
 
+.campaign-team-glossary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.campaign-team-glossary__item {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid rgba(226, 218, 205, 0.92);
+  border-radius: 0.95rem;
+  background: rgba(251, 248, 242, 0.78);
+}
+
+.campaign-team-glossary__item p {
+  margin: 0;
+  color: var(--blessing-text-light);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.campaign-team-glossary__label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--blessing-text-dark);
+  font-size: 0.83rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .campaign-team-toolbar__search {
   grid-column: span 2;
 }
@@ -262,6 +297,10 @@
 }
 
 @media (max-width: 1100px) {
+  .campaign-team-glossary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .campaign-team-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -276,6 +315,10 @@
 }
 
 @media (max-width: 760px) {
+  .campaign-team-glossary {
+    grid-template-columns: 1fr;
+  }
+
   .campaign-team-toolbar,
   .campaign-team-form-grid {
     grid-template-columns: 1fr;

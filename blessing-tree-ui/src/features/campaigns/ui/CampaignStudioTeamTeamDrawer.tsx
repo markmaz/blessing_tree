@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { getCampaignTeamGlossaryEntry } from '@/features/campaigns/model/campaignTeamWorkspaceGlossary';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
 import type {
   CampaignTeamUpsertInput,
@@ -6,6 +7,7 @@ import type {
   CampaignTeamWorkspaceTeam,
 } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
+import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
 
 interface CampaignStudioTeamTeamDrawerProps {
   isOpen: boolean;
@@ -36,6 +38,7 @@ export function CampaignStudioTeamTeamDrawer({
   onAddMember,
   onRemoveMember,
 }: CampaignStudioTeamTeamDrawerProps) {
+  const teamsHelp = getCampaignTeamGlossaryEntry('teams');
   const [formState, setFormState] = useState<CampaignTeamUpsertInput>(
     team
       ? {
@@ -140,7 +143,10 @@ export function CampaignStudioTeamTeamDrawer({
           <section className="campaign-team-drawer__section">
             <div className="campaign-team-drawer__section-header">
               <div>
-                <h4 className="h6 mb-1">Team Members</h4>
+                <h4 className="h6 mb-1">
+                  Team Members
+                  <InlineHelpPopover title={teamsHelp.label} body={teamsHelp.description} />
+                </h4>
                 <p className="text-muted mb-0">
                   Add or remove campaign people from this operational group.
                 </p>

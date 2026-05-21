@@ -187,4 +187,31 @@ describe('CampaignStudioAiRail', () => {
       'true'
     );
   });
+
+  it('shows Team glossary help and concept prompts when Team is selected', () => {
+    render(
+      <CampaignStudioAiRail
+        open
+        onClose={vi.fn()}
+        campaign={campaign}
+        selectedSection="team"
+        readiness={readiness}
+        scheduleItems={scheduleItems}
+        templates={templates}
+        milestones={milestones}
+        isSaving={false}
+        onCreateScheduleEvent={vi.fn().mockResolvedValue(true)}
+        onCreateCommunicationSchedule={vi.fn().mockResolvedValue(true)}
+        onSaveMilestones={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    expect(screen.getByText('Team Concepts')).toBeInTheDocument();
+    expect(
+      screen.getByText(/campaign-level roster label such as staff, volunteer, contact, or external/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /explain what member type means in this campaign workspace/i })
+    ).toBeInTheDocument();
+  });
 });

@@ -1,9 +1,11 @@
 import { campaignRoleOptions } from '@/features/campaigns/model/campaignStudio';
+import { getCampaignTeamGlossaryEntry } from '@/features/campaigns/model/campaignTeamWorkspaceGlossary';
 import {
   getCampaignRoleDescription,
   toCampaignRoleLabel,
 } from '@/features/campaigns/model/campaignTeamWorkspacePresentation';
 import type { CampaignTeamWorkspaceMember } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
+import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
 
 interface CampaignStudioTeamMemberAccessRolesSectionProps {
   member: CampaignTeamWorkspaceMember;
@@ -26,11 +28,18 @@ export function CampaignStudioTeamMemberAccessRolesSection({
   onSelectRoleKey,
   onSaveAccessRole,
 }: CampaignStudioTeamMemberAccessRolesSectionProps) {
+  const accessRolesHelp = getCampaignTeamGlossaryEntry('app_access_roles');
   return (
     <section className="campaign-team-drawer__section">
       <div className="campaign-team-drawer__section-header">
         <div>
-          <h4 className="h6 mb-1">Access Roles</h4>
+          <h4 className="h6 mb-1">
+            App Access Roles
+            <InlineHelpPopover
+              title={accessRolesHelp.label}
+              body={accessRolesHelp.description}
+            />
+          </h4>
           <p className="text-muted mb-0">
             Access roles are fixed permission bundles. Use teams for custom communication groups.
           </p>

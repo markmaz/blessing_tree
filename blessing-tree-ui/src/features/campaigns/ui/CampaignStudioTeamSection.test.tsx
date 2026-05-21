@@ -136,6 +136,7 @@ const baseWorkspace: CampaignTeamWorkspaceData = {
     },
   ],
   accessRoles: [],
+  roleCatalog: [],
   directoryUsers: [
     {
       id: 'user-2',
@@ -214,5 +215,19 @@ describe('CampaignStudioTeamSection', () => {
 
     expect(screen.queryByRole('button', { name: /add person/i })).not.toBeInTheDocument();
     expect(screen.getAllByText('Phone Bank').length).toBeGreaterThan(0);
+  });
+
+  it('shows inline Team glossary help for roster concepts', async () => {
+    const user = userEvent.setup();
+
+    render(<CampaignStudioTeamSection campaignId="campaign-123" access={baseAccess} />);
+
+    await user.click(screen.getAllByRole('button', { name: /help: member type/i })[0]);
+
+    expect(
+      screen.getAllByText(/campaign-level roster label such as staff, volunteer, contact, or external/i)
+        .length
+    ).toBeGreaterThan(0);
+    expect(screen.getByText('App Access Roles')).toBeInTheDocument();
   });
 });

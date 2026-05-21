@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { campaignRoleOptions } from '@/features/campaigns/model/campaignStudio';
+import { getCampaignTeamGlossaryEntry } from '@/features/campaigns/model/campaignTeamWorkspaceGlossary';
 import { campaignMemberTypeOptions } from '@/features/campaigns/model/campaignTeamWorkspacePresentation';
 import type {
   CampaignDirectoryUserOption,
@@ -13,6 +14,7 @@ import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDraw
 import { CampaignStudioTeamMemberAccessRolesSection } from '@/features/campaigns/ui/CampaignStudioTeamMemberAccessRolesSection';
 import { CampaignStudioTeamMemberAppAccessSection } from '@/features/campaigns/ui/CampaignStudioTeamMemberAppAccessSection';
 import { CampaignStudioTeamMemberTeamsSection } from '@/features/campaigns/ui/CampaignStudioTeamMemberTeamsSection';
+import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
 
 interface CampaignStudioTeamMemberDrawerProps {
   isOpen: boolean;
@@ -69,6 +71,7 @@ export function CampaignStudioTeamMemberDrawer({
   onRemoveAppAccess,
   onOpenCreateTeam,
 }: CampaignStudioTeamMemberDrawerProps) {
+  const memberTypeHelp = getCampaignTeamGlossaryEntry('member_type');
   const [formState, setFormState] = useState<CampaignTeamMemberUpsertInput>(
     member
       ? {
@@ -168,6 +171,7 @@ export function CampaignStudioTeamMemberDrawer({
             </label>
             <label className="form-label">
               Member Type
+              <InlineHelpPopover title={memberTypeHelp.label} body={memberTypeHelp.description} />
               <select
                 className="form-select"
                 value={formState.memberType}

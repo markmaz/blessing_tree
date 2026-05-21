@@ -7,6 +7,7 @@ import {
 import {
   getAiPromptStarters,
   getAiReadinessSignals,
+  getAiTeamGlossary,
 } from '@/features/campaigns/model/campaignStudioAi';
 import type {
   CampaignMilestone,
@@ -60,6 +61,7 @@ export function CampaignStudioAiRail({
   );
   const promptStarters = getAiPromptStarters(selectedSection, readiness, scheduleItems);
   const readinessSignals = getAiReadinessSignals(selectedSection, readiness);
+  const teamGlossary = getAiTeamGlossary(selectedSection);
   const scheduleSummary = useMemo(
     () => ({
       hasTemplates: templates.length > 0,
@@ -142,6 +144,8 @@ export function CampaignStudioAiRail({
       <p className="text-muted small mb-4">
         {selectedSection === 'schedule'
           ? 'Draft and apply new calendar items directly from a prompt.'
+          : selectedSection === 'team'
+            ? 'Use this panel to understand Team concepts and draft Team-related prompts.'
           : `Draft structured changes for the ${selectedSection} section.`}
       </p>
 
@@ -246,6 +250,20 @@ export function CampaignStudioAiRail({
                   ? 'This will place or update a milestone date.'
                   : 'This will create a manual calendar event.'}
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {teamGlossary.length > 0 ? (
+        <div className="campaign-studio__suggestions">
+          <div className="small fw-semibold mb-2">Team Concepts</div>
+          <div className="d-grid gap-2">
+            {teamGlossary.map((entry) => (
+              <div key={entry.key} className="campaign-studio__inline-note">
+                <div className="fw-semibold small mb-1">{entry.label}</div>
+                <div className="small text-muted">{entry.description}</div>
+              </div>
+            ))}
           </div>
         </div>
       ) : null}

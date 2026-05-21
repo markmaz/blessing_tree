@@ -1,6 +1,7 @@
 import type {
   CampaignDirectoryUserOption,
   CampaignMemberAccessRoleAssignment,
+  CampaignRoleCatalogEntry,
   CampaignTeamWorkspaceAppUser,
   CampaignTeamMemberUpsertInput,
   CampaignTeamWorkspaceData,
@@ -32,6 +33,13 @@ export interface CampaignMemberAccessRoleResponse {
   is_active: boolean;
   created_at: string | null;
   updated_at: string | null;
+}
+
+export interface CampaignRoleCatalogEntryResponse {
+  role_key: string;
+  label: string;
+  description: string;
+  capabilities: string[];
 }
 
 export interface CampaignTeamWorkspaceTeamSummaryResponse {
@@ -94,6 +102,7 @@ export interface CampaignTeamWorkspaceResponse {
   members: CampaignTeamWorkspaceMemberResponse[];
   teams: CampaignTeamWorkspaceTeamResponse[];
   access_roles: CampaignMemberAccessRoleResponse[];
+  role_catalog?: CampaignRoleCatalogEntryResponse[];
   directory_users: CampaignDirectoryUserResponse[];
   filters: {
     role_keys: string[];
@@ -124,6 +133,7 @@ export function mapCampaignTeamWorkspaceData(
     members: response.members.map(mapCampaignTeamWorkspaceMember),
     teams: response.teams.map(mapCampaignTeamWorkspaceTeam),
     accessRoles: response.access_roles.map(mapCampaignMemberAccessRole),
+    roleCatalog: (response.role_catalog ?? []).map(mapCampaignRoleCatalogEntry),
     directoryUsers: response.directory_users.map(mapCampaignDirectoryUser),
     filters: {
       roleKeys: response.filters.role_keys,
@@ -206,6 +216,17 @@ export function mapCampaignMemberAccessRole(
     isActive: role.is_active,
     createdAt: role.created_at,
     updatedAt: role.updated_at,
+  };
+}
+
+export function mapCampaignRoleCatalogEntry(
+  role: CampaignRoleCatalogEntryResponse
+): CampaignRoleCatalogEntry {
+  return {
+    roleKey: role.role_key,
+    label: role.label,
+    description: role.description,
+    capabilities: role.capabilities,
   };
 }
 

@@ -3,6 +3,10 @@ import type {
   CampaignScheduleItem,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import type { CampaignStudioSectionId } from '@/features/campaigns/model/campaignStudio';
+import {
+  campaignTeamGlossaryEntries,
+  type CampaignTeamGlossaryEntry,
+} from '@/features/campaigns/model/campaignTeamWorkspaceGlossary';
 
 const defaultPromptStarters = [
   'Create a sponsor reminder sequence for this campaign.',
@@ -16,6 +20,15 @@ export function getAiPromptStarters(
   readiness: CampaignReadiness,
   scheduleItems: CampaignScheduleItem[]
 ): string[] {
+  if (selectedSection === 'team') {
+    return [
+      'Explain what member type means in this campaign workspace.',
+      'Explain the difference between app access, app access roles, and teams.',
+      'Suggest how to organize volunteers into teams for this campaign.',
+      'List the people and team structure this campaign probably needs.',
+    ];
+  }
+
   if (selectedSection !== 'schedule') {
     return [...defaultPromptStarters];
   }
@@ -57,4 +70,14 @@ export function getAiReadinessSignals(
   }
 
   return readiness.items.filter((item) => item.section === selectedSection).slice(0, 3);
+}
+
+export function getAiTeamGlossary(
+  selectedSection: CampaignStudioSectionId
+): CampaignTeamGlossaryEntry[] {
+  if (selectedSection !== 'team') {
+    return [];
+  }
+
+  return campaignTeamGlossaryEntries;
 }

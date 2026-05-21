@@ -1,4 +1,5 @@
 import { campaignRoleOptions } from '@/features/campaigns/model/campaignStudio';
+import { getCampaignTeamGlossaryEntry } from '@/features/campaigns/model/campaignTeamWorkspaceGlossary';
 import {
   campaignAppAccessStatusOptions,
   campaignMemberTypeOptions,
@@ -7,6 +8,7 @@ import type {
   CampaignMemberAppAccessStatus,
   CampaignMemberType,
 } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
+import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
 
 export interface CampaignStudioTeamFiltersState {
   search: string;
@@ -34,6 +36,10 @@ export function CampaignStudioTeamToolbar({
   onAddMember,
   onAddTeam,
 }: CampaignStudioTeamToolbarProps) {
+  const memberTypeHelp = getCampaignTeamGlossaryEntry('member_type');
+  const appAccessHelp = getCampaignTeamGlossaryEntry('app_access');
+  const accessRolesHelp = getCampaignTeamGlossaryEntry('app_access_roles');
+
   return (
     <div className="campaign-team-toolbar">
       <label className="form-label campaign-team-toolbar__search">
@@ -52,7 +58,8 @@ export function CampaignStudioTeamToolbar({
       </label>
 
       <label className="form-label">
-        Access Role
+        App Access Role
+        <InlineHelpPopover title={accessRolesHelp.label} body={accessRolesHelp.description} />
         <select
           className="form-select"
           value={filters.roleKey}
@@ -95,6 +102,7 @@ export function CampaignStudioTeamToolbar({
 
       <label className="form-label">
         App Access
+        <InlineHelpPopover title={appAccessHelp.label} body={appAccessHelp.description} />
         <select
           className="form-select"
           value={filters.appAccessStatus}
@@ -116,6 +124,7 @@ export function CampaignStudioTeamToolbar({
 
       <label className="form-label">
         Member Type
+        <InlineHelpPopover title={memberTypeHelp.label} body={memberTypeHelp.description} />
         <select
           className="form-select"
           value={filters.memberType}
