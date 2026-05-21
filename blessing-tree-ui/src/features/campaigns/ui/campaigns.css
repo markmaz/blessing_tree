@@ -673,7 +673,9 @@
 }
 
 .campaign-studio__readiness-stat-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(7.5rem, 8.75rem));
+  justify-content: start;
+  gap: 0.75rem;
 }
 
 .campaign-studio__readiness-stat-grid .campaign-studio__stat-card {
