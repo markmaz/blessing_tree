@@ -57,7 +57,7 @@
 }
 
 .campaign-team-table-toolbar__search {
-  width: min(24rem, 100%);
+  width: 100%;
 }
 
 .campaign-team-stats {
