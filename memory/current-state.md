@@ -266,6 +266,7 @@ Last updated: 2026-05-21
   - Studio Team table row drawers for people and teams against the running backend workspace APIs
   - Studio Communications section rendering real template/schedule state
   - Studio Communications section creating a template and schedule in-browser against the running backend
+  - Studio Communications now uses a compact file-style template rail with delete support, and template deletion is blocked when schedules still reference the template
   - Studio Schedule section wiring to the unified schedule read APIs and milestone save path
   - Studio Schedule now uses the calendar as the primary planning tool and can create/edit/delete schedule records from the shared modal
   - Studio AI rail now drafts and applies schedule records through the real campaign event, milestone, and communication save paths

@@ -7,6 +7,7 @@ import {
 import {
   createCommunicationSchedule,
   createCommunicationTemplate,
+  deleteCommunicationTemplate,
   deleteCommunicationSchedule,
   getCampaignStudio,
   saveCampaignMilestones,
@@ -143,6 +144,18 @@ export function useCampaignStudio(campaignId: string | null) {
     return performMutationResult(
       async () => updateCommunicationTemplate(campaignId, templateId, input),
       'Communication template updated.'
+    );
+  };
+
+  const removeCommunicationTemplate = async (templateId: string) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await deleteCommunicationTemplate(campaignId, templateId);
+      },
+      'Communication template removed.'
     );
   };
 
@@ -327,6 +340,7 @@ export function useCampaignStudio(campaignId: string | null) {
     addAssignment,
     addCommunicationTemplate,
     patchCommunicationTemplate,
+    removeCommunicationTemplate,
     addCommunicationSchedule,
     patchCommunicationSchedule,
     removeCommunicationSchedule,

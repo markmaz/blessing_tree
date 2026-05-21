@@ -255,6 +255,15 @@ export async function updateCommunicationTemplate(
   return mapCommunicationTemplate(response);
 }
 
+export async function deleteCommunicationTemplate(
+  campaignId: string,
+  templateId: string
+): Promise<void> {
+  await apiFetchJson(`/api/v1/campaigns/${campaignId}/communications/templates/${templateId}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function createCommunicationSchedule(
   campaignId: string,
   input: CreateCommunicationScheduleInput

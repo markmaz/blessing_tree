@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import '@/features/campaigns/ui/campaignStudioCommunications.css';
 import {
   createBlankCommunicationTemplateDraft,
@@ -22,7 +22,6 @@ import { CampaignStudioTemplateWorkspace } from '@/features/campaigns/ui/Campaig
 interface CampaignStudioCommunicationsSectionProps {
   templates: CommunicationTemplate[];
   isSaving: boolean;
-  onOpenAiPanel: () => void;
   onCreateTemplate: (
     input: CreateCommunicationTemplateInput
   ) => Promise<CommunicationTemplate | null>;
@@ -30,14 +29,15 @@ interface CampaignStudioCommunicationsSectionProps {
     templateId: string,
     input: UpdateCommunicationTemplateInput
   ) => Promise<CommunicationTemplate | null>;
+  onDeleteTemplate: (templateId: string) => Promise<boolean>;
 }
 
 export function CampaignStudioCommunicationsSection({
   templates,
   isSaving,
-  onOpenAiPanel,
   onCreateTemplate,
   onUpdateTemplate,
+  onDeleteTemplate,
 }: CampaignStudioCommunicationsSectionProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
     templates[0]?.id ?? null
@@ -52,6 +52,22 @@ export function CampaignStudioCommunicationsSection({
       ? draftFromCommunicationTemplate(templates[0])
       : createBlankCommunicationTemplateDraft()
   );
+
+  useEffect(() => {
+    const selectedTemplate = templates.find((template) => template.id === selectedTemplateId);
+    if (selectedTemplateId && !selectedTemplate) {
+      const nextTemplate = templates[0] ?? null;
+      startTransition(() => {
+        setSelectedTemplateId(nextTemplate?.id ?? null);
+        setActiveTab(nextTemplate ? 'metadata' : 'content');
+        setDraft(
+          nextTemplate
+            ? draftFromCommunicationTemplate(nextTemplate)
+            : createBlankCommunicationTemplateDraft()
+        );
+      });
+    }
+  }, [selectedTemplateId, templates]);
 
   const handleCreateNew = () => {
     setSelectedTemplateId(null);
@@ -91,7 +107,7 @@ export function CampaignStudioCommunicationsSection({
           <CampaignStudioTemplateLibrary
             templates={templates}
             selectedTemplateId={selectedTemplateId}
-            isCollapsed={isLibraryCollapsed}
+            isPanelOpen={!isLibraryCollapsed}
             onSelectTemplate={(templateId) => {
               const selectedTemplate = templates.find((template) => template.id === templateId);
               setSelectedTemplateId(templateId);
@@ -102,8 +118,29 @@ export function CampaignStudioCommunicationsSection({
               }
             }}
             onCreateNew={handleCreateNew}
-            onOpenAiPanel={onOpenAiPanel}
-            onToggleCollapsed={() => setIsLibraryCollapsed((currentValue) => !currentValue)}
+            onDeleteTemplate={async (templateId) => {
+              const currentIndex = templates.findIndex((template) => template.id === templateId);
+              const fallbackTemplate =
+                templates[currentIndex + 1] ?? templates[currentIndex - 1] ?? null;
+
+              const deleted = await onDeleteTemplate(templateId);
+              if (!deleted) {
+                return false;
+              }
+
+              if (templateId === selectedTemplateId) {
+                setSelectedTemplateId(fallbackTemplate?.id ?? null);
+                setDraft(
+                  fallbackTemplate
+                    ? draftFromCommunicationTemplate(fallbackTemplate)
+                    : createBlankCommunicationTemplateDraft()
+                );
+                setActiveTab(fallbackTemplate ? 'metadata' : 'content');
+              }
+
+              return true;
+            }}
+            onTogglePanel={() => setIsLibraryCollapsed((currentValue) => !currentValue)}
           />
 
           <CampaignStudioTemplateWorkspace

@@ -262,6 +262,93 @@ def test_create_template_and_schedule_then_readiness_reflects_changes(
     assert automation_item["blocking_for"] == ["operations"]
 
 
+def test_delete_template_removes_unscheduled_template(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    template = CommunicationTemplate(
+        id=uuid.uuid4(),
+        template_key="volunteer_follow_up",
+        name="Volunteer Follow Up",
+        audience="VOLUNTEER",
+        channel="EMAIL",
+        subject_template="Thanks",
+        body_template="Thanks for helping.",
+        is_active=True,
+        created_by_user_id=manager.id,
+    )
+    session.add(template)
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    template_id = str(template.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.delete(
+        f"/api/v1/campaigns/{campaign_id}/communications/templates/{template_id}",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 204
+
+    session = campaign_api_module.SessionLocal()
+    assert session.get(CommunicationTemplate, uuid.UUID(template_id)) is None
+    session.close()
+
+
+def test_delete_template_rejects_scheduled_template(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    template = CommunicationTemplate(
+        id=uuid.uuid4(),
+        template_key="volunteer_follow_up",
+        name="Volunteer Follow Up",
+        audience="VOLUNTEER",
+        channel="EMAIL",
+        subject_template="Thanks",
+        body_template="Thanks for helping.",
+        is_active=True,
+        created_by_user_id=manager.id,
+    )
+    session.add(template)
+    session.flush()
+    session.add(
+        CampaignCommunicationSchedule(
+            id=uuid.uuid4(),
+            campaign_id=campaign.id,
+            template_id=template.id,
+            milestone_key="registration_open",
+            status="DRAFT",
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    template_id = str(template.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.delete(
+        f"/api/v1/campaigns/{campaign_id}/communications/templates/{template_id}",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 409
+    assert response.get_json()["error"] == "Template is still used by scheduled communications"
+
+
 def test_post_ai_draft_returns_schedule_event_action(
     app: Flask,
     monkeypatch: pytest.MonkeyPatch,

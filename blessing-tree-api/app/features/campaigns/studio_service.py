@@ -115,6 +115,22 @@ class CampaignStudioService:
         db.refresh(template)
         return template
 
+    def delete_template(self, db: Session, template_id: str) -> None:
+        template = self._get_template(db, template_id)
+        has_schedules = (
+            db.query(CampaignCommunicationSchedule.id)
+            .filter(CampaignCommunicationSchedule.template_id == template.id)
+            .first()
+            is not None
+        )
+        if has_schedules:
+            raise ServiceError(
+                "Template is still used by scheduled communications",
+                status_code=409,
+            )
+        db.delete(template)
+        db.commit()
+
     def list_schedules(self, db: Session, campaign_id: str) -> list[CampaignCommunicationSchedule]:
         return (
             db.query(CampaignCommunicationSchedule)

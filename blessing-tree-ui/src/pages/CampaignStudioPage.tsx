@@ -35,6 +35,7 @@ export function CampaignStudioPage() {
     reload,
     addCommunicationTemplate,
     patchCommunicationTemplate,
+    removeCommunicationTemplate,
     addCommunicationSchedule,
     patchCommunicationSchedule,
     removeCommunicationSchedule,
@@ -176,7 +177,7 @@ export function CampaignStudioPage() {
             },
             addCommunicationTemplate,
             patchCommunicationTemplate,
-            openAiPanel: () => setIsAiRailOpen(true),
+            removeCommunicationTemplate,
             addCommunicationSchedule,
             patchCommunicationSchedule,
             removeCommunicationSchedule,
@@ -251,7 +252,7 @@ function renderStudioSection({
   onUpdateCampaign,
   addCommunicationTemplate,
   patchCommunicationTemplate,
-  openAiPanel,
+  removeCommunicationTemplate,
   addCommunicationSchedule,
   patchCommunicationSchedule,
   removeCommunicationSchedule,
@@ -268,7 +269,7 @@ function renderStudioSection({
   onUpdateCampaign: (input: CampaignUpsertInput) => Promise<boolean>;
   addCommunicationTemplate: ReturnType<typeof useCampaignStudio>['addCommunicationTemplate'];
   patchCommunicationTemplate: ReturnType<typeof useCampaignStudio>['patchCommunicationTemplate'];
-  openAiPanel: () => void;
+  removeCommunicationTemplate: ReturnType<typeof useCampaignStudio>['removeCommunicationTemplate'];
   addCommunicationSchedule: ReturnType<typeof useCampaignStudio>['addCommunicationSchedule'];
   patchCommunicationSchedule: ReturnType<typeof useCampaignStudio>['patchCommunicationSchedule'];
   removeCommunicationSchedule: ReturnType<typeof useCampaignStudio>['removeCommunicationSchedule'];
@@ -301,9 +302,9 @@ function renderStudioSection({
       <CampaignStudioCommunicationsSection
         templates={studio.communications.templates}
         isSaving={isSaving}
-        onOpenAiPanel={openAiPanel}
         onCreateTemplate={addCommunicationTemplate}
         onUpdateTemplate={patchCommunicationTemplate}
+        onDeleteTemplate={removeCommunicationTemplate}
       />
     );
   }

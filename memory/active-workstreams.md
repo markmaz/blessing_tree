@@ -119,6 +119,7 @@ Last updated: 2026-05-21
 - Applied and verified the automation runtime migration against local MySQL `blessing_tree`
 - Live-smoke-tested worker/beat startup plus a real queued communication dispatch against the local Blessing Tree stack
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
+- Refined the Studio Communications template rail into a compact file-style panel with a Query Forge-like icon rail, template rehydration on file select, and backend-backed template delete with schedule-use protection
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Fixed backend runtime gaps discovered during live stack verification:
   - removed the RBAC package import cycle at app startup

@@ -104,6 +104,12 @@ class CommunicationTemplateDetailResource(Resource):
             template = _studio_service.update_template(db, template_id, payload)
         return serialize_communication_template(template)
 
+    @require_campaign_capability("campaign.admin")
+    def delete(self, campaign_id: str, template_id: str):
+        with SessionLocal() as db:
+            _studio_service.delete_template(db, template_id)
+        return "", 204
+
 
 @campaign_ns.route("/<string:campaign_id>/communications/schedules")
 class CommunicationScheduleListResource(Resource):
