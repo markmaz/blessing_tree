@@ -38,6 +38,7 @@ Last updated: 2026-05-21
   - Campaign Studio Schedule is now calendar-first, with modal create/edit/delete for events, milestones, and communication schedules directly from the month grid
   - Campaign Studio AI rail can now draft and apply schedule events, milestones, and communications from prompt input
   - Campaign Studio AI phase 1 now uses a real backend draft contract through `POST /api/v1/campaigns/<campaign_id>/ai/draft`, and the frontend drawer now renders structured AI action cards instead of relying on a frontend-local schedule parser
+  - Campaign Studio AI phase 2 now supports Communications actions, including drafting a new template and optionally placing a linked communication on the campaign calendar through best-effort multi-action apply
   - Campaign Studio now uses a compact icon-only section rail at medium widths, and the schedule calendar/AI draft controls have responsive overflow guards for narrower layouts
   - Campaign Studio AI draft type selection now uses a compact horizontal segmented control in the rail instead of stacked mini-cards
   - Campaign Studio AI now uses a more Query Forge-like drawer pattern with a conversation thread, prompt copy action, prompt suggestions, clear/new-session tools, and a generic composer instead of a schedule-only `Draft Calendar Change` action

@@ -55,6 +55,15 @@ export function getAiPromptStarters(
     ];
   }
 
+  if (selectedSection === 'communications') {
+    return [
+      'Create a volunteer welcome template and place it on the registration open milestone.',
+      'Draft a sponsor reminder email for November 10 and add it to the campaign calendar.',
+      'Build pickup instructions for families and schedule them one week before pickup weekend.',
+      'Create a thank-you email template for volunteers after the campaign closes.',
+    ];
+  }
+
   if (selectedSection !== 'schedule') {
     return [...defaultPromptStarters];
   }
@@ -127,7 +136,7 @@ export function getAiPromptPlaceholder(selectedSection: CampaignStudioSectionId)
   }
 
   if (selectedSection === 'communications') {
-    return 'Ask Campaign AI to shape campaign messaging, template ideas, or audience strategy.';
+    return 'Ask Campaign AI to draft communication templates and place them on the campaign calendar.';
   }
 
   if (selectedSection === 'readiness') {
@@ -233,7 +242,7 @@ export function buildAiAssistantResponse({
     return [
       `Campaign AI can help shape the ${campaign.name} communication plan.`,
       `There ${templates.length === 1 ? 'is' : 'are'} currently ${templates.length} template${templates.length === 1 ? '' : 's'} available in this campaign.`,
-      'Use this panel for template ideas, audience strategy, and merge-field guidance. Template sending and scheduler wiring still live outside this screen.',
+      'Use this panel to draft new templates and optionally place them on the campaign calendar. Actual email delivery automation still is not wired yet.',
     ].join('\n\n');
   }
 

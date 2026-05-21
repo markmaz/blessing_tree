@@ -9,6 +9,7 @@ import {
   getAiTeamGlossary,
 } from '@/features/campaigns/model/campaignStudioAi';
 import {
+  isCreateCommunicationTemplateAction,
   isCreateCampaignEventAction,
   isCreateCommunicationScheduleAction,
   isCreateMilestoneAction,
@@ -22,6 +23,7 @@ import type {
   CampaignScheduleItem,
   CommunicationTemplate,
   CreateCampaignEventInput,
+  CreateCommunicationTemplateInput,
   CreateCommunicationScheduleInput,
   SaveCampaignMilestoneInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
@@ -43,6 +45,9 @@ interface CampaignStudioAiRailProps {
   milestones: CampaignMilestone[];
   isSaving: boolean;
   onCreateScheduleEvent: (input: CreateCampaignEventInput) => Promise<boolean>;
+  onCreateCommunicationTemplate: (
+    input: CreateCommunicationTemplateInput
+  ) => Promise<CommunicationTemplate | null>;
   onCreateCommunicationSchedule: (
     input: CreateCommunicationScheduleInput
   ) => Promise<boolean>;
@@ -60,6 +65,7 @@ export function CampaignStudioAiRail({
   milestones,
   isSaving,
   onCreateScheduleEvent,
+  onCreateCommunicationTemplate,
   onCreateCommunicationSchedule,
   onSaveMilestones,
 }: CampaignStudioAiRailProps) {
@@ -135,7 +141,8 @@ export function CampaignStudioAiRail({
   };
 
   const handleApplyAction = async (action: CampaignStudioAiAction) => {
-    const didSave = await applyDraftAction(action);
+    const result = await applyDraftAction(action, new Map());
+    const didSave = result.success;
     if (!didSave) {
       return;
     }
@@ -165,6 +172,7 @@ export function CampaignStudioAiRail({
     }
 
     const successfulIds = new Set<string>();
+    const createdTemplateRefs = new Map<string, string>();
     let appliedCount = 0;
     let failed = false;
 
@@ -174,8 +182,8 @@ export function CampaignStudioAiRail({
         continue;
       }
 
-      const didSave = await applyDraftAction(action);
-      if (didSave) {
+      const result = await applyDraftAction(action, createdTemplateRefs);
+      if (result.success) {
         successfulIds.add(action.id);
         appliedCount += 1;
       } else {
@@ -207,13 +215,53 @@ export function CampaignStudioAiRail({
     setDraftError(failed ? 'Some AI actions could not be applied.' : null);
   };
 
-  const applyDraftAction = async (action: CampaignStudioAiAction): Promise<boolean> => {
+  const applyDraftAction = async (
+    action: CampaignStudioAiAction,
+    createdTemplateRefs: Map<string, string>
+  ): Promise<{ success: boolean; templateId?: string }> => {
+    if (isCreateCommunicationTemplateAction(action)) {
+      const createdTemplate = await onCreateCommunicationTemplate({
+        templateKey: action.payload.templateKey,
+        name: action.payload.name,
+        audience: action.payload.audience,
+        subjectTemplate: action.payload.subjectTemplate,
+        bodyTemplate: action.payload.bodyTemplate,
+        isActive: action.payload.isActive,
+      });
+      if (!createdTemplate) {
+        return { success: false };
+      }
+
+      if (action.payload.templateRef) {
+        createdTemplateRefs.set(action.payload.templateRef, createdTemplate.id);
+      }
+      return { success: true, templateId: createdTemplate.id };
+    }
+
     if (isCreateCampaignEventAction(action)) {
-      return onCreateScheduleEvent(action.payload);
+      return { success: await onCreateScheduleEvent(action.payload) };
     }
 
     if (isCreateCommunicationScheduleAction(action)) {
-      return onCreateCommunicationSchedule(action.payload);
+      const templateId =
+        action.payload.templateId ??
+        (action.payload.templateRef
+          ? createdTemplateRefs.get(action.payload.templateRef) ?? null
+          : null);
+      if (!templateId) {
+        setDraftError('Apply the template draft first so this communication can be placed.');
+        return { success: false };
+      }
+
+      return {
+        success: await onCreateCommunicationSchedule({
+          templateId,
+          milestoneKey: action.payload.milestoneKey ?? null,
+          scheduledFor: action.payload.scheduledFor ?? null,
+          status: action.payload.status,
+          notes: action.payload.notes ?? null,
+        }),
+      };
     }
 
     if (isCreateMilestoneAction(action)) {
@@ -231,10 +279,10 @@ export function CampaignStudioAiRail({
         notes: action.payload.notes ?? null,
       });
       nextMilestones.sort((left, right) => left.sortOrder - right.sortOrder);
-      return onSaveMilestones(nextMilestones);
+      return { success: await onSaveMilestones(nextMilestones) };
     }
 
-    return false;
+    return { success: false };
   };
 
   const clearHistory = () => {
@@ -273,6 +321,8 @@ export function CampaignStudioAiRail({
           <p className="campaign-studio__ai-context mb-0">
             {selectedSection === 'schedule'
               ? 'Draft and apply campaign calendar updates from one prompt.'
+              : selectedSection === 'communications'
+                ? 'Draft templates and place them on the campaign calendar from one prompt.'
               : `Focus the ${selectedSection} workspace with guided prompts and quick explanations.`}
           </p>
         </div>

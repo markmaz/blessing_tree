@@ -74,6 +74,22 @@ function mapAiAction(action: CampaignStudioAiActionResponse): CampaignStudioAiAc
 }
 
 function mapActionPayload(action: CampaignStudioAiActionResponse): Record<string, unknown> {
+  if (
+    action.action_type === 'create_template' ||
+    action.action_type === 'update_template' ||
+    action.action_type === 'duplicate_template'
+  ) {
+    return {
+      templateRef: action.payload.template_ref ?? null,
+      templateKey: action.payload.template_key,
+      name: action.payload.name,
+      audience: action.payload.audience,
+      subjectTemplate: action.payload.subject_template,
+      bodyTemplate: action.payload.body_template,
+      isActive: action.payload.is_active ?? true,
+    };
+  }
+
   if (action.action_type === 'create_event' || action.action_type === 'update_event') {
     return {
       title: action.payload.title,
@@ -100,7 +116,8 @@ function mapActionPayload(action: CampaignStudioAiActionResponse): Record<string
     action.action_type === 'update_communication_schedule'
   ) {
     return {
-      templateId: action.payload.template_id,
+      templateId: action.payload.template_id ?? null,
+      templateRef: action.payload.template_ref ?? null,
       milestoneKey: action.payload.milestone_key ?? null,
       scheduledFor: action.payload.scheduled_for ?? null,
       status: action.payload.status,

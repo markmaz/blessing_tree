@@ -1,6 +1,7 @@
 import type { CampaignStudioSectionId } from '@/features/campaigns/model/campaignStudio';
 import type {
   CreateCampaignEventInput,
+  CreateCommunicationTemplateInput,
   CreateCommunicationScheduleInput,
   SaveCampaignMilestoneInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
@@ -63,6 +64,23 @@ export interface CampaignStudioAiDraftRequest {
   requestedActionType?: ScheduleAiDraftType | null;
 }
 
+export interface CreateCommunicationTemplateAiPayload
+  extends CreateCommunicationTemplateInput {
+  templateRef?: string | null;
+}
+
+export interface CreateCommunicationScheduleAiPayload
+  extends Omit<CreateCommunicationScheduleInput, 'templateId'> {
+  templateId: string | null;
+  templateRef?: string | null;
+}
+
+export function isCreateCommunicationTemplateAction(
+  action: CampaignStudioAiAction
+): action is CampaignStudioAiAction & { payload: CreateCommunicationTemplateAiPayload } {
+  return action.actionType === 'create_template';
+}
+
 export function isCreateCampaignEventAction(
   action: CampaignStudioAiAction
 ): action is CampaignStudioAiAction & { payload: CreateCampaignEventInput } {
@@ -71,7 +89,7 @@ export function isCreateCampaignEventAction(
 
 export function isCreateCommunicationScheduleAction(
   action: CampaignStudioAiAction
-): action is CampaignStudioAiAction & { payload: CreateCommunicationScheduleInput } {
+): action is CampaignStudioAiAction & { payload: CreateCommunicationScheduleAiPayload } {
   return action.actionType === 'create_communication_schedule';
 }
 

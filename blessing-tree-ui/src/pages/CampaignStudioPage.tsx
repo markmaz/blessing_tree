@@ -199,6 +199,7 @@ export function CampaignStudioPage() {
           milestones={studio.milestones}
           isSaving={isSaving || isUpdatingCampaign}
           onCreateScheduleEvent={addScheduleEvent}
+          onCreateCommunicationTemplate={addCommunicationTemplate}
           onCreateCommunicationSchedule={addCommunicationSchedule}
           onSaveMilestones={persistMilestones}
         />

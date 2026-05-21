@@ -136,22 +136,32 @@ beforeEach(() => {
   vi.mocked(draftCampaignStudioAi).mockReset();
 });
 
+function buildBaseProps() {
+  return {
+    open: true,
+    onClose: vi.fn(),
+    campaign,
+    selectedSection: 'schedule' as const,
+    readiness,
+    scheduleItems,
+    templates,
+    milestones,
+    isSaving: false,
+    onCreateScheduleEvent: vi.fn().mockResolvedValue(true),
+    onCreateCommunicationTemplate: vi.fn().mockResolvedValue({
+      ...templates[0],
+      id: 'created-template-1',
+    }),
+    onCreateCommunicationSchedule: vi.fn().mockResolvedValue(true),
+    onSaveMilestones: vi.fn().mockResolvedValue(true),
+  };
+}
+
 describe('CampaignStudioAiRail', () => {
   it('shows schedule-specific prompt starters and signals', () => {
     render(
       <CampaignStudioAiRail
-        open
-        onClose={vi.fn()}
-        campaign={campaign}
-        selectedSection="schedule"
-        readiness={readiness}
-        scheduleItems={scheduleItems}
-        templates={templates}
-        milestones={milestones}
-        isSaving={false}
-        onCreateScheduleEvent={vi.fn().mockResolvedValue(true)}
-        onCreateCommunicationSchedule={vi.fn().mockResolvedValue(true)}
-        onSaveMilestones={vi.fn().mockResolvedValue(true)}
+        {...buildBaseProps()}
       />
     );
 
@@ -199,18 +209,8 @@ describe('CampaignStudioAiRail', () => {
 
     render(
       <CampaignStudioAiRail
-        open
-        onClose={vi.fn()}
-        campaign={campaign}
-        selectedSection="schedule"
-        readiness={readiness}
-        scheduleItems={scheduleItems}
-        templates={templates}
-        milestones={milestones}
-        isSaving={false}
+        {...buildBaseProps()}
         onCreateScheduleEvent={onCreateScheduleEvent}
-        onCreateCommunicationSchedule={vi.fn().mockResolvedValue(true)}
-        onSaveMilestones={vi.fn().mockResolvedValue(true)}
       />
     );
 
@@ -243,18 +243,7 @@ describe('CampaignStudioAiRail', () => {
 
     render(
       <CampaignStudioAiRail
-        open
-        onClose={vi.fn()}
-        campaign={campaign}
-        selectedSection="schedule"
-        readiness={readiness}
-        scheduleItems={scheduleItems}
-        templates={templates}
-        milestones={milestones}
-        isSaving={false}
-        onCreateScheduleEvent={vi.fn().mockResolvedValue(true)}
-        onCreateCommunicationSchedule={vi.fn().mockResolvedValue(true)}
-        onSaveMilestones={vi.fn().mockResolvedValue(true)}
+        {...buildBaseProps()}
       />
     );
 
@@ -272,18 +261,8 @@ describe('CampaignStudioAiRail', () => {
   it('shows Team glossary help and concept prompts when Team is selected', () => {
     render(
       <CampaignStudioAiRail
-        open
-        onClose={vi.fn()}
-        campaign={campaign}
+        {...buildBaseProps()}
         selectedSection="team"
-        readiness={readiness}
-        scheduleItems={scheduleItems}
-        templates={templates}
-        milestones={milestones}
-        isSaving={false}
-        onCreateScheduleEvent={vi.fn().mockResolvedValue(true)}
-        onCreateCommunicationSchedule={vi.fn().mockResolvedValue(true)}
-        onSaveMilestones={vi.fn().mockResolvedValue(true)}
       />
     );
 
@@ -300,23 +279,112 @@ describe('CampaignStudioAiRail', () => {
   it('uses phase-aware readiness prompts when Readiness is selected', () => {
     render(
       <CampaignStudioAiRail
-        open
-        onClose={vi.fn()}
-        campaign={campaign}
+        {...buildBaseProps()}
         selectedSection="readiness"
-        readiness={readiness}
-        scheduleItems={scheduleItems}
-        templates={templates}
-        milestones={milestones}
-        isSaving={false}
-        onCreateScheduleEvent={vi.fn().mockResolvedValue(true)}
-        onCreateCommunicationSchedule={vi.fn().mockResolvedValue(true)}
-        onSaveMilestones={vi.fn().mockResolvedValue(true)}
       />
     );
 
     expect(
       screen.getByRole('button', { name: /tell me exactly what i need to do to unblock campaign activation/i })
     ).toBeInTheDocument();
+  });
+
+  it('drafts a communication template and schedule bundle from the communications section', async () => {
+    const user = userEvent.setup();
+    const onCreateCommunicationTemplate = vi.fn().mockResolvedValue({
+      ...templates[0],
+      id: 'new-template-id',
+      name: 'Volunteer Welcome',
+      templateKey: 'volunteer_welcome',
+    });
+    const onCreateCommunicationSchedule = vi.fn().mockResolvedValue(true);
+
+    vi.mocked(draftCampaignStudioAi).mockResolvedValueOnce({
+      message: 'I drafted 2 communications actions for Blessing Tree 2026 Demo.',
+      assumptions: [],
+      warnings: ['This drafts a planned calendar communication only. Automated delivery is not wired yet.'],
+      actions: [
+        {
+          id: 'draft-template-1',
+          actionType: 'create_template',
+          section: 'communications',
+          title: 'Create Template: Volunteer Welcome',
+          summary: 'Creates a volunteer email template for Blessing Tree 2026 Demo.',
+          status: 'ready',
+          assumptions: [],
+          warnings: [],
+          payload: {
+            templateRef: 'draft-template-ref-1',
+            templateKey: 'volunteer_welcome',
+            name: 'Volunteer Welcome',
+            audience: 'VOLUNTEER',
+            subjectTemplate: 'Welcome to {{campaign.name}}',
+            bodyTemplate: 'Hello {{volunteer.first_name}},\n\nWelcome to {{campaign.name}}.',
+            isActive: true,
+          },
+          applyTarget: {
+            api: 'communication_template.create',
+            method: 'POST',
+          },
+        },
+        {
+          id: 'draft-schedule-1',
+          actionType: 'create_communication_schedule',
+          section: 'communications',
+          title: 'Schedule Communication: Volunteer Welcome',
+          summary: 'Places Volunteer Welcome at Registration Opens',
+          status: 'ready',
+          assumptions: [],
+          warnings: ['This drafts a planned calendar communication only. Automated delivery is not wired yet.'],
+          payload: {
+            templateId: null,
+            templateRef: 'draft-template-ref-1',
+            milestoneKey: 'registration_open',
+            scheduledFor: null,
+            status: 'DRAFT',
+            notes: 'Create a volunteer welcome template and place it on registration open.',
+          },
+          applyTarget: {
+            api: 'campaign_communication_schedule.create',
+            method: 'POST',
+          },
+        },
+      ],
+    });
+
+    render(
+      <CampaignStudioAiRail
+        {...buildBaseProps()}
+        selectedSection="communications"
+        onCreateCommunicationTemplate={onCreateCommunicationTemplate}
+        onCreateCommunicationSchedule={onCreateCommunicationSchedule}
+      />
+    );
+
+    await user.type(
+      screen.getByPlaceholderText(/ask campaign ai to draft communication templates and place them on the campaign calendar/i),
+      'Create a volunteer welcome template and place it on registration open.'
+    );
+    await user.click(screen.getByRole('button', { name: /send ai prompt/i }));
+    await user.click(screen.getByRole('button', { name: /apply all/i }));
+
+    await waitFor(() => {
+      expect(onCreateCommunicationTemplate).toHaveBeenCalledWith({
+        templateKey: 'volunteer_welcome',
+        name: 'Volunteer Welcome',
+        audience: 'VOLUNTEER',
+        subjectTemplate: 'Welcome to {{campaign.name}}',
+        bodyTemplate: 'Hello {{volunteer.first_name}},\n\nWelcome to {{campaign.name}}.',
+        isActive: true,
+      });
+    });
+
+    expect(onCreateCommunicationSchedule).toHaveBeenCalledWith({
+      templateId: 'new-template-id',
+      milestoneKey: 'registration_open',
+      scheduledFor: null,
+      status: 'DRAFT',
+      notes: 'Create a volunteer welcome template and place it on registration open.',
+    });
   });
 });

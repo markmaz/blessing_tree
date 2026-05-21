@@ -55,6 +55,15 @@ class CampaignStudioAiDraftService:
                 requested_action_type=requested_action_type,
             )
 
+        if section == "communications":
+            return self._build_communications_draft(
+                db,
+                campaign_id=campaign_id,
+                campaign_name=campaign.name,
+                campaign_year=campaign.year,
+                prompt=prompt,
+            )
+
         return self._build_advisory_draft(
             db,
             campaign_id=campaign_id,
@@ -111,6 +120,46 @@ class CampaignStudioAiDraftService:
             "actions": actions,
         }
 
+    def _build_communications_draft(
+        self,
+        db: Session,
+        *,
+        campaign_id: str,
+        campaign_name: str,
+        campaign_year: int,
+        prompt: str,
+    ) -> dict[str, Any]:
+        templates = self.studio.list_templates(db)
+        template_action, assumptions, warnings, template_ref = _build_template_creation_action(
+            prompt,
+            campaign_name=campaign_name,
+            templates=templates,
+        )
+        actions: list[dict[str, Any]] = [template_action]
+
+        if _communications_request_includes_schedule(prompt, campaign_year=campaign_year):
+            schedule_action, schedule_assumptions, schedule_warnings = (
+                _build_communication_schedule_from_template_ref(
+                    prompt,
+                    campaign_year=campaign_year,
+                    template_ref=template_ref,
+                    template_name=str(template_action["payload"]["name"]),
+                )
+            )
+            actions.append(schedule_action)
+            assumptions.extend(schedule_assumptions)
+            warnings.extend(schedule_warnings)
+
+        return {
+            "message": (
+                f"I drafted {len(actions)} communications action"
+                f"{'s' if len(actions) != 1 else ''} for {campaign_name}."
+            ),
+            "assumptions": assumptions,
+            "warnings": warnings,
+            "actions": actions,
+        }
+
     def _build_advisory_draft(
         self,
         db: Session,
@@ -122,20 +171,6 @@ class CampaignStudioAiDraftService:
     ) -> dict[str, Any]:
         _ = prompt
         readiness = self.studio.get_readiness(db, campaign_id)
-        templates = self.studio.list_templates(db)
-
-        if section == "communications":
-            return {
-                "message": (
-                    f"I reviewed the communications request for {campaign_name}. "
-                    f"There {'is' if len(templates) == 1 else 'are'} currently {len(templates)} "
-                    f"template{'s' if len(templates) != 1 else ''} available. "
-                    "Phase 1 only drafts normalized schedule actions. Communications template actions are next."
-                ),
-                "assumptions": [],
-                "warnings": [],
-                "actions": [],
-            }
 
         if section == "team":
             return {
@@ -324,6 +359,119 @@ def _build_communication_action(
     )
 
 
+def _build_template_creation_action(
+    prompt: str,
+    *,
+    campaign_name: str,
+    templates: list[Any],
+) -> tuple[dict[str, Any], list[str], list[str], str]:
+    audience = _detect_template_audience(prompt)
+    template_name = _extract_template_name(prompt, audience=audience)
+    template_key = _derive_unique_template_key(template_name, templates)
+    subject_template = _build_template_subject(prompt, template_name)
+    body_template = _build_template_body(
+        prompt,
+        audience=audience,
+    )
+    template_ref = f"draft-template-ref-{uuid.uuid4()}"
+    assumptions: list[str] = []
+    warnings: list[str] = []
+
+    existing_match, _ = _match_template(prompt, templates)
+    normalized_prompt = _normalize_text(prompt)
+    if existing_match is not None and any(
+        term in normalized_prompt for term in ("update", "revise", "edit", "change")
+    ):
+        warnings.append(
+            f"Matched existing template {existing_match.name}, but AI drafted a new template because updating existing templates requires explicit confirmation."
+        )
+    elif existing_match is not None:
+        assumptions.append(
+            f"Drafted a new template instead of reusing existing template {existing_match.name}."
+        )
+
+    return (
+        {
+            "id": f"draft-template-{uuid.uuid4()}",
+            "action_type": "create_template",
+            "section": "communications",
+            "title": f"Create Template: {template_name}",
+            "summary": f"Creates a {audience.lower()} email template for {campaign_name}.",
+            "status": "ready",
+            "assumptions": assumptions.copy(),
+            "warnings": warnings.copy(),
+            "payload": {
+                "template_ref": template_ref,
+                "template_key": template_key,
+                "name": template_name,
+                "audience": audience,
+                "subject_template": subject_template,
+                "body_template": body_template,
+                "is_active": True,
+            },
+            "apply_target": {"api": "communication_template.create", "method": "POST"},
+        },
+        assumptions,
+        warnings,
+        template_ref,
+    )
+
+
+def _build_communication_schedule_from_template_ref(
+    prompt: str,
+    *,
+    campaign_year: int,
+    template_ref: str,
+    template_name: str,
+) -> tuple[dict[str, Any], list[str], list[str]]:
+    milestone = _match_milestone_definition(prompt)
+    timing = _extract_date_time(prompt, default_year=campaign_year)
+    if milestone is None and timing["date_key"] is None:
+        raise ServiceError(
+            "Include either a milestone reference or a concrete send date so AI can place the communication on the calendar.",
+            status_code=400,
+            details={"field": "prompt"},
+        )
+
+    warnings = [
+        "This drafts a planned calendar communication only. Automated delivery is not wired yet."
+    ]
+
+    summary = (
+        f"Places {template_name} at {milestone['label']}"
+        if milestone is not None
+        else f"Places {template_name} on {timing['date_key']}"
+    )
+
+    return (
+        {
+            "id": f"draft-communication-{uuid.uuid4()}",
+            "action_type": "create_communication_schedule",
+            "section": "communications",
+            "title": f"Schedule Communication: {template_name}",
+            "summary": summary,
+            "status": "ready",
+            "assumptions": [],
+            "warnings": warnings.copy(),
+            "payload": {
+                "template_id": None,
+                "template_ref": template_ref,
+                "milestone_key": milestone["key"] if milestone is not None else None,
+                "scheduled_for": (
+                    f"{timing['date_key']}T{timing['time_text'] or '09:00'}"
+                    if timing["date_key"] is not None
+                    else None
+                ),
+                "status": "SCHEDULED" if timing["date_key"] is not None else "DRAFT",
+                "notes": prompt,
+            },
+            "apply_target": {"api": "campaign_communication_schedule.create", "method": "POST"},
+        },
+        [],
+        warnings,
+    )
+
+
 def _validate_section(value: object) -> str:
     section = str(value or "").strip().lower()
     if section not in AI_STUDIO_SECTIONS:
@@ -394,6 +542,30 @@ def _extract_title(prompt: str, fallback: str) -> str:
     return " ".join(part.capitalize() for part in cleaned.split())
 
 
+def _extract_template_name(prompt: str, *, audience: str) -> str:
+    quoted_match = re.search(r'"([^"]+)"', prompt)
+    if quoted_match and quoted_match.group(1):
+        return quoted_match.group(1).strip()
+
+    normalized = prompt.lower()
+    suffix = "Update"
+    if "welcome" in normalized:
+        suffix = "Welcome"
+    elif "reminder" in normalized:
+        suffix = "Reminder"
+    elif "instruction" in normalized:
+        suffix = "Instructions"
+    elif "thank" in normalized:
+        suffix = "Thank You"
+    elif "pickup" in normalized:
+        suffix = "Pickup Details"
+
+    prefix = "Campaign"
+    if audience != "GENERAL":
+        prefix = audience.title()
+    return f"{prefix} {suffix}"
+
+
 def _detect_event_type(prompt: str) -> str:
     normalized = prompt.lower()
     if "volunteer" in normalized:
@@ -411,6 +583,102 @@ def _detect_event_type(prompt: str) -> str:
     if "communicat" in normalized or "email" in normalized:
         return "COMMUNICATION"
     return "GENERAL"
+
+
+def _detect_template_audience(prompt: str) -> str:
+    normalized = prompt.lower()
+    if "sponsor" in normalized:
+        return "SPONSOR"
+    if "volunteer" in normalized:
+        return "VOLUNTEER"
+    if "manager" in normalized or "leader" in normalized:
+        return "MANAGER"
+    if "family" in normalized or "recipient" in normalized:
+        return "FAMILY"
+    return "GENERAL"
+
+
+def _communications_request_includes_schedule(prompt: str, *, campaign_year: int) -> bool:
+    normalized = _normalize_text(prompt)
+    if _match_milestone_definition(prompt) is not None:
+        return True
+    if _extract_date_time(prompt, default_year=campaign_year)["date_key"] is not None:
+        return True
+    return any(term in normalized for term in ("schedule", "calendar", "send on", "place on"))
+
+
+def _derive_unique_template_key(name: str, templates: list[Any]) -> str:
+    base = _slugify_template_key(name)
+    existing_keys = {template.template_key for template in templates}
+    if base not in existing_keys:
+        return base
+
+    suffix = 2
+    while f"{base}_{suffix}" in existing_keys:
+        suffix += 1
+    return f"{base}_{suffix}"
+
+
+def _slugify_template_key(name: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+    return slug[:100] or "campaign_template"
+
+
+def _build_template_subject(prompt: str, template_name: str) -> str:
+    quoted_match = re.search(r"subject\s*[:=-]\s*\"([^\"]+)\"", prompt, flags=re.IGNORECASE)
+    if quoted_match and quoted_match.group(1):
+        return quoted_match.group(1).strip()
+
+    normalized = prompt.lower()
+    if "welcome" in normalized:
+        return "Welcome to {{campaign.name}}"
+    if "reminder" in normalized:
+        return "Reminder from {{campaign.name}}"
+    if "pickup" in normalized:
+        return "Pickup details for {{campaign.name}}"
+    if "thank" in normalized:
+        return "Thank you from {{campaign.name}}"
+    return f"{template_name} | {{{{campaign.name}}}}"
+
+
+def _build_template_body(
+    prompt: str,
+    *,
+    audience: str,
+) -> str:
+    greeting_field = {
+        "SPONSOR": "{{sponsor.first_name}}",
+        "VOLUNTEER": "{{volunteer.first_name}}",
+        "MANAGER": "{{manager.name}}",
+        "FAMILY": "{{recipient.first_name}}",
+        "GENERAL": "there",
+    }[audience]
+
+    purpose_sentence = _build_template_purpose_sentence(prompt, audience)
+    return "\n\n".join(
+        [
+            f"Hello {greeting_field},",
+            purpose_sentence,
+            "Please review the details for {{campaign.name}} and let us know if you have any questions.",
+            "Thank you,\n{{organization.name}}",
+        ]
+    )
+
+
+def _build_template_purpose_sentence(prompt: str, audience: str) -> str:
+    normalized = prompt.lower()
+    if "welcome" in normalized:
+        return (
+            "Welcome to {{campaign.name}}. "
+            f"We are glad to have you involved in this {audience.lower()} effort."
+        )
+    if "reminder" in normalized:
+        return "This is a reminder about the next step for {{campaign.name}}."
+    if "pickup" in normalized:
+        return "Here are the key pickup details and timing for {{campaign.name}}."
+    if "thank" in normalized:
+        return "Thank you for supporting {{campaign.name}}."
+    return "Here is an update related to {{campaign.name}}."
 
 
 def _extract_date_time(prompt: str, *, default_year: int) -> dict[str, str | None]:

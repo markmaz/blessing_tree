@@ -9,6 +9,10 @@ Last updated: 2026-05-21
   - backend `POST /api/v1/campaigns/<campaign_id>/ai/draft`
   - normalized schedule draft actions
   - frontend AI action-card rendering and apply wiring for schedule actions
+- Phase 2 is now implemented as of 2026-05-21:
+  - Communications prompts can now draft `create_template` actions
+  - Communications prompts can optionally bundle `create_communication_schedule` actions
+  - frontend `Apply All` now resolves newly created template IDs before applying dependent communication schedule actions
 
 ## Purpose
 

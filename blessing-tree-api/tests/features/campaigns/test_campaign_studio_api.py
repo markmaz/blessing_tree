@@ -333,6 +333,51 @@ def test_post_ai_draft_returns_schedule_communication_action_with_warning(
     }
 
 
+def test_post_ai_draft_returns_communications_template_and_schedule_bundle(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ai/draft",
+        json={
+            "section": "communications",
+            "prompt": "Create a volunteer welcome template and place it on registration open",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["message"] == "I drafted 2 communications actions for Studio Campaign."
+    assert [action["action_type"] for action in payload["actions"]] == [
+        "create_template",
+        "create_communication_schedule",
+    ]
+    assert payload["actions"][0]["payload"]["audience"] == "VOLUNTEER"
+    assert payload["actions"][0]["payload"]["template_ref"]
+    assert payload["actions"][0]["payload"]["subject_template"] == "Welcome to {{campaign.name}}"
+    assert payload["actions"][1]["payload"]["template_id"] is None
+    assert (
+        payload["actions"][1]["payload"]["template_ref"]
+        == payload["actions"][0]["payload"]["template_ref"]
+    )
+    assert payload["actions"][1]["payload"]["milestone_key"] == "registration_open"
+    assert payload["warnings"] == [
+        "This drafts a planned calendar communication only. Automated delivery is not wired yet."
+    ]
+
+
 def test_post_ai_draft_returns_advisory_response_for_team_section(
     app: Flask,
     monkeypatch: pytest.MonkeyPatch,
