@@ -261,6 +261,8 @@ Last updated: 2026-05-21
   - the ignored local `blessing-tree-api/.env` has been corrected to point at `blessing_tree` for local runtime verification
 - Team migration note:
   - because the app has no real users yet, phase 2 shipped without SQL backfill; legacy `campaign_user_role` reads remain as a temporary compatibility fallback until Team write flows move to `campaign_member_access_role`
+- UI policy note:
+  - all product UI buttons should include icons; text-only buttons are now against project rules
 - Live frontend verification on 2026-05-20 now includes:
   - Studio Team section rendering the new member-centric roster workspace
   - Studio Team table row drawers for people and teams against the running backend workspace APIs

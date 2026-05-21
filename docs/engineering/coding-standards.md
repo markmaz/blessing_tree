@@ -32,6 +32,7 @@
 - Frontend verification for code changes now includes `npm run test` in addition to lint/build.
 - Do not use native browser dialogs such as `window.confirm`, `window.alert`, or `window.prompt` in product UI. Confirmation and notice flows must use custom application UI.
 - Avoid pill or oval badge styling in product UI. Prefer rounded-rectangle badges, chips, and segmented controls.
+- All product UI buttons must include an icon alongside their text or action affordance. Do not ship text-only buttons in the app interface.
 
 ## APIs And Shared Code
 
