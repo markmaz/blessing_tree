@@ -255,7 +255,7 @@ describe('CampaignStudioTeamSection', () => {
 
     expect(screen.getByText('People, Access, and Teams')).toBeInTheDocument();
     expect(screen.getByText('Volunteer User')).toBeInTheDocument();
-    expect(screen.getAllByText('Gift Intake Desk').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Caller').length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('button', { name: /volunteer user/i }));
 

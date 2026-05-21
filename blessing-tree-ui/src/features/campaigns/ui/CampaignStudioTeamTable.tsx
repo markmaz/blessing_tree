@@ -2,16 +2,13 @@ import { useMemo, useState } from 'react';
 import {
   toCampaignAppAccessStatusLabel,
   toCampaignMemberTypeLabel,
-  toCampaignRoleLabel,
 } from '@/features/campaigns/model/campaignTeamWorkspacePresentation';
 import type {
-  CampaignRoleCatalogEntry,
   CampaignTeamWorkspaceMember,
 } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 
 interface CampaignStudioTeamTableProps {
   members: CampaignTeamWorkspaceMember[];
-  roleCatalog: CampaignRoleCatalogEntry[];
   onSelectMember: (memberId: string) => void;
 }
 
@@ -19,7 +16,6 @@ type MemberSortKey = 'person' | 'access' | 'roles' | 'teams' | 'type' | 'status'
 
 export function CampaignStudioTeamTable({
   members,
-  roleCatalog,
   onSelectMember,
 }: CampaignStudioTeamTableProps) {
   const [sortKey, setSortKey] = useState<MemberSortKey>('person');
@@ -38,8 +34,8 @@ export function CampaignStudioTeamTable({
     const sorted = [...members];
 
     sorted.sort((left, right) => {
-      const leftValue = getMemberSortValue(left, sortKey, roleCatalog);
-      const rightValue = getMemberSortValue(right, sortKey, roleCatalog);
+      const leftValue = getMemberSortValue(left, sortKey);
+      const rightValue = getMemberSortValue(right, sortKey);
 
       if (leftValue < rightValue) {
         return sortDirection === 'asc' ? -1 : 1;
@@ -51,7 +47,7 @@ export function CampaignStudioTeamTable({
     });
 
     return sorted;
-  }, [members, roleCatalog, sortDirection, sortKey]);
+  }, [members, sortDirection, sortKey]);
 
   if (members.length === 0) {
     return (
@@ -143,15 +139,17 @@ export function CampaignStudioTeamTable({
               </td>
               <td>
                 <div className="campaign-chip-row">
-                  {member.accessRoles.length === 0 ? (
-                    <span className="campaign-chip campaign-chip-muted">No access roles</span>
+                  {member.teamMemberships.length === 0 ? (
+                    <span className="campaign-chip campaign-chip-muted">No team roles</span>
                   ) : (
-                    member.accessRoles.map((role) => (
+                    member.teamMemberships.map((membership) => (
                       <span
-                        key={role.id}
-                        className={`campaign-chip ${role.isActive ? '' : 'campaign-chip-muted'}`}
+                        key={membership.id}
+                        className={`campaign-chip ${
+                          membership.teamRole?.isActive === false ? 'campaign-chip-muted' : ''
+                        }`}
                       >
-                        {toCampaignRoleLabel(role.roleKey, roleCatalog)}
+                        {membership.teamRole?.name ?? 'Member'}
                       </span>
                     ))
                   )}
@@ -219,17 +217,16 @@ function SortableHeader({
 
 function getMemberSortValue(
   member: CampaignTeamWorkspaceMember,
-  sortKey: MemberSortKey,
-  roleCatalog: CampaignRoleCatalogEntry[]
+  sortKey: MemberSortKey
 ) {
   switch (sortKey) {
     case 'access':
       return `${toCampaignAppAccessStatusLabel(member.appAccessStatus)} ${member.appUser?.appRole ?? ''}`;
     case 'roles':
-      return member.accessRoles.length === 0
+      return member.teamMemberships.length === 0
         ? ''
-        : member.accessRoles
-            .map((role) => toCampaignRoleLabel(role.roleKey, roleCatalog))
+        : member.teamMemberships
+            .map((membership) => membership.teamRole?.name ?? 'Member')
             .sort()
             .join(', ');
     case 'teams':

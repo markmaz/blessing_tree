@@ -176,7 +176,6 @@ export function CampaignStudioTeamSection({
 
                 <CampaignStudioTeamTable
                   members={filteredMembers}
-                  roleCatalog={workspace.roleCatalog}
                   onSelectMember={(memberId) => {
                     setSelectedMemberId(memberId);
                     setIsCreateMemberOpen(false);
