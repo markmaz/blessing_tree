@@ -1,19 +1,16 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { listCampaignDirectoryUsers } from '@/features/campaigns/api/campaignStudioTeamApi';
 import { CampaignStudioTeamSection } from '@/features/campaigns/ui/CampaignStudioTeamSection';
-import type {
-  CampaignDirectoryUser,
-  CampaignTeamSnapshot,
-} from '@/features/campaigns/model/campaignStudioTypes';
+import { useCampaignTeamWorkspace } from '@/features/campaigns/model/useCampaignTeamWorkspace';
 import type { CampaignAccess } from '@/features/campaigns/model/campaignTypes';
+import type { CampaignTeamWorkspaceData } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 
-vi.mock('@/features/campaigns/api/campaignStudioTeamApi', () => ({
-  listCampaignDirectoryUsers: vi.fn(),
+vi.mock('@/features/campaigns/model/useCampaignTeamWorkspace', () => ({
+  useCampaignTeamWorkspace: vi.fn(),
 }));
 
-const mockedListCampaignDirectoryUsers = vi.mocked(listCampaignDirectoryUsers);
+const mockedUseCampaignTeamWorkspace = vi.mocked(useCampaignTeamWorkspace);
 
 const baseAccess: CampaignAccess = {
   campaignId: 'campaign-123',
@@ -22,125 +19,200 @@ const baseAccess: CampaignAccess = {
   capabilities: ['campaign.view', 'campaign.admin'],
 };
 
-const baseTeam: CampaignTeamSnapshot = {
-  assignments: [
+const baseWorkspace: CampaignTeamWorkspaceData = {
+  campaignId: 'campaign-123',
+  counts: {
+    memberCount: 2,
+    activeMemberCount: 2,
+    membersWithAppAccessCount: 1,
+    activeAssignmentCount: 2,
+    managerCount: 1,
+    teamCount: 1,
+  },
+  members: [
     {
-      id: 'assignment-1',
+      id: 'member-1',
       campaignId: 'campaign-123',
-      userId: 'user-1',
-      roleKey: 'CAMPAIGN_MANAGER',
+      displayName: 'Manager User',
+      email: 'manager@blessingtree.test',
+      phone: null,
+      notes: null,
+      memberType: 'staff',
+      appUserId: 'user-1',
+      appAccessStatus: 'active',
       isActive: true,
-      user: {
+      appUser: {
         id: 'user-1',
         email: 'manager@blessingtree.test',
         displayName: 'Manager User',
         appRole: 'ADMIN',
         isActive: true,
       },
+      accessRoles: [
+        {
+          id: 'role-1',
+          campaignMemberId: 'member-1',
+          roleKey: 'CAMPAIGN_MANAGER',
+          isActive: true,
+          createdAt: null,
+          updatedAt: null,
+        },
+      ],
+      teams: [{ id: 'team-1', name: 'Phone Bank', isActive: true }],
+      teamMemberships: [
+        {
+          id: 'membership-1',
+          teamId: 'team-1',
+          campaignMemberId: 'member-1',
+          createdAt: null,
+          updatedAt: null,
+        },
+      ],
+      createdAt: null,
+      updatedAt: null,
+    },
+    {
+      id: 'member-2',
+      campaignId: 'campaign-123',
+      displayName: 'Volunteer User',
+      email: 'volunteer@blessingtree.test',
+      phone: null,
+      notes: 'Weekend pickup support',
+      memberType: 'volunteer',
+      appUserId: null,
+      appAccessStatus: 'none',
+      isActive: true,
+      appUser: null,
+      accessRoles: [
+        {
+          id: 'role-2',
+          campaignMemberId: 'member-2',
+          roleKey: 'GIFT_CHECKIN',
+          isActive: true,
+          createdAt: null,
+          updatedAt: null,
+        },
+      ],
+      teams: [{ id: 'team-1', name: 'Phone Bank', isActive: true }],
+      teamMemberships: [
+        {
+          id: 'membership-2',
+          teamId: 'team-1',
+          campaignMemberId: 'member-2',
+          createdAt: null,
+          updatedAt: null,
+        },
+      ],
       createdAt: null,
       updatedAt: null,
     },
   ],
-  counts: {
-    assignmentCount: 1,
-    activeAssignmentCount: 1,
-    memberCount: 1,
-    managerCount: 1,
-    roleCounts: {
-      CAMPAIGN_MANAGER: 1,
+  teams: [
+    {
+      id: 'team-1',
+      campaignId: 'campaign-123',
+      name: 'Phone Bank',
+      description: 'Sponsor outreach callers',
+      isActive: true,
+      memberCount: 2,
+      memberships: [
+        {
+          id: 'membership-1',
+          teamId: 'team-1',
+          campaignMemberId: 'member-1',
+          createdAt: null,
+          updatedAt: null,
+        },
+        {
+          id: 'membership-2',
+          teamId: 'team-1',
+          campaignMemberId: 'member-2',
+          createdAt: null,
+          updatedAt: null,
+        },
+      ],
+      createdAt: null,
+      updatedAt: null,
     },
+  ],
+  accessRoles: [],
+  directoryUsers: [
+    {
+      id: 'user-2',
+      email: 'volunteer@blessingtree.test',
+      displayName: 'Volunteer User',
+      appRole: 'VOLUNTEER',
+      isActive: true,
+      assignedRoleKeys: [],
+      inactiveRoleKeys: [],
+    },
+  ],
+  filters: {
+    roleKeys: ['CAMPAIGN_MANAGER', 'GIFT_CHECKIN'],
+    teams: [{ id: 'team-1', name: 'Phone Bank', isActive: true, memberCount: 2 }],
+    memberTypes: ['staff', 'volunteer'],
+    appAccessStatuses: ['active', 'none'],
   },
-};
-
-const directoryUser: CampaignDirectoryUser = {
-  id: 'user-2',
-  email: 'volunteer@blessingtree.test',
-  displayName: 'Volunteer User',
-  appRole: 'VOLUNTEER',
-  isActive: true,
-  assignedRoleKeys: [],
-  inactiveRoleKeys: [],
 };
 
 describe('CampaignStudioTeamSection', () => {
   beforeEach(() => {
-    mockedListCampaignDirectoryUsers.mockReset();
+    mockedUseCampaignTeamWorkspace.mockReset();
+    mockedUseCampaignTeamWorkspace.mockReturnValue({
+      workspace: baseWorkspace,
+      isLoading: false,
+      isSaving: false,
+      error: null,
+      saveMessage: null,
+      reload: vi.fn(),
+      saveMember: vi.fn(),
+      saveAccessRole: vi.fn(),
+      saveTeam: vi.fn(),
+      addMemberToTeam: vi.fn(),
+      removeMemberFromTeam: vi.fn(),
+      linkAppUser: vi.fn(),
+      inviteAppAccess: vi.fn(),
+      removeAppAccess: vi.fn(),
+      clearSaveMessage: vi.fn(),
+      clearError: vi.fn(),
+    });
   });
 
-  it('shows read-only messaging without campaign admin capability', () => {
+  it('renders the member table and opens the person drawer from a row click', async () => {
+    const user = userEvent.setup();
+
+    render(<CampaignStudioTeamSection campaignId="campaign-123" access={baseAccess} />);
+
+    expect(screen.getByText('People, Access, and Teams')).toBeInTheDocument();
+    expect(screen.getByText('Volunteer User')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /volunteer user/i }));
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText(/track campaign people/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Volunteer User')).toBeInTheDocument();
+  });
+
+  it('filters the roster table by search term', async () => {
+    const user = userEvent.setup();
+
+    render(<CampaignStudioTeamSection campaignId="campaign-123" access={baseAccess} />);
+
+    await user.type(screen.getByPlaceholderText(/search name or email/i), 'volunteer');
+
+    expect(screen.getByText('Volunteer User')).toBeInTheDocument();
+    expect(screen.queryByText('Manager User')).not.toBeInTheDocument();
+  });
+
+  it('hides management actions without campaign admin capability', () => {
     render(
       <CampaignStudioTeamSection
         campaignId="campaign-123"
         access={{ ...baseAccess, capabilities: ['campaign.view'] }}
-        team={baseTeam}
-        isSaving={false}
-        onAddAssignment={vi.fn()}
       />
     );
 
-    expect(
-      screen.getByText(/team assignment changes require the/i)
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /search directory/i })
-    ).not.toBeInTheDocument();
-  });
-
-  it('searches the directory and creates a campaign assignment', async () => {
-    const user = userEvent.setup();
-    const onAddAssignment = vi.fn().mockResolvedValue(true);
-
-    mockedListCampaignDirectoryUsers
-      .mockResolvedValueOnce([directoryUser])
-      .mockResolvedValueOnce([
-        {
-          ...directoryUser,
-          assignedRoleKeys: ['GIFT_CHECKIN'],
-        },
-      ]);
-
-    render(
-      <CampaignStudioTeamSection
-        campaignId="campaign-123"
-        access={baseAccess}
-        team={baseTeam}
-        isSaving={false}
-        onAddAssignment={onAddAssignment}
-      />
-    );
-
-    await user.type(
-      screen.getByPlaceholderText(/search active users/i),
-      'volunteer'
-    );
-    await user.selectOptions(
-      screen.getByLabelText(/role to assign/i),
-      'GIFT_CHECKIN'
-    );
-    await user.click(screen.getByRole('button', { name: /search directory/i }));
-
-    expect(mockedListCampaignDirectoryUsers).toHaveBeenCalledWith(
-      'campaign-123',
-      'volunteer',
-      8
-    );
-
-    expect(await screen.findByText('Volunteer User')).toBeInTheDocument();
-    await user.click(
-      screen.getByRole('button', { name: /add as gift check-in/i })
-    );
-
-    expect(onAddAssignment).toHaveBeenCalledWith({
-      userId: 'user-2',
-      roleKey: 'GIFT_CHECKIN',
-      isActive: true,
-    });
-
-    await waitFor(() => {
-      expect(mockedListCampaignDirectoryUsers).toHaveBeenCalledTimes(2);
-    });
-    expect(
-      await screen.findByRole('button', { name: /already assigned/i })
-    ).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /add person/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText('Phone Bank').length).toBeGreaterThan(0);
   });
 });

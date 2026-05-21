@@ -31,7 +31,6 @@ export function CampaignStudioPage() {
     error,
     saveMessage,
     reload,
-    addAssignment,
     addCommunicationTemplate,
     patchCommunicationTemplate,
     addCommunicationSchedule,
@@ -160,7 +159,6 @@ export function CampaignStudioPage() {
                 setIsUpdatingCampaign(false);
               }
             },
-            addAssignment,
             addCommunicationTemplate,
             patchCommunicationTemplate,
             openAiPanel: () => setIsAiRailOpen(true),
@@ -207,7 +205,6 @@ function renderStudioSection({
   isSaving,
   setSelectedSection,
   onUpdateCampaign,
-  addAssignment,
   addCommunicationTemplate,
   patchCommunicationTemplate,
   openAiPanel,
@@ -224,7 +221,6 @@ function renderStudioSection({
   isSaving: boolean;
   setSelectedSection: (sectionId: CampaignStudioSectionId) => void;
   onUpdateCampaign: (input: CampaignUpsertInput) => Promise<boolean>;
-  addAssignment: ReturnType<typeof useCampaignStudio>['addAssignment'];
   addCommunicationTemplate: ReturnType<typeof useCampaignStudio>['addCommunicationTemplate'];
   patchCommunicationTemplate: ReturnType<typeof useCampaignStudio>['patchCommunicationTemplate'];
   openAiPanel: () => void;
@@ -250,9 +246,6 @@ function renderStudioSection({
       <CampaignStudioTeamSection
         campaignId={studio.campaign.id}
         access={studio.access}
-        team={studio.team}
-        isSaving={isSaving}
-        onAddAssignment={addAssignment}
       />
     );
   }

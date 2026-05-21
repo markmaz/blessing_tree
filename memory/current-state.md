@@ -38,7 +38,7 @@ Last updated: 2026-05-20
   - Campaign Studio now uses a compact icon-only section rail at medium widths, and the schedule calendar/AI draft controls have responsive overflow guards for narrower layouts
   - Campaign Studio AI draft type selection now uses a compact horizontal segmented control in the rail instead of stacked mini-cards
   - Schedule destructive actions now use custom in-app confirmation UI instead of native browser dialogs
-  - Campaign Studio Team can now search active users and create campaign assignments directly from the frontend, but that flow is now considered transitional and a roster-plus-teams redesign has been documented
+  - Campaign Studio Team now uses a member-centric roster workspace with a people table, team panel, and edit drawers for member profiles, fixed access roles, app access, and operational teams
   - Campaign Studio Communications now uses a template-only builder with a collapsible tool rail, tighter content editing layout, a builder-side merge-field drawer, a stronger rendered-email preview surface, a lightweight persisted block model for heading, text, and image content, and inline uploads for small embedded images such as maps; the Studio AI panel is now hidden by default and opens as a right-side drawer
   - Campaign Studio can now save milestone dates from the frontend
   - a Vitest + Testing Library harness now exists for automated frontend tests
@@ -164,12 +164,12 @@ Last updated: 2026-05-20
 - A backend metadata endpoint now exists:
   - `GET /api/v1/meta/version`
 - Local backend env note:
-  - the ignored local `blessing-tree-api/.env` is still pointed at `query_forge`, so local Blessing Tree migration verification currently has to target the `blessing_tree` database explicitly
+  - the ignored local `blessing-tree-api/.env` has been corrected to point at `blessing_tree` for local runtime verification
 - Team migration note:
   - because the app has no real users yet, phase 2 shipped without SQL backfill; legacy `campaign_user_role` reads remain as a temporary compatibility fallback until Team write flows move to `campaign_member_access_role`
 - Live frontend verification on 2026-05-20 now includes:
-  - Studio Team section rendering real assignments
-  - Studio Team assignment creation now verified against the running backend through the new directory search + assignment flow
+  - Studio Team section rendering the new member-centric roster workspace
+  - Studio Team table row drawers for people and teams against the running backend workspace APIs
   - Studio Communications section rendering real template/schedule state
   - Studio Communications section creating a template and schedule in-browser against the running backend
   - Studio Schedule section wiring to the unified schedule read APIs and milestone save path

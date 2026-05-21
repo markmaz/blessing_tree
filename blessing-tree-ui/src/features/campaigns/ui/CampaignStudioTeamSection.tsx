@@ -1,279 +1,291 @@
-import { useState } from 'react';
-import { listCampaignDirectoryUsers } from '@/features/campaigns/api/campaignStudioTeamApi';
-import { campaignRoleOptions } from '@/features/campaigns/model/campaignStudio';
+import { useMemo, useState } from 'react';
+import '@/features/campaigns/ui/campaignStudioTeam.css';
 import { canManageCampaign } from '@/features/campaigns/model/campaignPermissions';
-import type {
-  CampaignAssignment,
-  CampaignDirectoryUser,
-  CampaignTeamSnapshot,
-  CreateCampaignAssignmentInput,
-} from '@/features/campaigns/model/campaignStudioTypes';
 import type { CampaignAccess } from '@/features/campaigns/model/campaignTypes';
+import { useCampaignTeamWorkspace } from '@/features/campaigns/model/useCampaignTeamWorkspace';
 import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudioSectionCard';
+import {
+  CampaignStudioTeamToolbar,
+  type CampaignStudioTeamFiltersState,
+} from '@/features/campaigns/ui/CampaignStudioTeamToolbar';
+import { CampaignStudioTeamTable } from '@/features/campaigns/ui/CampaignStudioTeamTable';
+import { CampaignStudioTeamMemberDrawer } from '@/features/campaigns/ui/CampaignStudioTeamMemberDrawer';
+import { CampaignStudioTeamTeamDrawer } from '@/features/campaigns/ui/CampaignStudioTeamTeamDrawer';
+import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 
 interface CampaignStudioTeamSectionProps {
   campaignId: string;
   access: CampaignAccess;
-  team: CampaignTeamSnapshot;
-  isSaving: boolean;
-  onAddAssignment: (input: CreateCampaignAssignmentInput) => Promise<boolean>;
 }
+
+const defaultFilters: CampaignStudioTeamFiltersState = {
+  search: '',
+  roleKey: '',
+  teamId: '',
+  appAccessStatus: '',
+  memberType: '',
+  includeInactive: false,
+};
 
 export function CampaignStudioTeamSection({
   campaignId,
   access,
-  team,
-  isSaving,
-  onAddAssignment,
 }: CampaignStudioTeamSectionProps) {
-  const activeAssignments = team.assignments.filter((assignment) => assignment.isActive);
-  const canEditTeam = canManageCampaign(access);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRoleKey, setSelectedRoleKey] = useState<string>(
-    campaignRoleOptions[0]?.key ?? 'CAMPAIGN_MANAGER'
-  );
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [directoryUsers, setDirectoryUsers] = useState<CampaignDirectoryUser[]>([]);
-  const [hasSearched, setHasSearched] = useState(false);
+  const canManageTeam = canManageCampaign(access);
+  const {
+    workspace,
+    isLoading,
+    isSaving,
+    error,
+    saveMessage,
+    saveMember,
+    saveAccessRole,
+    saveTeam,
+    addMemberToTeam,
+    removeMemberFromTeam,
+    linkAppUser,
+    inviteAppAccess,
+    removeAppAccess,
+    clearSaveMessage,
+    clearError,
+  } = useCampaignTeamWorkspace(campaignId);
+  const [filters, setFilters] = useState<CampaignStudioTeamFiltersState>(defaultFilters);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [isCreateMemberOpen, setIsCreateMemberOpen] = useState(false);
+  const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
 
-  const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsSearching(true);
-    setSearchError(null);
-    setHasSearched(true);
-
-    try {
-      const users = await listCampaignDirectoryUsers(campaignId, searchTerm, 8);
-      setDirectoryUsers(users);
-    } catch (searchUsersError) {
-      setDirectoryUsers([]);
-      setSearchError(
-        searchUsersError instanceof Error
-          ? searchUsersError.message
-          : 'Unable to search users'
-      );
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleAddAssignment = async (user: CampaignDirectoryUser) => {
-    const didSave = await onAddAssignment({
-      userId: user.id,
-      roleKey: selectedRoleKey,
-      isActive: true,
-    });
-
-    if (!didSave) {
-      return;
+  const filteredMembers = useMemo(() => {
+    if (!workspace) {
+      return [];
     }
 
-    try {
-      const users = await listCampaignDirectoryUsers(campaignId, searchTerm, 8);
-      setDirectoryUsers(users);
-    } catch {
-      setDirectoryUsers([]);
-    }
-  };
+    const normalizedSearch = filters.search.trim().toLowerCase();
+
+    return workspace.members
+      .filter((member) => {
+        if (!filters.includeInactive && !member.isActive) {
+          return false;
+        }
+        if (normalizedSearch) {
+          const haystack = `${member.displayName} ${member.email ?? ''}`.toLowerCase();
+          if (!haystack.includes(normalizedSearch)) {
+            return false;
+          }
+        }
+        if (filters.roleKey && !member.accessRoles.some((role) => role.roleKey === filters.roleKey)) {
+          return false;
+        }
+        if (filters.teamId && !member.teams.some((team) => team.id === filters.teamId)) {
+          return false;
+        }
+        if (filters.appAccessStatus && member.appAccessStatus !== filters.appAccessStatus) {
+          return false;
+        }
+        if (filters.memberType && member.memberType !== filters.memberType) {
+          return false;
+        }
+        return true;
+      })
+      .sort((left, right) => left.displayName.localeCompare(right.displayName));
+  }, [filters, workspace]);
+
+  const selectedMember = findById(workspace?.members, selectedMemberId);
+  const selectedTeam = findById(workspace?.teams, selectedTeamId);
 
   return (
     <div className="campaign-studio__canvas-stack">
       <CampaignStudioSectionCard
         eyebrow="Team"
-        title="Campaign Operators"
-        description="See the active operating team, then add managers, coordinators, and volunteers from the campaign user directory."
+        title="People, Access, and Teams"
+        description="Manage the campaign roster, fixed access roles, and custom operational teams from one workspace."
       >
-        <div className="campaign-studio__stat-grid">
-          <div className="campaign-studio__stat-card">
-            <span className="campaign-studio__stat-label">Managers</span>
-            <strong>{team.counts.managerCount}</strong>
-          </div>
-          <div className="campaign-studio__stat-card">
-            <span className="campaign-studio__stat-label">Active Assignments</span>
-            <strong>{team.counts.activeAssignmentCount}</strong>
-          </div>
-          <div className="campaign-studio__stat-card">
-            <span className="campaign-studio__stat-label">Unique Members</span>
-            <strong>{team.counts.memberCount}</strong>
-          </div>
-        </div>
-
-        <div className="campaign-studio__section-grid mt-4">
-          <div className="campaign-studio__list-column">
-            <h3 className="h6 mb-3">Active Assignments</h3>
-            <div className="campaign-studio__section-list">
-              {activeAssignments.length === 0 ? (
-                <div className="campaign-studio__empty-note">
-                  No active campaign assignments yet.
-                </div>
-              ) : (
-                activeAssignments.map((assignment) => (
-                  <ActiveAssignmentCard key={assignment.id} assignment={assignment} />
-                ))
-              )}
+        {saveMessage ? (
+          <AutoDismissAlert
+            key={saveMessage}
+            message={saveMessage}
+            onDismiss={clearSaveMessage}
+          />
+        ) : null}
+        {error ? (
+          <div className="alert alert-danger" role="alert">
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+              <span>{error}</span>
+              <button
+                type="button"
+                className="btn btn-outline-danger btn-sm"
+                onClick={clearError}
+              >
+                Dismiss
+              </button>
             </div>
           </div>
+        ) : null}
 
-          <div className="campaign-studio__list-column">
-            <h3 className="h6 mb-3">Add Team Members</h3>
-            {canEditTeam ? (
-              <>
-                <form className="campaign-studio__form-grid" onSubmit={handleSearch}>
-                  <label className="form-label campaign-studio__form-span-2">
-                    Search by Name or Email
-                    <input
-                      className="form-control"
-                      value={searchTerm}
-                      onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder="Search active users"
-                    />
-                  </label>
-                  <label className="form-label campaign-studio__form-span-2">
-                    Role to Assign
-                    <select
-                      className="form-select"
-                      value={selectedRoleKey}
-                      onChange={(event) => setSelectedRoleKey(event.target.value)}
-                    >
-                      {campaignRoleOptions.map((role) => (
-                        <option key={role.key} value={role.key}>
-                          {role.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="form-text">
-                      {
-                        campaignRoleOptions.find((role) => role.key === selectedRoleKey)
-                          ?.description
-                      }
-                    </div>
-                  </label>
-                  <div className="campaign-studio__form-actions">
-                    <button
-                      type="submit"
-                      className="btn btn-secondary btn-sm"
-                      disabled={isSearching}
-                    >
-                      {isSearching ? 'Searching...' : 'Search Directory'}
-                    </button>
-                  </div>
-                </form>
+        {isLoading || !workspace ? (
+          <p className="text-muted mb-0">Loading team workspace...</p>
+        ) : (
+          <>
+            <div className="campaign-studio__stat-grid">
+              <StatCard label="Managers" value={workspace.counts.managerCount} />
+              <StatCard label="Active Assignments" value={workspace.counts.activeAssignmentCount} />
+              <StatCard label="Roster" value={workspace.counts.memberCount} />
+              <StatCard label="App Access" value={workspace.counts.membersWithAppAccessCount} />
+              <StatCard label="Teams" value={workspace.counts.teamCount} />
+            </div>
 
-                {searchError ? (
-                  <div className="alert alert-danger mt-3 mb-0" role="alert">
-                    {searchError}
-                  </div>
-                ) : null}
+            <CampaignStudioTeamToolbar
+              filters={filters}
+              teamOptions={workspace.teams.map((team) => ({
+                id: team.id,
+                name: team.name,
+              }))}
+              canManageTeam={canManageTeam}
+              onChange={setFilters}
+              onAddMember={() => {
+                setSelectedMemberId(null);
+                setIsCreateMemberOpen(true);
+              }}
+              onAddTeam={() => {
+                setSelectedTeamId(null);
+                setIsCreateTeamOpen(true);
+              }}
+            />
 
-                <div className="campaign-studio__section-list mt-3">
-                  {!hasSearched ? (
-                    <div className="campaign-studio__inline-note">
-                      Search the app users directory to add campaign managers, data entry operators, or volunteers.
-                    </div>
-                  ) : directoryUsers.length === 0 ? (
-                    <div className="campaign-studio__empty-note">
-                      No active users matched that search.
-                    </div>
-                  ) : (
-                    directoryUsers.map((user) => (
-                      <DirectoryUserCard
-                        key={user.id}
-                        user={user}
-                        selectedRoleKey={selectedRoleKey}
-                        isSaving={isSaving}
-                        onAddAssignment={handleAddAssignment}
-                      />
-                    ))
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="campaign-studio__empty-note">
-                Team assignment changes require the <code>campaign.admin</code> capability.
+            <div className="campaign-team-workspace">
+              <div className="campaign-team-workspace__main">
+                <CampaignStudioTeamTable
+                  members={filteredMembers}
+                  onSelectMember={(memberId) => {
+                    setSelectedMemberId(memberId);
+                    setIsCreateMemberOpen(false);
+                  }}
+                />
               </div>
-            )}
-          </div>
-        </div>
+
+              <aside className="campaign-team-workspace__side">
+                <div className="campaign-team-side-card">
+                  <div className="campaign-team-side-card__header">
+                    <div>
+                      <h3 className="h6 mb-1">Teams</h3>
+                      <p className="text-muted mb-0">
+                        Use teams for communication audiences and operating groups.
+                      </p>
+                    </div>
+                    {canManageTeam ? (
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => {
+                          setSelectedTeamId(null);
+                          setIsCreateTeamOpen(true);
+                        }}
+                      >
+                        New Team
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <div className="campaign-team-side-list">
+                    {workspace.teams.length === 0 ? (
+                      <div className="campaign-studio__empty-note">No teams created yet.</div>
+                    ) : (
+                      workspace.teams.map((team) => (
+                        <button
+                          key={team.id}
+                          type="button"
+                          className="campaign-team-side-item"
+                          onClick={() => {
+                            setSelectedTeamId(team.id);
+                            setIsCreateTeamOpen(false);
+                          }}
+                        >
+                          <strong>{team.name}</strong>
+                          <span>
+                            {team.memberCount} {team.memberCount === 1 ? 'member' : 'members'}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </>
+        )}
       </CampaignStudioSectionCard>
+
+      <CampaignStudioTeamMemberDrawer
+        key={isCreateMemberOpen ? 'create-member' : selectedMember?.id ?? 'closed-member'}
+        isOpen={isCreateMemberOpen || selectedMember !== null}
+        isSaving={isSaving}
+        member={isCreateMemberOpen ? null : selectedMember}
+        teams={workspace?.teams ?? []}
+        directoryUsers={workspace?.directoryUsers ?? []}
+        canManageTeam={canManageTeam}
+        onClose={() => {
+          setSelectedMemberId(null);
+          setIsCreateMemberOpen(false);
+        }}
+        onSave={async (input, memberId) => {
+          const didSave = await saveMember(input, memberId);
+          return didSave !== null;
+        }}
+        onSaveAccessRole={saveAccessRole}
+        onAddMemberToTeam={addMemberToTeam}
+        onRemoveMemberFromTeam={removeMemberFromTeam}
+        onLinkAppUser={async (memberId, input) => {
+          const result = await linkAppUser(memberId, input);
+          return result !== null;
+        }}
+        onInviteAppAccess={async (memberId, input) => {
+          const result = await inviteAppAccess(memberId, input);
+          return result !== null;
+        }}
+        onRemoveAppAccess={async (memberId) => {
+          const result = await removeAppAccess(memberId);
+          return result !== null;
+        }}
+        onOpenCreateTeam={() => {
+          setSelectedTeamId(null);
+          setIsCreateTeamOpen(true);
+        }}
+      />
+
+      <CampaignStudioTeamTeamDrawer
+        key={isCreateTeamOpen ? 'create-team' : selectedTeam?.id ?? 'closed-team'}
+        isOpen={isCreateTeamOpen || selectedTeam !== null}
+        isSaving={isSaving}
+        team={isCreateTeamOpen ? null : selectedTeam}
+        members={workspace?.members ?? []}
+        canManageTeam={canManageTeam}
+        onClose={() => {
+          setSelectedTeamId(null);
+          setIsCreateTeamOpen(false);
+        }}
+        onSave={async (input, teamId) => {
+          const result = await saveTeam(input, teamId);
+          return result !== null;
+        }}
+        onAddMember={addMemberToTeam}
+        onRemoveMember={removeMemberFromTeam}
+      />
     </div>
   );
 }
 
-function ActiveAssignmentCard({ assignment }: { assignment: CampaignAssignment }) {
+function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <article className="campaign-studio__list-card">
-      <div className="d-flex flex-wrap align-items-start justify-content-between gap-2">
-        <div>
-          <h4 className="h6 mb-1">{assignment.user.displayName}</h4>
-          <div className="small text-muted">{assignment.user.email}</div>
-        </div>
-        <div className="campaign-chip-row">
-          <span className="campaign-chip">{toRoleLabel(assignment.roleKey)}</span>
-          <span className="campaign-chip campaign-chip-muted">
-            {assignment.user.appRole}
-          </span>
-        </div>
-      </div>
-    </article>
+    <div className="campaign-studio__stat-card">
+      <span className="campaign-studio__stat-label">{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 
-function DirectoryUserCard({
-  user,
-  selectedRoleKey,
-  isSaving,
-  onAddAssignment,
-}: {
-  user: CampaignDirectoryUser;
-  selectedRoleKey: string;
-  isSaving: boolean;
-  onAddAssignment: (user: CampaignDirectoryUser) => Promise<void>;
-}) {
-  const alreadyAssigned = user.assignedRoleKeys.includes(selectedRoleKey);
-
-  return (
-    <article className="campaign-studio__list-card">
-      <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
-        <div className="campaign-studio__directory-user">
-          <h4 className="h6 mb-1">{user.displayName}</h4>
-          <div className="small text-muted">{user.email}</div>
-          <div className="campaign-chip-row mt-2">
-            <span className="campaign-chip campaign-chip-muted">{user.appRole}</span>
-            {user.assignedRoleKeys.map((roleKey) => (
-              <span key={roleKey} className="campaign-chip">
-                {toRoleLabel(roleKey)}
-              </span>
-            ))}
-            {user.inactiveRoleKeys.map((roleKey) => (
-              <span key={roleKey} className="campaign-chip campaign-chip-muted">
-                {toRoleLabel(roleKey)} inactive
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="campaign-studio__directory-actions">
-          <button
-            type="button"
-            className="btn btn-outline-secondary btn-sm"
-            disabled={alreadyAssigned || isSaving}
-            onClick={() => void onAddAssignment(user)}
-          >
-            {alreadyAssigned ? 'Already Assigned' : `Add as ${toRoleLabel(selectedRoleKey)}`}
-          </button>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function toRoleLabel(roleKey: string): string {
-  return (
-    campaignRoleOptions.find((role) => role.key === roleKey)?.label ??
-    roleKey
-      .toLowerCase()
-      .split('_')
-      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-      .join(' ')
-  );
+function findById<T extends { id: string }>(items: T[] | undefined, id: string | null) {
+  if (!items || !id) {
+    return null;
+  }
+  return items.find((item) => item.id === id) ?? null;
 }
