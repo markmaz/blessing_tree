@@ -6,6 +6,9 @@ from datetime import date, datetime
 import pytest
 from flask import Flask
 from app.features.campaigns import api as campaign_api_module
+from app.features.campaigns import studio_api as campaign_studio_api_module
+from app.features.admin.llm_runtime_service import LlmRuntimeUnavailableError
+from app.models.admin_llm_configuration import AdminLlmConfiguration
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
 from app.models.campaign_event import CampaignEvent
 from app.models.campaign_milestone import CampaignMilestone
@@ -19,6 +22,21 @@ from tests.features.campaigns.studio_test_support import (
 )
 
 pytest_plugins = ("tests.features.campaigns.studio_test_support",)
+
+
+def seed_llm_config(session) -> None:
+    session.add(
+        AdminLlmConfiguration(
+            id=uuid.uuid4(),
+            provider="OPENAI_COMPATIBLE",
+            label="Primary LLM",
+            base_url="https://llm.example.test/v1",
+            model="gpt-4o-mini",
+            api_key_encrypted=None,
+            is_enabled=True,
+        )
+    )
+    session.flush()
 
 
 def test_get_campaign_studio_returns_aggregate_payload(
@@ -282,6 +300,107 @@ def test_post_ai_draft_returns_schedule_event_action(
         "all_day": False,
         "notes": "Add volunteer orientation on 2026-11-03 at 6pm",
     }
+
+
+def test_post_ai_draft_uses_configured_llm_when_available(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    seed_llm_config(session)
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    monkeypatch.setattr(
+        campaign_studio_api_module._ai_draft_service.llm_drafts.runtime,
+        "_request_json",
+        lambda *args, **kwargs: {
+            "message": "Drafted with configured LLM.",
+            "assumptions": ["Used the configured LLM for richer email drafting."],
+            "warnings": [],
+            "actions": [
+                {
+                    "action_type": "create_template",
+                    "payload": {
+                        "name": "Volunteer Welcome",
+                        "audience": "VOLUNTEER",
+                        "subject_template": "Welcome to {{campaign.name}}",
+                        "body_template": "Hello {{member.display_name}},\\n\\nThank you for volunteering.",
+                    },
+                },
+                {
+                    "action_type": "create_communication_schedule",
+                    "payload": {
+                        "template_name": "Volunteer Welcome",
+                        "milestone_key": "registration_open",
+                        "status": "DRAFT",
+                    },
+                },
+            ],
+        },
+    )
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ai/draft",
+        json={
+            "section": "communications",
+            "prompt": "Create a volunteer welcome template and place it on registration open",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["message"] == "Drafted with configured LLM."
+    assert payload["actions"][0]["payload"]["body_template"].startswith("Hello {{member.display_name}}")
+    assert payload["actions"][1]["payload"]["template_ref"] == payload["actions"][0]["payload"]["template_ref"]
+    assert payload["assumptions"] == ["Used the configured LLM for richer email drafting."]
+
+
+def test_post_ai_draft_falls_back_when_configured_llm_fails(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    seed_llm_config(session)
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    monkeypatch.setattr(
+        campaign_studio_api_module._ai_draft_service.llm_drafts.runtime,
+        "_request_json",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            LlmRuntimeUnavailableError("Configured LLM request failed: timeout")
+        ),
+    )
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ai/draft",
+        json={
+            "section": "settings",
+            "prompt": "Set the campaign dates from 2026-11-10 to 2026-12-20 and add a description.",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["actions"][0]["action_type"] == "update_campaign_settings"
+    assert payload["warnings"][0] == "Configured LLM request failed: timeout"
 
 
 def test_post_ai_draft_returns_schedule_communication_action_with_warning(

@@ -9,6 +9,7 @@ import uuid
 from sqlalchemy.orm import Session
 
 from app.exceptions.service_error import ServiceError
+from app.features.campaigns.ai_llm_draft_service import CampaignStudioLlmDraftService
 from app.features.campaigns.service import CampaignService
 from app.features.campaigns.studio_constants import MILESTONE_DEFINITIONS
 from app.features.campaigns.studio_service import CampaignStudioService
@@ -33,6 +34,11 @@ class CampaignStudioAiDraftService:
         self.campaigns = campaigns or CampaignService()
         self.studio = studio or CampaignStudioService(self.campaigns)
         self.team_workspace = team_workspace or CampaignTeamWorkspaceService(self.campaigns)
+        self.llm_drafts = CampaignStudioLlmDraftService(
+            campaigns=self.campaigns,
+            studio=self.studio,
+            team_workspace=self.team_workspace,
+        )
 
     def draft(
         self,
@@ -45,13 +51,24 @@ class CampaignStudioAiDraftService:
         campaign = self.campaigns.get_campaign(db, campaign_id)
         section = _validate_section(payload.get("section"))
         prompt = require_short_text(payload.get("prompt"), "prompt", max_length=4000)
-        _ = user_id
+        requested_action_type = _validate_schedule_requested_action_type(
+            payload.get("requested_action_type")
+        )
+
+        llm_draft, llm_warning = self.llm_drafts.draft_or_none(
+            db,
+            user_id=user_id,
+            campaign_id=campaign_id,
+            campaign=campaign,
+            section=section,
+            prompt=prompt,
+            requested_action_type=requested_action_type,
+        )
+        if llm_draft is not None:
+            return llm_draft
 
         if section == "schedule":
-            requested_action_type = _validate_schedule_requested_action_type(
-                payload.get("requested_action_type")
-            )
-            return self._build_schedule_draft(
+            draft = self._build_schedule_draft(
                 db,
                 campaign_id=campaign_id,
                 campaign_name=campaign.name,
@@ -59,48 +76,54 @@ class CampaignStudioAiDraftService:
                 prompt=prompt,
                 requested_action_type=requested_action_type,
             )
+            return _with_runtime_warning(draft, llm_warning)
 
         if section == "communications":
-            return self._build_communications_draft(
+            draft = self._build_communications_draft(
                 db,
                 campaign_id=campaign_id,
                 campaign_name=campaign.name,
                 campaign_year=campaign.year,
                 prompt=prompt,
             )
+            return _with_runtime_warning(draft, llm_warning)
 
         if section == "team":
-            return self._build_team_draft(
+            draft = self._build_team_draft(
                 db,
                 campaign_id=campaign_id,
                 campaign_name=campaign.name,
                 prompt=prompt,
             )
+            return _with_runtime_warning(draft, llm_warning)
 
         if section == "readiness":
-            return self._build_readiness_draft(
+            draft = self._build_readiness_draft(
                 db,
                 campaign_id=campaign_id,
                 campaign=campaign,
                 prompt=prompt,
             )
+            return _with_runtime_warning(draft, llm_warning)
 
         if section == "settings":
-            return self._build_settings_draft(
+            draft = self._build_settings_draft(
                 db,
                 user_id=user_id,
                 campaign_id=campaign_id,
                 campaign=campaign,
                 prompt=prompt,
             )
+            return _with_runtime_warning(draft, llm_warning)
 
-        return self._build_advisory_draft(
+        draft = self._build_advisory_draft(
             db,
             campaign_id=campaign_id,
             section=section,
             campaign_name=campaign.name,
             prompt=prompt,
         )
+        return _with_runtime_warning(draft, llm_warning)
 
     def _build_schedule_draft(
         self,
@@ -1424,6 +1447,15 @@ def _build_blocked_readiness_action(
         },
         "apply_target": {"api": "readiness.fix_plan", "method": "POST"},
     }
+
+
+def _with_runtime_warning(payload: dict[str, Any], warning: str | None) -> dict[str, Any]:
+    if not warning:
+        return payload
+    warnings = [warning]
+    warnings.extend(str(item) for item in payload.get("warnings", []) if str(item))
+    payload["warnings"] = warnings
+    return payload
 
 
 def _validate_section(value: object) -> str:

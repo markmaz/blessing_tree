@@ -5,7 +5,7 @@ Last updated: 2026-05-21
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: admin runtime foundations are now implemented for invitations, LLM configuration, health status, and feature flags; the next focus is communications audiences based on teams/team roles/member filters plus deeper automation polish
+- Current step: Campaign Studio AI now runs through the configured admin LLM with deterministic fallback and verification; the next focus is communications audiences based on teams/team roles/member filters plus deeper automation/admin polish
 
 ## Recently Completed
 
@@ -88,6 +88,7 @@ Last updated: 2026-05-21
 - Implemented Campaign Studio AI phase 3 with Team bundles that can draft a new team, its team roles, a roster member, and a dependent member-to-team assignment, while keeping explanatory Team prompts advisory
 - Implemented Campaign Studio AI phase 4 with Readiness fix bundles that can draft cross-section actions for settings, milestones, templates, and planned communications, while rendering blocked fix-plan cards when the app still lacks enough information to apply a safe automated fix
 - Implemented Campaign Studio AI phase 5 with real Settings drafts, readiness-aware lifecycle/status suggestions, and inline edit-before-apply for scalar campaign setting changes in the AI drawer
+- Wired Campaign Studio AI to the configured admin LLM so draft generation now uses the saved model/base URL first and falls back to deterministic drafting when the LLM path fails or returns invalid structured actions
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Replaced the old placeholder automation warning with a real execution layer:

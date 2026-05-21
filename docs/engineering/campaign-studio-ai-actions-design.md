@@ -25,6 +25,10 @@ Last updated: 2026-05-21
   - Settings prompts can now draft concrete campaign setting updates and lifecycle/status suggestions
   - lifecycle suggestions now respect readiness and transition rules, returning blocked status-change cards when the campaign is not ready
   - the AI drawer now supports inline edit-before-apply for scalar settings/status changes
+- Runtime integration is now implemented as of 2026-05-21:
+  - Campaign Studio AI uses the configured admin LLM as the primary draft engine
+  - backend action normalization now verifies and reshapes LLM output before it reaches the frontend
+  - deterministic Studio AI logic remains in place as fallback when the configured LLM is missing, disabled, unavailable, or returns an invalid structured response
 
 ## Purpose
 
@@ -163,6 +167,12 @@ This keeps:
 - authz consistent
 - audit behavior clearer
 - AI behavior easier to trust
+
+The production draft path should also remain guarded:
+
+- use the configured admin LLM first
+- normalize and verify returned actions against the supported action contract
+- fall back to deterministic drafting when the LLM path fails or returns invalid output
 
 ## Structured Action Model
 

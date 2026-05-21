@@ -203,6 +203,7 @@ Current behavior:
 - Campaign Studio aggregate and section endpoints now power team, communications, milestone, and readiness cards in the frontend studio shell
 - schedule APIs now unify manual events with milestone-derived and communication-derived items for the upcoming Studio `Schedule` section
 - AI draft actions now cover schedule, communications, team, readiness, and settings planning flows through a campaign-scoped draft/apply contract
+- Campaign Studio AI now attempts structured drafts through the configured admin LLM first and falls back to the deterministic draft engine when the LLM is missing, disabled, unavailable, or returns an invalid action payload
 
 ## Admin Routes
 
@@ -227,6 +228,7 @@ Current behavior:
 - app admins can activate or deactivate users without deleting the account record
 - LLM settings are stored globally with the API key encrypted at rest
 - health reports cover database connectivity, Celery worker state/heartbeat, and the configured LLM endpoint
+- the same configured LLM is now the primary draft engine for Campaign Studio AI, while the older deterministic draft logic remains in place as fallback and verification guardrails
 
 ## Local Commands
 

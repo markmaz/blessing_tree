@@ -48,6 +48,7 @@ Last updated: 2026-05-21
   - Campaign Studio AI phase 3 now supports Team actions, including drafting a new team, team roles, roster members, and dependent team assignments through the same best-effort draft/review/apply flow
   - Campaign Studio AI phase 4 now supports Readiness fix bundles, including cross-section actions for settings, milestones, templates, schedule placement, and blocked fix-plan cards when user-specific input is still required
   - Campaign Studio AI phase 5 now supports real Settings-section actions, including lifecycle/status suggestions, direct campaign settings update drafts, and inline edit-before-apply for settings/status payloads in the AI drawer
+  - Campaign Studio AI now uses the configured admin LLM as the primary draft engine and falls back to the deterministic backend draft logic when the LLM is missing, disabled, unavailable, or returns an invalid structured response
   - Campaign Studio now uses a compact icon-only section rail at medium widths, and the schedule calendar/AI draft controls have responsive overflow guards for narrower layouts
   - Campaign Studio AI draft type selection now uses a compact horizontal segmented control in the rail instead of stacked mini-cards
   - Campaign Studio AI now uses a more Query Forge-like drawer pattern with a conversation thread, prompt copy action, prompt suggestions, clear/new-session tools, and a generic composer instead of a schedule-only `Draft Calendar Change` action
@@ -162,6 +163,7 @@ Last updated: 2026-05-21
   - `db/migration/V005__Campaign_Studio_Support.sql`
   - `db/migration/V006__Campaign_Schedule.sql`
   - `app/features/campaigns/ai_draft_service.py`
+  - `app/features/campaigns/ai_llm_draft_service.py`
   - `app/features/campaigns/studio_api.py`
   - `app/features/campaigns/studio_schedule_service.py`
   - `app/features/campaigns/studio_service.py`
@@ -215,6 +217,7 @@ Last updated: 2026-05-21
   - `app/features/admin/api.py`
   - `app/features/admin/invitation_service.py`
   - `app/features/admin/llm_service.py`
+  - `app/features/admin/llm_runtime_service.py`
   - `app/features/admin/health_service.py`
   - `app/features/admin/feature_flag_service.py`
   - `app/tasks/admin_tasks.py`
