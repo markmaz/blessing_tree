@@ -6,10 +6,8 @@ import {
   testAdminLlmConfig,
 } from '@/features/admin/api/adminApi';
 import {
-  CUSTOM_MODEL_VALUE,
   DEFAULT_OPENAI_MODEL,
   DEFAULT_OPENAI_BASE_URL,
-  getOpenAiModelSelectValue,
   getProviderBaseUrl,
   isOpenAiProvider,
   OPENAI_PROVIDER,
@@ -70,12 +68,7 @@ export function AdminLlmConfigCard() {
   const { configuration, providerCatalog } = payload;
   const showOpenAiPresets = isOpenAiProvider(configuration.provider);
   const providerModels = availableModels.length > 0 ? availableModels : showOpenAiPresets ? [...OPENAI_MODEL_PRESETS] : [];
-  const openAiModelSelectValue = providerModels.includes(configuration.model)
-    ? configuration.model
-    : getOpenAiModelSelectValue(configuration.model);
-  const showCustomOpenAiModel = providerModels.length > 0
-    ? openAiModelSelectValue === CUSTOM_MODEL_VALUE
-    : showOpenAiPresets && openAiModelSelectValue === CUSTOM_MODEL_VALUE;
+  const modelListId = 'admin-llm-model-options';
 
   const save = async () => {
     setIsSaving(true);
@@ -203,111 +196,45 @@ export function AdminLlmConfigCard() {
           <label className="form-label" htmlFor="admin-llm-model">
             Model
           </label>
+          <input
+            id="admin-llm-model"
+            className="form-control"
+            list={providerModels.length > 0 ? modelListId : undefined}
+            value={configuration.model}
+            onChange={(event) =>
+              setPayload({
+                ...payload,
+                configuration: { ...configuration, model: event.target.value },
+              })
+            }
+            placeholder={showOpenAiPresets ? DEFAULT_OPENAI_MODEL : 'gpt-4o-mini'}
+          />
+          {providerModels.length > 0 ? (
+            <datalist id={modelListId}>
+              {providerModels.map((model) => (
+                <option key={model} value={model} />
+              ))}
+            </datalist>
+          ) : null}
           {showOpenAiPresets ? (
             <>
-              <select
-                id="admin-llm-model"
-                className="form-select"
-                value={openAiModelSelectValue}
-                onChange={(event) =>
-                  setPayload({
-                    ...payload,
-                    configuration: {
-                      ...configuration,
-                      model:
-                        event.target.value === CUSTOM_MODEL_VALUE
-                          ? ''
-                          : event.target.value,
-                    },
-                  })
-                }
-              >
-                {providerModels.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))}
-                <option value={CUSTOM_MODEL_VALUE}>Custom model</option>
-              </select>
               {availableModels.length > 0 ? (
-                <div className="form-text">Loaded from the configured provider.</div>
+                <div className="form-text">Type or choose a model from the configured provider catalog.</div>
               ) : modelCatalogMessage ? (
                 <div className="form-text text-warning">
                   {modelCatalogMessage} Showing fallback OpenAI presets until the provider catalog is available.
                 </div>
-              ) : null}
-              {showCustomOpenAiModel ? (
-                <input
-                  id="admin-llm-model-custom"
-                  className="form-control mt-2"
-                  value={configuration.model}
-                  onChange={(event) =>
-                    setPayload({
-                      ...payload,
-                      configuration: { ...configuration, model: event.target.value },
-                    })
-                  }
-                  placeholder="Enter custom OpenAI model"
-                />
-              ) : null}
+              ) : (
+                <div className="form-text">Type any OpenAI model, or pick from the fallback suggestions.</div>
+              )}
             </>
           ) : (
             providerModels.length > 0 ? (
               <>
-                <select
-                  id="admin-llm-model"
-                  className="form-select"
-                  value={providerModels.includes(configuration.model) ? configuration.model : CUSTOM_MODEL_VALUE}
-                  onChange={(event) =>
-                    setPayload({
-                      ...payload,
-                      configuration: {
-                        ...configuration,
-                        model:
-                          event.target.value === CUSTOM_MODEL_VALUE
-                            ? ''
-                            : event.target.value,
-                      },
-                    })
-                  }
-                >
-                  {providerModels.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                  <option value={CUSTOM_MODEL_VALUE}>Custom model</option>
-                </select>
-                <div className="form-text">Loaded from the configured provider.</div>
-                {configuration.model === '' || !providerModels.includes(configuration.model) ? (
-                  <input
-                    id="admin-llm-model-custom"
-                    className="form-control mt-2"
-                    value={configuration.model}
-                    onChange={(event) =>
-                      setPayload({
-                        ...payload,
-                        configuration: { ...configuration, model: event.target.value },
-                      })
-                    }
-                    placeholder="Enter custom model"
-                  />
-                ) : null}
+                <div className="form-text">Type or choose a model from the configured provider catalog.</div>
               </>
             ) : (
               <>
-                <input
-                  id="admin-llm-model"
-                  className="form-control"
-                  value={configuration.model}
-                  onChange={(event) =>
-                    setPayload({
-                      ...payload,
-                      configuration: { ...configuration, model: event.target.value },
-                    })
-                  }
-                  placeholder="gpt-4o-mini"
-                />
                 {modelCatalogMessage ? <div className="form-text text-warning">{modelCatalogMessage}</div> : null}
               </>
             )

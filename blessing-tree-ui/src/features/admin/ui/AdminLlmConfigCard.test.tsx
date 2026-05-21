@@ -65,14 +65,14 @@ describe('AdminLlmConfigCard', () => {
     });
   });
 
-  it('shows OpenAI presets and hides the raw base url field for OpenAI', async () => {
+  it('shows OpenAI model suggestions in a combo input and hides the raw base url field for OpenAI', async () => {
     render(<AdminLlmConfigCard />);
 
     expect(await screen.findByText(/llm configuration/i)).toBeInTheDocument();
     expect(screen.getByText(/using the default openai api endpoint/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/^base url$/i)).not.toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /model/i })).toHaveValue('gpt-4.1-mini');
-    expect(screen.getByText(/loaded from the configured provider/i)).toBeInTheDocument();
+    expect(screen.getByText(/type or choose a model from the configured provider catalog/i)).toBeInTheDocument();
   });
 
   it('shows a fallback warning when the provider model catalog is unavailable', async () => {
@@ -112,7 +112,7 @@ describe('AdminLlmConfigCard', () => {
     });
   });
 
-  it('shows editable base url and freeform model for OpenAI-compatible providers', async () => {
+  it('shows editable base url and a combo input for OpenAI-compatible providers', async () => {
     const user = userEvent.setup();
     vi.mocked(fetchAdminLlmModels).mockResolvedValue({
       configured: true,
@@ -127,5 +127,17 @@ describe('AdminLlmConfigCard', () => {
 
     expect(screen.getByLabelText(/^base url$/i)).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /model/i })).toBeInTheDocument();
+    expect(screen.getByText(/type or choose a model from the configured provider catalog/i)).toBeInTheDocument();
+  });
+
+  it('allows typing a custom model directly into the combo input', async () => {
+    const user = userEvent.setup();
+    render(<AdminLlmConfigCard />);
+
+    const modelInput = await screen.findByRole('combobox', { name: /model/i });
+    await user.clear(modelInput);
+    await user.type(modelInput, 'gpt-4.1-nano');
+
+    expect(modelInput).toHaveValue('gpt-4.1-nano');
   });
 });

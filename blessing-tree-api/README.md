@@ -230,7 +230,7 @@ Current behavior:
 - health reports cover database connectivity, Celery worker state/heartbeat, and the configured LLM endpoint
 - the same configured LLM is now the primary draft engine for Campaign Studio AI, while the older deterministic draft logic remains in place as fallback and verification guardrails
 - admin LLM test/health now validates the real generation path against the configured model instead of only checking `/models`, so model-access problems surface before users hit the Campaign Studio AI drawer
-- the Admin LLM UI can now populate its model dropdown from the configured provider's `/models` response through `GET /api/v1/admin/llm/models`, and that endpoint now surfaces provider-catalog failures so the UI can explain when it is falling back to presets
+- the Admin LLM UI can now populate its model combo/input suggestions from the configured provider's `/models` response through `GET /api/v1/admin/llm/models`, and that endpoint now surfaces provider-catalog failures so the UI can explain when it is falling back to presets
 
 ## Local Commands
 

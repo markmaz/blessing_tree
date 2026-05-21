@@ -90,7 +90,7 @@ Last updated: 2026-05-21
 - Implemented Campaign Studio AI phase 5 with real Settings drafts, readiness-aware lifecycle/status suggestions, and inline edit-before-apply for scalar campaign setting changes in the AI drawer
 - Wired Campaign Studio AI to the configured admin LLM so draft generation now uses the saved model/base URL first and falls back to deterministic drafting when the LLM path fails or returns invalid structured actions
 - Tightened admin LLM validation so `Test Connection` now exercises the configured model on the same generation path used by Campaign Studio AI instead of only checking provider reachability at `/models`
-- Added a provider-backed Admin LLM model catalog endpoint and wired the LLM page to use it for the model dropdown when available, with explicit warning text when the provider catalog cannot be loaded and the UI is using fallback presets
+- Added a provider-backed Admin LLM model catalog endpoint and wired the LLM page to use it for a combo/input model field when available, with explicit warning text when the provider catalog cannot be loaded and the UI is using fallback presets
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Replaced the old placeholder automation warning with a real execution layer:
