@@ -10,6 +10,13 @@ export interface CampaignTeamWorkspaceAppUser {
   isActive: boolean;
 }
 
+export interface CampaignRoleCatalogEntry {
+  roleKey: string;
+  label: string;
+  description: string;
+  capabilities: string[];
+}
+
 export interface CampaignMemberAccessRoleAssignment {
   id: string;
   campaignMemberId: string;
@@ -102,6 +109,7 @@ export interface CampaignTeamWorkspaceData {
   teams: CampaignTeamWorkspaceTeam[];
   accessRoles: CampaignMemberAccessRoleAssignment[];
   directoryUsers: CampaignDirectoryUserOption[];
+  roleCatalog: CampaignRoleCatalogEntry[];
   filters: CampaignTeamWorkspaceFilters;
 }
 

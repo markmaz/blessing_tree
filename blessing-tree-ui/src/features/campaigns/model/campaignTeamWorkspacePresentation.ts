@@ -1,16 +1,8 @@
-import { campaignRoleOptions } from '@/features/campaigns/model/campaignStudio';
 import type {
+  CampaignRoleCatalogEntry,
   CampaignMemberAppAccessStatus,
   CampaignMemberType,
 } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
-
-const roleLabelByKey = new Map<string, string>(
-  campaignRoleOptions.map((role) => [role.key, role.label])
-);
-
-const roleDescriptionByKey = new Map<string, string>(
-  campaignRoleOptions.map((role) => [role.key, role.description])
-);
 
 export const campaignMemberTypeOptions: Array<{
   value: CampaignMemberType;
@@ -32,12 +24,21 @@ export const campaignAppAccessStatusOptions: Array<{
   { value: 'active', label: 'Active' },
 ];
 
-export function toCampaignRoleLabel(roleKey: string): string {
-  return roleLabelByKey.get(roleKey) ?? humanizeKey(roleKey);
+export function toCampaignRoleLabel(
+  roleKey: string,
+  roleCatalog: CampaignRoleCatalogEntry[] = []
+): string {
+  return (
+    roleCatalog.find((role) => role.roleKey === roleKey)?.label ??
+    humanizeKey(roleKey)
+  );
 }
 
-export function getCampaignRoleDescription(roleKey: string): string {
-  return roleDescriptionByKey.get(roleKey) ?? '';
+export function getCampaignRoleDescription(
+  roleKey: string,
+  roleCatalog: CampaignRoleCatalogEntry[] = []
+): string {
+  return roleCatalog.find((role) => role.roleKey === roleKey)?.description ?? '';
 }
 
 export function toCampaignMemberTypeLabel(memberType: CampaignMemberType): string {

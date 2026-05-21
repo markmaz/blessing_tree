@@ -1,4 +1,3 @@
-import { campaignRoleOptions } from '@/features/campaigns/model/campaignStudio';
 import { getCampaignTeamGlossaryEntry } from '@/features/campaigns/model/campaignTeamWorkspaceGlossary';
 import {
   campaignAppAccessStatusOptions,
@@ -7,6 +6,7 @@ import {
 import type {
   CampaignMemberAppAccessStatus,
   CampaignMemberType,
+  CampaignRoleCatalogEntry,
 } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
 
@@ -22,6 +22,7 @@ export interface CampaignStudioTeamFiltersState {
 interface CampaignStudioTeamToolbarProps {
   filters: CampaignStudioTeamFiltersState;
   teamOptions: Array<{ id: string; name: string }>;
+  roleOptions: CampaignRoleCatalogEntry[];
   canManageTeam: boolean;
   onChange: (next: CampaignStudioTeamFiltersState) => void;
   onAddMember: () => void;
@@ -31,6 +32,7 @@ interface CampaignStudioTeamToolbarProps {
 export function CampaignStudioTeamToolbar({
   filters,
   teamOptions,
+  roleOptions,
   canManageTeam,
   onChange,
   onAddMember,
@@ -71,8 +73,8 @@ export function CampaignStudioTeamToolbar({
           }
         >
           <option value="">All roles</option>
-          {campaignRoleOptions.map((role) => (
-            <option key={role.key} value={role.key}>
+          {roleOptions.map((role) => (
+            <option key={role.roleKey} value={role.roleKey}>
               {role.label}
             </option>
           ))}

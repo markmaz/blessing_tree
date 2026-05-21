@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { campaignRoleOptions } from '@/features/campaigns/model/campaignStudio';
 import { getCampaignTeamGlossaryEntry } from '@/features/campaigns/model/campaignTeamWorkspaceGlossary';
 import { campaignMemberTypeOptions } from '@/features/campaigns/model/campaignTeamWorkspacePresentation';
 import type {
   CampaignDirectoryUserOption,
   CampaignMemberAppInviteInput,
   CampaignMemberAppLinkInput,
+  CampaignRoleCatalogEntry,
   CampaignTeamMemberUpsertInput,
   CampaignTeamWorkspaceMember,
   CampaignTeamWorkspaceTeam,
@@ -21,6 +21,7 @@ interface CampaignStudioTeamMemberDrawerProps {
   isSaving: boolean;
   member: CampaignTeamWorkspaceMember | null;
   teams: CampaignTeamWorkspaceTeam[];
+  roleCatalog: CampaignRoleCatalogEntry[];
   directoryUsers: CampaignDirectoryUserOption[];
   canManageTeam: boolean;
   onClose: () => void;
@@ -59,6 +60,7 @@ export function CampaignStudioTeamMemberDrawer({
   isSaving,
   member,
   teams,
+  roleCatalog,
   directoryUsers,
   canManageTeam,
   onClose,
@@ -86,7 +88,7 @@ export function CampaignStudioTeamMemberDrawer({
       : emptyFormState
   );
   const [selectedRoleKey, setSelectedRoleKey] = useState<string>(
-    campaignRoleOptions[0]?.key ?? ''
+    roleCatalog[0]?.roleKey ?? ''
   );
   const [selectedDirectoryUserId, setSelectedDirectoryUserId] = useState(
     member?.appUserId ?? ''
@@ -226,6 +228,7 @@ export function CampaignStudioTeamMemberDrawer({
           <>
             <CampaignStudioTeamMemberAccessRolesSection
               member={member}
+              roleCatalog={roleCatalog}
               canManageTeam={canManageTeam}
               isSaving={isSaving}
               selectedRoleKey={selectedRoleKey}

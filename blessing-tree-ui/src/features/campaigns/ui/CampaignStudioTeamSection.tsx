@@ -160,6 +160,7 @@ export function CampaignStudioTeamSection({
                 id: team.id,
                 name: team.name,
               }))}
+              roleOptions={workspace.roleCatalog}
               canManageTeam={canManageTeam}
               onChange={setFilters}
               onAddMember={() => {
@@ -176,6 +177,7 @@ export function CampaignStudioTeamSection({
               <div className="campaign-team-workspace__main">
                 <CampaignStudioTeamTable
                   members={filteredMembers}
+                  roleCatalog={workspace.roleCatalog}
                   onSelectMember={(memberId) => {
                     setSelectedMemberId(memberId);
                     setIsCreateMemberOpen(false);
@@ -241,6 +243,7 @@ export function CampaignStudioTeamSection({
         isSaving={isSaving}
         member={isCreateMemberOpen ? null : selectedMember}
         teams={workspace?.teams ?? []}
+        roleCatalog={workspace?.roleCatalog ?? []}
         directoryUsers={workspace?.directoryUsers ?? []}
         canManageTeam={canManageTeam}
         onClose={() => {

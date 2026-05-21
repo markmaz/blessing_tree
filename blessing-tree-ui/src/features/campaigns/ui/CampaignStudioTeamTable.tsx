@@ -3,15 +3,20 @@ import {
   toCampaignMemberTypeLabel,
   toCampaignRoleLabel,
 } from '@/features/campaigns/model/campaignTeamWorkspacePresentation';
-import type { CampaignTeamWorkspaceMember } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
+import type {
+  CampaignRoleCatalogEntry,
+  CampaignTeamWorkspaceMember,
+} from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 
 interface CampaignStudioTeamTableProps {
   members: CampaignTeamWorkspaceMember[];
+  roleCatalog: CampaignRoleCatalogEntry[];
   onSelectMember: (memberId: string) => void;
 }
 
 export function CampaignStudioTeamTable({
   members,
+  roleCatalog,
   onSelectMember,
 }: CampaignStudioTeamTableProps) {
   if (members.length === 0) {
@@ -76,7 +81,7 @@ export function CampaignStudioTeamTable({
                         key={role.id}
                         className={`campaign-chip ${role.isActive ? '' : 'campaign-chip-muted'}`}
                       >
-                        {toCampaignRoleLabel(role.roleKey)}
+                        {toCampaignRoleLabel(role.roleKey, roleCatalog)}
                       </span>
                     ))
                   )}

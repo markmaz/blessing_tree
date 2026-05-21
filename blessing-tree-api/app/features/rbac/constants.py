@@ -75,6 +75,34 @@ CAMPAIGN_ROLE_CAPABILITIES = {
     VOLUNTEER_VIEWER_ROLE: frozenset({CAMPAIGN_VIEW_CAPABILITY}),
 }
 
+CAMPAIGN_ROLE_CATALOG = (
+    {
+        "role_key": CAMPAIGN_MANAGER_ROLE,
+        "label": "Campaign Manager",
+        "description": "Full campaign setup, staffing, and operations access.",
+    },
+    {
+        "role_key": RECIPIENT_COORDINATOR_ROLE,
+        "label": "Recipient Coordinator",
+        "description": "Manage recipients, wishlists, and sponsor coordination.",
+    },
+    {
+        "role_key": DONATION_ENTRY_ROLE,
+        "label": "Donation Entry",
+        "description": "Record and edit donations for the campaign.",
+    },
+    {
+        "role_key": GIFT_CHECKIN_ROLE,
+        "label": "Gift Check-In",
+        "description": "Check in gifts and support fulfillment handling.",
+    },
+    {
+        "role_key": VOLUNTEER_VIEWER_ROLE,
+        "label": "Volunteer Viewer",
+        "description": "Read-only campaign access for general volunteers.",
+    },
+)
+
 
 def normalize_app_role(value: str | None) -> str:
     normalized = (value or "").strip().upper()
@@ -87,3 +115,15 @@ def normalize_campaign_role_key(value: str | None) -> str:
 
 def get_capabilities_for_campaign_role(role_key: str | None) -> frozenset[str]:
     return CAMPAIGN_ROLE_CAPABILITIES.get(normalize_campaign_role_key(role_key), frozenset())
+
+
+def list_campaign_role_catalog() -> list[dict[str, object]]:
+    return [
+        {
+            "role_key": role["role_key"],
+            "label": role["label"],
+            "description": role["description"],
+            "capabilities": sorted(get_capabilities_for_campaign_role(str(role["role_key"]))),
+        }
+        for role in CAMPAIGN_ROLE_CATALOG
+    ]

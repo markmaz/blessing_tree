@@ -82,31 +82,3 @@ export const communicationAudienceOptions = [
   'FAMILY',
   'GENERAL',
 ] as const;
-
-export const campaignRoleOptions = [
-  {
-    key: 'CAMPAIGN_MANAGER',
-    label: 'Campaign Manager',
-    description: 'Full campaign setup, staffing, and operations access.',
-  },
-  {
-    key: 'RECIPIENT_COORDINATOR',
-    label: 'Recipient Coordinator',
-    description: 'Manage recipients, wishlists, and sponsor coordination.',
-  },
-  {
-    key: 'DONATION_ENTRY',
-    label: 'Donation Entry',
-    description: 'Record and edit donations for the campaign.',
-  },
-  {
-    key: 'GIFT_CHECKIN',
-    label: 'Gift Check-In',
-    description: 'Check in gifts and support fulfillment handling.',
-  },
-  {
-    key: 'VOLUNTEER_VIEWER',
-    label: 'Volunteer Viewer',
-    description: 'Read-only campaign access for general volunteers.',
-  },
-] as const;

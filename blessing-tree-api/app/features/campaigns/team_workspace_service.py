@@ -8,7 +8,7 @@ from app.features.campaigns.member_service import CampaignMemberService
 from app.features.campaigns.service import CampaignService
 from app.features.campaigns.studio_team_service import CampaignStudioTeamService
 from app.features.campaigns.team_service import CampaignTeamService
-from app.features.rbac.constants import CAMPAIGN_MANAGER_ROLE
+from app.features.rbac.constants import CAMPAIGN_MANAGER_ROLE, list_campaign_role_catalog
 
 
 class CampaignTeamWorkspaceService:
@@ -31,6 +31,7 @@ class CampaignTeamWorkspaceService:
             "teams": teams,
             "access_roles": access_roles,
             "directory_users": directory_users,
+            "role_catalog": list_campaign_role_catalog(),
         }
 
     @staticmethod

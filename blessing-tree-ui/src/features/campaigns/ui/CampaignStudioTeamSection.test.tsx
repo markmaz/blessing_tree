@@ -136,7 +136,20 @@ const baseWorkspace: CampaignTeamWorkspaceData = {
     },
   ],
   accessRoles: [],
-  roleCatalog: [],
+  roleCatalog: [
+    {
+      roleKey: 'CAMPAIGN_MANAGER',
+      label: 'Campaign Manager',
+      description: 'Full campaign setup, staffing, and operations access.',
+      capabilities: ['campaign.admin', 'campaign.view'],
+    },
+    {
+      roleKey: 'GIFT_CHECKIN',
+      label: 'Gift Intake Desk',
+      description: 'Check in gifts and support fulfillment handling.',
+      capabilities: ['campaign.gifts.check_in', 'campaign.view'],
+    },
+  ],
   directoryUsers: [
     {
       id: 'user-2',
@@ -186,6 +199,7 @@ describe('CampaignStudioTeamSection', () => {
 
     expect(screen.getByText('People, Access, and Teams')).toBeInTheDocument();
     expect(screen.getByText('Volunteer User')).toBeInTheDocument();
+    expect(screen.getAllByText('Gift Intake Desk').length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('button', { name: /volunteer user/i }));
 

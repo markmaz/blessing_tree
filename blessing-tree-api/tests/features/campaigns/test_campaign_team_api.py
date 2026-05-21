@@ -93,6 +93,9 @@ def test_get_team_workspace_returns_members_teams_and_counts(
     assert payload["members"][0]["display_name"] == "Volunteer One"
     assert payload["teams"][0]["name"] == "Sponsor Callers"
     assert payload["filters"]["role_keys"] == ["VOLUNTEER_VIEWER"]
+    assert payload["role_catalog"][0]["role_key"] == "CAMPAIGN_MANAGER"
+    assert payload["role_catalog"][0]["label"] == "Campaign Manager"
+    assert "campaign.admin" in payload["role_catalog"][0]["capabilities"]
 
 
 def test_member_crud_endpoints_create_and_update_member(

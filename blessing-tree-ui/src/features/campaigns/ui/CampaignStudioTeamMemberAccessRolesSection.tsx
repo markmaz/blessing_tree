@@ -1,14 +1,17 @@
-import { campaignRoleOptions } from '@/features/campaigns/model/campaignStudio';
 import { getCampaignTeamGlossaryEntry } from '@/features/campaigns/model/campaignTeamWorkspaceGlossary';
 import {
   getCampaignRoleDescription,
   toCampaignRoleLabel,
 } from '@/features/campaigns/model/campaignTeamWorkspacePresentation';
-import type { CampaignTeamWorkspaceMember } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
+import type {
+  CampaignRoleCatalogEntry,
+  CampaignTeamWorkspaceMember,
+} from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
 
 interface CampaignStudioTeamMemberAccessRolesSectionProps {
   member: CampaignTeamWorkspaceMember;
+  roleCatalog: CampaignRoleCatalogEntry[];
   canManageTeam: boolean;
   isSaving: boolean;
   selectedRoleKey: string;
@@ -22,6 +25,7 @@ interface CampaignStudioTeamMemberAccessRolesSectionProps {
 
 export function CampaignStudioTeamMemberAccessRolesSection({
   member,
+  roleCatalog,
   canManageTeam,
   isSaving,
   selectedRoleKey,
@@ -53,8 +57,8 @@ export function CampaignStudioTeamMemberAccessRolesSection({
           disabled={!canManageTeam || isSaving}
           onChange={(event) => onSelectRoleKey(event.target.value)}
         >
-          {campaignRoleOptions.map((role) => (
-            <option key={role.key} value={role.key}>
+          {roleCatalog.map((role) => (
+            <option key={role.roleKey} value={role.roleKey}>
               {role.label}
             </option>
           ))}
@@ -73,7 +77,9 @@ export function CampaignStudioTeamMemberAccessRolesSection({
           Add Role
         </button>
       </div>
-      <div className="form-text mb-3">{getCampaignRoleDescription(selectedRoleKey)}</div>
+      <div className="form-text mb-3">
+        {getCampaignRoleDescription(selectedRoleKey, roleCatalog)}
+      </div>
 
       <div className="campaign-team-inline-list">
         {member.accessRoles.length === 0 ? (
@@ -82,7 +88,7 @@ export function CampaignStudioTeamMemberAccessRolesSection({
           member.accessRoles.map((assignment) => (
             <article key={assignment.id} className="campaign-team-inline-item">
               <div>
-                <strong>{toCampaignRoleLabel(assignment.roleKey)}</strong>
+                <strong>{toCampaignRoleLabel(assignment.roleKey, roleCatalog)}</strong>
                 <div className="small text-muted">
                   {assignment.isActive ? 'Active assignment' : 'Inactive assignment'}
                 </div>

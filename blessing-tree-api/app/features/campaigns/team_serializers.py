@@ -101,6 +101,7 @@ def serialize_team_workspace(
     teams: list[CampaignTeam],
     access_roles: list[CampaignMemberAccessRole],
     directory_users: list[dict[str, Any]],
+    role_catalog: list[dict[str, Any]],
 ) -> dict[str, Any]:
     return {
         "campaign_id": campaign_id,
@@ -111,6 +112,7 @@ def serialize_team_workspace(
             serialize_campaign_member_access_role(assignment) for assignment in access_roles
         ],
         "directory_users": [serialize_directory_user(user) for user in directory_users],
+        "role_catalog": role_catalog,
         "filters": {
             "role_keys": sorted({assignment.role_key for assignment in access_roles}),
             "teams": [
@@ -126,5 +128,7 @@ def serialize_team_workspace(
             "app_access_statuses": sorted({member.app_access_status for member in members}),
         },
     }
+
+
 def _serialize_datetime(value: datetime | None) -> str | None:
     return value.isoformat() if value else None
