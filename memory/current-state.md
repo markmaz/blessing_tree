@@ -22,6 +22,7 @@ Last updated: 2026-05-21
   - Campaign Studio backend support now exists for assignments, campaign-scoped communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, aggregate studio payloads, and create-from-previous-campaign cloning support
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
   - local outbound email is now operational in development through a repo-owned SMTP sink plus configurable TLS/SSL flags, so invite delivery and scheduled communication dispatch can be exercised end to end without external SMTP credentials
+  - the existing recipient domain model is now explicitly slated for refinement rather than replacement: keep `recipient_group`, `group_contact`, `recipient`, `wishlist`, and `wishlist_item`, but evolve it toward explicit container/contact/recipient separation plus `program_type` for `CHILD_FAMILY` and `NURSING_HOME`
   - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
   - admin LLM test/health now probes the real generation path against the configured model instead of treating `/models` reachability as sufficient
   - invitation-centric onboarding now supports Google, Yahoo, and local password from the invite funnel; generic Google/Yahoo OAuth remains limited to already-linked returning users, and invite validation now exposes accepted-vs-pending onboarding state for cleaner frontend handling
@@ -93,6 +94,7 @@ Last updated: 2026-05-21
   - `docs/engineering/campaign-team-implementation-plan.md`
   - `docs/engineering/campaign-readiness-design.md`
   - `docs/engineering/campaign-studio-ai-actions-design.md`
+  - `docs/engineering/campaign-recipient-design.md`
   - `docs/engineering/rbac-design.md`
   - `docs/engineering/rbac-implementation-plan.md`
   - `docs/engineering/campaign-schedule-design.md`

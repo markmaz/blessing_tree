@@ -70,6 +70,13 @@
 - Rationale: Blessing Tree campaigns are often repeated seasonally, and rebuilding the same operational setup each year would create avoidable admin overhead.
 - Consequence: the campaign create API should accept an optional source campaign reference, default missing dates from the source campaign shifted into the target year, keep clone operations campaign-scoped, and treat communication templates as campaign-owned assets rather than global shared templates.
 
+## Recipient Domain Direction
+
+- Status: active
+- Decision: keep one unified recipient domain built around `recipient_group`, `group_contact`, `recipient`, `wishlist`, and `wishlist_item`, but refine the meaning of those records so group/container context, operational contacts, and the actual gift recipient are clearly separated. Use `recipient_kind` plus explicit `program_type` instead of overloading `recipient_type`.
+- Rationale: Blessing Tree currently serves both children in family intake flows and adults in nursing-home flows. Those are different intake programs, but they still share the same downstream sponsorship, fulfillment, pickup, and reporting pipeline.
+- Consequence: parents/guardians and facility staff remain contacts, not recipients; `recipient_group` remains the intake container; each actual recipient keeps one wishlist; the schema should evolve from `HOUSEHOLD | INSTITUTION` and `CHILD | ADULT | SENIOR` toward `HOUSEHOLD | CARE_FACILITY`, `recipient_kind`, and `program_type`; and future recipient APIs/UI should be built as one campaign-scoped recipient workspace rather than split program-specific products.
+
 ## Campaign Schedule Direction
 
 - Status: active
