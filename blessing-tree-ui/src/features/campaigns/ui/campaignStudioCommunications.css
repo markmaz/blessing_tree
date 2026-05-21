@@ -323,7 +323,7 @@
   background: rgba(248, 244, 238, 0.98);
   color: var(--blessing-text-dark);
   font-weight: 800;
-  writing-mode: vertical-rl;
+  writing-mode: vertical-lr;
   text-orientation: mixed;
   box-shadow: 0 10px 22px rgba(35, 24, 17, 0.07);
 }
