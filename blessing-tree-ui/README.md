@@ -26,6 +26,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - The Team workspace is now intentionally reduced to search-plus-sort controls: compact top stats, a People card with search and sortable columns, and a Teams card with the same simpler interaction model.
 - The Team section now also includes inline concept help for roster terms such as `Member Type`, `App Access`, `App Access Roles`, and `Teams`, and the Studio AI drawer now exposes the same Team glossary when the Team section is active.
 - The Team workspace now consumes the backend-provided app access role catalog, so role labels and descriptions are no longer duplicated in the frontend.
+- The Admin page now supports user invitations, LLM configuration/testing, runtime health status, and app feature flag toggles.
 - The communications section is now a template-only builder with a collapsible tool rail, metadata/content editing, a stronger rendered preview surface, a builder-side merge-field drawer, heading/text/image content blocks, and inline uploads for small embedded images; the Studio AI panel now opens as a hidden right drawer instead of taking permanent page width.
 - The dates section now saves campaign milestone dates through the studio.
 - A Vitest + Testing Library harness now exists for automated frontend tests.
@@ -40,6 +41,7 @@ Public routes:
 
 - `/login`
 - `/auth/callback`
+- `/auth/register`
 
 Protected routes:
 
@@ -62,6 +64,7 @@ Route constants live in `src/app/routes.ts`.
 - `src/shared/api/authApi.ts`: frontend auth API client
 - `src/shared/api/client.ts`: shared authenticated fetch layer with refresh-on-401 handling
 - `src/features/campaigns/`: campaign API client, state, and UI components
+- `src/features/admin/`: admin API client, feature-flag context, and admin workspace cards
 - `src/pages/CampaignStudioPage.tsx`: Campaign Studio workspace and section routing
 - `src/features/campaigns/api/campaignStudioApi.ts`: studio aggregate and mutation API client
 - `src/features/campaigns/model/useCampaignStudio.ts`: studio state and reload/mutation flow
@@ -101,6 +104,14 @@ Current sequence:
 3. backend returns an access token and sets the refresh cookie
 4. frontend stores the access token and enters the protected app
 5. on reload without a stored token, the frontend attempts `POST /api/v1/auth/refresh` to restore the session from the refresh cookie
+
+Invitation sequence:
+
+1. app admin creates a user from `/admin`
+2. backend creates an invitation and sends a signed accept link
+3. invited user opens `/auth/register?token=...`
+4. frontend validates the token and submits the password form
+5. backend accepts the invite, links local auth, and marks the invitation accepted
 
 OAuth sequence:
 

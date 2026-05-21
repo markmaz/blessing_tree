@@ -1,0 +1,135 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { acceptInvite, validateInviteToken } from '@/shared/api/authApi';
+import { routes } from '@/app/routes';
+import './AuthPages.css';
+
+export function InviteAcceptPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isValidating, setIsValidating] = useState(true);
+
+  const token = useMemo(() => {
+    const value = new URLSearchParams(location.search).get('token');
+    return typeof value === 'string' ? value.trim() : '';
+  }, [location.search]);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      if (!token) {
+        setError('Invite link invalid or expired.');
+        setIsValidating(false);
+        return;
+      }
+      try {
+        const invite = await validateInviteToken(token);
+        if (!active) {
+          return;
+        }
+        setDisplayName(invite.displayName);
+        setEmail(invite.email);
+      } catch (validationError) {
+        if (!active) {
+          return;
+        }
+        setError(
+          validationError instanceof Error
+            ? validationError.message
+            : 'Invite link invalid or expired.'
+        );
+      } finally {
+        if (active) {
+          setIsValidating(false);
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  const submit = async () => {
+    setIsLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await acceptInvite(token, { displayName, email, password });
+      setMessage('Invitation accepted. You can sign in now.');
+      window.setTimeout(() => navigate(routes.LOGIN), 800);
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Unable to accept invitation.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-container">
+      <div className="auth-form-panel">
+        <div className="auth-form-content">
+          <div className="auth-header">
+            <h1 className="auth-title">Accept Invitation</h1>
+            <p className="auth-subtitle">Finish creating your Blessing Tree account.</p>
+          </div>
+          {error ? <div className="alert alert-danger">{error}</div> : null}
+          {message ? <div className="alert alert-success">{message}</div> : null}
+          {isValidating ? (
+            <p className="text-muted">Validating invitation…</p>
+          ) : (
+            <>
+              <div className="mb-3">
+                <label className="form-label" htmlFor="invite-display-name">Display Name</label>
+                <input
+                  id="invite-display-name"
+                  className="form-control"
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label" htmlFor="invite-email">Email</label>
+                <input
+                  id="invite-email"
+                  className="form-control"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  type="email"
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label" htmlFor="invite-password">Password</label>
+                <input
+                  id="invite-password"
+                  className="form-control"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  type="password"
+                />
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary w-100"
+                disabled={isLoading || !token}
+                onClick={() => void submit()}
+              >
+                {isLoading ? 'Accepting…' : 'Accept Invite'}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="auth-hero-panel">
+        <div className="auth-hero-placeholder">
+          <img src="/hero.png" alt="Blessing Tree" className="auth-hero-image" />
+        </div>
+      </div>
+    </div>
+  );
+}

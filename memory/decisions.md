@@ -118,3 +118,10 @@
 - Decision: run Blessing Tree campaign automation through Celery worker/beat with explicit execution logging, worker heartbeat health checks, and a dedicated default queue named `bt` even when sharing the same local Valkey broker with other projects.
 - Rationale: scheduled communications and lifecycle transitions now need a real execution path, and local development already shares broker infrastructure with Query Forge. Using the default Celery queue caused Blessing Tree workers to receive Query Forge task envelopes, which is operationally noisy and unsafe.
 - Consequence: communication schedules now record delivery attempts and dispatch outcomes, lifecycle transitions can be advanced by worker tasks, readiness reflects actual worker health and recent execution issues, and all Blessing Tree automation tasks must publish and consume on the dedicated `bt` queue.
+
+## Admin Runtime Direction
+
+- Status: active
+- Decision: add a first-class admin runtime slice for Query Forge-style user invitations, global LLM configuration, runtime health visibility, and feature flag control.
+- Rationale: Blessing Tree now has enough moving parts that operators need a real admin surface instead of ad hoc environment edits. The invitation flow should match the existing Query Forge pattern, LLM configuration should be app-managed, and health/feature state should be visible in-product.
+- Consequence: the backend now owns invitation lifecycle, encrypted LLM settings, feature-flag state, and health probes; the frontend admin page is no longer a placeholder; and authenticated users can read feature flags for route/navigation gating while only app admins can mutate admin settings.

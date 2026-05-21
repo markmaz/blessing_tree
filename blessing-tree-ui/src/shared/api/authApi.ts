@@ -23,6 +23,14 @@ export interface SessionResponse {
   role: string | null;
 }
 
+export interface InviteValidationResponse {
+  invitationId: string;
+  userId: string;
+  email: string;
+  displayName: string;
+  expiresAt: string;
+}
+
 interface LocalLoginApiResponse {
   access_token: string;
   token_type: string;
@@ -204,4 +212,41 @@ export async function refreshSession(): Promise<SessionResponse> {
     token: payload.access_token,
     role: getRoleFromToken(payload.access_token),
   };
+}
+
+export async function validateInviteToken(token: string): Promise<InviteValidationResponse> {
+  const response = await fetch(authUrl(`/invite/validate/${encodeURIComponent(token)}`), {
+    method: 'GET',
+  });
+  const payload = await parseJsonResponse<{
+    invitation_id: string;
+    user_id: string;
+    email: string;
+    display_name: string;
+    expires_at: string;
+  }>(response);
+  return {
+    invitationId: payload.invitation_id,
+    userId: payload.user_id,
+    email: payload.email,
+    displayName: payload.display_name,
+    expiresAt: payload.expires_at,
+  };
+}
+
+export async function acceptInvite(token: string, input: {
+  displayName: string;
+  email: string;
+  password: string;
+}): Promise<void> {
+  const response = await fetch(`${authUrl('/invite/accept')}?token=${encodeURIComponent(token)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      display_name: input.displayName,
+      email: input.email,
+      password: input.password,
+    }),
+  });
+  await parseJsonResponse(response);
 }

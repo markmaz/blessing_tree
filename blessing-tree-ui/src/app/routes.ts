@@ -5,6 +5,7 @@
 
 export const routes = {
   LOGIN: '/login',
+  AUTH_REGISTER: '/auth/register',
   AUTH_CALLBACK: '/auth/callback',
   HOME: '/',
   DASHBOARD: '/',

@@ -7,6 +7,7 @@ from authlib.integrations.flask_client import OAuth
 from flask import current_app, jsonify, make_response, redirect, request
 from flask_restx import Namespace, Resource, fields
 
+from app.features.admin.invitation_service import AdminInvitationService
 from app.config import (
     FRONTEND_BASE_URL,
     REFRESH_COOKIE_NAME,
@@ -32,8 +33,18 @@ local_login_model = auth_ns.model(
     },
 )
 
+invite_accept_model = auth_ns.model(
+    "InviteAccept",
+    {
+        "email": fields.String(required=True, description="Invited email address"),
+        "display_name": fields.String(required=True, description="Display name"),
+        "password": fields.String(required=True, description="Local account password"),
+    },
+)
+
 _oauth = OAuth()
 _oauth_service = OAuthService()
+_invitation_service = AdminInvitationService()
 
 
 def init_oauth(app):
@@ -259,3 +270,34 @@ class Logout(Resource):
         response = make_response(("", 204))
         _clear_refresh_cookie(response)
         return response
+
+
+@auth_ns.route("/invite/validate/<string:token>")
+class InviteValidation(Resource):
+    @auth_ns.doc(security=[])
+    def get(self, token: str):
+        if not token:
+            raise ServiceError("Missing token", status_code=400)
+
+        with SessionLocal() as db:
+            return _invitation_service.validate_invitation_token(db, token), 200
+
+
+@auth_ns.route("/invite/accept")
+class InviteAccept(Resource):
+    @auth_ns.expect(invite_accept_model)
+    @auth_ns.doc(security=[])
+    def post(self):
+        payload = request.get_json(silent=True) or {}
+        token = str(request.args.get("token") or payload.get("token") or "").strip()
+        if not token:
+            raise ServiceError("Missing token", status_code=400)
+
+        with SessionLocal() as db:
+            user = _invitation_service.accept_invitation(db, token, payload)
+            return {
+                "user_id": str(user.id),
+                "email": user.email,
+                "display_name": user.display_name,
+                "status": "active",
+            }, 200

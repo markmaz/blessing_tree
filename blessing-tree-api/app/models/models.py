@@ -11,7 +11,10 @@ Works with SQLAlchemy 2.x.
 
 from app.features.rbac.models import CampaignUserRole
 
+from .admin_llm_configuration import AdminLlmConfiguration
+from .admin_user_invitation import AdminUserInvitation
 from .app_user import AppUser
+from .app_feature_flag import AppFeatureFlag
 from .auth import AuthIdentity
 from .base import Base
 from .campaign import Campaign
@@ -48,7 +51,10 @@ from .wishlist import Wishlist
 from .wishlist_item import WishlistItem
 
 __all__ = [
+    "AdminLlmConfiguration",
+    "AdminUserInvitation",
     "AppUser",
+    "AppFeatureFlag",
     "AuthIdentity",
     "Base",
     "CampaignUserRole",

@@ -21,6 +21,7 @@ Last updated: 2026-05-21
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
   - Campaign Studio backend support now exists for assignments, communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, and aggregate studio payloads
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
+  - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
   - backend startup now imports the full SQLAlchemy model registry during app creation
   - local auth compatibility now depends on `bcrypt 4.1.3` with `passlib 1.7.4`
   - runtime and dev dependency manifests now exist
@@ -31,6 +32,7 @@ Last updated: 2026-05-21
   - React + TypeScript + Vite
   - protected shell exists
   - the protected app shell now includes a footer with `QueryForge, LLC` copyright plus frontend/backend version display
+  - the admin page now supports user invitations, LLM configuration/testing, runtime health visibility, and app feature enable/disable controls
   - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
   - dashboard is now campaign-aware and loads live summary/access data from the backend
   - Campaign Studio now has live Team, Communications, Schedule, Readiness, and Settings sections backed by the backend studio APIs
@@ -202,6 +204,14 @@ Last updated: 2026-05-21
   - `app/features/campaigns/runtime_health.py`
   - `app/features/campaigns/template_renderer.py`
   - `app/features/campaigns/recipient_resolver.py`
+- Admin runtime now exists:
+  - `db/migration/V012__Admin_Runtime.sql`
+  - `app/features/admin/api.py`
+  - `app/features/admin/invitation_service.py`
+  - `app/features/admin/llm_service.py`
+  - `app/features/admin/health_service.py`
+  - `app/features/admin/feature_flag_service.py`
+  - `app/tasks/admin_tasks.py`
 - Local MySQL verification:
   - `V011__Campaign_Automation_Runtime.sql` has been applied to the local `blessing_tree` database
   - verified campaign communication delivery metadata columns
@@ -213,6 +223,11 @@ Last updated: 2026-05-21
   - execution records and schedule delivery-attempt metadata were written to MySQL
   - worker heartbeat now reports healthy through the readiness/runtime health path
   - the backend now uses a dedicated Celery queue named `bt` to avoid cross-talk with Query Forge tasks on shared local Valkey
+- Local admin runtime smoke on 2026-05-21:
+  - local admin login succeeds against `blessing_tree`
+  - `GET /api/v1/admin/health` returns database/celery/llm status
+  - `GET /api/v1/admin/features` returns authenticated feature-flag state for frontend gating
+  - `GET /api/v1/admin/users` returns existing users plus invitation state
 - Frontend campaign routes now exist:
   - `/campaigns`
   - `/campaigns/:campaignId`

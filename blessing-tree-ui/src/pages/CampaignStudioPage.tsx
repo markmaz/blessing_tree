@@ -20,8 +20,10 @@ import { useCampaignStudio } from '@/features/campaigns/model/useCampaignStudio'
 import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudioSectionCard';
 import { CampaignEditorForm } from '@/features/campaigns/ui/CampaignEditorForm';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
+import { useAppFeatures } from '@/features/admin/model/appFeaturesContext';
 
 export function CampaignStudioPage() {
+  const { isFeatureEnabled } = useAppFeatures();
   const { campaignId = null } = useParams();
   const { selectedCampaignId, selectCampaign, reloadCampaigns } = useCampaigns();
   const {
@@ -49,6 +51,7 @@ export function CampaignStudioPage() {
   const [isUpdatingCampaign, setIsUpdatingCampaign] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
+  const campaignAiEnabled = isFeatureEnabled('campaign_ai');
 
   useEffect(() => {
     if (!campaignId) {
@@ -87,16 +90,18 @@ export function CampaignStudioPage() {
           </p>
         </div>
         <div className="d-flex flex-wrap gap-2">
-          <button
-            type="button"
-            className={`btn btn-sm d-inline-flex align-items-center gap-2 ${
-              isAiRailOpen ? 'btn-secondary' : 'btn-outline-secondary'
-            }`}
-            onClick={() => setIsAiRailOpen((currentValue) => !currentValue)}
-          >
-            <i className={`bi ${isAiRailOpen ? 'bi-stars' : 'bi-robot'}`} aria-hidden="true" />
-            <span>{isAiRailOpen ? 'Hide AI Panel' : 'Open AI Panel'}</span>
-          </button>
+          {campaignAiEnabled ? (
+            <button
+              type="button"
+              className={`btn btn-sm d-inline-flex align-items-center gap-2 ${
+                isAiRailOpen ? 'btn-secondary' : 'btn-outline-secondary'
+              }`}
+              onClick={() => setIsAiRailOpen((currentValue) => !currentValue)}
+            >
+              <i className={`bi ${isAiRailOpen ? 'bi-stars' : 'bi-robot'}`} aria-hidden="true" />
+              <span>{isAiRailOpen ? 'Hide AI Panel' : 'Open AI Panel'}</span>
+            </button>
+          ) : null}
           <Link
             to={routes.CAMPAIGNS}
             className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
@@ -182,7 +187,7 @@ export function CampaignStudioPage() {
           })}
         </main>
 
-        {isAiRailOpen ? (
+        {campaignAiEnabled && isAiRailOpen ? (
           <button
             type="button"
             className="campaign-studio__ai-backdrop"
@@ -190,46 +195,48 @@ export function CampaignStudioPage() {
             onClick={() => setIsAiRailOpen(false)}
           />
         ) : null}
-        <CampaignStudioAiRail
-          open={isAiRailOpen}
-          onClose={() => setIsAiRailOpen(false)}
-          campaign={studio.campaign}
-          selectedSection={selectedSection}
-          readiness={studio.readiness}
-          scheduleItems={studio.schedule.items}
-          templates={studio.communications.templates}
-          milestones={studio.milestones}
-          isSaving={isSaving || isUpdatingCampaign}
-          onCreateScheduleEvent={addScheduleEvent}
-          onCreateCommunicationTemplate={addCommunicationTemplate}
-          onCreateCommunicationSchedule={addCommunicationSchedule}
-          onSaveMilestones={persistMilestones}
-          onTeamWorkspaceChanged={async () => {
-            setTeamWorkspaceRefreshToken((currentValue) => currentValue + 1);
-            await reload();
-          }}
-          onUpdateCampaignSettings={async (input) => {
-            setIsUpdatingCampaign(true);
-            setUpdateError(null);
-            setUpdateMessage(null);
+        {campaignAiEnabled ? (
+          <CampaignStudioAiRail
+            open={isAiRailOpen}
+            onClose={() => setIsAiRailOpen(false)}
+            campaign={studio.campaign}
+            selectedSection={selectedSection}
+            readiness={studio.readiness}
+            scheduleItems={studio.schedule.items}
+            templates={studio.communications.templates}
+            milestones={studio.milestones}
+            isSaving={isSaving || isUpdatingCampaign}
+            onCreateScheduleEvent={addScheduleEvent}
+            onCreateCommunicationTemplate={addCommunicationTemplate}
+            onCreateCommunicationSchedule={addCommunicationSchedule}
+            onSaveMilestones={persistMilestones}
+            onTeamWorkspaceChanged={async () => {
+              setTeamWorkspaceRefreshToken((currentValue) => currentValue + 1);
+              await reload();
+            }}
+            onUpdateCampaignSettings={async (input) => {
+              setIsUpdatingCampaign(true);
+              setUpdateError(null);
+              setUpdateMessage(null);
 
-            try {
-              await updateCampaign(campaignId, input);
-              await Promise.all([reloadCampaigns(), reload()]);
-              setUpdateMessage('Campaign updated.');
-              return true;
-            } catch (updateCampaignError) {
-              setUpdateError(
-                updateCampaignError instanceof Error
-                  ? updateCampaignError.message
-                  : 'Unable to update campaign'
-              );
-              return false;
-            } finally {
-              setIsUpdatingCampaign(false);
-            }
-          }}
-        />
+              try {
+                await updateCampaign(campaignId, input);
+                await Promise.all([reloadCampaigns(), reload()]);
+                setUpdateMessage('Campaign updated.');
+                return true;
+              } catch (updateCampaignError) {
+                setUpdateError(
+                  updateCampaignError instanceof Error
+                    ? updateCampaignError.message
+                    : 'Unable to update campaign'
+                );
+                return false;
+              } finally {
+                setIsUpdatingCampaign(false);
+              }
+            }}
+          />
+        ) : null}
       </div>
     </section>
   );

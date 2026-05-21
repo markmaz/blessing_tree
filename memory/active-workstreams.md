@@ -5,7 +5,7 @@ Last updated: 2026-05-21
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: real scheduling automation is now implemented for communication dispatch and lifecycle transitions, including Celery worker/beat entry points, execution logging, worker heartbeat, dedicated queue isolation, and readiness health checks; the next focus is audiences based on teams/team roles/member filters plus deeper automation polish
+- Current step: admin runtime foundations are now implemented for invitations, LLM configuration, health status, and feature flags; the next focus is communications audiences based on teams/team roles/member filters plus deeper automation polish
 
 ## Recently Completed
 
@@ -97,6 +97,11 @@ Last updated: 2026-05-21
   - execution logging in `campaign_automation_execution`
   - worker heartbeat-backed readiness health
   - a dedicated `bt` queue to isolate Blessing Tree from Query Forge on shared local Valkey
+- Added an admin runtime slice with:
+  - Query Forge-style user invitation creation/resend plus invite acceptance
+  - global LLM configuration storage and health testing
+  - runtime health visibility for database, Celery, and the configured LLM
+  - app feature flag reads/toggles for frontend route and UI gating
 - Applied and verified the automation runtime migration against local MySQL `blessing_tree`
 - Live-smoke-tested worker/beat startup plus a real queued communication dispatch against the local Blessing Tree stack
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
@@ -113,7 +118,7 @@ Last updated: 2026-05-21
 
 1. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
 2. Expand communications audiences to use teams, team roles, and member filters as first-class targets
-3. Improve automation ergonomics around retries, SMTP configuration visibility, and richer execution diagnostics
+3. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
 4. Extend AI editing-before-apply into higher-complexity bundles beyond the new Settings/status scalar editor
 5. After the Team write paths move over, retire the temporary legacy `campaign_user_role` fallback in authorization resolution
 

@@ -1,5 +1,8 @@
 import { NavLink, Link } from 'react-router-dom';
 import { routes } from '@/app/routes';
+import { useAppFeatures } from '@/features/admin/model/appFeaturesContext';
+import { useAuth } from '@/features/auth/model/authContext';
+import { isAppAdminRole } from '@/features/campaigns/model/campaignPermissions';
 
 interface SidebarNavProps {
   isOpen: boolean;
@@ -41,6 +44,16 @@ const navItems = [
 ];
 
 export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
+  const { role } = useAuth();
+  const { isFeatureEnabled } = useAppFeatures();
+  const visibleItems = navItems.filter((item) => {
+    if (item.to === routes.FAMILIES) return isFeatureEnabled('families');
+    if (item.to === routes.DONATIONS) return isFeatureEnabled('donations');
+    if (item.to === routes.REPORTS) return isFeatureEnabled('reports');
+    if (item.to === routes.ADMIN) return isAppAdminRole(role);
+    return true;
+  });
+
   return (
     <aside className={`app-sidebar ${isOpen ? 'is-open' : ''}`}>
       <div className="sidebar-header">
@@ -54,7 +67,7 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
       </div>
 
       <nav className="sidebar-nav">
-        {navItems.map((item) => (
+        {visibleItems.map((item) => (
           <NavLink
             key={item.label}
             to={item.to}

@@ -19,6 +19,7 @@ The backend is a Flask application built around:
 - The first campaign business routes now exist as a feature package with protected list, detail, access, summary, create, and update endpoints.
 - Campaign Studio backend support now exists for team assignments, communication templates/schedules, milestone dates, readiness evaluation, aggregate studio payloads, manual campaign events, and unified schedule reads.
 - Campaign automation runtime now exists for scheduled communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness health checks.
+- Admin runtime support now exists for Query Forge-style user invitations, global LLM configuration, runtime health probes, and app feature flags.
 - Campaign Studio now also exposes a campaign-scoped active-user directory search endpoint to support assignment creation from the frontend.
 - The Team redesign backend now also exposes member, access-role, team, membership, and aggregate Team workspace APIs alongside the older transitional assignment endpoints.
 - Dependency manifests now exist as `requirements.txt` and `requirements-dev.txt`.
@@ -90,6 +91,8 @@ Current routes under `/api/v1/auth`:
 - `GET /yahoo/callback`
 - `POST /refresh`
 - `POST /logout`
+- `GET /invite/validate/<token>`
+- `POST /invite/accept`
 
 Important current behavior:
 
@@ -131,6 +134,7 @@ Core DDL lives in:
 - `db/migration/V009__Campaign_Teams.sql`
 - `db/migration/V010__Campaign_Team_Roles.sql`
 - `db/migration/V011__Campaign_Automation_Runtime.sql`
+- `db/migration/V012__Admin_Runtime.sql`
 
 ## Campaign Routes
 
@@ -177,6 +181,7 @@ Current routes under `/api/v1/campaigns`:
 - `GET /<campaign_id>/milestones`
 - `PUT /<campaign_id>/milestones`
 - `GET /<campaign_id>/readiness`
+- `POST /<campaign_id>/ai/draft`
 
 Current behavior:
 
@@ -192,6 +197,29 @@ Current behavior:
 - multiple campaigns per year are allowed
 - Campaign Studio aggregate and section endpoints now power team, communications, milestone, and readiness cards in the frontend studio shell
 - schedule APIs now unify manual events with milestone-derived and communication-derived items for the upcoming Studio `Schedule` section
+- AI draft actions now cover schedule, communications, team, readiness, and settings planning flows through a campaign-scoped draft/apply contract
+
+## Admin Routes
+
+Current routes under `/api/v1/admin`:
+
+- `GET /users`
+- `POST /users`
+- `POST /invitations/<invitation_id>/resend`
+- `GET /llm`
+- `PUT /llm`
+- `POST /llm/test`
+- `GET /health`
+- `GET /features`
+- `PUT /features/<feature_key>`
+
+Current behavior:
+
+- most admin routes require the app-admin capability
+- `GET /features` is readable by authenticated users so the frontend can gate nav/routes consistently
+- invitations create local app users and deliver signed invite-accept URLs through the mailer/task path
+- LLM settings are stored globally with the API key encrypted at rest
+- health reports cover database connectivity, Celery worker state/heartbeat, and the configured LLM endpoint
 
 ## Local Commands
 
@@ -224,6 +252,7 @@ Config cleanup notes:
 - `VALKEY_ADDRESS` is the canonical cache/broker host variable; `VALKEY_HOST` is also accepted for compatibility.
 - Celery now uses a dedicated default queue named `bt`, even when sharing the same local Valkey broker with other projects.
 - Scheduled communication delivery requires working SMTP settings; otherwise the worker will still execute schedules, but it will log failed delivery attempts instead of sending mail.
+- Admin LLM health checks can probe an OpenAI-compatible `/models` endpoint when an API key and base URL are configured.
 
 ## Versioning
 

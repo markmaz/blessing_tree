@@ -1,0 +1,225 @@
+import { apiFetchJson } from '@/shared/api/client';
+import type {
+  AdminFeatureFlag,
+  AdminFeaturesPayload,
+  AdminHealthPayload,
+  AdminInvitation,
+  AdminLlmPayload,
+  AdminUsersPayload,
+} from '@/features/admin/model/adminTypes';
+
+function normalizeUserPayload(payload: AdminUsersPayload): AdminUsersPayload {
+  return {
+    users: (payload.users ?? []).map((user) => ({
+      ...user,
+      displayName: user.displayName ?? (user as unknown as { display_name?: string }).display_name ?? '',
+      isActive: Boolean(user.isActive ?? (user as unknown as { is_active?: boolean }).is_active),
+      lastLoginAt:
+        user.lastLoginAt ?? (user as unknown as { last_login_at?: string | null }).last_login_at ?? null,
+      createdAt: user.createdAt ?? (user as unknown as { created_at?: string }).created_at ?? '',
+      updatedAt: user.updatedAt ?? (user as unknown as { updated_at?: string }).updated_at ?? '',
+    })),
+    invitations: (payload.invitations ?? []).map((invitation) => ({
+      ...invitation,
+      userId: invitation.userId ?? (invitation as unknown as { user_id?: string }).user_id ?? '',
+      expiresAt: invitation.expiresAt ?? (invitation as unknown as { expires_at?: string }).expires_at ?? '',
+      acceptedAt:
+        invitation.acceptedAt ??
+        (invitation as unknown as { accepted_at?: string | null }).accepted_at ??
+        null,
+      revokedAt:
+        invitation.revokedAt ??
+        (invitation as unknown as { revoked_at?: string | null }).revoked_at ??
+        null,
+      createdAt: invitation.createdAt ?? (invitation as unknown as { created_at?: string }).created_at ?? '',
+      updatedAt: invitation.updatedAt ?? (invitation as unknown as { updated_at?: string }).updated_at ?? '',
+      inviteUrl: invitation.inviteUrl ?? (invitation as unknown as { invite_url?: string }).invite_url,
+    })),
+    roleCatalog: (payload.roleCatalog ??
+      (payload as unknown as { role_catalog?: AdminUsersPayload['roleCatalog'] }).role_catalog ??
+      []
+    ).map((item) => ({
+      roleKey: item.roleKey ?? (item as unknown as { role_key?: string }).role_key ?? '',
+      label: item.label,
+      description: item.description,
+    })),
+  };
+}
+
+function normalizeLlmPayload(payload: AdminLlmPayload): AdminLlmPayload {
+  return {
+    configuration: {
+      ...payload.configuration,
+      baseUrl:
+        payload.configuration.baseUrl ??
+        (payload.configuration as unknown as { base_url?: string }).base_url ??
+        '',
+      apiKeyConfigured:
+        payload.configuration.apiKeyConfigured ??
+        Boolean((payload.configuration as unknown as { api_key_configured?: boolean }).api_key_configured),
+      isEnabled:
+        payload.configuration.isEnabled ??
+        Boolean((payload.configuration as unknown as { is_enabled?: boolean }).is_enabled),
+      lastTestedAt:
+        payload.configuration.lastTestedAt ??
+        (payload.configuration as unknown as { last_tested_at?: string | null }).last_tested_at ??
+        null,
+      lastTestStatus:
+        payload.configuration.lastTestStatus ??
+        (payload.configuration as unknown as { last_test_status?: string | null }).last_test_status ??
+        null,
+      lastTestMessage:
+        payload.configuration.lastTestMessage ??
+        (payload.configuration as unknown as { last_test_message?: string | null }).last_test_message ??
+        null,
+    },
+    providerCatalog: (payload.providerCatalog ??
+      (payload as unknown as { provider_catalog?: AdminLlmPayload['providerCatalog'] }).provider_catalog ??
+      []
+    ).map((item) => ({
+      provider: item.provider,
+      label: item.label,
+      description: item.description,
+    })),
+  };
+}
+
+function normalizeFeaturesPayload(payload: AdminFeaturesPayload): AdminFeaturesPayload {
+  return {
+    features: (payload.features ?? []).map((feature) => ({
+      featureKey: feature.featureKey ?? (feature as unknown as { feature_key?: string }).feature_key ?? '',
+      label: feature.label,
+      description: feature.description,
+      isEnabled: feature.isEnabled ?? Boolean((feature as unknown as { is_enabled?: boolean }).is_enabled),
+      createdAt: feature.createdAt ?? (feature as unknown as { created_at?: string }).created_at ?? '',
+      updatedAt: feature.updatedAt ?? (feature as unknown as { updated_at?: string }).updated_at ?? '',
+    })),
+  };
+}
+
+function normalizeFeature(feature: AdminFeatureFlag): AdminFeatureFlag {
+  return {
+    featureKey: feature.featureKey ?? (feature as unknown as { feature_key?: string }).feature_key ?? '',
+    label: feature.label,
+    description: feature.description,
+    isEnabled: feature.isEnabled ?? Boolean((feature as unknown as { is_enabled?: boolean }).is_enabled),
+    createdAt: feature.createdAt ?? (feature as unknown as { created_at?: string }).created_at ?? '',
+    updatedAt: feature.updatedAt ?? (feature as unknown as { updated_at?: string }).updated_at ?? '',
+  };
+}
+
+export async function fetchAdminUsers(): Promise<AdminUsersPayload> {
+  return normalizeUserPayload(await apiFetchJson<AdminUsersPayload>('/api/v1/admin/users'));
+}
+
+export async function createAdminInvite(input: {
+  email: string;
+  displayName: string;
+  role: string;
+}): Promise<{ invitation: AdminInvitation }> {
+  const payload = await apiFetchJson<{ invitation: AdminInvitation }>('/api/v1/admin/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: input.email,
+      display_name: input.displayName,
+      role: input.role,
+    }),
+  });
+  return {
+    invitation: normalizeUserPayload({
+      users: [],
+      invitations: [payload.invitation],
+      roleCatalog: [],
+    }).invitations[0],
+  };
+}
+
+export async function resendAdminInvite(invitationId: string): Promise<AdminInvitation> {
+  const payload = await apiFetchJson<{ invitation: AdminInvitation }>(
+    `/api/v1/admin/invitations/${invitationId}/resend`,
+    { method: 'POST' }
+  );
+  return normalizeUserPayload({
+    users: [],
+    invitations: [payload.invitation],
+    roleCatalog: [],
+  }).invitations[0];
+}
+
+export async function fetchAdminLlmConfig(): Promise<AdminLlmPayload> {
+  return normalizeLlmPayload(await apiFetchJson<AdminLlmPayload>('/api/v1/admin/llm'));
+}
+
+export async function saveAdminLlmConfig(input: {
+  provider: string;
+  label: string;
+  baseUrl: string;
+  model: string;
+  apiKey: string;
+  isEnabled: boolean;
+}): Promise<AdminLlmPayload['configuration']> {
+  const payload = await apiFetchJson<{ configuration: AdminLlmPayload['configuration'] }>(
+    '/api/v1/admin/llm',
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: input.provider,
+        label: input.label,
+        base_url: input.baseUrl,
+        model: input.model,
+        api_key: input.apiKey,
+        is_enabled: input.isEnabled,
+      }),
+    }
+  );
+  return normalizeLlmPayload({
+    configuration: payload.configuration,
+    providerCatalog: [],
+  }).configuration;
+}
+
+export async function testAdminLlmConfig(): Promise<AdminHealthPayload['checks']['llm']> {
+  return apiFetchJson<AdminHealthPayload['checks']['llm']>('/api/v1/admin/llm/test', {
+    method: 'POST',
+  });
+}
+
+export async function fetchAdminHealth(): Promise<AdminHealthPayload> {
+  const payload = await apiFetchJson<AdminHealthPayload>('/api/v1/admin/health');
+  return {
+    overall: payload.overall,
+    checkedAt: payload.checkedAt ?? (payload as unknown as { checked_at?: string }).checked_at ?? '',
+    checks: {
+      database: payload.checks.database,
+      celery: {
+        ...payload.checks.celery,
+        workerHeartbeat:
+          payload.checks.celery.workerHeartbeat ??
+          (payload.checks.celery as unknown as { worker_heartbeat?: boolean }).worker_heartbeat ??
+          false,
+      },
+      llm: payload.checks.llm,
+    },
+  };
+}
+
+export async function fetchFeatureFlags(): Promise<AdminFeaturesPayload> {
+  return normalizeFeaturesPayload(await apiFetchJson<AdminFeaturesPayload>('/api/v1/admin/features'));
+}
+
+export async function updateFeatureFlag(
+  featureKey: string,
+  isEnabled: boolean
+): Promise<AdminFeatureFlag> {
+  const payload = await apiFetchJson<{ feature: AdminFeatureFlag }>(
+    `/api/v1/admin/features/${featureKey}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_enabled: isEnabled }),
+    }
+  );
+  return normalizeFeature(payload.feature);
+}
