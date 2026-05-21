@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   addCampaignTeamMember,
   createCampaignMember,
@@ -90,7 +90,7 @@ export function useCampaignTeamWorkspace(campaignId: string) {
     };
   }, [campaignId]);
 
-  const reload = async () => {
+  const reload = useCallback(async () => {
     setState((currentState) => ({
       ...currentState,
       isLoading: true,
@@ -113,7 +113,7 @@ export function useCampaignTeamWorkspace(campaignId: string) {
       }));
       return null;
     }
-  };
+  }, [campaignId]);
 
   const saveMember = async (
     input: CampaignTeamMemberUpsertInput,

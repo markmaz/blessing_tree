@@ -397,7 +397,7 @@ def test_post_ai_draft_returns_advisory_response_for_team_section(
         f"/api/v1/campaigns/{campaign_id}/ai/draft",
         json={
             "section": "team",
-            "prompt": "Set up a warehouse crew team.",
+            "prompt": "Explain the difference between app access roles and team roles.",
         },
         headers=auth_header(manager_id, "VOLUNTEER"),
     )
@@ -405,7 +405,50 @@ def test_post_ai_draft_returns_advisory_response_for_team_section(
     assert response.status_code == 200
     payload = response.get_json()
     assert payload["actions"] == []
-    assert "Phase 1 only drafts normalized schedule actions." in payload["message"]
+    assert "Campaign AI can explain roster concepts here" in payload["message"]
+
+
+def test_post_ai_draft_returns_team_bundle_actions(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ai/draft",
+        json={
+            "section": "team",
+            "prompt": "Set up a Warehouse Crew team with Lead, Runner, and Check-In roles and add Chris Walker to Warehouse Crew as Check-In",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["message"] == "I drafted 6 team actions for Studio Campaign."
+    assert [action["action_type"] for action in payload["actions"]] == [
+        "create_team",
+        "create_team_role",
+        "create_team_role",
+        "create_team_role",
+        "create_member",
+        "assign_member_to_team",
+    ]
+    assert payload["actions"][0]["payload"]["name"] == "Warehouse Crew"
+    assert payload["actions"][1]["payload"]["team_ref"] == payload["actions"][0]["payload"]["team_ref"]
+    assert payload["actions"][4]["payload"]["display_name"] == "Chris Walker"
+    assert payload["actions"][5]["payload"]["member_ref"] == payload["actions"][4]["payload"]["member_ref"]
+    assert payload["actions"][5]["summary"] == "Assigns Chris Walker to Warehouse Crew as Check In."
+    assert payload["actions"][5]["payload"]["team_role_ref"] == payload["actions"][3]["payload"]["role_ref"]
 
 
 def test_delete_communication_schedule_removes_schedule(

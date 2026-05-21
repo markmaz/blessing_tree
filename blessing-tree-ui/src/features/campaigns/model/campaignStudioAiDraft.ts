@@ -5,6 +5,12 @@ import type {
   CreateCommunicationScheduleInput,
   SaveCampaignMilestoneInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
+import type {
+  CampaignMemberAccessRoleUpsertInput,
+  CampaignTeamMemberUpsertInput,
+  CampaignTeamRoleUpsertInput,
+  CampaignTeamUpsertInput,
+} from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 
 export type ScheduleAiDraftType = 'event' | 'milestone' | 'communication';
 
@@ -75,6 +81,35 @@ export interface CreateCommunicationScheduleAiPayload
   templateRef?: string | null;
 }
 
+export interface CreateTeamAiPayload extends CampaignTeamUpsertInput {
+  teamRef?: string | null;
+}
+
+export interface CreateTeamRoleAiPayload extends CampaignTeamRoleUpsertInput {
+  teamId: string | null;
+  teamRef?: string | null;
+  roleRef?: string | null;
+}
+
+export interface CreateMemberAiPayload extends CampaignTeamMemberUpsertInput {
+  memberRef?: string | null;
+}
+
+export interface AssignMemberToTeamAiPayload {
+  teamId: string | null;
+  teamRef?: string | null;
+  memberId: string | null;
+  memberRef?: string | null;
+  teamRoleId?: string | null;
+  teamRoleRef?: string | null;
+}
+
+export interface AssignAppAccessRoleAiPayload
+  extends CampaignMemberAccessRoleUpsertInput {
+  memberId: string | null;
+  memberRef?: string | null;
+}
+
 export function isCreateCommunicationTemplateAction(
   action: CampaignStudioAiAction
 ): action is CampaignStudioAiAction & { payload: CreateCommunicationTemplateAiPayload } {
@@ -97,4 +132,34 @@ export function isCreateMilestoneAction(
   action: CampaignStudioAiAction
 ): action is CampaignStudioAiAction & { payload: SaveCampaignMilestoneInput } {
   return action.actionType === 'create_milestone';
+}
+
+export function isCreateTeamAction(
+  action: CampaignStudioAiAction
+): action is CampaignStudioAiAction & { payload: CreateTeamAiPayload } {
+  return action.actionType === 'create_team';
+}
+
+export function isCreateTeamRoleAction(
+  action: CampaignStudioAiAction
+): action is CampaignStudioAiAction & { payload: CreateTeamRoleAiPayload } {
+  return action.actionType === 'create_team_role';
+}
+
+export function isCreateMemberAction(
+  action: CampaignStudioAiAction
+): action is CampaignStudioAiAction & { payload: CreateMemberAiPayload } {
+  return action.actionType === 'create_member';
+}
+
+export function isAssignMemberToTeamAction(
+  action: CampaignStudioAiAction
+): action is CampaignStudioAiAction & { payload: AssignMemberToTeamAiPayload } {
+  return action.actionType === 'assign_member_to_team';
+}
+
+export function isAssignAppAccessRoleAction(
+  action: CampaignStudioAiAction
+): action is CampaignStudioAiAction & { payload: AssignAppAccessRoleAiPayload } {
+  return action.actionType === 'assign_app_access_role';
 }

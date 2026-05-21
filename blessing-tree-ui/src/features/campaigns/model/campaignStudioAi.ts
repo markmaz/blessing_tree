@@ -48,10 +48,12 @@ export function getAiPromptStarters(
 
   if (selectedSection === 'team') {
     return [
+      'Set up a Warehouse Crew team with Lead, Runner, and Check-In roles.',
+      'Add Chris Walker to Warehouse Crew as Check-In.',
+      'Create a Sponsor Callers team with Caller and Lead roles.',
       'Explain what member type means in this campaign workspace.',
       'Explain the difference between app access, app access roles, and teams.',
       'Suggest how to organize volunteers into teams for this campaign.',
-      'List the people and team structure this campaign probably needs.',
     ];
   }
 
@@ -132,7 +134,7 @@ export function getAiPromptPlaceholder(selectedSection: CampaignStudioSectionId)
   }
 
   if (selectedSection === 'team') {
-    return 'Ask Campaign AI to explain team concepts or suggest roster structure.';
+    return 'Ask Campaign AI to build teams, team roles, and roster assignments or explain team concepts.';
   }
 
   if (selectedSection === 'communications') {
@@ -222,7 +224,7 @@ export function buildAiAssistantResponse({
     return [
       `Campaign AI can help organize the ${campaign.name} roster into people, teams, and team roles.`,
       'App Access Roles control permissions in the app. Team Roles describe responsibilities inside a team. Plain team membership without a role still counts as Member participation.',
-      'Use the team drawer to create team roles and manage membership. Use the people drawer for roster details and app access.',
+      'Use this panel to draft Team bundles like a new team, its roles, and roster assignments. Use the team drawer to refine the structure after apply.',
     ].join('\n\n');
   }
 

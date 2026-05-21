@@ -154,6 +154,7 @@ function buildBaseProps() {
     }),
     onCreateCommunicationSchedule: vi.fn().mockResolvedValue(true),
     onSaveMilestones: vi.fn().mockResolvedValue(true),
+    onTeamWorkspaceChanged: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -287,6 +288,224 @@ describe('CampaignStudioAiRail', () => {
     expect(
       screen.getByRole('button', { name: /tell me exactly what i need to do to unblock campaign activation/i })
     ).toBeInTheDocument();
+  });
+
+  it('drafts and applies a team bundle from the team section', async () => {
+    const user = userEvent.setup();
+    const onTeamWorkspaceChanged = vi.fn().mockResolvedValue(undefined);
+
+    vi.mocked(draftCampaignStudioAi).mockResolvedValueOnce({
+      message: 'I drafted 4 team actions for Blessing Tree 2026 Demo.',
+      assumptions: [],
+      warnings: [],
+      actions: [
+        {
+          id: 'draft-team-1',
+          actionType: 'create_team',
+          section: 'team',
+          title: 'Create Team: Warehouse Crew',
+          summary: 'Creates the Warehouse Crew team in Blessing Tree 2026 Demo.',
+          status: 'ready',
+          assumptions: [],
+          warnings: [],
+          payload: {
+            teamRef: 'draft-team-ref-1',
+            name: 'Warehouse Crew',
+            description: null,
+            isActive: true,
+          },
+          applyTarget: {
+            api: 'campaign_team.create',
+            method: 'POST',
+          },
+        },
+        {
+          id: 'draft-role-1',
+          actionType: 'create_team_role',
+          section: 'team',
+          title: 'Create Team Role: Check In',
+          summary: 'Adds the Check In role to the selected team.',
+          status: 'ready',
+          assumptions: [],
+          warnings: [],
+          payload: {
+            teamId: null,
+            teamRef: 'draft-team-ref-1',
+            roleRef: 'draft-role-ref-1',
+            name: 'Check In',
+            description: null,
+            sortOrder: 1,
+            isActive: true,
+          },
+          applyTarget: {
+            api: 'campaign_team_role.create',
+            method: 'POST',
+          },
+        },
+        {
+          id: 'draft-member-1',
+          actionType: 'create_member',
+          section: 'team',
+          title: 'Create Member: Chris Walker',
+          summary: 'Adds Chris Walker to the campaign roster.',
+          status: 'ready',
+          assumptions: [],
+          warnings: [],
+          payload: {
+            memberRef: 'draft-member-ref-1',
+            displayName: 'Chris Walker',
+            email: null,
+            phone: null,
+            notes: null,
+            memberType: 'volunteer',
+            appAccessStatus: 'none',
+            isActive: true,
+          },
+          applyTarget: {
+            api: 'campaign_member.create',
+            method: 'POST',
+          },
+        },
+        {
+          id: 'draft-assignment-1',
+          actionType: 'assign_member_to_team',
+          section: 'team',
+          title: 'Assign Member: Chris Walker',
+          summary: 'Assigns Chris Walker to Warehouse Crew as Check In.',
+          status: 'ready',
+          assumptions: [],
+          warnings: [],
+          payload: {
+            teamId: null,
+            teamRef: 'draft-team-ref-1',
+            memberId: null,
+            memberRef: 'draft-member-ref-1',
+            teamRoleId: null,
+            teamRoleRef: 'draft-role-ref-1',
+          },
+          applyTarget: {
+            api: 'campaign_team_member.create',
+            method: 'POST',
+          },
+        },
+      ],
+    });
+
+    const createTeamSpy = vi.spyOn(
+      await import('@/features/campaigns/api/campaignTeamWorkspaceApi'),
+      'createCampaignTeam'
+    ).mockResolvedValue({
+      id: 'team-1',
+      campaignId: 'campaign-123',
+      name: 'Warehouse Crew',
+      description: null,
+      isActive: true,
+      memberCount: 0,
+      roles: [],
+      memberships: [],
+      createdAt: null,
+      updatedAt: null,
+    });
+    const createRoleSpy = vi.spyOn(
+      await import('@/features/campaigns/api/campaignTeamWorkspaceApi'),
+      'createCampaignTeamRole'
+    ).mockResolvedValue({
+      id: 'role-1',
+      teamId: 'team-1',
+      name: 'Check In',
+      description: null,
+      sortOrder: 1,
+      isActive: true,
+      createdAt: null,
+      updatedAt: null,
+    });
+    const createMemberSpy = vi.spyOn(
+      await import('@/features/campaigns/api/campaignTeamWorkspaceApi'),
+      'createCampaignMember'
+    ).mockResolvedValue({
+      id: 'member-1',
+      campaignId: 'campaign-123',
+      displayName: 'Chris Walker',
+      email: null,
+      phone: null,
+      notes: null,
+      memberType: 'volunteer',
+      appUserId: null,
+      appAccessStatus: 'none',
+      isActive: true,
+      appUser: null,
+      accessRoles: [],
+      teams: [],
+      teamMemberships: [],
+      createdAt: null,
+      updatedAt: null,
+    });
+    const addMemberSpy = vi.spyOn(
+      await import('@/features/campaigns/api/campaignTeamWorkspaceApi'),
+      'addCampaignTeamMember'
+    ).mockResolvedValue({
+      id: 'membership-1',
+      teamId: 'team-1',
+      campaignMemberId: 'member-1',
+      teamRoleId: 'role-1',
+      teamRole: {
+        id: 'role-1',
+        teamId: 'team-1',
+        name: 'Check In',
+        description: null,
+        sortOrder: 1,
+        isActive: true,
+        createdAt: null,
+        updatedAt: null,
+      },
+      createdAt: null,
+      updatedAt: null,
+    });
+
+    render(
+      <CampaignStudioAiRail
+        {...buildBaseProps()}
+        selectedSection="team"
+        onTeamWorkspaceChanged={onTeamWorkspaceChanged}
+      />
+    );
+
+    await user.type(
+      screen.getByPlaceholderText(/ask campaign ai to build teams, team roles, and roster assignments or explain team concepts/i),
+      'Set up a Warehouse Crew team with Check In and add Chris Walker to Warehouse Crew as Check In.'
+    );
+    await user.click(screen.getByRole('button', { name: /send ai prompt/i }));
+    await user.click(screen.getByRole('button', { name: /apply all/i }));
+
+    await waitFor(() => {
+      expect(createTeamSpy).toHaveBeenCalledWith('campaign-123', {
+        name: 'Warehouse Crew',
+        description: null,
+        isActive: true,
+      });
+    });
+    expect(createRoleSpy).toHaveBeenCalledWith('campaign-123', 'team-1', {
+      name: 'Check In',
+      description: null,
+      sortOrder: 1,
+      isActive: true,
+    });
+    expect(createMemberSpy).toHaveBeenCalledWith('campaign-123', {
+      displayName: 'Chris Walker',
+      email: null,
+      phone: null,
+      notes: null,
+      memberType: 'volunteer',
+      appAccessStatus: 'none',
+      isActive: true,
+    });
+    expect(addMemberSpy).toHaveBeenCalledWith('campaign-123', 'team-1', 'member-1', 'role-1');
+    expect(onTeamWorkspaceChanged).toHaveBeenCalledTimes(4);
+
+    createTeamSpy.mockRestore();
+    createRoleSpy.mockRestore();
+    createMemberSpy.mockRestore();
+    addMemberSpy.mockRestore();
   });
 
   it('drafts a communication template and schedule bundle from the communications section', async () => {

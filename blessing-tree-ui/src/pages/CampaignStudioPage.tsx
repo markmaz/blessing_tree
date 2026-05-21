@@ -45,6 +45,7 @@ export function CampaignStudioPage() {
   const [selectedSection, setSelectedSection] =
     useState<CampaignStudioSectionId>('overview');
   const [isAiRailOpen, setIsAiRailOpen] = useState(false);
+  const [teamWorkspaceRefreshToken, setTeamWorkspaceRefreshToken] = useState(0);
   const [isUpdatingCampaign, setIsUpdatingCampaign] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
@@ -114,7 +115,7 @@ export function CampaignStudioPage() {
       </div>
 
       <div className="campaign-studio">
-        <CampaignStudioRail
+      <CampaignStudioRail
           sections={campaignStudioSections}
           selectedSection={selectedSection}
           onSelectSection={setSelectedSection}
@@ -144,6 +145,7 @@ export function CampaignStudioPage() {
             selectedSection,
             studio,
             isSaving: isSaving || isUpdatingCampaign,
+            teamWorkspaceRefreshToken,
             setSelectedSection,
             onUpdateCampaign: async (input) => {
               setIsUpdatingCampaign(true);
@@ -202,6 +204,10 @@ export function CampaignStudioPage() {
           onCreateCommunicationTemplate={addCommunicationTemplate}
           onCreateCommunicationSchedule={addCommunicationSchedule}
           onSaveMilestones={persistMilestones}
+          onTeamWorkspaceChanged={async () => {
+            setTeamWorkspaceRefreshToken((currentValue) => currentValue + 1);
+            await reload();
+          }}
         />
       </div>
     </section>
@@ -212,6 +218,7 @@ function renderStudioSection({
   selectedSection,
   studio,
   isSaving,
+  teamWorkspaceRefreshToken,
   setSelectedSection,
   onUpdateCampaign,
   addCommunicationTemplate,
@@ -228,6 +235,7 @@ function renderStudioSection({
   selectedSection: CampaignStudioSectionId;
   studio: NonNullable<ReturnType<typeof useCampaignStudio>['studio']>;
   isSaving: boolean;
+  teamWorkspaceRefreshToken: number;
   setSelectedSection: (sectionId: CampaignStudioSectionId) => void;
   onUpdateCampaign: (input: CampaignUpsertInput) => Promise<boolean>;
   addCommunicationTemplate: ReturnType<typeof useCampaignStudio>['addCommunicationTemplate'];
@@ -255,6 +263,7 @@ function renderStudioSection({
       <CampaignStudioTeamSection
         campaignId={studio.campaign.id}
         access={studio.access}
+        refreshToken={teamWorkspaceRefreshToken}
       />
     );
   }

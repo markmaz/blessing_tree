@@ -13,6 +13,10 @@ Last updated: 2026-05-21
   - Communications prompts can now draft `create_template` actions
   - Communications prompts can optionally bundle `create_communication_schedule` actions
   - frontend `Apply All` now resolves newly created template IDs before applying dependent communication schedule actions
+- Phase 3 is now implemented as of 2026-05-21:
+  - Team prompts can now draft `create_team`, `create_team_role`, `create_member`, and `assign_member_to_team` actions
+  - Team `Apply All` now resolves created team, team-role, and member IDs before applying dependent membership actions
+  - explanatory Team prompts still stay advisory and action-free
 
 ## Purpose
 

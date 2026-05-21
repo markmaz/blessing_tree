@@ -11,6 +11,7 @@ from app.exceptions.service_error import ServiceError
 from app.features.campaigns.service import CampaignService
 from app.features.campaigns.studio_constants import MILESTONE_DEFINITIONS
 from app.features.campaigns.studio_service import CampaignStudioService
+from app.features.campaigns.team_workspace_service import CampaignTeamWorkspaceService
 from app.features.campaigns.studio_validation import require_short_text
 
 AI_STUDIO_SECTIONS = frozenset(
@@ -25,9 +26,11 @@ class CampaignStudioAiDraftService:
         *,
         campaigns: CampaignService | None = None,
         studio: CampaignStudioService | None = None,
+        team_workspace: CampaignTeamWorkspaceService | None = None,
     ) -> None:
         self.campaigns = campaigns or CampaignService()
         self.studio = studio or CampaignStudioService(self.campaigns)
+        self.team_workspace = team_workspace or CampaignTeamWorkspaceService(self.campaigns)
 
     def draft(
         self,
@@ -61,6 +64,14 @@ class CampaignStudioAiDraftService:
                 campaign_id=campaign_id,
                 campaign_name=campaign.name,
                 campaign_year=campaign.year,
+                prompt=prompt,
+            )
+
+        if section == "team":
+            return self._build_team_draft(
+                db,
+                campaign_id=campaign_id,
+                campaign_name=campaign.name,
                 prompt=prompt,
             )
 
@@ -113,6 +124,154 @@ class CampaignStudioAiDraftService:
         return {
             "message": (
                 f"I drafted {len(actions)} schedule action"
+                f"{'s' if len(actions) != 1 else ''} for {campaign_name}."
+            ),
+            "assumptions": assumptions,
+            "warnings": warnings,
+            "actions": actions,
+        }
+
+    def _build_team_draft(
+        self,
+        db: Session,
+        *,
+        campaign_id: str,
+        campaign_name: str,
+        prompt: str,
+    ) -> dict[str, Any]:
+        if _is_team_explanation_prompt(prompt):
+            return self._build_advisory_draft(
+                db,
+                campaign_id=campaign_id,
+                section="team",
+                campaign_name=campaign_name,
+                prompt=prompt,
+            )
+
+        workspace = self.team_workspace.get_workspace_payload(db, campaign_id)
+        existing_teams = workspace["teams"]
+        existing_members = workspace["members"]
+
+        actions: list[dict[str, Any]] = []
+        assumptions: list[str] = []
+        warnings: list[str] = []
+
+        team_name = _extract_team_name(prompt)
+        team_ref: str | None = None
+        team_id: str | None = None
+        if team_name is not None:
+            matched_team = _match_workspace_team(team_name, existing_teams)
+            if matched_team is None:
+                team_ref = f"draft-team-ref-{uuid.uuid4()}"
+                actions.append(
+                    _build_team_action(
+                        campaign_name=campaign_name,
+                        team_name=team_name,
+                        team_ref=team_ref,
+                    )
+                )
+            else:
+                team_id = str(_read_value(matched_team, "id"))
+                assumptions.append(f"Using existing team {_read_value(matched_team, 'name')}.")
+
+        role_names = _extract_team_role_names(prompt)
+        role_refs_by_name: dict[str, str] = {}
+        if role_names and team_name is not None:
+            team_for_roles = _match_workspace_team(team_name, existing_teams)
+            team_roles = _read_value(team_for_roles, "roles", default=[]) if team_for_roles else []
+            for index, role_name in enumerate(role_names, start=1):
+                existing_role = _match_team_role(role_name, team_roles)
+                if existing_role is not None:
+                    assumptions.append(
+                        f"Using existing team role {_read_value(existing_role, 'name')} in {_read_value(team_for_roles, 'name')}."
+                    )
+                    continue
+
+                role_ref = f"draft-team-role-ref-{uuid.uuid4()}"
+                role_refs_by_name[_normalize_text(role_name)] = role_ref
+                actions.append(
+                    _build_team_role_action(
+                        role_name=role_name,
+                        team_id=team_id,
+                        team_ref=team_ref,
+                        role_ref=role_ref,
+                        sort_order=index,
+                    )
+                )
+
+        member_name = _extract_member_name(prompt)
+        member_ref: str | None = None
+        member_id: str | None = None
+        if member_name is not None:
+            matched_member = _match_workspace_member(member_name, existing_members)
+            if matched_member is None:
+                member_ref = f"draft-member-ref-{uuid.uuid4()}"
+                actions.append(
+                    _build_member_action(
+                        member_name=member_name,
+                        member_ref=member_ref,
+                    )
+                )
+            else:
+                member_id = str(_read_value(matched_member, "id"))
+                assumptions.append(
+                    f"Using existing member {_read_value(matched_member, 'display_name', fallback_key='display_name')}."
+                )
+
+        assignment_role_name = (
+            _extract_assignment_role_name(prompt, role_names)
+            if member_name is not None and role_names
+            else None
+        )
+        normalized_role_name = (
+            _normalize_text(assignment_role_name)
+            if assignment_role_name is not None
+            else (_normalize_text(role_names[0]) if member_name is not None and role_names else None)
+        )
+        team_role_ref = (
+            role_refs_by_name.get(normalized_role_name) if normalized_role_name is not None else None
+        )
+        team_role_id = None
+        if member_name is not None and role_names and team_name is not None and team_role_ref is None:
+            existing_team = _match_workspace_team(team_name, existing_teams)
+            if existing_team is not None:
+                existing_role = _match_team_role(
+                    role_names[0],
+                    _read_value(existing_team, "roles", default=[]),
+                )
+                if existing_role is not None:
+                    team_role_id = str(_read_value(existing_role, "id"))
+
+        if member_name is not None and team_name is not None:
+            actions.append(
+                _build_member_assignment_action(
+                    member_name=member_name,
+                    team_name=team_name,
+                    team_id=team_id,
+                    team_ref=team_ref,
+                    member_id=member_id,
+                    member_ref=member_ref,
+                    team_role_id=team_role_id,
+                    team_role_ref=team_role_ref,
+                    team_role_name=assignment_role_name or (role_names[0] if role_names else None),
+                )
+            )
+
+        if not actions:
+            return {
+                "message": (
+                    f"I reviewed the team request for {campaign_name}, but I could not turn it into a concrete Team action bundle yet."
+                ),
+                "assumptions": assumptions,
+                "warnings": [
+                    "Try naming the team, member, or team role more explicitly so Campaign AI can draft a concrete Team bundle."
+                ],
+                "actions": [],
+            }
+
+        return {
+            "message": (
+                f"I drafted {len(actions)} team action"
                 f"{'s' if len(actions) != 1 else ''} for {campaign_name}."
             ),
             "assumptions": assumptions,
@@ -176,7 +335,7 @@ class CampaignStudioAiDraftService:
             return {
                 "message": (
                     f"I reviewed the team request for {campaign_name}. "
-                    "Phase 1 only drafts normalized schedule actions. Team actions will follow in the next AI phase."
+                    "Campaign AI can explain roster concepts here, and it now drafts concrete team bundles when the prompt names a team, member, or team role."
                 ),
                 "assumptions": [],
                 "warnings": [],
@@ -472,6 +631,127 @@ def _build_communication_schedule_from_template_ref(
     )
 
 
+def _build_team_action(
+    *,
+    campaign_name: str,
+    team_name: str,
+    team_ref: str,
+) -> dict[str, Any]:
+    return {
+        "id": f"draft-team-{uuid.uuid4()}",
+        "action_type": "create_team",
+        "section": "team",
+        "title": f"Create Team: {team_name}",
+        "summary": f"Creates the {team_name} team in {campaign_name}.",
+        "status": "ready",
+        "assumptions": [],
+        "warnings": [],
+        "payload": {
+            "team_ref": team_ref,
+            "name": team_name,
+            "description": None,
+            "is_active": True,
+        },
+        "apply_target": {"api": "campaign_team.create", "method": "POST"},
+    }
+
+
+def _build_team_role_action(
+    *,
+    role_name: str,
+    team_id: str | None,
+    team_ref: str | None,
+    role_ref: str,
+    sort_order: int,
+) -> dict[str, Any]:
+    return {
+        "id": f"draft-team-role-{uuid.uuid4()}",
+        "action_type": "create_team_role",
+        "section": "team",
+        "title": f"Create Team Role: {role_name}",
+        "summary": f"Adds the {role_name} role to the selected team.",
+        "status": "ready",
+        "assumptions": [],
+        "warnings": [],
+        "payload": {
+            "team_id": team_id,
+            "team_ref": team_ref,
+            "role_ref": role_ref,
+            "name": role_name,
+            "description": None,
+            "sort_order": sort_order,
+            "is_active": True,
+        },
+        "apply_target": {"api": "campaign_team_role.create", "method": "POST"},
+    }
+
+
+def _build_member_action(
+    *,
+    member_name: str,
+    member_ref: str,
+) -> dict[str, Any]:
+    return {
+        "id": f"draft-member-{uuid.uuid4()}",
+        "action_type": "create_member",
+        "section": "team",
+        "title": f"Create Member: {member_name}",
+        "summary": f"Adds {member_name} to the campaign roster.",
+        "status": "ready",
+        "assumptions": [],
+        "warnings": [],
+        "payload": {
+            "member_ref": member_ref,
+            "display_name": member_name,
+            "email": None,
+            "phone": None,
+            "notes": None,
+            "member_type": "volunteer",
+            "app_access_status": "none",
+            "is_active": True,
+        },
+        "apply_target": {"api": "campaign_member.create", "method": "POST"},
+    }
+
+
+def _build_member_assignment_action(
+    *,
+    member_name: str,
+    team_name: str,
+    team_id: str | None,
+    team_ref: str | None,
+    member_id: str | None,
+    member_ref: str | None,
+    team_role_id: str | None,
+    team_role_ref: str | None,
+    team_role_name: str | None,
+) -> dict[str, Any]:
+    summary = (
+        f"Assigns {member_name} to {team_name} as {team_role_name}."
+        if team_role_name
+        else f"Assigns {member_name} to {team_name} as a team member."
+    )
+    return {
+        "id": f"draft-team-membership-{uuid.uuid4()}",
+        "action_type": "assign_member_to_team",
+        "section": "team",
+        "title": f"Assign Member: {member_name}",
+        "summary": summary,
+        "status": "ready",
+        "assumptions": [],
+        "warnings": [],
+        "payload": {
+            "team_id": team_id,
+            "team_ref": team_ref,
+            "member_id": member_id,
+            "member_ref": member_ref,
+            "team_role_id": team_role_id,
+            "team_role_ref": team_role_ref,
+        },
+        "apply_target": {"api": "campaign_team_member.create", "method": "POST"},
+    }
+
+
 def _validate_section(value: object) -> str:
     section = str(value or "").strip().lower()
     if section not in AI_STUDIO_SECTIONS:
@@ -566,6 +846,102 @@ def _extract_template_name(prompt: str, *, audience: str) -> str:
     return f"{prefix} {suffix}"
 
 
+def _extract_team_name(prompt: str) -> str | None:
+    normalized = prompt.lower()
+    defaults = [
+        ("warehouse crew", "Warehouse Crew"),
+        ("pickup team", "Pickup Team"),
+        ("sponsor callers", "Sponsor Callers"),
+        ("phone bank", "Phone Bank"),
+        ("warehouse", "Warehouse Crew"),
+        ("pickup", "Pickup Team"),
+        ("sponsor", "Sponsor Callers"),
+    ]
+    for term, label in defaults:
+        if term in normalized:
+            return label
+
+    quoted_match = re.search(r'"([^"]+)"', prompt)
+    if quoted_match and any(term in normalized for term in ("team", "crew", "callers", "committee")):
+        return quoted_match.group(1).strip()
+
+    keyword_patterns = [
+        r"\b(?:create|set up|build|add)\s+(?:a\s+|an\s+|the\s+)?([a-z][a-z\s-]{2,}?)\s+(?:team|crew|group)\b",
+        r"\bto\s+(?:the\s+)?([a-z][a-z\s-]{2,}?)\s+(?:team|crew|group)\b",
+        r"\b([a-z][a-z\s-]{2,}?)\s+(?:team|crew|group)\b",
+    ]
+    for pattern in keyword_patterns:
+        match = re.search(pattern, normalized, flags=re.IGNORECASE)
+        if match and match.group(1):
+            return " ".join(part.capitalize() for part in match.group(1).strip().split())
+
+    return None
+
+
+def _extract_team_role_names(prompt: str) -> list[str]:
+    normalized = prompt.lower()
+    role_names: list[str] = []
+    with_match = re.search(r"\bwith\s+(.+)$", prompt, flags=re.IGNORECASE)
+    if with_match:
+        role_clause = re.split(
+            r"\b(?:add|assign|put|place)\b",
+            with_match.group(1),
+            maxsplit=1,
+            flags=re.IGNORECASE,
+        )[0]
+        candidates = re.split(r",| and ", role_clause)
+        for candidate in candidates:
+            cleaned = re.sub(r"\broles?\b", "", candidate, flags=re.IGNORECASE).strip(" .")
+            if not cleaned:
+                continue
+            role_names.append(_title_case_phrase(cleaned))
+
+    for role in ("lead", "runner", "check-in", "sorter", "caller", "coordinator"):
+        if role in normalized and not any(_normalize_text(role) == _normalize_text(name) for name in role_names):
+            role_names.append(_title_case_phrase(role))
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for role_name in role_names:
+        normalized_name = _normalize_text(role_name)
+        if normalized_name in seen:
+            continue
+        seen.add(normalized_name)
+        deduped.append(role_name)
+    return deduped
+
+
+def _extract_member_name(prompt: str) -> str | None:
+    quoted_match = re.search(r'"([^"]+)"', prompt)
+    if quoted_match and len(quoted_match.group(1).split()) >= 2:
+        return quoted_match.group(1).strip()
+
+    patterns = [
+        r"\b(?:add|assign|put|place)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b",
+        r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s+(?:to|on)\s+(?:the\s+)?[A-Za-z]",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, prompt)
+        if match and match.group(1):
+            return match.group(1).strip()
+    return None
+
+
+def _extract_assignment_role_name(prompt: str, role_names: list[str]) -> str | None:
+    if not role_names:
+        return None
+
+    as_match = re.search(r"\bas\s+([A-Za-z][A-Za-z\s-]+)$", prompt.strip())
+    if not as_match or not as_match.group(1):
+        return None
+
+    requested_role = _normalize_text(as_match.group(1).strip(" ."))
+    for role_name in role_names:
+        if _normalize_text(role_name) == requested_role:
+            return role_name
+    return None
+
+
 def _detect_event_type(prompt: str) -> str:
     normalized = prompt.lower()
     if "volunteer" in normalized:
@@ -596,6 +972,67 @@ def _detect_template_audience(prompt: str) -> str:
     if "family" in normalized or "recipient" in normalized:
         return "FAMILY"
     return "GENERAL"
+
+
+def _is_team_explanation_prompt(prompt: str) -> bool:
+    normalized = _normalize_text(prompt)
+    return any(
+        term in normalized
+        for term in (
+            "explain",
+            "what is",
+            "what does",
+            "difference",
+            "mean",
+        )
+    )
+
+
+def _match_workspace_team(team_name: str, teams: list[Any]) -> dict[str, Any] | None:
+    normalized_name = _normalize_text(team_name)
+    for team in teams:
+        if _normalize_text(str(_read_value(team, "name"))) == normalized_name:
+            return team
+    return None
+
+
+def _match_workspace_member(member_name: str, members: list[Any]) -> dict[str, Any] | None:
+    normalized_name = _normalize_text(member_name)
+    for member in members:
+        display_name = _read_value(member, "display_name", fallback_key="display_name")
+        if _normalize_text(str(display_name)) == normalized_name:
+            return member
+    return None
+
+
+def _match_team_role(role_name: str, roles: list[Any]) -> dict[str, Any] | None:
+    normalized_name = _normalize_text(role_name)
+    for role in roles:
+        if _normalize_text(str(_read_value(role, "name"))) == normalized_name:
+            return role
+    return None
+
+
+def _title_case_phrase(value: str) -> str:
+    parts = re.split(r"[\s-]+", value.strip())
+    if not parts:
+        return value.strip()
+    return " ".join(part.capitalize() for part in parts if part)
+
+
+def _read_value(value: Any, key: str, *, default: Any = None, fallback_key: str | None = None) -> Any:
+    if isinstance(value, Mapping):
+        if key in value:
+            return value[key]
+        if fallback_key and fallback_key in value:
+            return value[fallback_key]
+        return default
+
+    if hasattr(value, key):
+        return getattr(value, key)
+    if fallback_key and hasattr(value, fallback_key):
+        return getattr(value, fallback_key)
+    return default
 
 
 def _communications_request_includes_schedule(prompt: str, *, campaign_year: int) -> bool:

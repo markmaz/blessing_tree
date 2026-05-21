@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import '@/features/campaigns/ui/campaignStudioTeam.css';
 import { canManageCampaign } from '@/features/campaigns/model/campaignPermissions';
 import type { CampaignAccess } from '@/features/campaigns/model/campaignTypes';
@@ -17,6 +17,7 @@ import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 interface CampaignStudioTeamSectionProps {
   campaignId: string;
   access: CampaignAccess;
+  refreshToken?: number;
 }
 
 const defaultPeopleSearch: CampaignStudioTeamSearchState = {
@@ -30,6 +31,7 @@ const defaultTeamSearch: CampaignStudioTeamSearchState = {
 export function CampaignStudioTeamSection({
   campaignId,
   access,
+  refreshToken = 0,
 }: CampaignStudioTeamSectionProps) {
   const canManageTeam = canManageCampaign(access);
   const {
@@ -50,6 +52,7 @@ export function CampaignStudioTeamSection({
     clearError,
     saveTeamRole,
     updateMemberTeamRole,
+    reload,
   } = useCampaignTeamWorkspace(campaignId);
   const [peopleSearch, setPeopleSearch] = useState<CampaignStudioTeamSearchState>(
     defaultPeopleSearch
@@ -60,6 +63,14 @@ export function CampaignStudioTeamSection({
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [isCreateMemberOpen, setIsCreateMemberOpen] = useState(false);
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
+
+  useEffect(() => {
+    if (refreshToken <= 0) {
+      return;
+    }
+
+    void reload();
+  }, [refreshToken, reload]);
 
   const filteredMembers = useMemo(() => {
     if (!workspace) {

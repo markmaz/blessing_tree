@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { draftCampaignStudioAi } from '@/features/campaigns/api/campaignStudioAiApi';
+import {
+  addCampaignTeamMember,
+  createCampaignMember,
+  createCampaignTeam,
+  createCampaignTeamRole,
+} from '@/features/campaigns/api/campaignTeamWorkspaceApi';
 import { type CampaignStudioSectionId } from '@/features/campaigns/model/campaignStudio';
 import {
   getAiPromptPlaceholder,
@@ -9,10 +15,14 @@ import {
   getAiTeamGlossary,
 } from '@/features/campaigns/model/campaignStudioAi';
 import {
+  isAssignMemberToTeamAction,
+  isCreateMemberAction,
   isCreateCommunicationTemplateAction,
   isCreateCampaignEventAction,
   isCreateCommunicationScheduleAction,
   isCreateMilestoneAction,
+  isCreateTeamAction,
+  isCreateTeamRoleAction,
   type CampaignStudioAiAction,
   type CampaignStudioAiDraftResponse,
   type ScheduleAiDraftType,
@@ -52,6 +62,7 @@ interface CampaignStudioAiRailProps {
     input: CreateCommunicationScheduleInput
   ) => Promise<boolean>;
   onSaveMilestones: (milestones: SaveCampaignMilestoneInput[]) => Promise<boolean>;
+  onTeamWorkspaceChanged: () => Promise<void>;
 }
 
 export function CampaignStudioAiRail({
@@ -68,6 +79,7 @@ export function CampaignStudioAiRail({
   onCreateCommunicationTemplate,
   onCreateCommunicationSchedule,
   onSaveMilestones,
+  onTeamWorkspaceChanged,
 }: CampaignStudioAiRailProps) {
   const [draftPrompt, setDraftPrompt] = useState('');
   const [draftType, setDraftType] = useState<ScheduleAiDraftType>('event');
@@ -141,7 +153,18 @@ export function CampaignStudioAiRail({
   };
 
   const handleApplyAction = async (action: CampaignStudioAiAction) => {
-    const result = await applyDraftAction(action, new Map());
+    let result;
+    try {
+      result = await applyDraftAction(action, {
+        createdTemplateRefs: new Map(),
+        createdTeamRefs: new Map(),
+        createdRoleRefs: new Map(),
+        createdMemberRefs: new Map(),
+      });
+    } catch (error) {
+      setDraftError(error instanceof Error ? error.message : 'Unable to apply this AI action.');
+      return;
+    }
     const didSave = result.success;
     if (!didSave) {
       return;
@@ -172,7 +195,12 @@ export function CampaignStudioAiRail({
     }
 
     const successfulIds = new Set<string>();
-    const createdTemplateRefs = new Map<string, string>();
+    const createdRefs = {
+      createdTemplateRefs: new Map<string, string>(),
+      createdTeamRefs: new Map<string, string>(),
+      createdRoleRefs: new Map<string, string>(),
+      createdMemberRefs: new Map<string, string>(),
+    };
     let appliedCount = 0;
     let failed = false;
 
@@ -182,7 +210,14 @@ export function CampaignStudioAiRail({
         continue;
       }
 
-      const result = await applyDraftAction(action, createdTemplateRefs);
+      let result;
+      try {
+        result = await applyDraftAction(action, createdRefs);
+      } catch (error) {
+        setDraftError(error instanceof Error ? error.message : 'Some AI actions could not be applied.');
+        failed = true;
+        continue;
+      }
       if (result.success) {
         successfulIds.add(action.id);
         appliedCount += 1;
@@ -217,7 +252,12 @@ export function CampaignStudioAiRail({
 
   const applyDraftAction = async (
     action: CampaignStudioAiAction,
-    createdTemplateRefs: Map<string, string>
+    createdRefs: {
+      createdTemplateRefs: Map<string, string>;
+      createdTeamRefs: Map<string, string>;
+      createdRoleRefs: Map<string, string>;
+      createdMemberRefs: Map<string, string>;
+    }
   ): Promise<{ success: boolean; templateId?: string }> => {
     if (isCreateCommunicationTemplateAction(action)) {
       const createdTemplate = await onCreateCommunicationTemplate({
@@ -233,9 +273,89 @@ export function CampaignStudioAiRail({
       }
 
       if (action.payload.templateRef) {
-        createdTemplateRefs.set(action.payload.templateRef, createdTemplate.id);
+        createdRefs.createdTemplateRefs.set(action.payload.templateRef, createdTemplate.id);
       }
       return { success: true, templateId: createdTemplate.id };
+    }
+
+    if (isCreateTeamAction(action)) {
+      const createdTeam = await createCampaignTeam(campaign.id, {
+        name: action.payload.name,
+        description: action.payload.description ?? null,
+        isActive: action.payload.isActive,
+      });
+      if (action.payload.teamRef) {
+        createdRefs.createdTeamRefs.set(action.payload.teamRef, createdTeam.id);
+      }
+      await onTeamWorkspaceChanged();
+      return { success: true };
+    }
+
+    if (isCreateTeamRoleAction(action)) {
+      const teamId =
+        action.payload.teamId ??
+        (action.payload.teamRef
+          ? createdRefs.createdTeamRefs.get(action.payload.teamRef) ?? null
+          : null);
+      if (!teamId) {
+        setDraftError('Apply the team draft first so this team role can be created.');
+        return { success: false };
+      }
+
+      const createdRole = await createCampaignTeamRole(campaign.id, teamId, {
+        name: action.payload.name,
+        description: action.payload.description ?? null,
+        sortOrder: action.payload.sortOrder ?? 0,
+        isActive: action.payload.isActive,
+      });
+      if (action.payload.roleRef) {
+        createdRefs.createdRoleRefs.set(action.payload.roleRef, createdRole.id);
+      }
+      await onTeamWorkspaceChanged();
+      return { success: true };
+    }
+
+    if (isCreateMemberAction(action)) {
+      const createdMember = await createCampaignMember(campaign.id, {
+        displayName: action.payload.displayName,
+        email: action.payload.email ?? null,
+        phone: action.payload.phone ?? null,
+        notes: action.payload.notes ?? null,
+        memberType: action.payload.memberType,
+        appAccessStatus: action.payload.appAccessStatus,
+        isActive: action.payload.isActive,
+      });
+      if (action.payload.memberRef) {
+        createdRefs.createdMemberRefs.set(action.payload.memberRef, createdMember.id);
+      }
+      await onTeamWorkspaceChanged();
+      return { success: true };
+    }
+
+    if (isAssignMemberToTeamAction(action)) {
+      const teamId =
+        action.payload.teamId ??
+        (action.payload.teamRef
+          ? createdRefs.createdTeamRefs.get(action.payload.teamRef) ?? null
+          : null);
+      const memberId =
+        action.payload.memberId ??
+        (action.payload.memberRef
+          ? createdRefs.createdMemberRefs.get(action.payload.memberRef) ?? null
+          : null);
+      const teamRoleId =
+        action.payload.teamRoleId ??
+        (action.payload.teamRoleRef
+          ? createdRefs.createdRoleRefs.get(action.payload.teamRoleRef) ?? null
+          : null);
+      if (!teamId || !memberId) {
+        setDraftError('Apply the team and member drafts first so this assignment can be created.');
+        return { success: false };
+      }
+
+      await addCampaignTeamMember(campaign.id, teamId, memberId, teamRoleId ?? null);
+      await onTeamWorkspaceChanged();
+      return { success: true };
     }
 
     if (isCreateCampaignEventAction(action)) {
@@ -246,7 +366,7 @@ export function CampaignStudioAiRail({
       const templateId =
         action.payload.templateId ??
         (action.payload.templateRef
-          ? createdTemplateRefs.get(action.payload.templateRef) ?? null
+          ? createdRefs.createdTemplateRefs.get(action.payload.templateRef) ?? null
           : null);
       if (!templateId) {
         setDraftError('Apply the template draft first so this communication can be placed.');

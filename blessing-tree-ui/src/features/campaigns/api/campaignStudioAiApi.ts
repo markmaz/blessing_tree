@@ -90,6 +90,60 @@ function mapActionPayload(action: CampaignStudioAiActionResponse): Record<string
     };
   }
 
+  if (action.action_type === 'create_team' || action.action_type === 'update_team') {
+    return {
+      teamRef: action.payload.team_ref ?? null,
+      name: action.payload.name,
+      description: action.payload.description ?? null,
+      isActive: action.payload.is_active ?? true,
+    };
+  }
+
+  if (action.action_type === 'create_team_role' || action.action_type === 'update_team_role') {
+    return {
+      teamId: action.payload.team_id ?? null,
+      teamRef: action.payload.team_ref ?? null,
+      roleRef: action.payload.role_ref ?? null,
+      name: action.payload.name,
+      description: action.payload.description ?? null,
+      sortOrder: Number(action.payload.sort_order ?? 0),
+      isActive: action.payload.is_active ?? true,
+    };
+  }
+
+  if (action.action_type === 'create_member' || action.action_type === 'update_member') {
+    return {
+      memberRef: action.payload.member_ref ?? null,
+      displayName: action.payload.display_name,
+      email: action.payload.email ?? null,
+      phone: action.payload.phone ?? null,
+      notes: action.payload.notes ?? null,
+      memberType: action.payload.member_type,
+      appAccessStatus: action.payload.app_access_status ?? 'none',
+      isActive: action.payload.is_active ?? true,
+    };
+  }
+
+  if (action.action_type === 'assign_member_to_team') {
+    return {
+      teamId: action.payload.team_id ?? null,
+      teamRef: action.payload.team_ref ?? null,
+      memberId: action.payload.member_id ?? null,
+      memberRef: action.payload.member_ref ?? null,
+      teamRoleId: action.payload.team_role_id ?? null,
+      teamRoleRef: action.payload.team_role_ref ?? null,
+    };
+  }
+
+  if (action.action_type === 'assign_app_access_role') {
+    return {
+      memberId: action.payload.member_id ?? null,
+      memberRef: action.payload.member_ref ?? null,
+      roleKey: action.payload.role_key,
+      isActive: action.payload.is_active ?? true,
+    };
+  }
+
   if (action.action_type === 'create_event' || action.action_type === 'update_event') {
     return {
       title: action.payload.title,
