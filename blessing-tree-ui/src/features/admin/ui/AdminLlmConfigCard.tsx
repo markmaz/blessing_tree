@@ -4,6 +4,16 @@ import {
   saveAdminLlmConfig,
   testAdminLlmConfig,
 } from '@/features/admin/api/adminApi';
+import {
+  CUSTOM_MODEL_VALUE,
+  DEFAULT_OPENAI_MODEL,
+  DEFAULT_OPENAI_BASE_URL,
+  getOpenAiModelSelectValue,
+  getProviderBaseUrl,
+  isOpenAiProvider,
+  OPENAI_PROVIDER,
+  OPENAI_MODEL_PRESETS,
+} from '@/features/admin/model/adminLlmForm';
 import type { AdminLlmPayload } from '@/features/admin/model/adminTypes';
 
 export function AdminLlmConfigCard() {
@@ -46,6 +56,9 @@ export function AdminLlmConfigCard() {
   }
 
   const { configuration, providerCatalog } = payload;
+  const showOpenAiPresets = isOpenAiProvider(configuration.provider);
+  const openAiModelSelectValue = getOpenAiModelSelectValue(configuration.model);
+  const showCustomOpenAiModel = showOpenAiPresets && openAiModelSelectValue === CUSTOM_MODEL_VALUE;
 
   const save = async () => {
     setIsSaving(true);
@@ -55,7 +68,7 @@ export function AdminLlmConfigCard() {
       const nextConfiguration = await saveAdminLlmConfig({
         provider: configuration.provider,
         label: configuration.label,
-        baseUrl: configuration.baseUrl,
+        baseUrl: getProviderBaseUrl(configuration.provider, configuration.baseUrl),
         model: configuration.model,
         apiKey,
         isEnabled: configuration.isEnabled,
@@ -94,8 +107,11 @@ export function AdminLlmConfigCard() {
       {error ? <div className="alert alert-danger py-2">{error}</div> : null}
       <div className="row g-3">
         <div className="col-12 col-md-6">
-          <label className="form-label">Label</label>
+          <label className="form-label" htmlFor="admin-llm-label">
+            Label
+          </label>
           <input
+            id="admin-llm-label"
             className="form-control"
             value={configuration.label}
             onChange={(event) =>
@@ -107,14 +123,28 @@ export function AdminLlmConfigCard() {
           />
         </div>
         <div className="col-12 col-md-6">
-          <label className="form-label">Provider</label>
+          <label className="form-label" htmlFor="admin-llm-provider">
+            Provider
+          </label>
           <select
+            id="admin-llm-provider"
             className="form-select"
             value={configuration.provider}
             onChange={(event) =>
               setPayload({
                 ...payload,
-                configuration: { ...configuration, provider: event.target.value },
+                configuration: {
+                  ...configuration,
+                  provider: event.target.value,
+                  baseUrl:
+                    event.target.value === OPENAI_PROVIDER
+                      ? DEFAULT_OPENAI_BASE_URL
+                      : configuration.baseUrl,
+                  model:
+                    event.target.value === OPENAI_PROVIDER && !configuration.model
+                      ? DEFAULT_OPENAI_MODEL
+                      : configuration.model,
+                },
               })
             }
           >
@@ -125,37 +155,97 @@ export function AdminLlmConfigCard() {
             ))}
           </select>
         </div>
-        <div className="col-12">
-          <label className="form-label">Base URL</label>
-          <input
-            className="form-control"
-            value={configuration.baseUrl}
-            onChange={(event) =>
-              setPayload({
-                ...payload,
-                configuration: { ...configuration, baseUrl: event.target.value },
-              })
-            }
-            placeholder="https://example-llm.company.com/v1"
-          />
+        {showOpenAiPresets ? (
+          <div className="col-12">
+            <label className="form-label">Endpoint</label>
+            <div className="form-control bg-light text-muted">Using the default OpenAI API endpoint</div>
+            <div className="form-text">{DEFAULT_OPENAI_BASE_URL}</div>
+          </div>
+        ) : (
+          <div className="col-12">
+            <label className="form-label" htmlFor="admin-llm-base-url">
+              Base URL
+            </label>
+            <input
+              id="admin-llm-base-url"
+              className="form-control"
+              value={configuration.baseUrl}
+              onChange={(event) =>
+                setPayload({
+                  ...payload,
+                  configuration: { ...configuration, baseUrl: event.target.value },
+                })
+              }
+              placeholder="https://example-llm.company.com/v1"
+            />
+          </div>
+        )}
+        <div className="col-12 col-md-6">
+          <label className="form-label" htmlFor="admin-llm-model">
+            Model
+          </label>
+          {showOpenAiPresets ? (
+            <>
+              <select
+                id="admin-llm-model"
+                className="form-select"
+                value={openAiModelSelectValue}
+                onChange={(event) =>
+                  setPayload({
+                    ...payload,
+                    configuration: {
+                      ...configuration,
+                      model:
+                        event.target.value === CUSTOM_MODEL_VALUE
+                          ? ''
+                          : event.target.value,
+                    },
+                  })
+                }
+              >
+                {OPENAI_MODEL_PRESETS.map((model) => (
+                  <option key={model} value={model}>
+                    {model}
+                  </option>
+                ))}
+                <option value={CUSTOM_MODEL_VALUE}>Custom model</option>
+              </select>
+              {showCustomOpenAiModel ? (
+                <input
+                  id="admin-llm-model-custom"
+                  className="form-control mt-2"
+                  value={configuration.model}
+                  onChange={(event) =>
+                    setPayload({
+                      ...payload,
+                      configuration: { ...configuration, model: event.target.value },
+                    })
+                  }
+                  placeholder="Enter custom OpenAI model"
+                />
+              ) : null}
+            </>
+          ) : (
+            <input
+              id="admin-llm-model"
+              className="form-control"
+              value={configuration.model}
+              onChange={(event) =>
+                setPayload({
+                  ...payload,
+                  configuration: { ...configuration, model: event.target.value },
+                })
+              }
+              placeholder="gpt-4o-mini"
+            />
+          )}
         </div>
         <div className="col-12 col-md-6">
-          <label className="form-label">Model</label>
+          <label className="form-label" htmlFor="admin-llm-api-key">
+            API Key
+          </label>
           <input
-            className="form-control"
-            value={configuration.model}
-            onChange={(event) =>
-              setPayload({
-                ...payload,
-                configuration: { ...configuration, model: event.target.value },
-              })
-            }
-            placeholder="gpt-4o-mini"
-          />
-        </div>
-        <div className="col-12 col-md-6">
-          <label className="form-label">API Key</label>
-          <input
+            id="admin-llm-api-key"
             className="form-control"
             type="password"
             value={apiKey}
@@ -166,6 +256,7 @@ export function AdminLlmConfigCard() {
         <div className="col-12">
           <div className="form-check form-switch">
             <input
+              id="admin-llm-enabled"
               className="form-check-input"
               type="checkbox"
               checked={configuration.isEnabled}
@@ -176,7 +267,9 @@ export function AdminLlmConfigCard() {
                 })
               }
             />
-            <label className="form-check-label">Enable this LLM configuration</label>
+            <label className="form-check-label" htmlFor="admin-llm-enabled">
+              Enable this LLM configuration
+            </label>
           </div>
         </div>
       </div>

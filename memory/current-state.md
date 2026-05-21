@@ -36,6 +36,7 @@ Last updated: 2026-05-21
   - the admin page now supports user invitations, LLM configuration/testing, runtime health visibility, and app feature enable/disable controls
   - admin user management now uses a Query Forge-style searchable/sortable table workspace with row actions plus invite and detail drawers instead of the earlier combined invite card, includes top filter cards for `All`, `Active`, and `Invited`, and supports activate/deactivate directly from the menu
   - the admin area now exposes child navigation in the left sidebar under `Admin` for user management, LLM configuration, health checks, and app capabilities, with feature toggles no longer mixed into the LLM page
+  - the Admin LLM page now has provider-specific behavior so `OpenAI` uses a default endpoint plus model presets instead of making admins type raw base URLs, while `OpenAI-Compatible` remains fully editable
   - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
   - dashboard is now campaign-aware and loads live summary/access data from the backend
   - Campaign Studio now has live Team, Communications, Schedule, Readiness, and Settings sections backed by the backend studio APIs
