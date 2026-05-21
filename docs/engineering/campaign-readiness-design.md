@@ -3,6 +3,8 @@
 ## Status
 
 - Proposed and accepted for implementation on 2026-05-20
+- Grouped, lifecycle-aware readiness is now implemented in the backend and
+  Studio UI as of 2026-05-20
 
 ## Summary
 
@@ -361,9 +363,9 @@ Recommended sequence:
 5. Expand AI prompt generation to use grouped readiness plus phase data
 6. Add automation rules once scheduled execution exists
 
-## Current Gap
+## Current Implementation
 
-Current readiness already checks:
+Readiness now checks and exposes:
 
 - campaign description
 - campaign date range
@@ -374,14 +376,26 @@ Current readiness already checks:
 - milestone-linked communication timing
 - active templates
 - active communication schedules
+- missing automated delivery path for scheduled communications
 - draft status
+- grouped categories:
+  - `blockers`
+  - `launch_checks`
+  - `planning_gaps`
+  - `operational_health`
+- lifecycle phase gating for:
+  - `draft`
+  - `activate`
+  - `operations`
+  - `close`
+- normalized `action_label` and `blocking_for` metadata
+- AI prompt support that now consumes grouped readiness plus phase state
 
-Current readiness does not yet support:
+Readiness still does not yet support:
 
-- grouped categories
-- lifecycle phase gating
-- action labels
-- automation readiness
-- operations health after schedule execution exists
+- actual automation execution success/failure signals
+- recipient/workflow readiness once those features exist
+- operational health beyond the current scheduling and staffing gaps
+- close-phase specific rule families
 
 This design replaces the current flat model with a lifecycle-aware, grouped readiness system.

@@ -113,21 +113,34 @@ export interface CampaignScheduleItem {
 
 export interface CampaignReadinessItem {
   severity: 'error' | 'warning' | 'info';
+  category: 'blockers' | 'launch_checks' | 'planning_gaps' | 'operational_health';
   code: string;
   section: string;
   message: string;
+  actionLabel: string;
+  blockingFor: Array<'draft' | 'activate' | 'operations' | 'close'>;
   details: Record<string, unknown>;
 }
 
 export interface CampaignReadiness {
   campaignId: string;
   status: 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+  overallStatus: 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED';
+  phaseStatus: Record<'draft' | 'activate' | 'operations' | 'close', 'READY' | 'NEEDS_ATTENTION' | 'BLOCKED'>;
   items: CampaignReadinessItem[];
+  groups: Record<
+    'blockers' | 'launch_checks' | 'planning_gaps' | 'operational_health',
+    CampaignReadinessItem[]
+  >;
   counts: {
     errors: number;
     warnings: number;
     infos: number;
   };
+  categoryCounts: Record<
+    'blockers' | 'launch_checks' | 'planning_gaps' | 'operational_health',
+    number
+  >;
 }
 
 export interface CampaignStudioData {

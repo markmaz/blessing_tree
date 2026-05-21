@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Team phase 5 is implemented with the Team Studio frontend rewrite; the Team design is now being refined to separate fixed app access roles from team-scoped team roles before communications audience integration continues
+- Current step: lifecycle-aware Campaign Readiness is now implemented; the next design/implementation focus is team-scoped team roles plus communications audiences and then real scheduling automation
 
 ## Recently Completed
 
@@ -80,6 +80,8 @@ Last updated: 2026-05-20
 - Reworked the Team workspace layout so People and Teams now render as separate first-class tables instead of a people table plus side team rail
 - Simplified the Team workspace again so the top stats are smaller and the People/Teams cards now rely on search plus click-sort instead of a larger filter bar
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
+- Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
+- Added an explicit readiness warning when scheduled communications exist but automated delivery is not wired yet
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Fixed backend runtime gaps discovered during live stack verification:
@@ -92,10 +94,10 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Refactor backend readiness into grouped rule families with normalized item shape, action labels, and lifecycle phase gating
-2. Update the frontend Readiness screen to use grouped sections and phase status instead of one flat list
-3. Add backend support for team-scoped roles and role-less `Member` team participation
-4. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
+1. Add backend support for team-scoped roles and role-less `Member` team participation
+2. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
+3. Design and implement the actual scheduling execution layer for communications and lifecycle events
+4. Feed real automation health and execution failures back into Campaign Readiness
 5. After the Team write paths move over, retire the temporary legacy `campaign_user_role` fallback in authorization resolution
 
 ## Blockers Or Ambiguities

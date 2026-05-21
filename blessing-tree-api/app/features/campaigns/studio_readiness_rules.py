@@ -1,0 +1,238 @@
+from __future__ import annotations
+
+from app.features.campaigns.readiness_constants import (
+    READINESS_CATEGORY_BLOCKERS,
+    READINESS_CATEGORY_LAUNCH_CHECKS,
+    READINESS_CATEGORY_OPERATIONAL_HEALTH,
+    READINESS_CATEGORY_PLANNING_GAPS,
+    READINESS_PHASE_ACTIVATE,
+    READINESS_PHASE_OPERATIONS,
+    SECTION_ACTION_LABELS,
+)
+from app.features.campaigns.studio_constants import REQUIRED_MILESTONE_KEYS
+from app.features.rbac.constants import CAMPAIGN_MANAGER_ROLE
+
+
+def build_metadata_rules(campaign) -> list[dict[str, object]]:
+    items: list[dict[str, object]] = []
+
+    if not campaign.description:
+        items.append(
+            readiness_item(
+                severity="warning",
+                category=READINESS_CATEGORY_PLANNING_GAPS,
+                code="missing_description",
+                section="settings",
+                message="Add a campaign description.",
+                blocking_for=[READINESS_PHASE_ACTIVATE],
+            )
+        )
+
+    if not campaign.start_date or not campaign.end_date:
+        items.append(
+            readiness_item(
+                severity="error",
+                category=READINESS_CATEGORY_BLOCKERS,
+                code="missing_date_range",
+                section="settings",
+                message="Set the campaign start and end dates.",
+                blocking_for=[READINESS_PHASE_ACTIVATE, READINESS_PHASE_OPERATIONS],
+            )
+        )
+
+    return items
+
+
+def build_team_rules(assignments, role_counts) -> list[dict[str, object]]:
+    items: list[dict[str, object]] = []
+    active_assignments = [assignment for assignment in assignments if assignment.is_active]
+
+    if role_counts.get(CAMPAIGN_MANAGER_ROLE, 0) == 0:
+        items.append(
+            readiness_item(
+                severity="error",
+                category=READINESS_CATEGORY_BLOCKERS,
+                code="missing_manager",
+                section="team",
+                message="Assign at least one campaign manager.",
+                blocking_for=[READINESS_PHASE_ACTIVATE, READINESS_PHASE_OPERATIONS],
+            )
+        )
+
+    if not any(assignment.role_key != CAMPAIGN_MANAGER_ROLE for assignment in active_assignments):
+        items.append(
+            readiness_item(
+                severity="warning",
+                category=READINESS_CATEGORY_LAUNCH_CHECKS,
+                code="missing_team_assignments",
+                section="team",
+                message="Add at least one non-manager campaign assignment.",
+                blocking_for=[],
+            )
+        )
+
+    return items
+
+
+def build_schedule_rules(milestones, schedules, manual_events) -> list[dict[str, object]]:
+    items: list[dict[str, object]] = []
+    milestone_keys = {milestone.milestone_key for milestone in milestones}
+    missing_milestone_keys = sorted(REQUIRED_MILESTONE_KEYS - milestone_keys)
+    active_schedules = [schedule for schedule in schedules if schedule.status != "DISABLED"]
+    manual_events_with_dates = [
+        event
+        for event in manual_events
+        if event.source_type == "manual" and event.start_at is not None
+    ]
+    milestone_keys_with_schedule = {
+        schedule.milestone_key
+        for schedule in active_schedules
+        if schedule.milestone_key
+    }
+    milestone_keys_needing_schedule = sorted(
+        milestone.milestone_key
+        for milestone in milestones
+        if milestone.milestone_key in REQUIRED_MILESTONE_KEYS
+        and milestone.occurs_on is not None
+        and milestone.milestone_key not in milestone_keys_with_schedule
+    )
+
+    if missing_milestone_keys:
+        items.append(
+            readiness_item(
+                severity="warning",
+                category=READINESS_CATEGORY_LAUNCH_CHECKS,
+                code="missing_milestones",
+                section="schedule",
+                message="Add the remaining required milestone dates.",
+                blocking_for=[READINESS_PHASE_ACTIVATE],
+                details={"missing_keys": missing_milestone_keys},
+            )
+        )
+
+    if not manual_events_with_dates:
+        items.append(
+            readiness_item(
+                severity="warning",
+                category=READINESS_CATEGORY_PLANNING_GAPS,
+                code="missing_manual_schedule",
+                section="schedule",
+                message="Add at least one manual planning event to shape the campaign timeline.",
+                blocking_for=[],
+            )
+        )
+
+    if milestone_keys_needing_schedule:
+        items.append(
+            readiness_item(
+                severity="warning",
+                category=READINESS_CATEGORY_LAUNCH_CHECKS,
+                code="missing_schedule_messaging",
+                section="schedule",
+                message="Add communication timing for the key milestones already on the calendar.",
+                blocking_for=[READINESS_PHASE_ACTIVATE],
+                details={"missing_keys": milestone_keys_needing_schedule},
+            )
+        )
+
+    return items
+
+
+def build_communications_rules(templates, schedules) -> list[dict[str, object]]:
+    items: list[dict[str, object]] = []
+    active_templates = [template for template in templates if template.is_active]
+    active_schedules = [schedule for schedule in schedules if schedule.status != "DISABLED"]
+
+    if not active_templates:
+        items.append(
+            readiness_item(
+                severity="warning",
+                category=READINESS_CATEGORY_LAUNCH_CHECKS,
+                code="missing_templates",
+                section="communications",
+                message="Create at least one active communication template.",
+                blocking_for=[READINESS_PHASE_ACTIVATE],
+            )
+        )
+
+    if not active_schedules:
+        items.append(
+            readiness_item(
+                severity="warning",
+                category=READINESS_CATEGORY_LAUNCH_CHECKS,
+                code="missing_schedules",
+                section="communications",
+                message="Add at least one campaign communication schedule.",
+                blocking_for=[READINESS_PHASE_ACTIVATE],
+            )
+        )
+
+    return items
+
+
+def build_automation_rules(campaign, schedules) -> list[dict[str, object]]:
+    active_schedules = [schedule for schedule in schedules if schedule.status != "DISABLED"]
+    if not active_schedules:
+        return []
+
+    is_active_campaign = campaign.status == "ACTIVE"
+    return [
+        readiness_item(
+            severity="warning",
+            category=(
+                READINESS_CATEGORY_OPERATIONAL_HEALTH
+                if is_active_campaign
+                else READINESS_CATEGORY_LAUNCH_CHECKS
+            ),
+            code="automation_delivery_unavailable",
+            section="readiness",
+            message=(
+                "Scheduled communications exist, but automated delivery is not wired yet."
+                if is_active_campaign
+                else "Scheduled communications will not deliver automatically until the automation worker is implemented."
+            ),
+            blocking_for=(
+                [READINESS_PHASE_OPERATIONS]
+                if is_active_campaign
+                else [READINESS_PHASE_ACTIVATE]
+            ),
+        )
+    ]
+
+
+def build_lifecycle_rules(campaign) -> list[dict[str, object]]:
+    if campaign.status != "DRAFT":
+        return []
+
+    return [
+        readiness_item(
+            severity="info",
+            category=READINESS_CATEGORY_PLANNING_GAPS,
+            code="campaign_in_draft",
+            section="settings",
+            message="Campaign is still in draft status.",
+            blocking_for=[],
+        )
+    ]
+
+
+def readiness_item(
+    *,
+    severity: str,
+    category: str,
+    code: str,
+    section: str,
+    message: str,
+    blocking_for: list[str],
+    details: dict[str, object] | None = None,
+) -> dict[str, object]:
+    return {
+        "severity": severity,
+        "category": category,
+        "code": code,
+        "section": section,
+        "message": message,
+        "action_label": SECTION_ACTION_LABELS.get(section, "Open Settings"),
+        "blocking_for": blocking_for,
+        "details": details or {},
+    }

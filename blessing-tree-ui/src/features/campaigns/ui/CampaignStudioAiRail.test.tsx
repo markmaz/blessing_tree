@@ -25,26 +25,73 @@ const campaign: Campaign = {
 const readiness: CampaignReadiness = {
   campaignId: 'campaign-123',
   status: 'NEEDS_ATTENTION',
+  overallStatus: 'NEEDS_ATTENTION',
+  phaseStatus: {
+    draft: 'NEEDS_ATTENTION',
+    activate: 'BLOCKED',
+    operations: 'NEEDS_ATTENTION',
+    close: 'READY',
+  },
   items: [
     {
       severity: 'warning',
+      category: 'planning_gaps',
       code: 'missing_manual_schedule',
       section: 'schedule',
       message: 'Add at least one manual planning event to shape the campaign timeline.',
+      actionLabel: 'Open Schedule',
+      blockingFor: [],
       details: {},
     },
     {
       severity: 'warning',
+      category: 'launch_checks',
       code: 'missing_schedule_messaging',
       section: 'schedule',
       message: 'Add communication timing for the key milestones already on the calendar.',
+      actionLabel: 'Open Schedule',
+      blockingFor: ['activate'],
       details: { missing_keys: ['registration_open'] },
     },
   ],
+  groups: {
+    blockers: [],
+    launch_checks: [
+      {
+        severity: 'warning',
+        category: 'launch_checks',
+        code: 'missing_schedule_messaging',
+        section: 'schedule',
+        message: 'Add communication timing for the key milestones already on the calendar.',
+        actionLabel: 'Open Schedule',
+        blockingFor: ['activate'],
+        details: { missing_keys: ['registration_open'] },
+      },
+    ],
+    planning_gaps: [
+      {
+        severity: 'warning',
+        category: 'planning_gaps',
+        code: 'missing_manual_schedule',
+        section: 'schedule',
+        message: 'Add at least one manual planning event to shape the campaign timeline.',
+        actionLabel: 'Open Schedule',
+        blockingFor: [],
+        details: {},
+      },
+    ],
+    operational_health: [],
+  },
   counts: {
     errors: 0,
     warnings: 2,
     infos: 0,
+  },
+  categoryCounts: {
+    blockers: 0,
+    launch_checks: 1,
+    planning_gaps: 1,
+    operational_health: 0,
   },
 };
 
@@ -212,6 +259,34 @@ describe('CampaignStudioAiRail', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /explain what member type means in this campaign workspace/i })
+    ).toBeInTheDocument();
+  });
+
+  it('uses phase-aware readiness prompts when Readiness is selected', () => {
+    render(
+      <CampaignStudioAiRail
+        open
+        onClose={vi.fn()}
+        campaign={campaign}
+        selectedSection="readiness"
+        readiness={readiness}
+        scheduleItems={scheduleItems}
+        templates={templates}
+        milestones={milestones}
+        isSaving={false}
+        onCreateScheduleEvent={vi.fn().mockResolvedValue(true)}
+        onCreateCommunicationSchedule={vi.fn().mockResolvedValue(true)}
+        onSaveMilestones={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: /tell me exactly what i need to do to unblock campaign activation/i,
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/add communication timing for the key milestones already on the calendar/i)
     ).toBeInTheDocument();
   });
 });

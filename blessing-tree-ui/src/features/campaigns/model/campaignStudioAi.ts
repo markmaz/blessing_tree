@@ -20,6 +20,29 @@ export function getAiPromptStarters(
   readiness: CampaignReadiness,
   scheduleItems: CampaignScheduleItem[]
 ): string[] {
+  if (selectedSection === 'readiness') {
+    const starters = [
+      'Explain what is currently blocking this campaign from activation.',
+      'Tell me the fastest path to clear the current launch checks.',
+      'Summarize the planning gaps that still need attention.',
+    ];
+
+    if (readiness.groups.blockers.length > 0) {
+      starters.unshift('List the blockers and tell me the order I should fix them in.');
+    }
+    if (readiness.phaseStatus.activate === 'BLOCKED') {
+      starters.unshift('Tell me exactly what I need to do to unblock campaign activation.');
+    }
+    if (readiness.phaseStatus.operations !== 'READY') {
+      starters.push('Explain what still weakens operational readiness after this campaign goes live.');
+    }
+    if (readiness.groups.operational_health.length > 0) {
+      starters.push('Summarize the current operational health warnings and why they matter.');
+    }
+
+    return Array.from(new Set(starters));
+  }
+
   if (selectedSection === 'team') {
     return [
       'Explain what member type means in this campaign workspace.',
@@ -65,6 +88,15 @@ export function getAiReadinessSignals(
   selectedSection: CampaignStudioSectionId,
   readiness: CampaignReadiness
 ): CampaignReadiness['items'] {
+  if (selectedSection === 'readiness') {
+    return [
+      ...readiness.groups.blockers,
+      ...readiness.groups.launch_checks,
+      ...readiness.groups.planning_gaps,
+      ...readiness.groups.operational_health,
+    ].slice(0, 5);
+  }
+
   if (selectedSection === 'schedule') {
     return readiness.items.filter((item) => item.section === 'schedule');
   }

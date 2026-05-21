@@ -129,21 +129,31 @@ interface CampaignScheduleItemResponse {
 
 interface CampaignReadinessItemResponse {
   severity: CampaignReadiness['items'][number]['severity'];
+  category: CampaignReadiness['items'][number]['category'];
   code: string;
   section: string;
   message: string;
+  action_label: string;
+  blocking_for: CampaignReadiness['items'][number]['blockingFor'];
   details: Record<string, unknown>;
 }
 
 interface CampaignReadinessResponse {
   campaign_id: string;
   status: CampaignReadiness['status'];
+  overall_status: CampaignReadiness['overallStatus'];
+  phase_status: CampaignReadiness['phaseStatus'];
   items: CampaignReadinessItemResponse[];
+  groups: Record<
+    'blockers' | 'launch_checks' | 'planning_gaps' | 'operational_health',
+    CampaignReadinessItemResponse[]
+  >;
   counts: {
     errors: number;
     warnings: number;
     infos: number;
   };
+  category_counts: CampaignReadiness['categoryCounts'];
 }
 
 interface CampaignStudioResponse {
@@ -465,7 +475,31 @@ function mapCampaignReadiness(
   return {
     campaignId: readiness.campaign_id,
     status: readiness.status,
-    items: readiness.items,
+    overallStatus: readiness.overall_status,
+    phaseStatus: readiness.phase_status,
+    items: readiness.items.map(mapCampaignReadinessItem),
+    groups: {
+      blockers: readiness.groups.blockers.map(mapCampaignReadinessItem),
+      launch_checks: readiness.groups.launch_checks.map(mapCampaignReadinessItem),
+      planning_gaps: readiness.groups.planning_gaps.map(mapCampaignReadinessItem),
+      operational_health: readiness.groups.operational_health.map(mapCampaignReadinessItem),
+    },
     counts: readiness.counts,
+    categoryCounts: readiness.category_counts,
+  };
+}
+
+function mapCampaignReadinessItem(
+  item: CampaignReadinessItemResponse
+): CampaignReadiness['items'][number] {
+  return {
+    severity: item.severity,
+    category: item.category,
+    code: item.code,
+    section: item.section,
+    message: item.message,
+    actionLabel: item.action_label,
+    blockingFor: item.blocking_for,
+    details: item.details,
   };
 }

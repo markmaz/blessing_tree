@@ -79,6 +79,11 @@ def test_get_campaign_studio_returns_aggregate_payload(
     assert payload["communications"]["schedules"][0]["status"] == "SCHEDULED"
     assert payload["milestones"][0]["milestone_key"] == "registration_open"
     assert payload["readiness"]["status"] == "NEEDS_ATTENTION"
+    assert payload["readiness"]["overall_status"] == "NEEDS_ATTENTION"
+    assert payload["readiness"]["phase_status"]["activate"] == "NEEDS_ATTENTION"
+    assert "planning_gaps" in payload["readiness"]["groups"]
+    assert "launch_checks" in payload["readiness"]["groups"]
+    assert payload["readiness"]["items"][0]["action_label"].startswith("Open ")
 
 
 def test_post_assignment_creates_campaign_role_assignment(
@@ -221,8 +226,18 @@ def test_create_template_and_schedule_then_readiness_reflects_changes(
     assert schedule_response.status_code == 201
     assert readiness_response.status_code == 200
     readiness = readiness_response.get_json()
-    assert "missing_templates" not in {item["code"] for item in readiness["items"]}
-    assert "missing_schedules" not in {item["code"] for item in readiness["items"]}
+    readiness_codes = {item["code"] for item in readiness["items"]}
+    assert "missing_templates" not in readiness_codes
+    assert "missing_schedules" not in readiness_codes
+    assert "automation_delivery_unavailable" in readiness_codes
+    automation_item = next(
+        item
+        for item in readiness["items"]
+        if item["code"] == "automation_delivery_unavailable"
+    )
+    assert automation_item["category"] == "operational_health"
+    assert automation_item["action_label"] == "Open Readiness"
+    assert automation_item["blocking_for"] == ["operations"]
 
 
 def test_delete_communication_schedule_removes_schedule(
@@ -389,3 +404,36 @@ def test_readiness_clears_schedule_warnings_after_manual_event_and_milestone_sch
     readiness_codes = {item["code"] for item in response.get_json()["items"]}
     assert "missing_manual_schedule" not in readiness_codes
     assert "missing_schedule_messaging" not in readiness_codes
+
+
+def test_readiness_blocks_activation_when_date_range_is_missing(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    campaign.start_date = None
+    campaign.end_date = None
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/readiness",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    readiness = response.get_json()
+    assert readiness["status"] == "BLOCKED"
+    assert readiness["phase_status"]["activate"] == "BLOCKED"
+    assert readiness["phase_status"]["operations"] == "BLOCKED"
+    item = next(item for item in readiness["items"] if item["code"] == "missing_date_range")
+    assert item["category"] == "blockers"
+    assert item["action_label"] == "Open Settings"
+    assert item["blocking_for"] == ["activate", "operations"]

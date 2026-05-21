@@ -33,6 +33,7 @@ Last updated: 2026-05-20
   - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
   - dashboard is now campaign-aware and loads live summary/access data from the backend
   - Campaign Studio now has live Team, Communications, Schedule, Readiness, and Settings sections backed by the backend studio APIs
+  - Campaign Studio Readiness now uses grouped lifecycle-aware backend output with summary cards, phase status, grouped findings, direct section actions, and AI prompt integration
   - Campaign Studio Schedule is now calendar-first, with modal create/edit/delete for events, milestones, and communication schedules directly from the month grid
   - Campaign Studio AI rail can now draft and apply schedule events, milestones, and communications from prompt input
   - Campaign Studio now uses a compact icon-only section rail at medium widths, and the schedule calendar/AI draft controls have responsive overflow guards for narrower layouts
@@ -169,6 +170,7 @@ Last updated: 2026-05-20
   - grouped categories instead of one flat finding list
   - phase-aware gating for `draft`, `activate`, `operations`, and `close`
   - readiness items should carry `category`, `action_label`, and `blocking_for`
+  - current readiness now explicitly surfaces the missing scheduled-communication automation layer when communication schedules exist
 - Frontend campaign routes now exist:
   - `/campaigns`
   - `/campaigns/:campaignId`
@@ -193,6 +195,7 @@ Last updated: 2026-05-20
   - Studio Schedule now uses the calendar as the primary planning tool and can create/edit/delete schedule records from the shared modal
   - Studio AI rail now drafts and applies schedule records through the real campaign event, milestone, and communication save paths
   - Studio readiness now includes schedule-specific warnings for missing manual planning coverage and missing milestone-linked communication timing
+  - Studio Readiness now renders grouped findings, phase status cards, and direct section action buttons from the richer backend payload
   - Studio Readiness section rendering backend readiness findings
   - campaign create/update UI wiring against the existing backend campaign routes
 - Live stack verification on 2026-05-20 now also includes:
