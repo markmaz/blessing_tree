@@ -33,7 +33,7 @@ Last updated: 2026-05-21
   - protected shell exists
   - the protected app shell now includes a footer with `QueryForge, LLC` copyright plus frontend/backend version display
   - the admin page now supports user invitations, LLM configuration/testing, runtime health visibility, and app feature enable/disable controls
-  - the admin area is now split into child pages under `/admin` for user management, LLM configuration, and health checks, with feature flags living alongside the LLM configuration surface
+  - the admin area now exposes child navigation in the left sidebar under `Admin` for user management, LLM configuration, and health checks, with feature flags living alongside the LLM configuration surface
   - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
   - dashboard is now campaign-aware and loads live summary/access data from the backend
   - Campaign Studio now has live Team, Communications, Schedule, Readiness, and Settings sections backed by the backend studio APIs

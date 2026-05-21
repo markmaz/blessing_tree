@@ -1,4 +1,4 @@
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { routes } from '@/app/routes';
 import { useAppFeatures } from '@/features/admin/model/appFeaturesContext';
 import { useAuth } from '@/features/auth/model/authContext';
@@ -38,19 +38,34 @@ const navItems = [
   },
   {
     label: 'Admin',
-    to: routes.ADMIN_USERS,
+    to: routes.ADMIN,
     icon: 'bi-gear',
+    children: [
+      {
+        label: 'User Management',
+        to: routes.ADMIN_USERS,
+      },
+      {
+        label: 'LLM Configuration',
+        to: routes.ADMIN_LLM,
+      },
+      {
+        label: 'Health Check',
+        to: routes.ADMIN_HEALTH,
+      },
+    ],
   },
 ];
 
 export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
+  const location = useLocation();
   const { role } = useAuth();
   const { isFeatureEnabled } = useAppFeatures();
   const visibleItems = navItems.filter((item) => {
     if (item.to === routes.FAMILIES) return isFeatureEnabled('families');
     if (item.to === routes.DONATIONS) return isFeatureEnabled('donations');
     if (item.to === routes.REPORTS) return isFeatureEnabled('reports');
-    if (item.to === routes.ADMIN_USERS) return isAppAdminRole(role);
+    if (item.to === routes.ADMIN) return isAppAdminRole(role);
     return true;
   });
 
@@ -68,18 +83,41 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
 
       <nav className="sidebar-nav">
         {visibleItems.map((item) => (
-          <NavLink
-            key={item.label}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              `sidebar-link nav-link ${isActive ? 'active' : ''}`
-            }
-            onClick={onNavigate}
-          >
-            <i className={`bi ${item.icon} me-2`} aria-hidden="true" />
-            <span>{item.label}</span>
-          </NavLink>
+          <div key={item.label} className="sidebar-nav-group">
+            <NavLink
+              to={item.children?.length ? item.children[0].to : item.to}
+              end={item.end}
+              className={() =>
+                `sidebar-link nav-link ${
+                  item.children?.some((child) => location.pathname.startsWith(child.to)) ||
+                  (!item.children?.length &&
+                    (item.end ? location.pathname === item.to : location.pathname.startsWith(item.to)))
+                    ? 'active'
+                    : ''
+                }`
+              }
+              onClick={onNavigate}
+            >
+              <i className={`bi ${item.icon} me-2`} aria-hidden="true" />
+              <span>{item.label}</span>
+            </NavLink>
+            {item.children?.length ? (
+              <div className="sidebar-subnav">
+                {item.children.map((child) => (
+                  <NavLink
+                    key={child.to}
+                    to={child.to}
+                    className={({ isActive }) =>
+                      `sidebar-sublink nav-link ${isActive ? 'active' : ''}`
+                    }
+                    onClick={onNavigate}
+                  >
+                    <span>{child.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            ) : null}
+          </div>
         ))}
       </nav>
 

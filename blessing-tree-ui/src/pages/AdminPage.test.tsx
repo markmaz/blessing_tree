@@ -14,7 +14,7 @@ describe('AdminPage', () => {
     mockUseAuth.mockReset();
   });
 
-  it('shows admin child navigation for app admins', () => {
+  it('renders the selected admin child content for app admins', () => {
     mockUseAuth.mockReturnValue({ role: 'ADMIN' });
 
     render(
@@ -27,9 +27,7 @@ describe('AdminPage', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('link', { name: /user management/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /llm configuration/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /health check/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /admin/i })).toBeInTheDocument();
     expect(screen.getByText('User Management Child')).toBeInTheDocument();
   });
 

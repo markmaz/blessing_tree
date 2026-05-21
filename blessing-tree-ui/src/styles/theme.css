@@ -332,6 +332,40 @@ a:hover {
   background: var(--blessing-gold);
 }
 
+.sidebar-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.sidebar-subnav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-left: 1.05rem;
+  padding-left: 1rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.sidebar-sublink {
+  color: rgba(255, 255, 255, 0.68) !important;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.55rem;
+  transition: var(--blessing-transition);
+}
+
+.sidebar-sublink:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.sidebar-sublink.active {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.11);
+}
+
 .sidebar-footer {
   padding: 1.5rem;
 }
