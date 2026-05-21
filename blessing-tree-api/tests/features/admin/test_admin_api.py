@@ -4,6 +4,7 @@ import uuid
 from collections.abc import Generator
 
 import pytest
+import requests
 from flask import Flask, jsonify
 from flask_restx import Api
 from sqlalchemy import create_engine
@@ -451,6 +452,52 @@ def test_llm_models_returns_available_models(
     payload = models_response.get_json()
     assert payload["configured"] is True
     assert payload["models"] == ["gpt-4o-mini", "gpt-4.1-mini"]
+
+
+def test_llm_models_surfaces_catalog_load_failure(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    from app.features.admin import api as admin_api
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="admin-model-error@blessingtree.test", role="ADMIN", name="Admin User")
+        admin_user_id = str(admin_user.id)
+        db.commit()
+
+    save_response = client.put(
+        "/api/v1/admin/llm",
+        json={
+            "provider": "OPENAI",
+            "label": "Primary LLM",
+            "base_url": "https://api.openai.com/v1",
+            "model": "gpt-4.1-mini",
+            "api_key": "test-key",
+            "is_enabled": True,
+        },
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+    assert save_response.status_code == 200
+
+    class _BoomResponse:
+        def raise_for_status(self):
+            raise requests.HTTPError("401 Client Error: Unauthorized for url: https://api.openai.com/v1/models")
+
+    monkeypatch.setattr(
+        "app.features.admin.llm_service.requests.get",
+        lambda *args, **kwargs: _BoomResponse(),
+    )
+
+    response = client.get("/api/v1/admin/llm/models", headers=auth_header(admin_user_id, "ADMIN"))
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["configured"] is True
+    assert payload["models"] == []
+    assert "Unable to load provider model catalog" in payload["message"]
 
 
 def test_admin_can_deactivate_and_reactivate_user(

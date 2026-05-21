@@ -25,6 +25,13 @@ export function AdminLlmConfigCard() {
   const [error, setError] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [modelCatalogMessage, setModelCatalogMessage] = useState<string | null>(null);
+
+  const loadAvailableModels = async () => {
+    const modelPayload = await fetchAdminLlmModels().catch(() => null);
+    setAvailableModels(modelPayload?.models ?? []);
+    setModelCatalogMessage(modelPayload?.message ?? null);
+  };
 
   useEffect(() => {
     let active = true;
@@ -34,9 +41,8 @@ export function AdminLlmConfigCard() {
         if (active) {
           setPayload(nextPayload);
         }
-        const modelPayload = await fetchAdminLlmModels().catch(() => null);
-        if (active && modelPayload) {
-          setAvailableModels(modelPayload.models ?? []);
+        if (active) {
+          await loadAvailableModels();
         }
       } catch (loadError) {
         if (active) {
@@ -85,10 +91,7 @@ export function AdminLlmConfigCard() {
         isEnabled: configuration.isEnabled,
       });
       setPayload({ ...payload, configuration: nextConfiguration });
-      const modelPayload = await fetchAdminLlmModels().catch(() => null);
-      if (modelPayload) {
-        setAvailableModels(modelPayload.models ?? []);
-      }
+      await loadAvailableModels();
       setApiKey('');
       setMessage('LLM configuration saved.');
     } catch (saveError) {
@@ -105,10 +108,7 @@ export function AdminLlmConfigCard() {
     try {
       const result = await testAdminLlmConfig();
       setMessage(result.message ?? 'LLM connection test complete.');
-      const modelPayload = await fetchAdminLlmModels().catch(() => null);
-      if (modelPayload) {
-        setAvailableModels(modelPayload.models ?? []);
-      }
+      await loadAvailableModels();
     } catch (testError) {
       setError(testError instanceof Error ? testError.message : 'Unable to test LLM configuration.');
     } finally {
@@ -231,6 +231,10 @@ export function AdminLlmConfigCard() {
               </select>
               {availableModels.length > 0 ? (
                 <div className="form-text">Loaded from the configured provider.</div>
+              ) : modelCatalogMessage ? (
+                <div className="form-text text-warning">
+                  {modelCatalogMessage} Showing fallback OpenAI presets until the provider catalog is available.
+                </div>
               ) : null}
               {showCustomOpenAiModel ? (
                 <input
@@ -291,18 +295,21 @@ export function AdminLlmConfigCard() {
                 ) : null}
               </>
             ) : (
-              <input
-                id="admin-llm-model"
-                className="form-control"
-                value={configuration.model}
-                onChange={(event) =>
-                  setPayload({
-                    ...payload,
-                    configuration: { ...configuration, model: event.target.value },
-                  })
-                }
-                placeholder="gpt-4o-mini"
-              />
+              <>
+                <input
+                  id="admin-llm-model"
+                  className="form-control"
+                  value={configuration.model}
+                  onChange={(event) =>
+                    setPayload({
+                      ...payload,
+                      configuration: { ...configuration, model: event.target.value },
+                    })
+                  }
+                  placeholder="gpt-4o-mini"
+                />
+                {modelCatalogMessage ? <div className="form-text text-warning">{modelCatalogMessage}</div> : null}
+              </>
             )
           )}
         </div>

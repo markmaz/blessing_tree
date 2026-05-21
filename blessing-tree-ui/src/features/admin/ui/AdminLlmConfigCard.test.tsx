@@ -75,6 +75,24 @@ describe('AdminLlmConfigCard', () => {
     expect(screen.getByText(/loaded from the configured provider/i)).toBeInTheDocument();
   });
 
+  it('shows a fallback warning when the provider model catalog is unavailable', async () => {
+    vi.mocked(fetchAdminLlmModels).mockResolvedValue({
+      configured: true,
+      provider: 'OPENAI',
+      model: 'gpt-4.1-mini',
+      models: [],
+      message: 'Unable to load provider model catalog: 401 Client Error',
+    });
+
+    render(<AdminLlmConfigCard />);
+
+    expect(await screen.findByText(/llm configuration/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/unable to load provider model catalog: 401 client error/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/showing fallback openai presets/i)).toBeInTheDocument();
+  });
+
   it('sends the default OpenAI base url on save', async () => {
     const user = userEvent.setup();
     render(<AdminLlmConfigCard />);

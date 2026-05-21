@@ -83,11 +83,13 @@ class AdminLlmService:
                 "models": [],
                 "message": "LLM is not configured.",
             }
+        models, catalog_message = self._fetch_available_models_with_message(config)
         return {
             "configured": True,
             "provider": config.provider,
             "model": config.model,
-            "models": self._fetch_available_models(config),
+            "models": models,
+            "message": catalog_message,
         }
 
     def _probe_config(self, config: AdminLlmConfiguration) -> dict[str, object]:
@@ -103,7 +105,7 @@ class AdminLlmService:
                 user_prompt="Run a connectivity and generation check for Blessing Tree.",
             )
             latency_ms = int((datetime.now(UTC) - start).total_seconds() * 1000)
-            available_models = self._fetch_available_models(config)
+            available_models, catalog_message = self._fetch_available_models_with_message(config)
             return {
                 "status": "ok",
                 "configured": True,
@@ -112,10 +114,11 @@ class AdminLlmService:
                 "latency_ms": latency_ms,
                 "message": generation_message,
                 "available_models": available_models,
+                "available_models_message": catalog_message,
             }
         except LlmRuntimeUnavailableError as exc:
             latency_ms = int((datetime.now(UTC) - start).total_seconds() * 1000)
-            available_models = self._fetch_available_models(config)
+            available_models, catalog_message = self._fetch_available_models_with_message(config)
             message = str(exc)
             if available_models and config.model not in available_models:
                 message = (
@@ -129,10 +132,18 @@ class AdminLlmService:
                 "latency_ms": latency_ms,
                 "message": message,
                 "available_models": available_models,
+                "available_models_message": catalog_message,
             }
 
     @staticmethod
     def _fetch_available_models(config: AdminLlmConfiguration) -> list[str]:
+        models, _message = AdminLlmService._fetch_available_models_with_message(config)
+        return models
+
+    @staticmethod
+    def _fetch_available_models_with_message(
+        config: AdminLlmConfiguration,
+    ) -> tuple[list[str], str | None]:
         headers: dict[str, str] = {}
         api_key = decrypt_secret(config.api_key_encrypted)
         if api_key:
@@ -144,10 +155,15 @@ class AdminLlmService:
             response.raise_for_status()
             payload = response.json()
             models = payload.get("data") if isinstance(payload, dict) else None
-            return [
-                str(item.get("id") or "").strip()
-                for item in models
-                if isinstance(item, dict) and str(item.get("id") or "").strip()
-            ]
-        except (RequestException, ValueError):
-            return []
+            return (
+                [
+                    str(item.get("id") or "").strip()
+                    for item in models
+                    if isinstance(item, dict) and str(item.get("id") or "").strip()
+                ],
+                None,
+            )
+        except RequestException as exc:
+            return [], f"Unable to load provider model catalog: {exc}"
+        except ValueError:
+            return [], "Unable to load provider model catalog: provider returned invalid JSON."
