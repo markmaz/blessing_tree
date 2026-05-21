@@ -148,19 +148,27 @@ export function CampaignStudioTeamSection({
                       Manage roster records, app access, and fixed app access roles here.
                     </p>
                   </div>
+                  {canManageTeam ? (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm campaign-team-workspace__section-action"
+                      aria-label="Add person"
+                      title="Add person"
+                      onClick={() => {
+                        setSelectedMemberId(null);
+                        setIsCreateMemberOpen(true);
+                      }}
+                    >
+                      <i className="bi bi-person-plus" aria-hidden="true" />
+                    </button>
+                  ) : null}
                 </div>
 
                 <CampaignStudioTeamToolbar
                   searchLabel="Search People"
                   searchPlaceholder="Search name or email"
                   searchState={peopleSearch}
-                  canManageTeam={canManageTeam}
-                  addButtonLabel="Add person"
                   onChange={setPeopleSearch}
-                  onAdd={() => {
-                    setSelectedMemberId(null);
-                    setIsCreateMemberOpen(true);
-                  }}
                 />
 
                 <CampaignStudioTeamTable
@@ -181,6 +189,20 @@ export function CampaignStudioTeamSection({
                       Create operational groups here, then manage membership from the team drawer.
                     </p>
                   </div>
+                  {canManageTeam ? (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm campaign-team-workspace__section-action"
+                      aria-label="Add team"
+                      title="Add team"
+                      onClick={() => {
+                        setSelectedTeamId(null);
+                        setIsCreateTeamOpen(true);
+                      }}
+                    >
+                      <i className="bi bi-plus-lg" aria-hidden="true" />
+                    </button>
+                  ) : null}
                 </div>
 
                 <div className="campaign-team-table-toolbar">
@@ -188,14 +210,7 @@ export function CampaignStudioTeamSection({
                     searchLabel="Search Teams"
                     searchPlaceholder="Search team name or description"
                     searchState={teamSearchState}
-                    canManageTeam={canManageTeam}
-                    addButtonLabel="Add team"
-                    addIconClassName="bi bi-plus-lg"
                     onChange={setTeamSearchState}
-                    onAdd={() => {
-                      setSelectedTeamId(null);
-                      setIsCreateTeamOpen(true);
-                    }}
                   />
                 </div>
 
