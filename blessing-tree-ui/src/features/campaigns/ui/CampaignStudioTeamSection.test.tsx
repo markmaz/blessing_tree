@@ -222,6 +222,22 @@ describe('CampaignStudioTeamSection', () => {
     expect(screen.queryByText('Manager User')).not.toBeInTheDocument();
   });
 
+  it('renders a separate Teams table and opens the team drawer from a team row', async () => {
+    const user = userEvent.setup();
+
+    render(<CampaignStudioTeamSection campaignId="campaign-123" access={baseAccess} />);
+
+    expect(screen.getByRole('heading', { name: 'Teams' })).toBeInTheDocument();
+
+    const teamButtons = screen.getAllByRole('button', { name: /phone bank/i });
+
+    await user.click(teamButtons[teamButtons.length - 1]);
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText(/configure the team first, then manage who belongs to it/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Phone Bank')).toBeInTheDocument();
+  });
+
   it('hides management actions without campaign admin capability', () => {
     render(
       <CampaignStudioTeamSection
@@ -231,6 +247,7 @@ describe('CampaignStudioTeamSection', () => {
     );
 
     expect(screen.queryByRole('button', { name: /add person/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /new team/i })).not.toBeInTheDocument();
     expect(screen.getAllByText('Phone Bank').length).toBeGreaterThan(0);
   });
 

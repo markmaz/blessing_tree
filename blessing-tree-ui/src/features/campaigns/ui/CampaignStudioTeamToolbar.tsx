@@ -26,7 +26,6 @@ interface CampaignStudioTeamToolbarProps {
   canManageTeam: boolean;
   onChange: (next: CampaignStudioTeamFiltersState) => void;
   onAddMember: () => void;
-  onAddTeam: () => void;
 }
 
 export function CampaignStudioTeamToolbar({
@@ -36,7 +35,6 @@ export function CampaignStudioTeamToolbar({
   canManageTeam,
   onChange,
   onAddMember,
-  onAddTeam,
 }: CampaignStudioTeamToolbarProps) {
   const memberTypeHelp = getCampaignTeamGlossaryEntry('member_type');
   const appAccessHelp = getCampaignTeamGlossaryEntry('app_access');
@@ -162,9 +160,6 @@ export function CampaignStudioTeamToolbar({
 
       {canManageTeam ? (
         <div className="campaign-team-toolbar__actions">
-          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={onAddTeam}>
-            New Team
-          </button>
           <button type="button" className="btn btn-secondary btn-sm" onClick={onAddMember}>
             Add Person
           </button>

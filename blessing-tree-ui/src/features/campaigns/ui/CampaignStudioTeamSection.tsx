@@ -8,6 +8,7 @@ import {
   CampaignStudioTeamToolbar,
   type CampaignStudioTeamFiltersState,
 } from '@/features/campaigns/ui/CampaignStudioTeamToolbar';
+import { CampaignStudioTeamListTable } from '@/features/campaigns/ui/CampaignStudioTeamListTable';
 import { CampaignStudioTeamTable } from '@/features/campaigns/ui/CampaignStudioTeamTable';
 import { CampaignStudioTeamMemberDrawer } from '@/features/campaigns/ui/CampaignStudioTeamMemberDrawer';
 import { CampaignStudioTeamTeamDrawer } from '@/features/campaigns/ui/CampaignStudioTeamTeamDrawer';
@@ -54,6 +55,7 @@ export function CampaignStudioTeamSection({
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [isCreateMemberOpen, setIsCreateMemberOpen] = useState(false);
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
+  const [teamSearch, setTeamSearch] = useState('');
 
   const filteredMembers = useMemo(() => {
     if (!workspace) {
@@ -92,6 +94,24 @@ export function CampaignStudioTeamSection({
 
   const selectedMember = findById(workspace?.members, selectedMemberId);
   const selectedTeam = findById(workspace?.teams, selectedTeamId);
+  const filteredTeams = useMemo(() => {
+    if (!workspace) {
+      return [];
+    }
+
+    const normalizedSearch = teamSearch.trim().toLowerCase();
+
+    return workspace.teams
+      .filter((team) => {
+        if (!normalizedSearch) {
+          return true;
+        }
+
+        const haystack = `${team.name} ${team.description ?? ''}`.toLowerCase();
+        return haystack.includes(normalizedSearch);
+      })
+      .sort((left, right) => left.name.localeCompare(right.name));
+  }, [teamSearch, workspace]);
 
   return (
     <div className="campaign-studio__canvas-stack">
@@ -134,27 +154,32 @@ export function CampaignStudioTeamSection({
               <StatCard label="Teams" value={workspace.counts.teamCount} />
             </div>
 
-            <CampaignStudioTeamToolbar
-              filters={filters}
-              teamOptions={workspace.teams.map((team) => ({
-                id: team.id,
-                name: team.name,
-              }))}
-              roleOptions={workspace.roleCatalog}
-              canManageTeam={canManageTeam}
-              onChange={setFilters}
-              onAddMember={() => {
-                setSelectedMemberId(null);
-                setIsCreateMemberOpen(true);
-              }}
-              onAddTeam={() => {
-                setSelectedTeamId(null);
-                setIsCreateTeamOpen(true);
-              }}
-            />
-
             <div className="campaign-team-workspace">
-              <div className="campaign-team-workspace__main">
+              <section className="campaign-team-workspace__section">
+                <div className="campaign-team-workspace__section-header">
+                  <div>
+                    <h3 className="h5 mb-1">People</h3>
+                    <p className="text-muted mb-0">
+                      Manage roster records, app access, and fixed app access roles here.
+                    </p>
+                  </div>
+                </div>
+
+                <CampaignStudioTeamToolbar
+                  filters={filters}
+                  teamOptions={workspace.teams.map((team) => ({
+                    id: team.id,
+                    name: team.name,
+                  }))}
+                  roleOptions={workspace.roleCatalog}
+                  canManageTeam={canManageTeam}
+                  onChange={setFilters}
+                  onAddMember={() => {
+                    setSelectedMemberId(null);
+                    setIsCreateMemberOpen(true);
+                  }}
+                />
+
                 <CampaignStudioTeamTable
                   members={filteredMembers}
                   roleCatalog={workspace.roleCatalog}
@@ -163,57 +188,54 @@ export function CampaignStudioTeamSection({
                     setIsCreateMemberOpen(false);
                   }}
                 />
-              </div>
+              </section>
 
-              <aside className="campaign-team-workspace__side">
-                <div className="campaign-team-side-card">
-                  <div className="campaign-team-side-card__header">
-                    <div>
-                      <h3 className="h6 mb-1">Teams</h3>
-                      <p className="text-muted mb-0">
-                        Use teams for communication audiences and operating groups.
-                      </p>
-                    </div>
-                    {canManageTeam ? (
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary btn-sm"
-                        onClick={() => {
-                          setSelectedTeamId(null);
-                          setIsCreateTeamOpen(true);
-                        }}
-                      >
-                        New Team
-                      </button>
-                    ) : null}
+              <section className="campaign-team-workspace__section">
+                <div className="campaign-team-workspace__section-header">
+                  <div>
+                    <h3 className="h5 mb-1">Teams</h3>
+                    <p className="text-muted mb-0">
+                      Create operational groups here, then manage membership from the team drawer.
+                    </p>
                   </div>
-
-                  <div className="campaign-team-side-list">
-                    {workspace.teams.length === 0 ? (
-                      <div className="campaign-studio__empty-note">No teams created yet.</div>
-                    ) : (
-                      workspace.teams.map((team) => (
-                        <button
-                          key={team.id}
-                          type="button"
-                          className={`campaign-team-side-item ${
-                            selectedTeamId === team.id && !isCreateTeamOpen ? 'is-selected' : ''
-                          }`}
-                          onClick={() => {
-                            setSelectedTeamId(team.id);
-                            setIsCreateTeamOpen(false);
-                          }}
-                        >
-                          <strong>{team.name}</strong>
-                          <span>
-                            {team.memberCount} {team.memberCount === 1 ? 'member' : 'members'}
-                          </span>
-                        </button>
-                      ))
-                    )}
-                  </div>
+                  {canManageTeam ? (
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary btn-sm"
+                      onClick={() => {
+                        setSelectedTeamId(null);
+                        setIsCreateTeamOpen(true);
+                      }}
+                    >
+                      New Team
+                    </button>
+                  ) : null}
                 </div>
-              </aside>
+
+                <div className="campaign-team-table-toolbar">
+                  <label className="form-label mb-0 campaign-team-table-toolbar__search">
+                    <div>
+                      <span className="text-muted small d-block mb-1">Search teams</span>
+                      <input
+                        type="search"
+                        className="form-control"
+                        placeholder="Search team name or description"
+                        value={teamSearch}
+                        onChange={(event) => setTeamSearch(event.target.value)}
+                      />
+                    </div>
+                  </label>
+                </div>
+
+                <CampaignStudioTeamListTable
+                  teams={filteredTeams}
+                  selectedTeamId={isCreateTeamOpen ? null : selectedTeamId}
+                  onSelectTeam={(teamId) => {
+                    setSelectedTeamId(teamId);
+                    setIsCreateTeamOpen(false);
+                  }}
+                />
+              </section>
             </div>
           </>
         )}

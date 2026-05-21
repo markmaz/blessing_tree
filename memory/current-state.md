@@ -43,6 +43,7 @@ Last updated: 2026-05-20
   - the Team workspace now keeps glossary help inline through `?` controls beside terms like `Member Type`, `App Access`, `App Access Roles`, and `Teams`, and the Studio AI drawer still exposes the same Team concept definitions when the Team section is selected
   - the Team workspace now reads app access role labels and descriptions from the backend `role_catalog` contract instead of duplicating fixed role definitions in the frontend
   - Team UI responsibilities are now split more cleanly: person drawers handle profile and app access, while team drawers own team setup and membership changes
+  - the Team workspace now presents People and Teams as separate first-class tables instead of using a side team rail, which makes the two management modes easier to scan and understand
   - Campaign Studio Communications now uses a template-only builder with a collapsible tool rail, tighter content editing layout, a builder-side merge-field drawer, a stronger rendered-email preview surface, a lightweight persisted block model for heading, text, and image content, and inline uploads for small embedded images such as maps; the Studio AI panel is now hidden by default and opens as a right-side drawer
   - Campaign Studio can now save milestone dates from the frontend
   - a Vitest + Testing Library harness now exists for automated frontend tests
