@@ -26,10 +26,23 @@ export interface CampaignMemberAccessRoleAssignment {
   updatedAt: string | null;
 }
 
+export interface CampaignTeamRole {
+  id: string;
+  teamId: string;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
 export interface CampaignTeamWorkspaceTeamMembership {
   id: string;
   teamId: string;
   campaignMemberId: string;
+  teamRoleId: string | null;
+  teamRole: CampaignTeamRole | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -38,6 +51,8 @@ export interface CampaignTeamWorkspaceTeamSummary {
   id: string;
   name: string;
   isActive: boolean;
+  teamRoleId: string | null;
+  teamRoleName: string | null;
 }
 
 export interface CampaignTeamWorkspaceMember {
@@ -66,6 +81,7 @@ export interface CampaignTeamWorkspaceTeam {
   description: string | null;
   isActive: boolean;
   memberCount: number;
+  roles: CampaignTeamRole[];
   memberships: CampaignTeamWorkspaceTeamMembership[];
   createdAt: string | null;
   updatedAt: string | null;
@@ -131,6 +147,13 @@ export interface CampaignMemberAccessRoleUpsertInput {
 export interface CampaignTeamUpsertInput {
   name: string;
   description?: string | null;
+  isActive?: boolean;
+}
+
+export interface CampaignTeamRoleUpsertInput {
+  name: string;
+  description?: string | null;
+  sortOrder?: number;
   isActive?: boolean;
 }
 

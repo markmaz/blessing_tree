@@ -2,6 +2,7 @@ import type {
   CampaignDirectoryUserOption,
   CampaignMemberAccessRoleAssignment,
   CampaignRoleCatalogEntry,
+  CampaignTeamRole,
   CampaignTeamWorkspaceAppUser,
   CampaignTeamMemberUpsertInput,
   CampaignTeamWorkspaceData,
@@ -14,6 +15,19 @@ export interface CampaignTeamWorkspaceMembershipResponse {
   id: string;
   team_id: string;
   campaign_member_id: string;
+  team_role_id: string | null;
+  team_role: CampaignTeamRoleResponse | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface CampaignTeamRoleResponse {
+  id: string;
+  team_id: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -46,6 +60,8 @@ export interface CampaignTeamWorkspaceTeamSummaryResponse {
   id: string;
   name: string;
   is_active: boolean;
+  team_role_id: string | null;
+  team_role_name: string | null;
 }
 
 export interface CampaignTeamWorkspaceMemberResponse {
@@ -74,6 +90,7 @@ export interface CampaignTeamWorkspaceTeamResponse {
   description: string | null;
   is_active: boolean;
   member_count: number;
+  roles: CampaignTeamRoleResponse[];
   memberships: CampaignTeamWorkspaceMembershipResponse[];
   created_at: string | null;
   updated_at: string | null;
@@ -169,6 +186,8 @@ export function mapCampaignTeamWorkspaceMember(
       id: team.id,
       name: team.name,
       isActive: team.is_active,
+      teamRoleId: team.team_role_id,
+      teamRoleName: team.team_role_name,
     })),
     teamMemberships: member.team_memberships.map(mapCampaignTeamWorkspaceMembership),
     createdAt: member.created_at,
@@ -186,6 +205,7 @@ export function mapCampaignTeamWorkspaceTeam(
     description: team.description,
     isActive: team.is_active,
     memberCount: team.member_count,
+    roles: team.roles.map(mapCampaignTeamRole),
     memberships: team.memberships.map(mapCampaignTeamWorkspaceMembership),
     createdAt: team.created_at,
     updatedAt: team.updated_at,
@@ -237,8 +257,23 @@ export function mapCampaignTeamWorkspaceMembership(
     id: membership.id,
     teamId: membership.team_id,
     campaignMemberId: membership.campaign_member_id,
+    teamRoleId: membership.team_role_id,
+    teamRole: membership.team_role ? mapCampaignTeamRole(membership.team_role) : null,
     createdAt: membership.created_at,
     updatedAt: membership.updated_at,
+  };
+}
+
+export function mapCampaignTeamRole(role: CampaignTeamRoleResponse): CampaignTeamRole {
+  return {
+    id: role.id,
+    teamId: role.team_id,
+    name: role.name,
+    description: role.description,
+    sortOrder: role.sort_order,
+    isActive: role.is_active,
+    createdAt: role.created_at,
+    updatedAt: role.updated_at,
   };
 }
 

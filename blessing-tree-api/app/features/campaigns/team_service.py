@@ -11,6 +11,7 @@ from app.features.campaigns.studio_validation import parse_bool, require_short_t
 from app.models.campaign_member import CampaignMember
 from app.models.campaign_team import CampaignTeam
 from app.models.campaign_team_member import CampaignTeamMember
+from app.models.campaign_team_role import CampaignTeamRole
 
 
 class CampaignTeamService:
@@ -22,9 +23,11 @@ class CampaignTeamService:
         return (
             db.query(CampaignTeam)
             .options(
+                joinedload(CampaignTeam.roles),
                 joinedload(CampaignTeam.memberships).joinedload(
                     CampaignTeamMember.campaign_member
-                )
+                ),
+                joinedload(CampaignTeam.memberships).joinedload(CampaignTeamMember.team_role),
             )
             .filter(CampaignTeam.campaign_id == campaign_id)
             .order_by(CampaignTeam.name.asc())
@@ -83,15 +86,83 @@ class CampaignTeamService:
         db.commit()
         return self._get_team(db, campaign_id, team_id)
 
+    def create_role(
+        self,
+        db: Session,
+        campaign_id: str,
+        team_id: str,
+        payload: Mapping[str, object],
+    ) -> CampaignTeamRole:
+        team = self._get_team(db, campaign_id, team_id)
+        name = require_short_text(payload.get("name"), "name")
+        existing = self._find_role_by_name(db, team.id, name)
+        if existing is not None:
+            raise ServiceError(
+                "Campaign team role already exists",
+                status_code=409,
+                details={"campaign_id": campaign_id, "team_id": team_id, "name": name},
+            )
+
+        role = CampaignTeamRole(
+            id=uuid.uuid4(),
+            team_id=team.id,
+            name=name,
+            description=self._optional_description(payload.get("description")),
+            sort_order=self._parse_sort_order(payload.get("sort_order")),
+            is_active=parse_bool(payload.get("is_active"), "is_active", default=True),
+        )
+        db.add(role)
+        db.commit()
+        return self._get_role(db, team.id, str(role.id))
+
+    def list_roles(
+        self,
+        db: Session,
+        campaign_id: str,
+        team_id: str,
+    ) -> list[CampaignTeamRole]:
+        return list(self._get_team(db, campaign_id, team_id).roles or [])
+
+    def update_role(
+        self,
+        db: Session,
+        campaign_id: str,
+        team_id: str,
+        role_id: str,
+        payload: Mapping[str, object],
+    ) -> CampaignTeamRole:
+        team = self._get_team(db, campaign_id, team_id)
+        role = self._get_role(db, team.id, role_id)
+        if "name" in payload:
+            name = require_short_text(payload.get("name"), "name")
+            duplicate = self._find_role_by_name(db, team.id, name)
+            if duplicate is not None and duplicate.id != role.id:
+                raise ServiceError(
+                    "Campaign team role already exists",
+                    status_code=409,
+                    details={"campaign_id": campaign_id, "team_id": team_id, "name": name},
+                )
+            role.name = name
+        if "description" in payload:
+            role.description = self._optional_description(payload.get("description"))
+        if "sort_order" in payload:
+            role.sort_order = self._parse_sort_order(payload.get("sort_order"))
+        if "is_active" in payload:
+            role.is_active = parse_bool(payload.get("is_active"), "is_active")
+        db.commit()
+        return self._get_role(db, team.id, role_id)
+
     def add_member(
         self,
         db: Session,
         campaign_id: str,
         team_id: str,
         member_id: str,
+        team_role_id: str | None = None,
     ) -> CampaignTeamMember:
         team = self._get_team(db, campaign_id, team_id)
         member = self._get_member(db, campaign_id, member_id)
+        role = self._get_optional_role(db, team.id, team_role_id)
         existing = (
             db.query(CampaignTeamMember)
             .filter(
@@ -111,8 +182,38 @@ class CampaignTeamService:
             id=uuid.uuid4(),
             team_id=team.id,
             campaign_member_id=member.id,
+            team_role_id=role.id if role is not None else None,
         )
         db.add(membership)
+        db.commit()
+        return self._get_membership(db, team.id, member.id)
+
+    def update_member_role(
+        self,
+        db: Session,
+        campaign_id: str,
+        team_id: str,
+        member_id: str,
+        team_role_id: str | None,
+    ) -> CampaignTeamMember:
+        team = self._get_team(db, campaign_id, team_id)
+        member = self._get_member(db, campaign_id, member_id)
+        membership = (
+            db.query(CampaignTeamMember)
+            .filter(
+                CampaignTeamMember.team_id == team.id,
+                CampaignTeamMember.campaign_member_id == member.id,
+            )
+            .one_or_none()
+        )
+        if membership is None:
+            raise ServiceError(
+                "Campaign team membership not found",
+                status_code=404,
+                details={"campaign_id": campaign_id, "team_id": team_id, "member_id": member_id},
+            )
+        role = self._get_optional_role(db, team.id, team_role_id)
+        membership.team_role_id = role.id if role is not None else None
         db.commit()
         return self._get_membership(db, team.id, member.id)
 
@@ -153,9 +254,11 @@ class CampaignTeamService:
         team = (
             db.query(CampaignTeam)
             .options(
+                joinedload(CampaignTeam.roles),
                 joinedload(CampaignTeam.memberships).joinedload(
                     CampaignTeamMember.campaign_member
-                )
+                ),
+                joinedload(CampaignTeam.memberships).joinedload(CampaignTeamMember.team_role),
             )
             .filter(CampaignTeam.campaign_id == campaign_id, CampaignTeam.id == team_uuid)
             .one_or_none()
@@ -184,6 +287,19 @@ class CampaignTeamService:
         return member
 
     @staticmethod
+    def _parse_sort_order(value: object) -> int:
+        if value in (None, ""):
+            return 0
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            raise ServiceError(
+                "sort_order must be an integer",
+                status_code=400,
+                details={"field": "sort_order"},
+            )
+
+    @staticmethod
     def _get_membership(
         db: Session,
         team_id: uuid.UUID,
@@ -194,6 +310,7 @@ class CampaignTeamService:
             .options(
                 joinedload(CampaignTeamMember.team),
                 joinedload(CampaignTeamMember.campaign_member),
+                joinedload(CampaignTeamMember.team_role),
             )
             .filter(
                 CampaignTeamMember.team_id == team_id,
@@ -212,6 +329,48 @@ class CampaignTeamService:
         return (
             db.query(CampaignTeam)
             .filter(CampaignTeam.campaign_id == campaign_id, CampaignTeam.name == name)
+            .one_or_none()
+        )
+
+    @staticmethod
+    def _get_role(
+        db: Session,
+        team_id: uuid.UUID,
+        role_id: str,
+    ) -> CampaignTeamRole:
+        role_uuid = CampaignTeamService._require_uuid(role_id, "team_role_id")
+        role = (
+            db.query(CampaignTeamRole)
+            .filter(CampaignTeamRole.team_id == team_id, CampaignTeamRole.id == role_uuid)
+            .one_or_none()
+        )
+        if role is None:
+            raise ServiceError(
+                "Campaign team role not found",
+                status_code=404,
+                details={"team_id": str(team_id), "team_role_id": role_id},
+            )
+        return role
+
+    def _get_optional_role(
+        self,
+        db: Session,
+        team_id: uuid.UUID,
+        role_id: str | None,
+    ) -> CampaignTeamRole | None:
+        if role_id in (None, ""):
+            return None
+        return self._get_role(db, team_id, str(role_id))
+
+    @staticmethod
+    def _find_role_by_name(
+        db: Session,
+        team_id: uuid.UUID,
+        name: str,
+    ) -> CampaignTeamRole | None:
+        return (
+            db.query(CampaignTeamRole)
+            .filter(CampaignTeamRole.team_id == team_id, CampaignTeamRole.name == name)
             .one_or_none()
         )
 

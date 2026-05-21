@@ -39,6 +39,17 @@ def require_access_role_assignment_id(value: object) -> uuid.UUID:
         )
 
 
+def require_team_role_id(value: object) -> uuid.UUID:
+    try:
+        return uuid.UUID(str(value))
+    except (TypeError, ValueError, AttributeError):
+        raise ServiceError(
+            "Valid team_role_id is required",
+            status_code=400,
+            details={"field": "team_role_id"},
+        )
+
+
 def require_app_user_id(value: object) -> uuid.UUID:
     try:
         return uuid.UUID(str(value))
@@ -136,6 +147,7 @@ __all__ = [
     "require_app_user_id",
     "require_member_id",
     "require_team_id",
+    "require_team_role_id",
     "require_short_text",
     "validate_app_access_status",
     "validate_invite_status",

@@ -54,6 +54,7 @@ export function CampaignStudioTeamMemberTeamsSection({
               <div>
                 <strong>{team.name}</strong>
                 <div className="small text-muted">
+                  {team.teamRoleName ? `${team.teamRoleName} · ` : ''}
                   {team.isActive ? 'Active team' : 'Inactive team'}
                 </div>
               </div>

@@ -48,6 +48,8 @@ export function CampaignStudioTeamSection({
     removeAppAccess,
     clearSaveMessage,
     clearError,
+    saveTeamRole,
+    updateMemberTeamRole,
   } = useCampaignTeamWorkspace(campaignId);
   const [peopleSearch, setPeopleSearch] = useState<CampaignStudioTeamSearchState>(
     defaultPeopleSearch
@@ -284,7 +286,9 @@ export function CampaignStudioTeamSection({
           const result = await saveTeam(input, teamId);
           return result !== null;
         }}
+        onSaveRole={saveTeamRole}
         onAddMember={addMemberToTeam}
+        onUpdateMemberRole={updateMemberTeamRole}
         onRemoveMember={removeMemberFromTeam}
       />
     </div>

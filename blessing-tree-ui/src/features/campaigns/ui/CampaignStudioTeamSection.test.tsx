@@ -58,12 +58,31 @@ const baseWorkspace: CampaignTeamWorkspaceData = {
           updatedAt: null,
         },
       ],
-      teams: [{ id: 'team-1', name: 'Phone Bank', isActive: true }],
+      teams: [
+        {
+          id: 'team-1',
+          name: 'Phone Bank',
+          isActive: true,
+          teamRoleId: 'team-role-1',
+          teamRoleName: 'Caller',
+        },
+      ],
       teamMemberships: [
         {
           id: 'membership-1',
           teamId: 'team-1',
           campaignMemberId: 'member-1',
+          teamRoleId: 'team-role-1',
+          teamRole: {
+            id: 'team-role-1',
+            teamId: 'team-1',
+            name: 'Caller',
+            description: 'Makes outreach calls.',
+            sortOrder: 1,
+            isActive: true,
+            createdAt: null,
+            updatedAt: null,
+          },
           createdAt: null,
           updatedAt: null,
         },
@@ -93,12 +112,22 @@ const baseWorkspace: CampaignTeamWorkspaceData = {
           updatedAt: null,
         },
       ],
-      teams: [{ id: 'team-1', name: 'Phone Bank', isActive: true }],
+      teams: [
+        {
+          id: 'team-1',
+          name: 'Phone Bank',
+          isActive: true,
+          teamRoleId: null,
+          teamRoleName: null,
+        },
+      ],
       teamMemberships: [
         {
           id: 'membership-2',
           teamId: 'team-1',
           campaignMemberId: 'member-2',
+          teamRoleId: null,
+          teamRole: null,
           createdAt: null,
           updatedAt: null,
         },
@@ -115,11 +144,34 @@ const baseWorkspace: CampaignTeamWorkspaceData = {
       description: 'Sponsor outreach callers',
       isActive: true,
       memberCount: 2,
+      roles: [
+        {
+          id: 'team-role-1',
+          teamId: 'team-1',
+          name: 'Caller',
+          description: 'Makes outreach calls.',
+          sortOrder: 1,
+          isActive: true,
+          createdAt: null,
+          updatedAt: null,
+        },
+      ],
       memberships: [
         {
           id: 'membership-1',
           teamId: 'team-1',
           campaignMemberId: 'member-1',
+          teamRoleId: 'team-role-1',
+          teamRole: {
+            id: 'team-role-1',
+            teamId: 'team-1',
+            name: 'Caller',
+            description: 'Makes outreach calls.',
+            sortOrder: 1,
+            isActive: true,
+            createdAt: null,
+            updatedAt: null,
+          },
           createdAt: null,
           updatedAt: null,
         },
@@ -127,6 +179,8 @@ const baseWorkspace: CampaignTeamWorkspaceData = {
           id: 'membership-2',
           teamId: 'team-1',
           campaignMemberId: 'member-2',
+          teamRoleId: null,
+          teamRole: null,
           createdAt: null,
           updatedAt: null,
         },
@@ -182,7 +236,9 @@ describe('CampaignStudioTeamSection', () => {
       saveMember: vi.fn(),
       saveAccessRole: vi.fn(),
       saveTeam: vi.fn(),
+      saveTeamRole: vi.fn(),
       addMemberToTeam: vi.fn(),
+      updateMemberTeamRole: vi.fn(),
       removeMemberFromTeam: vi.fn(),
       linkAppUser: vi.fn(),
       inviteAppAccess: vi.fn(),
@@ -253,6 +309,7 @@ describe('CampaignStudioTeamSection', () => {
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText(/configure the team first, then manage who belongs to it/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue('Phone Bank')).toBeInTheDocument();
+    expect(screen.getByText('Team Roles')).toBeInTheDocument();
   });
 
   it('hides management actions without campaign admin capability', () => {
@@ -285,5 +342,89 @@ describe('CampaignStudioTeamSection', () => {
       screen.getAllByText(/campaign-level roster label such as staff, volunteer, contact, or external/i)
         .length
     ).toBeGreaterThan(0);
+  });
+
+  it('creates team roles and assigns them in the team drawer', async () => {
+    const user = userEvent.setup();
+    const saveTeamRole = vi.fn().mockResolvedValue(true);
+    const addMemberToTeam = vi.fn().mockResolvedValue(true);
+    const updateMemberTeamRole = vi.fn().mockResolvedValue(true);
+    const workspaceWithAvailableMember: CampaignTeamWorkspaceData = {
+      ...baseWorkspace,
+      counts: {
+        ...baseWorkspace.counts,
+        memberCount: 3,
+        activeMemberCount: 3,
+      },
+      members: [
+        ...baseWorkspace.members,
+        {
+          id: 'member-3',
+          campaignId: 'campaign-123',
+          displayName: 'New Volunteer',
+          email: 'new@blessingtree.test',
+          phone: null,
+          notes: null,
+          memberType: 'volunteer',
+          appUserId: null,
+          appAccessStatus: 'none',
+          isActive: true,
+          appUser: null,
+          accessRoles: [],
+          teams: [],
+          teamMemberships: [],
+          createdAt: null,
+          updatedAt: null,
+        },
+      ],
+    };
+
+    mockedUseCampaignTeamWorkspace.mockReturnValue({
+      workspace: workspaceWithAvailableMember,
+      isLoading: false,
+      isSaving: false,
+      error: null,
+      saveMessage: null,
+      reload: vi.fn(),
+      saveMember: vi.fn(),
+      saveAccessRole: vi.fn(),
+      saveTeam: vi.fn(),
+      saveTeamRole,
+      addMemberToTeam,
+      updateMemberTeamRole,
+      removeMemberFromTeam: vi.fn(),
+      linkAppUser: vi.fn(),
+      inviteAppAccess: vi.fn(),
+      removeAppAccess: vi.fn(),
+      clearSaveMessage: vi.fn(),
+      clearError: vi.fn(),
+    });
+
+    render(<CampaignStudioTeamSection campaignId="campaign-123" access={baseAccess} />);
+
+    const teamButtons = screen.getAllByRole('button', { name: /phone bank/i });
+    await user.click(teamButtons[teamButtons.length - 1]);
+    const dialog = await screen.findByRole('dialog');
+
+    await user.clear(screen.getByLabelText(/role name/i));
+    await user.type(screen.getByLabelText(/role name/i), 'Lead');
+    await user.type(screen.getByLabelText(/role description/i), 'Coordinates callers');
+    await user.click(screen.getByRole('button', { name: /add role/i }));
+
+    expect(saveTeamRole).toHaveBeenCalledWith(
+      'team-1',
+      expect.objectContaining({
+        name: 'Lead',
+        description: 'Coordinates callers',
+      }),
+      undefined
+    );
+
+    const selects = within(dialog).getAllByRole('combobox');
+    await user.selectOptions(selects[0], 'member-3');
+    await user.selectOptions(selects[1], 'team-role-1');
+    await user.click(within(dialog).getAllByRole('button', { name: /^add member$/i })[0]);
+
+    expect(addMemberToTeam).toHaveBeenCalledWith('team-1', 'member-3', 'team-role-1');
   });
 });

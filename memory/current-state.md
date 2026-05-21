@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-20
+Last updated: 2026-05-21
 
 ## Project Snapshot
 
@@ -16,7 +16,7 @@ Last updated: 2026-05-20
   - RBAC foundation now exists with campaign role persistence, capability bundles, and an authorization service
   - campaign roster foundation now exists with a new `campaign_member` model and migration
   - member-centric RBAC transition now exists with a new `campaign_member_access_role` model and member-first authorization resolution
-  - operational team foundation now exists with `campaign_team`, `campaign_team_member`, and a backend team service
+  - operational team foundation now exists with `campaign_team`, `campaign_team_member`, `campaign_team_role`, and backend team-role-aware services
   - Team workspace API foundation now exists with member, access-role, team, membership, app-access, and aggregate workspace endpoints
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
   - Campaign Studio backend support now exists for assignments, communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, and aggregate studio payloads
@@ -39,8 +39,8 @@ Last updated: 2026-05-20
   - Campaign Studio now uses a compact icon-only section rail at medium widths, and the schedule calendar/AI draft controls have responsive overflow guards for narrower layouts
   - Campaign Studio AI draft type selection now uses a compact horizontal segmented control in the rail instead of stacked mini-cards
   - Schedule destructive actions now use custom in-app confirmation UI instead of native browser dialogs
-  - Campaign Studio Team now uses a member-centric roster workspace with a people table, team panel, and edit drawers for member profiles, fixed access roles, app access, and operational teams
-  - the accepted next Team refinement is to separate fixed `App Access Roles` from team-scoped `Team Roles`, and to allow plain team membership with no explicit role
+  - Campaign Studio Team now uses a member-centric roster workspace with separate People and Teams tables plus edit drawers for member profiles, fixed access roles, app access, operational teams, and team-scoped team roles
+  - Team memberships can now be plain `Member` participation or explicit team-role assignments, separate from app access roles
   - the Team workspace now keeps glossary help inline through `?` controls beside terms like `Member Type`, `App Access`, `App Access Roles`, and `Teams`, and the Studio AI drawer still exposes the same Team concept definitions when the Team section is selected
   - the Team workspace now reads app access role labels and descriptions from the backend `role_catalog` contract instead of duplicating fixed role definitions in the frontend
   - Team UI responsibilities are now split more cleanly: person drawers handle profile and app access, while team drawers own team setup and membership changes
@@ -110,8 +110,10 @@ Last updated: 2026-05-20
   - member-first authorization resolution with legacy fallback in `app/features/rbac/services/authorization_service.py`
 - Team foundation now exists:
   - `db/migration/V009__Campaign_Teams.sql`
+  - `db/migration/V010__Campaign_Team_Roles.sql`
   - `app/models/campaign_team.py`
   - `app/models/campaign_team_member.py`
+  - `app/models/campaign_team_role.py`
   - `app/features/campaigns/team_service.py`
 - Team workspace API now exists:
   - `app/features/campaigns/team_api.py`
@@ -120,10 +122,15 @@ Last updated: 2026-05-20
   - `app/features/campaigns/team_serializers.py`
   - `app/features/campaigns/team_validation.py`
   - `GET /api/v1/campaigns/<campaign_id>/team-workspace` now includes `role_catalog` for frontend app access role metadata
+  - Team APIs now also cover:
+    - `POST /api/v1/campaigns/<campaign_id>/teams/<team_id>/roles`
+    - `PATCH /api/v1/campaigns/<campaign_id>/teams/<team_id>/roles/<role_id>`
+    - `PATCH /api/v1/campaigns/<campaign_id>/teams/<team_id>/members/<member_id>` for team-role changes
 - Team design direction now explicitly distinguishes:
   - fixed app access roles for RBAC
   - team-scoped team roles for operational responsibility
   - role-less team membership rendered as plain `Member`
+  - those team-role concepts are now implemented in the Team backend and Team Studio drawer
 - Local MySQL verification:
   - `V003__Campaign_User_Roles.sql` has been applied to the local `blessing_tree` database
   - verified columns, indexes, and foreign keys for `campaign_user_role`
@@ -165,6 +172,10 @@ Last updated: 2026-05-20
   - verified `campaign_team`
   - verified `campaign_team_member`
   - verified team/team-member unique scopes, indexes, and foreign keys
+  - `V010__Campaign_Team_Roles.sql` has been applied to the local `blessing_tree` database
+  - verified `campaign_team_role`
+  - verified `campaign_team_member.team_role_id`
+  - verified new indexes and foreign keys for team roles and membership role links
 - Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
 - Readiness direction is now explicitly lifecycle-aware and backend-driven:
   - grouped categories instead of one flat finding list

@@ -67,6 +67,7 @@ class CampaignMember(Base):
         back_populates="campaign_member",
         cascade="all, delete-orphan",
         passive_deletes=True,
+        order_by="CampaignTeamMember.created_at.asc()",
     )
 
     __table_args__ = (

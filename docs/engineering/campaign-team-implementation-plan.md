@@ -4,9 +4,11 @@ Last updated: 2026-05-20
 
 ## Status
 
-- Phases 1 through 5 are implemented.
-- This revision adds phases 6 through 10 to separate app access roles from
-  team-scoped roles and to carry that distinction through communications.
+- Phases 1 through 7 are implemented.
+- Team roles and role-less team membership are now supported in the backend and
+  the Team Studio drawer.
+- Remaining work is focused on communications audiences and final cleanup of
+  the old compatibility layer.
 
 ## Objective
 

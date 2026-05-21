@@ -1,11 +1,11 @@
 # Active Workstreams
 
-Last updated: 2026-05-20
+Last updated: 2026-05-21
 
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: lifecycle-aware Campaign Readiness is now implemented; the next design/implementation focus is team-scoped team roles plus communications audiences and then real scheduling automation
+- Current step: team-scoped team roles are now implemented; the next design/implementation focus is communications audiences based on teams, team roles, and member filters, then real scheduling automation
 
 ## Recently Completed
 
@@ -73,6 +73,8 @@ Last updated: 2026-05-20
 - Implemented Team redesign phase 4 with member, access-role, team, membership, app-access, and aggregate Team workspace APIs plus backend tests
 - Implemented Team redesign phase 5 with a member-centric Team Studio frontend workspace, roster table, team panel, Query Forge-style drawers, and automated frontend tests
 - Revised the Team design and implementation plan so teams can carry their own operational roles separately from app access roles, and so plain team membership without a role is valid
+- Implemented team-scoped team roles in the backend and Team Studio drawer, including role-aware membership assignment plus role-less `Member` participation
+- Fixed the Teams search row so its input stretches the full available width like the People search row
 - Added inline Team glossary help in the workspace and mirrored those definitions into the Studio AI drawer for Team prompts
 - Finished the Team workspace role-catalog cutover so frontend app access role labels and descriptions now come from the backend `team-workspace` payload
 - Fixed local backend CORS so both `localhost:5173` and `127.0.0.1:5173` can call campaign APIs during development
@@ -94,11 +96,10 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Add backend support for team-scoped roles and role-less `Member` team participation
-2. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
-3. Design and implement the actual scheduling execution layer for communications and lifecycle events
-4. Feed real automation health and execution failures back into Campaign Readiness
-5. After the Team write paths move over, retire the temporary legacy `campaign_user_role` fallback in authorization resolution
+1. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
+2. Design and implement the actual scheduling execution layer for communications and lifecycle events
+3. Feed real automation health and execution failures back into Campaign Readiness
+4. After the Team write paths move over, retire the temporary legacy `campaign_user_role` fallback in authorization resolution
 
 ## Blockers Or Ambiguities
 

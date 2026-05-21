@@ -57,6 +57,11 @@
   margin-bottom: 0.95rem;
 }
 
+.campaign-team-table-toolbar > * {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
 .campaign-team-table-toolbar__search {
   width: 100%;
 }
@@ -265,6 +270,10 @@
   margin-bottom: 0.75rem;
 }
 
+.campaign-team-add-inline--stacked {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) auto;
+}
+
 .campaign-team-inline-list {
   display: grid;
   gap: 0.7rem;
@@ -281,9 +290,62 @@
   background: rgba(251, 248, 242, 0.78);
 }
 
+.campaign-team-inline-item--stacked {
+  align-items: flex-start;
+}
+
+.campaign-team-inline-item__content {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.campaign-team-inline-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  min-width: min(100%, 14rem);
+}
+
+.campaign-team-inline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.campaign-team-role-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) 9rem;
+  gap: 0.85rem;
+  align-items: end;
+  margin-bottom: 0.85rem;
+}
+
+.campaign-team-role-form__name,
+.campaign-team-role-form__description {
+  min-width: 0;
+}
+
+.campaign-team-role-form__name {
+  grid-column: span 1;
+}
+
+.campaign-team-role-form__description {
+  grid-column: span 2;
+}
+
 @media (max-width: 1100px) {
   .campaign-team-stats {
     grid-template-columns: 1fr;
+  }
+
+  .campaign-team-role-form {
+    grid-template-columns: 1fr;
+  }
+
+  .campaign-team-role-form__description {
+    grid-column: span 1;
   }
 }
 
@@ -299,6 +361,7 @@
   .campaign-team-toolbar,
   .campaign-team-add-inline,
   .campaign-team-inline-item,
+  .campaign-team-inline-item__actions,
   .campaign-team-drawer__header,
   .campaign-team-table-toolbar,
   .campaign-team-workspace__section-header {

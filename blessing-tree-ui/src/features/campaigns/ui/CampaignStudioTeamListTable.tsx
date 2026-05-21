@@ -104,7 +104,8 @@ export function CampaignStudioTeamListTable({
                 <div className="campaign-team-table__person">
                   <strong>{team.name}</strong>
                   <span>
-                    {team.memberCount} {team.memberCount === 1 ? 'member' : 'members'}
+                    {team.memberCount} {team.memberCount === 1 ? 'member' : 'members'} ·{' '}
+                    {team.roles.length} {team.roles.length === 1 ? 'role' : 'roles'}
                   </span>
                 </div>
               </td>

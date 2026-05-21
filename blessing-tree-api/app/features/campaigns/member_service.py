@@ -52,6 +52,7 @@ class CampaignMemberService:
                 joinedload(CampaignMember.app_user),
                 joinedload(CampaignMember.access_roles),
                 joinedload(CampaignMember.team_memberships).joinedload(CampaignTeamMember.team),
+                joinedload(CampaignMember.team_memberships).joinedload(CampaignTeamMember.team_role),
             )
             .filter(CampaignMember.campaign_id == campaign_id)
         )
@@ -114,6 +115,7 @@ class CampaignMemberService:
                 joinedload(CampaignMember.app_user),
                 joinedload(CampaignMember.access_roles),
                 joinedload(CampaignMember.team_memberships).joinedload(CampaignTeamMember.team),
+                joinedload(CampaignMember.team_memberships).joinedload(CampaignTeamMember.team_role),
             )
             .filter(CampaignMember.campaign_id == campaign_id, CampaignMember.id == member_uuid)
             .one_or_none()

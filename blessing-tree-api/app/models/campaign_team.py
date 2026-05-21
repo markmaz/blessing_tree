@@ -14,6 +14,7 @@ from .uuid_bin import UUIDBin
 if TYPE_CHECKING:
     from .campaign import Campaign
     from .campaign_team_member import CampaignTeamMember
+    from .campaign_team_role import CampaignTeamRole
 
 
 class CampaignTeam(Base):
@@ -36,6 +37,12 @@ class CampaignTeam(Base):
         back_populates="team",
         cascade="all, delete-orphan",
         passive_deletes=True,
+    )
+    roles: Mapped[list["CampaignTeamRole"]] = relationship(
+        back_populates="team",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="CampaignTeamRole.sort_order.asc(), CampaignTeamRole.name.asc()",
     )
 
     __table_args__ = (

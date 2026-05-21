@@ -11,6 +11,7 @@ from app.models.campaign_member_access_role import CampaignMemberAccessRole
 from app.models.campaign_member_constants import APP_ACCESS_STATUS_ACTIVE, APP_ACCESS_STATUS_NONE
 from app.models.campaign_team import CampaignTeam
 from app.models.campaign_team_member import CampaignTeamMember
+from app.models.campaign_team_role import CampaignTeamRole
 from tests.features.campaigns.studio_test_support import (
     assign_role,
     auth_header,
@@ -60,11 +61,20 @@ def test_get_team_workspace_returns_members_teams_and_counts(
     )
     session.add(team)
     session.flush()
+    role = CampaignTeamRole(
+        id=uuid.uuid4(),
+        team_id=team.id,
+        name="Caller",
+        is_active=True,
+    )
+    session.add(role)
+    session.flush()
     team.memberships.append(
         CampaignTeamMember(
             id=uuid.uuid4(),
             team_id=team.id,
             campaign_member_id=member.id,
+            team_role_id=role.id,
         )
     )
     session.add(
@@ -92,6 +102,9 @@ def test_get_team_workspace_returns_members_teams_and_counts(
     assert payload["counts"]["team_count"] == 1
     assert payload["members"][0]["display_name"] == "Volunteer One"
     assert payload["teams"][0]["name"] == "Sponsor Callers"
+    assert payload["teams"][0]["roles"][0]["name"] == "Caller"
+    assert payload["teams"][0]["memberships"][0]["team_role"]["name"] == "Caller"
+    assert payload["members"][0]["teams"][0]["team_role_name"] == "Caller"
     assert payload["filters"]["role_keys"] == ["VOLUNTEER_VIEWER"]
     assert payload["role_catalog"][0]["role_key"] == "CAMPAIGN_MANAGER"
     assert payload["role_catalog"][0]["label"] == "Campaign Manager"
@@ -236,6 +249,66 @@ def test_team_endpoints_create_add_and_remove_member(
 
     assert delete_response.status_code == 204
     assert list_after_delete.get_json()[0]["member_count"] == 0
+
+
+def test_team_role_endpoints_create_update_and_assign_member_role(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    member = _seed_member(session, campaign.id, display_name="Warehouse Helper")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    member_id = str(member.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    team_response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/teams",
+        json={"name": "Warehouse Crew"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert team_response.status_code == 201
+    team_id = team_response.get_json()["id"]
+
+    create_role_response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/teams/{team_id}/roles",
+        json={"name": "Gift Check-In", "description": "Handles intake"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert create_role_response.status_code == 201
+    role_id = create_role_response.get_json()["id"]
+
+    update_role_response = client.patch(
+        f"/api/v1/campaigns/{campaign_id}/teams/{team_id}/roles/{role_id}",
+        json={"name": "Gift Intake Lead", "sort_order": 2},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert update_role_response.status_code == 200
+    assert update_role_response.get_json()["name"] == "Gift Intake Lead"
+
+    add_member_response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/teams/{team_id}/members",
+        json={"member_id": member_id, "team_role_id": role_id},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert add_member_response.status_code == 201
+    assert add_member_response.get_json()["team_role_id"] == role_id
+    assert add_member_response.get_json()["team_role"]["name"] == "Gift Intake Lead"
+
+    clear_role_response = client.patch(
+        f"/api/v1/campaigns/{campaign_id}/teams/{team_id}/members/{member_id}",
+        json={"team_role_id": None},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert clear_role_response.status_code == 200
+    assert clear_role_response.get_json()["team_role_id"] is None
+    assert clear_role_response.get_json()["team_role"] is None
 
 
 def test_member_app_access_endpoints_link_invite_and_remove(

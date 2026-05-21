@@ -8,6 +8,7 @@ from app.models.campaign_member import CampaignMember
 from app.models.campaign_member_access_role import CampaignMemberAccessRole
 from app.models.campaign_team import CampaignTeam
 from app.models.campaign_team_member import CampaignTeamMember
+from app.models.campaign_team_role import CampaignTeamRole
 
 
 def serialize_campaign_member_access_role(
@@ -23,6 +24,19 @@ def serialize_campaign_member_access_role(
     }
 
 
+def serialize_campaign_team_role(role: CampaignTeamRole) -> dict[str, Any]:
+    return {
+        "id": str(role.id),
+        "team_id": str(role.team_id),
+        "name": role.name,
+        "description": role.description,
+        "sort_order": role.sort_order,
+        "is_active": bool(role.is_active),
+        "created_at": _serialize_datetime(role.created_at),
+        "updated_at": _serialize_datetime(role.updated_at),
+    }
+
+
 def serialize_campaign_team_membership(
     membership: CampaignTeamMember,
 ) -> dict[str, Any]:
@@ -30,6 +44,12 @@ def serialize_campaign_team_membership(
         "id": str(membership.id),
         "team_id": str(membership.team_id),
         "campaign_member_id": str(membership.campaign_member_id),
+        "team_role_id": str(membership.team_role_id) if membership.team_role_id else None,
+        "team_role": (
+            serialize_campaign_team_role(membership.team_role)
+            if membership.team_role is not None
+            else None
+        ),
         "created_at": _serialize_datetime(membership.created_at),
         "updated_at": _serialize_datetime(membership.updated_at),
     }
@@ -44,6 +64,7 @@ def serialize_campaign_team(team: CampaignTeam) -> dict[str, Any]:
         "description": team.description,
         "is_active": bool(team.is_active),
         "member_count": len(memberships),
+        "roles": [serialize_campaign_team_role(role) for role in list(team.roles or [])],
         "memberships": [serialize_campaign_team_membership(membership) for membership in memberships],
         "created_at": _serialize_datetime(team.created_at),
         "updated_at": _serialize_datetime(team.updated_at),
@@ -53,7 +74,6 @@ def serialize_campaign_team(team: CampaignTeam) -> dict[str, Any]:
 def serialize_campaign_member(member: CampaignMember) -> dict[str, Any]:
     access_roles = list(member.access_roles or [])
     team_memberships = list(member.team_memberships or [])
-    teams = [membership.team for membership in team_memberships if membership.team is not None]
     return {
         "id": str(member.id),
         "campaign_id": str(member.campaign_id),
@@ -79,11 +99,20 @@ def serialize_campaign_member(member: CampaignMember) -> dict[str, Any]:
         ],
         "teams": [
             {
-                "id": str(team.id),
-                "name": team.name,
-                "is_active": bool(team.is_active),
+                "id": str(membership.team.id),
+                "name": membership.team.name,
+                "is_active": bool(membership.team.is_active),
+                "team_role_id": (
+                    str(membership.team_role_id) if membership.team_role_id else None
+                ),
+                "team_role_name": (
+                    membership.team_role.name
+                    if membership.team_role is not None
+                    else None
+                ),
             }
-            for team in teams
+            for membership in team_memberships
+            if membership.team is not None
         ],
         "team_memberships": [
             serialize_campaign_team_membership(membership) for membership in team_memberships

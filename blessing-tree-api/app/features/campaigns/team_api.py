@@ -11,6 +11,7 @@ from app.features.campaigns.team_serializers import (
     serialize_campaign_member_access_role,
     serialize_campaign_team,
     serialize_campaign_team_membership,
+    serialize_campaign_team_role,
     serialize_team_workspace,
 )
 from app.features.campaigns.team_workspace_service import CampaignTeamWorkspaceService
@@ -133,19 +134,66 @@ class CampaignTeamDetailResource(Resource):
         return serialize_campaign_team(team)
 
 
+@campaign_ns.route("/<string:campaign_id>/teams/<string:team_id>/roles")
+class CampaignTeamRoleListResource(Resource):
+    @require_campaign_capability("campaign.view")
+    def get(self, campaign_id: str, team_id: str):
+        with SessionLocal() as db:
+            roles = _team_service.list_roles(db, campaign_id, team_id)
+        return [serialize_campaign_team_role(role) for role in roles]
+
+    @require_campaign_capability("campaign.admin")
+    def post(self, campaign_id: str, team_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            role = _team_service.create_role(db, campaign_id, team_id, payload)
+        return serialize_campaign_team_role(role), 201
+
+
+@campaign_ns.route("/<string:campaign_id>/teams/<string:team_id>/roles/<string:role_id>")
+class CampaignTeamRoleDetailResource(Resource):
+    @require_campaign_capability("campaign.admin")
+    def patch(self, campaign_id: str, team_id: str, role_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            role = _team_service.update_role(db, campaign_id, team_id, role_id, payload)
+        return serialize_campaign_team_role(role)
+
+
 @campaign_ns.route("/<string:campaign_id>/teams/<string:team_id>/members")
 class CampaignTeamMembershipCreateResource(Resource):
     @require_campaign_capability("campaign.admin")
     def post(self, campaign_id: str, team_id: str):
         payload = request.get_json(silent=True) or {}
         member_id = payload.get("member_id")
+        team_role_id = payload.get("team_role_id")
         with SessionLocal() as db:
-            membership = _team_service.add_member(db, campaign_id, team_id, str(member_id))
+            membership = _team_service.add_member(
+                db,
+                campaign_id,
+                team_id,
+                str(member_id),
+                None if team_role_id in (None, "") else str(team_role_id),
+            )
         return serialize_campaign_team_membership(membership), 201
 
 
 @campaign_ns.route("/<string:campaign_id>/teams/<string:team_id>/members/<string:member_id>")
-class CampaignTeamMembershipDeleteResource(Resource):
+class CampaignTeamMembershipDetailResource(Resource):
+    @require_campaign_capability("campaign.admin")
+    def patch(self, campaign_id: str, team_id: str, member_id: str):
+        payload = request.get_json(silent=True) or {}
+        team_role_id = payload.get("team_role_id")
+        with SessionLocal() as db:
+            membership = _team_service.update_member_role(
+                db,
+                campaign_id,
+                team_id,
+                member_id,
+                None if team_role_id in (None, "") else str(team_role_id),
+            )
+        return serialize_campaign_team_membership(membership)
+
     @require_campaign_capability("campaign.admin")
     def delete(self, campaign_id: str, team_id: str, member_id: str):
         with SessionLocal() as db:

@@ -1,11 +1,13 @@
 import { apiFetchJson } from '@/shared/api/client';
 import {
   mapCampaignMemberAccessRole,
+  mapCampaignTeamRole,
   mapCampaignTeamWorkspaceData,
   mapCampaignTeamWorkspaceMember,
   mapCampaignTeamWorkspaceMembership,
   mapCampaignTeamWorkspaceTeam,
   type CampaignMemberAccessRoleResponse,
+  type CampaignTeamRoleResponse,
   type CampaignTeamWorkspaceMemberResponse,
   type CampaignTeamWorkspaceMembershipResponse,
   type CampaignTeamWorkspaceResponse,
@@ -15,8 +17,10 @@ import type {
   CampaignMemberAccessRoleAssignment,
   CampaignMemberAppInviteInput,
   CampaignMemberAppLinkInput,
-  CampaignTeamMemberUpsertInput,
   CampaignMemberAccessRoleUpsertInput,
+  CampaignTeamMemberUpsertInput,
+  CampaignTeamRole,
+  CampaignTeamRoleUpsertInput,
   CampaignTeamUpsertInput,
   CampaignTeamWorkspaceData,
   CampaignTeamWorkspaceMember,
@@ -143,14 +147,70 @@ export async function updateCampaignTeam(
   return mapCampaignTeamWorkspaceTeam(response);
 }
 
+export async function createCampaignTeamRole(
+  campaignId: string,
+  teamId: string,
+  input: CampaignTeamRoleUpsertInput
+): Promise<CampaignTeamRole> {
+  const response = await apiFetchJson<CampaignTeamRoleResponse>(
+    `/api/v1/campaigns/${campaignId}/teams/${teamId}/roles`,
+    withJson('POST', {
+      name: input.name,
+      description: input.description ?? null,
+      sort_order: input.sortOrder ?? 0,
+      is_active: input.isActive ?? true,
+    })
+  );
+
+  return mapCampaignTeamRole(response);
+}
+
+export async function updateCampaignTeamRole(
+  campaignId: string,
+  teamId: string,
+  roleId: string,
+  input: Partial<CampaignTeamRoleUpsertInput>
+): Promise<CampaignTeamRole> {
+  const payload: Record<string, unknown> = {};
+  if ('name' in input) payload.name = input.name;
+  if ('description' in input) payload.description = input.description ?? null;
+  if ('sortOrder' in input) payload.sort_order = input.sortOrder ?? 0;
+  if ('isActive' in input) payload.is_active = input.isActive;
+
+  const response = await apiFetchJson<CampaignTeamRoleResponse>(
+    `/api/v1/campaigns/${campaignId}/teams/${teamId}/roles/${roleId}`,
+    withJson('PATCH', payload)
+  );
+
+  return mapCampaignTeamRole(response);
+}
+
 export async function addCampaignTeamMember(
   campaignId: string,
   teamId: string,
-  memberId: string
+  memberId: string,
+  teamRoleId?: string | null
 ): Promise<CampaignTeamWorkspaceTeamMembership> {
   const response = await apiFetchJson<CampaignTeamWorkspaceMembershipResponse>(
     `/api/v1/campaigns/${campaignId}/teams/${teamId}/members`,
-    withJson('POST', { member_id: memberId })
+    withJson('POST', {
+      member_id: memberId,
+      team_role_id: teamRoleId ?? null,
+    })
+  );
+
+  return mapCampaignTeamWorkspaceMembership(response);
+}
+
+export async function updateCampaignTeamMemberRole(
+  campaignId: string,
+  teamId: string,
+  memberId: string,
+  teamRoleId: string | null
+): Promise<CampaignTeamWorkspaceTeamMembership> {
+  const response = await apiFetchJson<CampaignTeamWorkspaceMembershipResponse>(
+    `/api/v1/campaigns/${campaignId}/teams/${teamId}/members/${memberId}`,
+    withJson('PATCH', { team_role_id: teamRoleId })
   );
 
   return mapCampaignTeamWorkspaceMembership(response);

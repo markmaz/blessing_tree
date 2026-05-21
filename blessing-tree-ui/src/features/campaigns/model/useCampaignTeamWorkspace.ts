@@ -4,6 +4,7 @@ import {
   createCampaignMember,
   createCampaignMemberAccessRole,
   createCampaignTeam,
+  createCampaignTeamRole,
   getCampaignTeamWorkspace,
   inviteCampaignMemberAppAccess,
   linkCampaignMemberAppUser,
@@ -12,12 +13,15 @@ import {
   updateCampaignMember,
   updateCampaignMemberAccessRole,
   updateCampaignTeam,
+  updateCampaignTeamMemberRole,
+  updateCampaignTeamRole,
 } from '@/features/campaigns/api/campaignTeamWorkspaceApi';
 import type {
   CampaignMemberAccessRoleUpsertInput,
   CampaignMemberAppInviteInput,
   CampaignMemberAppLinkInput,
   CampaignTeamMemberUpsertInput,
+  CampaignTeamRoleUpsertInput,
   CampaignTeamUpsertInput,
   CampaignTeamWorkspaceData,
   CampaignTeamWorkspaceMember,
@@ -148,10 +152,37 @@ export function useCampaignTeamWorkspace(campaignId: string) {
       teamId ? 'Team updated.' : 'Team added.'
     );
 
-  const addMemberToTeam = async (teamId: string, memberId: string) =>
+  const saveTeamRole = async (
+    teamId: string,
+    input: CampaignTeamRoleUpsertInput,
+    roleId?: string
+  ) =>
     performMutation(
-      () => addCampaignTeamMember(campaignId, teamId, memberId),
+      () =>
+        roleId
+          ? updateCampaignTeamRole(campaignId, teamId, roleId, input)
+          : createCampaignTeamRole(campaignId, teamId, input),
+      roleId ? 'Team role updated.' : 'Team role added.'
+    );
+
+  const addMemberToTeam = async (
+    teamId: string,
+    memberId: string,
+    teamRoleId?: string | null
+  ) =>
+    performMutation(
+      () => addCampaignTeamMember(campaignId, teamId, memberId, teamRoleId),
       'Team member added.'
+    );
+
+  const updateMemberTeamRole = async (
+    teamId: string,
+    memberId: string,
+    teamRoleId: string | null
+  ) =>
+    performMutation(
+      () => updateCampaignTeamMemberRole(campaignId, teamId, memberId, teamRoleId),
+      'Team role updated.'
     );
 
   const removeMemberFromTeam = async (teamId: string, memberId: string) =>
@@ -270,7 +301,9 @@ export function useCampaignTeamWorkspace(campaignId: string) {
     saveMember,
     saveAccessRole,
     saveTeam,
+    saveTeamRole,
     addMemberToTeam,
+    updateMemberTeamRole,
     removeMemberFromTeam,
     linkAppUser,
     inviteAppAccess,

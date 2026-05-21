@@ -19,6 +19,7 @@ from app.models.campaign_member import CampaignMember
 from app.models.campaign_member_constants import APP_ACCESS_STATUS_NONE
 from app.models.campaign_team import CampaignTeam
 from app.models.campaign_team_member import CampaignTeamMember
+from app.models.campaign_team_role import CampaignTeamRole
 
 
 @compiles(TINYINT, "sqlite")
@@ -36,6 +37,7 @@ def _build_session() -> Session:
             Campaign.__table__,
             CampaignMember.__table__,
             CampaignTeam.__table__,
+            CampaignTeamRole.__table__,
             CampaignTeamMember.__table__,
         ],
     )
@@ -142,6 +144,46 @@ def test_add_and_remove_team_member() -> None:
     service.remove_member(db, str(campaign.id), str(team.id), str(member.id))
 
     assert service.list_teams(db, str(campaign.id))[0].memberships == []
+    db.close()
+
+
+def test_team_roles_and_role_less_membership() -> None:
+    db = _build_session()
+    campaign = _create_campaign()
+    member = _create_member(campaign.id, "Casey Caller")
+    db.add_all([campaign, member])
+    db.commit()
+    service = CampaignTeamService()
+    team = service.create_team(db, str(campaign.id), {"name": "Phone Bank"})
+
+    role = service.create_role(
+        db,
+        str(campaign.id),
+        str(team.id),
+        {"name": "Lead", "description": "Coordinates the team"},
+    )
+    membership = service.add_member(
+        db,
+        str(campaign.id),
+        str(team.id),
+        str(member.id),
+        str(role.id),
+    )
+
+    assert membership.team_role_id == role.id
+    assert membership.team_role is not None
+    assert membership.team_role.name == "Lead"
+
+    updated_membership = service.update_member_role(
+        db,
+        str(campaign.id),
+        str(team.id),
+        str(member.id),
+        None,
+    )
+
+    assert updated_membership.team_role_id is None
+    assert updated_membership.team_role is None
     db.close()
 
 
