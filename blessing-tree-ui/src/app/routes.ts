@@ -19,6 +19,7 @@ export const routes = {
   ADMIN_USERS: '/admin/users',
   ADMIN_LLM: '/admin/llm',
   ADMIN_HEALTH: '/admin/health',
+  ADMIN_CAPABILITIES: '/admin/capabilities',
 } as const;
 
 export function buildCampaignDetailPath(campaignId: string): string {

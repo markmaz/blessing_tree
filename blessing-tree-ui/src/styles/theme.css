@@ -366,6 +366,131 @@ a:hover {
   background: rgba(255, 255, 255, 0.11);
 }
 
+.admin-health-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.2rem 1.3rem;
+  border-radius: 0.9rem;
+  color: #fff;
+}
+
+.admin-health-banner.is-ok {
+  background: linear-gradient(135deg, #255c4a, #2d8261);
+}
+
+.admin-health-banner.is-warn {
+  background: linear-gradient(135deg, #7b5a1d, #a67b26);
+}
+
+.admin-health-banner.is-error {
+  background: linear-gradient(135deg, #6d2431, #9f3147);
+}
+
+.admin-health-banner__eyebrow {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.admin-health-banner__title {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.admin-health-banner__state {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+}
+
+.admin-health-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-health-card__title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.admin-health-card__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 6.5rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-health-card__status.is-ok {
+  background: #dff3ea;
+  color: #1d5d47;
+}
+
+.admin-health-card__status.is-warn {
+  background: #f9edd3;
+  color: #86610d;
+}
+
+.admin-health-card__status.is-error {
+  background: #f8d9df;
+  color: #8a2237;
+}
+
+.admin-health-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.admin-health-card__metric {
+  background: #fff;
+  border: 1px solid rgba(31, 41, 55, 0.08);
+  border-radius: 0.8rem;
+  padding: 0.85rem 0.9rem;
+}
+
+.admin-health-card__metric-label {
+  display: block;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.admin-health-card__metric-value {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #172033;
+}
+
+.admin-health-card__detail {
+  color: #495368;
+  margin-bottom: 0.65rem;
+}
+
+.admin-health-card__meta {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
 .sidebar-footer {
   padding: 1.5rem;
 }

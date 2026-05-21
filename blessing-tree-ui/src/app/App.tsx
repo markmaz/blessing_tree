@@ -24,6 +24,7 @@ import { AdminPage } from '@/pages/AdminPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { AdminLlmPage } from '@/pages/AdminLlmPage';
 import { AdminHealthPage } from '@/pages/AdminHealthPage';
+import { AdminCapabilitiesPage } from '@/pages/AdminCapabilitiesPage';
 import { routes } from './routes';
 
 export function App() {
@@ -86,6 +87,7 @@ export function App() {
                   <Route path="users" element={<AdminUsersPage />} />
                   <Route path="llm" element={<AdminLlmPage />} />
                   <Route path="health" element={<AdminHealthPage />} />
+                  <Route path="capabilities" element={<AdminCapabilitiesPage />} />
                 </Route>
               </Route>
 

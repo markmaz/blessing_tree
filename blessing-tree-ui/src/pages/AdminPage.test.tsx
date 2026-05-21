@@ -22,6 +22,7 @@ describe('AdminPage', () => {
         <Routes>
           <Route path="/admin" element={<AdminPage />}>
             <Route path="users" element={<div>User Management Child</div>} />
+            <Route path="capabilities" element={<div>Capabilities Child</div>} />
           </Route>
         </Routes>
       </MemoryRouter>,
@@ -39,6 +40,7 @@ describe('AdminPage', () => {
         <Routes>
           <Route path="/admin" element={<AdminPage />}>
             <Route path="users" element={<div>User Management Child</div>} />
+            <Route path="capabilities" element={<div>Capabilities Child</div>} />
           </Route>
         </Routes>
       </MemoryRouter>,

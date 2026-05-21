@@ -53,6 +53,10 @@ const navItems = [
         label: 'Health Check',
         to: routes.ADMIN_HEALTH,
       },
+      {
+        label: 'App Capabilities',
+        to: routes.ADMIN_CAPABILITIES,
+      },
     ],
   },
 ];

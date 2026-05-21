@@ -23,9 +23,9 @@ export function AdminFeatureFlagsCard() {
 
   return (
     <div className="content-card h-100">
-      <h2 className="h5 mb-1">Feature Flags</h2>
+      <h2 className="h5 mb-1">App Capabilities</h2>
       <p className="text-muted mb-3">
-        Enable or disable major application surfaces without changing code.
+        Enable or disable major application surfaces without changing code or navigation.
       </p>
       {error ? <div className="alert alert-danger py-2">{error}</div> : null}
       <div className="vstack gap-3">
