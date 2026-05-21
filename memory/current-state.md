@@ -22,6 +22,7 @@ Last updated: 2026-05-21
   - Campaign Studio backend support now exists for assignments, communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, and aggregate studio payloads
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
   - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
+  - current onboarding is still transitional: invite acceptance currently completes through local password setup, while Google/Yahoo OAuth is implemented for pre-provisioned emails but does not yet complete invitation acceptance
   - backend startup now imports the full SQLAlchemy model registry during app creation
   - local auth compatibility now depends on `bcrypt 4.1.3` with `passlib 1.7.4`
   - runtime and dev dependency manifests now exist
@@ -102,6 +103,7 @@ Last updated: 2026-05-21
   - Yahoo login/callback
   - refresh
   - logout
+  - invite validate/accept
 - Local stack verification:
   - Blessing Tree backend now boots correctly on port `5000`
   - Blessing Tree frontend now serves correctly on port `5173`
@@ -229,6 +231,10 @@ Last updated: 2026-05-21
   - `GET /api/v1/admin/health` returns database/celery/llm status
   - `GET /api/v1/admin/features` returns authenticated feature-flag state for frontend gating
   - `GET /api/v1/admin/users` returns existing users plus invitation state
+- Auth/onboarding direction is now explicitly invitation-centric:
+  - invite is the only first-time entry funnel
+  - invited users should choose Google, Yahoo, or local password from the invite flow
+  - generic OAuth login should remain for already-linked returning users only
 - Frontend campaign routes now exist:
   - `/campaigns`
   - `/campaigns/:campaignId`

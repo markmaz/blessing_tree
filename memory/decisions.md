@@ -125,3 +125,10 @@
 - Decision: add a first-class admin runtime slice for Query Forge-style user invitations, global LLM configuration, runtime health visibility, and feature flag control.
 - Rationale: Blessing Tree now has enough moving parts that operators need a real admin surface instead of ad hoc environment edits. The invitation flow should match the existing Query Forge pattern, LLM configuration should be app-managed, and health/feature state should be visible in-product.
 - Consequence: the backend now owns invitation lifecycle, encrypted LLM settings, feature-flag state, and health probes; the frontend admin page is no longer a placeholder; and authenticated users can read feature flags for route/navigation gating while only app admins can mutate admin settings.
+
+## Invitation-Centric Onboarding Direction
+
+- Status: active
+- Decision: invitation is the only onboarding funnel into Blessing Tree. An invited user may choose Google, Yahoo, or a local password as their first authentication method, and the first successful identity binding should accept the invitation. App roles remain admin-controlled internally.
+- Rationale: the current split between local-password invite acceptance and pre-provisioned OAuth login is inconsistent. The cleaner model is controlled provisioning plus user-chosen auth method.
+- Consequence: generic Google/Yahoo login should be for already-linked returning users only; first-time onboarding should start from the invite link; invite-scoped OAuth must validate the invited email, bind the identity, accept the invite, and complete sign-in; and local password setup becomes one onboarding option rather than the definition of invite acceptance.

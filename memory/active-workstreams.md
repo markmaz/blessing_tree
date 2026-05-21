@@ -103,6 +103,7 @@ Last updated: 2026-05-21
   - runtime health visibility for database, Celery, and the configured LLM
   - app feature flag reads/toggles for frontend route and UI gating
 - Split the admin frontend into left-sidebar child sections under `Admin` so user management, LLM configuration, health checks, and app capabilities are no longer stacked on one screen
+- Documented invitation-centric onboarding so invite acceptance, Google/Yahoo OAuth, and local password setup now have a single target model instead of the current split behavior
 - Applied and verified the automation runtime migration against local MySQL `blessing_tree`
 - Live-smoke-tested worker/beat startup plus a real queued communication dispatch against the local Blessing Tree stack
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
@@ -122,6 +123,7 @@ Last updated: 2026-05-21
 3. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
 4. Extend AI editing-before-apply into higher-complexity bundles beyond the new Settings/status scalar editor
 5. After the Team write paths move over, retire the temporary legacy `campaign_user_role` fallback in authorization resolution
+6. Implement invite-scoped Google/Yahoo onboarding and limit generic OAuth login to already-linked returning users
 
 ## Blockers Or Ambiguities
 
