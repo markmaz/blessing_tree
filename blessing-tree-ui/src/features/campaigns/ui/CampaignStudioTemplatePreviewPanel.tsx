@@ -61,7 +61,11 @@ export function CampaignStudioTemplatePreviewPanel({
                         </figure>
                       );
                     }
-                    return <p key={block.id}>{block.content || 'Text block'}</p>;
+                    return (
+                      <p key={block.id} className="campaign-template-preview-card__text-block">
+                        {block.content || 'Text block'}
+                      </p>
+                    );
                   })
                 ) : (
                   <p className="text-muted mb-0">Body preview will appear here.</p>

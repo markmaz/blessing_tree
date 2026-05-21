@@ -231,6 +231,10 @@
   padding-left: 1rem;
 }
 
+.campaign-template-preview-card__text-block {
+  white-space: pre-wrap;
+}
+
 .campaign-template-workspace__subject-field {
   margin-bottom: 0;
 }

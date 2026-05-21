@@ -181,6 +181,31 @@ describe('CampaignStudioCommunicationsSection', () => {
     expect(screen.getByLabelText(/image url/i)).toHaveValue('{{location.map_url}}');
   });
 
+  it('preserves authored line breaks in the rendered preview', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CampaignStudioCommunicationsSection
+        templates={templates}
+        isSaving={false}
+        onOpenAiPanel={vi.fn()}
+        onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /content blocks/i }));
+
+    const previewSurface = screen.getByText(/rendered output/i).closest('.campaign-template-preview-email');
+    expect(previewSurface).not.toBeNull();
+    const previewText = (previewSurface as HTMLElement).querySelector('.campaign-template-preview-card__text-block');
+    expect(previewText).not.toBeNull();
+    expect(previewText).toHaveClass('campaign-template-preview-card__text-block');
+    expect(previewText).toHaveTextContent('Hello Chris,');
+    expect(previewText?.textContent).toContain('\n\n');
+    expect(previewText).toHaveTextContent('Please arrive by November 3, 2026 at 6:00 PM.');
+  });
+
   it('opens the merge field drawer and inserts a field into the focused input', async () => {
     const user = userEvent.setup();
 
