@@ -38,7 +38,8 @@ Blessing Tree should separate these concepts:
 1. Campaign members
 2. App access roles
 3. Teams
-4. Email audiences
+4. Team roles
+5. Email audiences
 
 Recommended model:
 
@@ -46,6 +47,7 @@ Recommended model:
 - app access is optional through nullable `app_user_id`
 - access roles stay fixed and capability-based for RBAC
 - teams are user-defined operational groups
+- team roles are team-scoped responsibility labels owned by each team
 - role-based and team-based audiences should be available for communications
 
 This is intentionally simpler than a fully dynamic RBAC system while still
@@ -75,6 +77,18 @@ Examples like:
 - Pickup Weekend Team
 
 are often communication or coordination groups, not permission bundles.
+
+### It Conflates App Access Roles With Team Responsibilities
+
+Those are different concepts.
+
+Examples:
+
+- `GIFT_CHECKIN` is an app access role
+- `Warehouse Crew` is a team
+- `Check-In Lead` is a team role inside that team
+
+A person may need one, two, or all three.
 
 ### It Does Not Support Multiple Responsibilities Cleanly
 
@@ -111,13 +125,30 @@ App permissions and operational organization are related but not identical.
 
 Keep them separate.
 
+### Team Roles Belong To Teams
+
+Team responsibilities should be defined inside the team that owns them.
+
+Examples:
+
+- `Warehouse Crew`
+  - `Lead`
+  - `Gift Check-In`
+  - `Runner`
+  - `Sorter`
+- `Sponsor Callers`
+  - `Lead`
+  - `Caller`
+
+Do not elevate those operational roles into the global RBAC layer.
+
 ### One Person Can Hold Multiple Assignments
 
 One person may be:
 
 - a `GIFT_CHECKIN` app user
-- on the `Sponsor Callers` team
-- on the `Pickup Weekend` team
+- on the `Sponsor Callers` team as a `Caller`
+- on the `Pickup Weekend` team as a `Greeter`
 
 The system should model that directly instead of forcing combined roles.
 
@@ -208,6 +239,12 @@ Important distinction:
 
 - access roles are for permissions
 - they are not the same thing as campaign teams
+- they are not the same thing as team roles
+
+UI naming guidance:
+
+- label these as `App Access Roles`
+- do not label them generically as `Roles` inside the Team workspace
 
 ### 4. Teams
 
@@ -246,17 +283,98 @@ Teams are for:
 
 They are not permission bundles.
 
-### 5. Communication Audiences
+### 5. Team Roles
+
+Team roles are operational responsibilities inside a specific team.
+
+Recommended fields for `campaign_team_role`:
+
+- `id`
+- `team_id`
+- `name`
+- `description`
+- `is_active`
+- `sort_order`
+- timestamps
+
+Recommended `campaign_team_member` shape:
+
+- `id`
+- `team_id`
+- `campaign_member_id`
+- `team_role_id` nullable
+- timestamps
+
+Recommendations:
+
+- each team should support its own role list
+- a member should be assignable to a team without picking a specific role
+- `team_role_id = null` should mean plain `Member` participation
+- one member should hold at most one explicit team role per team in v1
+- members can still belong to many different teams
+
+Examples:
+
+- Team: `Warehouse Crew`
+  - `Member`
+  - `Lead`
+  - `Gift Check-In`
+  - `Runner`
+  - `Sorter`
+- Team: `Sponsor Callers`
+  - `Member`
+  - `Lead`
+  - `Caller`
+
+Important distinction:
+
+- team roles are not app permissions
+- team roles are not shared globally across campaigns
+- team roles should be editable as part of team management
+- plain team membership without a role is valid and should render as `Member`
+
+### 6. Communication Audiences
 
 The communications system should eventually support audiences based on:
 
 - one or more teams
+- one or more team roles within a team
 - one or more access roles
 - all members with email
 - all members with app access
 - manual member selection
 
 This should be designed now even if the actual scheduler integration lands later.
+
+## Workspace Direction
+
+The Team section should remain table-first, but the UI language must be more
+explicit.
+
+Recommended workspace split:
+
+- top summary for managers, members, app-enabled members, and teams
+- center roster table for people
+- side panel for teams
+- row click opens a member drawer
+- team click opens a team drawer
+
+Member drawer sections:
+
+- profile
+- app access
+- app access roles
+- team memberships
+
+Team drawer sections:
+
+- team metadata
+- team roles
+- team members grouped by role
+
+The team drawer should make `create team` and `define team roles` part of the
+same workflow so campaign managers do not have to jump between unrelated
+screens to finish the setup.
 
 ## Recommended Data Model
 

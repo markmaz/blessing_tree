@@ -5,7 +5,7 @@ Last updated: 2026-05-20
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Team phase 5 is implemented with the Team Studio frontend rewrite; the next step is communications audience integration on top of teams and member filters
+- Current step: Team phase 5 is implemented with the Team Studio frontend rewrite; the Team design is now being refined to separate fixed app access roles from team-scoped team roles before communications audience integration continues
 
 ## Recently Completed
 
@@ -72,6 +72,7 @@ Last updated: 2026-05-20
 - Implemented Team redesign phase 3 with `campaign_team`, `campaign_team_member`, a backend team service, backend tests, and local MySQL verification against `blessing_tree`
 - Implemented Team redesign phase 4 with member, access-role, team, membership, app-access, and aggregate Team workspace APIs plus backend tests
 - Implemented Team redesign phase 5 with a member-centric Team Studio frontend workspace, roster table, team panel, Query Forge-style drawers, and automated frontend tests
+- Revised the Team design and implementation plan so teams can carry their own operational roles separately from app access roles, and so plain team membership without a role is valid
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Fixed backend runtime gaps discovered during live stack verification:
@@ -84,9 +85,11 @@ Last updated: 2026-05-20
 
 ## Immediate Next Steps
 
-1. Use teams and member filters as audience sources in the Communications builder and future scheduler flows
-2. Expand Team workspace coverage around invite/link flows and team-member editing as new backend behavior lands
-3. After the Team write paths move over, retire the temporary legacy `campaign_user_role` fallback in authorization resolution
+1. Add backend support for team-scoped roles and role-less `Member` team participation
+2. Expose the fixed app access role catalog from the backend so the frontend stops duplicating it
+3. Refine the Team workspace UI to separate `App Access Roles` from team memberships and team roles
+4. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
+5. After the Team write paths move over, retire the temporary legacy `campaign_user_role` fallback in authorization resolution
 
 ## Blockers Or Ambiguities
 

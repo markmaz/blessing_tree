@@ -80,9 +80,9 @@
 ## Campaign Team Workspace Direction
 
 - Status: active
-- Decision: redesign Campaign Studio Team around a campaign roster workspace instead of a direct app-user assignment flow. Treat campaign members, app access, fixed access roles, and user-defined teams as separate concepts. Keep access roles fixed for RBAC, but use teams for operational grouping and email targeting.
-- Rationale: the current Team flow assumes every person is an app user and overloads roles as the only grouping mechanism. That does not fit the real operating model where some campaign participants never log in, some people hold multiple responsibilities, and campaign managers need named groups such as Sponsor Callers or Pickup Weekend Team for communication and coordination.
-- Consequence: add a `campaign_member`-centered design, make app access optional, keep RBAC code-defined, add user-defined teams, and move the Team UI toward a table-plus-drawer workspace instead of a one-role-at-a-time search flow.
+- Decision: redesign Campaign Studio Team around a campaign roster workspace instead of a direct app-user assignment flow. Treat campaign members, app access, fixed app access roles, user-defined teams, and team-scoped team roles as separate concepts. Keep app access roles fixed for RBAC, but use teams and team roles for operational grouping and email targeting.
+- Rationale: the earlier Team flow assumed every person was an app user and overloaded roles as the only grouping mechanism. That still left a gap once the new roster workspace landed, because campaign managers also need to assign people to teams without granting app permissions and may want team-specific responsibilities such as `Lead`, `Caller`, or `Gift Check-In` inside a given team.
+- Consequence: keep `campaign_member` as the roster source of truth, make app access optional, keep RBAC code-defined and backend-authoritative, rename UI language to `App Access Roles` where applicable, add team-owned role definitions, allow plain team membership with no explicit role, and evolve communications audiences to target teams and team roles separately from RBAC.
 
 ## Team Phase 2 Transition Policy
 

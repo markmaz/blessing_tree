@@ -1,5 +1,13 @@
 # Campaign Team Implementation Plan
 
+Last updated: 2026-05-20
+
+## Status
+
+- Phases 1 through 5 are implemented.
+- This revision adds phases 6 through 10 to separate app access roles from
+  team-scoped roles and to carry that distinction through communications.
+
 ## Objective
 
 Implement the Campaign Team redesign in a way that supports:
@@ -7,6 +15,7 @@ Implement the Campaign Team redesign in a way that supports:
 - a real campaign roster independent of app login
 - fixed RBAC access roles for app behavior
 - user-defined teams for operations and communication targeting
+- optional team-scoped roles for operational responsibility
 - a Query Forge-style table-plus-drawer Team workspace
 - a safe transition from the current assignment-only model
 
@@ -208,7 +217,117 @@ Replace the current assignment-first Team UI with the table-plus-drawer workspac
 - team creation/edit flow
 - frontend automated tests for the new workspace
 
-## Phase 6: Communications Audience Integration
+## Phase 6: Team Role Separation
+
+### Goal
+
+Separate app access roles from team-scoped operational roles.
+
+### Tasks
+
+1. Add `campaign_team_role`
+   - create DB migration
+   - add model
+   - add uniqueness constraint for team-scoped role names
+   - add ordering and active status support
+
+2. Extend `campaign_team_member`
+   - add nullable `team_role_id`
+   - interpret `null` as plain `Member` participation
+   - keep one membership row per member/team pair
+
+3. Update backend service rules
+   - allow member assignment to a team with no explicit role
+   - validate that explicit team roles belong to the target team
+   - prevent access-role keys from being reused as implicit team roles
+
+4. Add app access role catalog contract
+   - expose fixed RBAC roles from the backend
+   - stop duplicating app access role definitions in the frontend
+   - rename frontend labels to `App Access Roles`
+
+### Deliverables
+
+- migration for `campaign_team_role` and `campaign_team_member.team_role_id`
+- model and relationship wiring
+- service-layer support for role-less and role-specific team membership
+- backend app access role catalog contract
+
+## Phase 7: Team Role APIs And Workspace Expansion
+
+### Goal
+
+Make teams and team roles manageable in the same workflow.
+
+### Tasks
+
+1. Add team-role APIs
+   - `GET /api/v1/campaigns/:campaignId/teams/:teamId/roles`
+   - `POST /api/v1/campaigns/:campaignId/teams/:teamId/roles`
+   - `PATCH /api/v1/campaigns/:campaignId/teams/:teamId/roles/:roleId`
+
+2. Expand team membership APIs
+   - support optional `teamRoleId` on create
+   - support updating a member's team role without removing membership
+
+3. Expand Team workspace aggregate payload
+   - include app access role catalog from the backend
+   - include per-team role catalogs
+   - include member team-role assignments
+   - keep app access roles and team roles as clearly separate payload fields
+
+4. Add serializer and validation separation
+   - `app_access_roles`
+   - `team_roles`
+   - `team_memberships`
+
+### Deliverables
+
+- team-role CRUD APIs
+- expanded team membership APIs
+- aggregate workspace contract with separate app access role and team role data
+
+## Phase 8: Frontend Team Workspace Refinement
+
+### Goal
+
+Align the Team Studio experience with the separated access-role and team-role model.
+
+### Tasks
+
+1. Rename UI surfaces
+   - `Roles` becomes `App Access Roles` where it refers to RBAC
+   - keep team-role language scoped to team membership only
+
+2. Expand the member drawer
+   - show app access roles separately from team memberships
+   - allow assigning a member to a team with no explicit team role
+   - allow assigning or changing a specific team role later
+
+3. Expand the team drawer
+   - create/edit team metadata
+   - create/edit/deactivate team roles
+   - assign members to the team
+   - optionally assign a role as part of the membership workflow
+
+4. Replace hardcoded frontend app access role options
+   - consume the backend role catalog
+   - remove duplicated frontend role definitions where possible
+
+5. Add frontend automated tests
+   - role-less membership assignment
+   - team-role create/edit
+   - app access role display and editing
+   - drawer labeling and separation of concerns
+
+### Deliverables
+
+- refined Team workspace UI
+- backend-driven app access role options
+- team-role-aware member and team drawers
+- automated test coverage for the refined flows
+
+## Phase 9: Communications Audience Integration
 
 ### Goal
 
@@ -218,6 +337,7 @@ Make Team data useful to communications instead of just visible in Studio.
 
 1. Add audience primitives based on:
    - teams
+   - team roles within a team
    - access roles
    - members with email
    - members with app access
@@ -235,7 +355,7 @@ Make Team data useful to communications instead of just visible in Studio.
 - backend audience resolution helpers
 - communications integration points
 
-## Phase 7: Cutover And Cleanup
+## Phase 10: Cutover And Cleanup
 
 ### Goal
 
@@ -274,7 +394,9 @@ Finish the transition off the old assignment-first Team model.
 - table filter/search tests
 - drawer open/edit/save tests
 - team create/edit tests
-- role assignment tests
+- app access role assignment tests
+- team role create/edit tests
+- role-less team membership tests
 - app-access link state tests
 
 ### Runtime Verification
@@ -299,6 +421,7 @@ For each schema phase:
   - `campaign_member.py`
   - `campaign_member_access_role.py`
   - `campaign_team.py`
+  - `campaign_team_role.py`
   - `campaign_team_member.py`
 - `blessing-tree-api/db/migration/`
   - Team redesign migrations
@@ -318,8 +441,9 @@ For each schema phase:
 3. `campaign_team` and `campaign_team_member`
 4. member/team aggregate APIs
 5. Team workspace frontend rewrite
-6. communications audience integration
-7. cutover and cleanup
+6. team-role separation and app access role catalog exposure
+7. communications audience integration
+8. cutover and cleanup
 
 ## Key Decisions Locked By This Plan
 
