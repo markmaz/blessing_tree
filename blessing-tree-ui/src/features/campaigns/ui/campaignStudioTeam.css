@@ -145,9 +145,12 @@
   min-width: 0;
 }
 
-.campaign-team-table__person span {
-  color: var(--blessing-text-light);
-  font-size: 0.88rem;
+.campaign-team-table__detail {
+  min-width: 0;
+}
+
+.campaign-team-table__detail .campaign-chip {
+  font-size: 0.76rem;
   overflow-wrap: anywhere;
 }
 

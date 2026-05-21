@@ -103,10 +103,20 @@ export function CampaignStudioTeamListTable({
               <td>
                 <div className="campaign-team-table__person">
                   <strong>{team.name}</strong>
-                  <span>
-                    {team.memberCount} {team.memberCount === 1 ? 'member' : 'members'} ·{' '}
-                    {team.roles.length} {team.roles.length === 1 ? 'role' : 'roles'}
-                  </span>
+                  <div className="campaign-chip-row campaign-team-table__detail">
+                    {team.roles.length === 0 ? (
+                      <span className="campaign-chip campaign-chip-muted">Member Only</span>
+                    ) : (
+                      team.roles.map((role) => (
+                        <span
+                          key={role.id}
+                          className={`campaign-chip ${role.isActive ? '' : 'campaign-chip-muted'}`}
+                        >
+                          {role.name}
+                        </span>
+                      ))
+                    )}
+                  </div>
                 </div>
               </td>
               <td className="text-muted">{team.description?.trim() || 'No description yet'}</td>
