@@ -56,7 +56,7 @@ export function CampaignStudioReadinessSection({
         description="These checks come from the backend readiness evaluator and are grouped by what they mean for the campaign lifecycle."
       >
         <div className="campaign-studio__readiness-summary-row mb-4">
-          <div className="campaign-studio__stat-card campaign-studio__readiness-summary-card campaign-studio__readiness-summary-card--overall">
+          <div className="campaign-studio__stat-card campaign-studio__readiness-summary-card">
             <span className="campaign-studio__stat-label">Overall</span>
             <strong>{toDisplayLabel(readiness.overallStatus)}</strong>
           </div>

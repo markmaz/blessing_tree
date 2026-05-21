@@ -673,38 +673,27 @@
 }
 
 .campaign-studio__readiness-summary-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  padding-bottom: 0.15rem;
 }
 
 .campaign-studio__readiness-summary-card {
-  flex: 0 0 auto;
+  min-width: 0;
   padding: 0.8rem 0.85rem;
-  min-width: 8.5rem;
 }
 
 .campaign-studio__readiness-summary-card .campaign-studio__stat-label {
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   letter-spacing: 0.03em;
   white-space: nowrap;
 }
 
 .campaign-studio__readiness-summary-card strong {
   display: block;
-  font-size: 0.92rem;
+  font-size: 0.82rem;
   line-height: 1.2;
   white-space: nowrap;
-}
-
-.campaign-studio__readiness-summary-card--overall strong {
-  font-size: 0.88rem;
-}
-
-.campaign-studio__readiness-summary-card--overall {
-  min-width: 12rem;
 }
 
 .campaign-studio__readiness-group-card,
