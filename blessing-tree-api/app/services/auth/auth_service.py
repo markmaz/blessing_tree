@@ -58,11 +58,48 @@ class AuthService:
 
         email = self._normalize_email(self._get_userinfo_field(userinfo, "email"))
         if not email:
-            raise NotApproved(details={"email": None, "provider": provider_key})
+            raise NotApproved(
+                "Use your invitation link to finish setup",
+                details={"email": None, "provider": provider_key},
+            )
 
-        user = self._find_user_by_email(db, email)
-        if user is None or not user.is_active:
-            raise NotApproved(details={"email": email, "provider": provider_key})
+        raise NotApproved(
+            "Use your invitation link to finish setup",
+            details={"email": email, "provider": provider_key},
+        )
+
+    def bind_oauth_identity(self, db: Session, user: AppUser, provider: str, userinfo) -> AuthIdentity:
+        provider_key = (provider or "").strip().upper()
+        if not provider_key:
+            raise OAuthError("Missing provider")
+
+        sub = self._get_userinfo_field(userinfo, "sub")
+        if not sub:
+            raise OAuthError("User info missing subject")
+
+        email = self._normalize_email(self._get_userinfo_field(userinfo, "email"))
+
+        existing_by_sub = (
+            db.query(AuthIdentity)
+            .filter(AuthIdentity.provider == provider_key, AuthIdentity.provider_sub == sub)
+            .one_or_none()
+        )
+        if existing_by_sub is not None:
+            if existing_by_sub.user_id != user.id:
+                raise OAuthError("OAuth identity already linked to another user")
+            existing_by_sub.email = email
+            return existing_by_sub
+
+        existing_by_user = (
+            db.query(AuthIdentity)
+            .filter(AuthIdentity.user_id == user.id, AuthIdentity.provider == provider_key)
+            .one_or_none()
+        )
+        if existing_by_user is not None:
+            existing_by_user.provider_sub = sub
+            existing_by_user.email = email
+            existing_by_user.is_active = True
+            return existing_by_user
 
         identity = AuthIdentity(
             id=uuid.uuid4(),
@@ -74,11 +111,16 @@ class AuthService:
             is_active=True,
         )
         db.add(identity)
+        return identity
 
-        user.last_login_at = datetime.utcnow()
-        db.commit()
-
-        return self._issue_tokens(user, provider_key, ip, user_agent)
+    def issue_user_session(
+        self,
+        user: AppUser,
+        provider: str,
+        ip: str | None,
+        user_agent: str | None,
+    ) -> tuple[dict, str]:
+        return self._issue_tokens(user, provider, ip, user_agent)
 
     def login_local(self, db: Session, email: str, password: str, ip: str | None, user_agent: str | None) -> tuple[dict, str]:
         email_norm = self._normalize_email(email)

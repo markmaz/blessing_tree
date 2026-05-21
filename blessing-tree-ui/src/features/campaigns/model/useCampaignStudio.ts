@@ -1,0 +1,357 @@
+import { useEffect, useState } from 'react';
+import {
+  createCampaignEvent,
+  deleteCampaignEvent,
+  updateCampaignEvent,
+} from '@/features/campaigns/api/campaignStudioScheduleApi';
+import {
+  createCommunicationSchedule,
+  createCommunicationTemplate,
+  deleteCommunicationTemplate,
+  deleteCommunicationSchedule,
+  getCampaignStudio,
+  saveCampaignMilestones,
+  updateCommunicationTemplate,
+  updateCommunicationSchedule,
+} from '@/features/campaigns/api/campaignStudioApi';
+import { createCampaignAssignment } from '@/features/campaigns/api/campaignStudioTeamApi';
+import type {
+  CampaignStudioData,
+  CommunicationTemplate,
+  CreateCampaignAssignmentInput,
+  CreateCampaignEventInput,
+  CreateCommunicationScheduleInput,
+  CreateCommunicationTemplateInput,
+  SaveCampaignMilestoneInput,
+  UpdateCommunicationTemplateInput,
+  UpdateCommunicationScheduleInput,
+  UpdateCampaignEventInput,
+} from '@/features/campaigns/model/campaignStudioTypes';
+
+interface CampaignStudioState {
+  isLoading: boolean;
+  isSaving: boolean;
+  error: string | null;
+  saveMessage: string | null;
+  studio: CampaignStudioData | null;
+}
+
+const emptyState: CampaignStudioState = {
+  isLoading: false,
+  isSaving: false,
+  error: null,
+  saveMessage: null,
+  studio: null,
+};
+
+export function useCampaignStudio(campaignId: string | null) {
+  const [state, setState] = useState<CampaignStudioState>(emptyState);
+
+  useEffect(() => {
+    if (!campaignId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const load = async () => {
+      setState((currentState) => ({
+        ...currentState,
+        isLoading: true,
+        error: null,
+      }));
+
+      try {
+        const studio = await getCampaignStudio(campaignId);
+        if (cancelled) {
+          return;
+        }
+        setState({
+          isLoading: false,
+          isSaving: false,
+          error: null,
+          saveMessage: null,
+          studio,
+        });
+      } catch (loadError) {
+        if (cancelled) {
+          return;
+        }
+
+        setState({
+          isLoading: false,
+          isSaving: false,
+          error: toErrorMessage(loadError, 'Unable to load campaign studio'),
+          saveMessage: null,
+          studio: null,
+        });
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignId]);
+
+  const reload = async () => {
+    if (!campaignId) {
+      return;
+    }
+
+    setState((currentState) => ({
+      ...currentState,
+      isLoading: true,
+      error: null,
+    }));
+
+    try {
+      const studio = await getCampaignStudio(campaignId);
+      setState((currentState) => ({
+        ...currentState,
+        isLoading: false,
+        studio,
+      }));
+    } catch (reloadError) {
+      setState((currentState) => ({
+        ...currentState,
+        isLoading: false,
+        error: toErrorMessage(reloadError, 'Unable to refresh campaign studio'),
+      }));
+    }
+  };
+
+  const addCommunicationTemplate = async (
+    input: CreateCommunicationTemplateInput
+  ): Promise<CommunicationTemplate | null> => {
+    if (!campaignId) {
+      return null;
+    }
+    return performMutationResult(
+      async () => createCommunicationTemplate(campaignId, input),
+      'Communication template added.'
+    );
+  };
+
+  const patchCommunicationTemplate = async (
+    templateId: string,
+    input: UpdateCommunicationTemplateInput
+  ): Promise<CommunicationTemplate | null> => {
+    if (!campaignId) {
+      return null;
+    }
+    return performMutationResult(
+      async () => updateCommunicationTemplate(campaignId, templateId, input),
+      'Communication template updated.'
+    );
+  };
+
+  const removeCommunicationTemplate = async (templateId: string) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await deleteCommunicationTemplate(campaignId, templateId);
+      },
+      'Communication template removed.'
+    );
+  };
+
+  const addCommunicationSchedule = async (input: CreateCommunicationScheduleInput) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await createCommunicationSchedule(campaignId, input);
+      },
+      'Communication schedule added.'
+    );
+  };
+
+  const persistMilestones = async (milestones: SaveCampaignMilestoneInput[]) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await saveCampaignMilestones(campaignId, milestones);
+      },
+      'Milestones saved.'
+    );
+  };
+
+  const addAssignment = async (input: CreateCampaignAssignmentInput) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await createCampaignAssignment(campaignId, input);
+      },
+      'Campaign assignment added.'
+    );
+  };
+
+  const addScheduleEvent = async (input: CreateCampaignEventInput) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await createCampaignEvent(campaignId, input);
+      },
+      'Schedule event added.'
+    );
+  };
+
+  const updateScheduleEvent = async (
+    eventId: string,
+    input: UpdateCampaignEventInput
+  ) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await updateCampaignEvent(campaignId, eventId, input);
+      },
+      'Schedule event updated.'
+    );
+  };
+
+  const removeScheduleEvent = async (eventId: string) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await deleteCampaignEvent(campaignId, eventId);
+      },
+      'Schedule event removed.'
+    );
+  };
+
+  const patchCommunicationSchedule = async (
+    scheduleId: string,
+    input: UpdateCommunicationScheduleInput
+  ) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await updateCommunicationSchedule(campaignId, scheduleId, input);
+      },
+      'Communication schedule updated.'
+    );
+  };
+
+  const removeCommunicationSchedule = async (scheduleId: string) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await deleteCommunicationSchedule(campaignId, scheduleId);
+      },
+      'Communication schedule removed.'
+    );
+  };
+
+  const clearSaveMessage = () => {
+    setState((currentState) => ({
+      ...currentState,
+      saveMessage: null,
+    }));
+  };
+
+  const performMutation = async (
+    mutate: () => Promise<void>,
+    successMessage: string
+  ) => {
+    setState((currentState) => ({
+      ...currentState,
+      isSaving: true,
+      error: null,
+      saveMessage: null,
+    }));
+
+    try {
+      await mutate();
+      const studio = await getCampaignStudio(campaignId as string);
+      setState({
+        isLoading: false,
+        isSaving: false,
+        error: null,
+        saveMessage: successMessage,
+        studio,
+      });
+      return true;
+    } catch (mutationError) {
+      setState((currentState) => ({
+        ...currentState,
+        isSaving: false,
+        error: toErrorMessage(mutationError, 'Unable to save campaign studio changes'),
+        saveMessage: null,
+      }));
+      return false;
+    }
+  };
+
+  const performMutationResult = async <T>(
+    mutate: () => Promise<T>,
+    successMessage: string
+  ): Promise<T | null> => {
+    setState((currentState) => ({
+      ...currentState,
+      isSaving: true,
+      error: null,
+      saveMessage: null,
+    }));
+
+    try {
+      const result = await mutate();
+      const studio = await getCampaignStudio(campaignId as string);
+      setState({
+        isLoading: false,
+        isSaving: false,
+        error: null,
+        saveMessage: successMessage,
+        studio,
+      });
+      return result;
+    } catch (mutationError) {
+      setState((currentState) => ({
+        ...currentState,
+        isSaving: false,
+        error: toErrorMessage(mutationError, 'Unable to save campaign studio changes'),
+        saveMessage: null,
+      }));
+      return null;
+    }
+  };
+
+  return {
+    ...state,
+    reload,
+    addAssignment,
+    addCommunicationTemplate,
+    patchCommunicationTemplate,
+    removeCommunicationTemplate,
+    addCommunicationSchedule,
+    patchCommunicationSchedule,
+    removeCommunicationSchedule,
+    persistMilestones,
+    addScheduleEvent,
+    updateScheduleEvent,
+    removeScheduleEvent,
+    clearSaveMessage,
+  };
+}
+
+function toErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}

@@ -9,16 +9,33 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:500
 );
 const AUTH_BASE_PATH = '/api/v1/auth';
 
+export type OAuthProvider = 'google' | 'yahoo';
+
 export interface LoginResponse {
   userId: string;
   email: string;
   token: string;
+  role: string | null;
 }
 
 export interface SessionResponse {
   userId: string;
   email: string;
   token: string;
+  role: string | null;
+}
+
+export interface InviteValidationResponse {
+  invitationId: string;
+  userId: string;
+  email: string;
+  displayName: string;
+  expiresAt: string;
+  status: 'pending' | 'accepted';
+  acceptedAt: string | null;
+  onboardingComplete: boolean;
+  hasLocalIdentity: boolean;
+  hasOauthIdentity: boolean;
 }
 
 interface LocalLoginApiResponse {
@@ -30,10 +47,22 @@ interface LocalLoginApiResponse {
 interface TokenClaims {
   sub?: unknown;
   email?: unknown;
+  role?: unknown;
 }
 
 function authUrl(path: string): string {
   return `${API_BASE_URL}${AUTH_BASE_PATH}${path}`;
+}
+
+export function getOAuthLoginUrl(provider: OAuthProvider): string {
+  const redirectUri = `${API_BASE_URL}${AUTH_BASE_PATH}/${provider}/callback`;
+  const params = new URLSearchParams({ redirect_uri: redirectUri });
+  return `${API_BASE_URL}${AUTH_BASE_PATH}/${provider}/login?${params.toString()}`;
+}
+
+export function getInviteOAuthLoginUrl(provider: OAuthProvider, token: string): string {
+  const params = new URLSearchParams({ token });
+  return `${API_BASE_URL}${AUTH_BASE_PATH}/invite/${provider}/login?${params.toString()}`;
 }
 
 function readErrorMessage(payload: unknown, fallback: string): string {
@@ -96,6 +125,15 @@ function getEmailFromToken(token: string): string | null {
   }
 }
 
+function getRoleFromToken(token: string): string | null {
+  try {
+    const payload = getTokenClaims(token);
+    return typeof payload.role === 'string' && payload.role ? payload.role : null;
+  } catch {
+    return null;
+  }
+}
+
 function getTokenClaims(token: string): TokenClaims {
   const tokenParts = token.split('.');
   if (tokenParts.length < 2) {
@@ -139,6 +177,7 @@ export async function login(
     userId,
     email,
     token: payload.access_token,
+    role: getRoleFromToken(payload.access_token),
   };
 }
 
@@ -189,5 +228,53 @@ export async function refreshSession(): Promise<SessionResponse> {
     userId: getUserIdFromToken(payload.access_token) ?? '',
     email: getEmailFromToken(payload.access_token) ?? '',
     token: payload.access_token,
+    role: getRoleFromToken(payload.access_token),
   };
+}
+
+export async function validateInviteToken(token: string): Promise<InviteValidationResponse> {
+  const response = await fetch(authUrl(`/invite/validate/${encodeURIComponent(token)}`), {
+    method: 'GET',
+  });
+  const payload = await parseJsonResponse<{
+    invitation_id: string;
+    user_id: string;
+    email: string;
+    display_name: string;
+    expires_at: string;
+    status: 'pending' | 'accepted';
+    accepted_at: string | null;
+    onboarding_complete: boolean;
+    has_local_identity: boolean;
+    has_oauth_identity: boolean;
+  }>(response);
+  return {
+    invitationId: payload.invitation_id,
+    userId: payload.user_id,
+    email: payload.email,
+    displayName: payload.display_name,
+    expiresAt: payload.expires_at,
+    status: payload.status,
+    acceptedAt: payload.accepted_at,
+    onboardingComplete: payload.onboarding_complete,
+    hasLocalIdentity: payload.has_local_identity,
+    hasOauthIdentity: payload.has_oauth_identity,
+  };
+}
+
+export async function acceptInvite(token: string, input: {
+  displayName: string;
+  email: string;
+  password: string;
+}): Promise<void> {
+  const response = await fetch(`${authUrl('/invite/accept')}?token=${encodeURIComponent(token)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      display_name: input.displayName,
+      email: input.email,
+      password: input.password,
+    }),
+  });
+  await parseJsonResponse(response);
 }

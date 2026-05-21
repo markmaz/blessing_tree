@@ -40,6 +40,7 @@ blessing-tree-api/.ruff_cache/
 blessing-tree-api/.hypothesis/
 blessing-tree-api/.venv/
 blessing-tree-api/default_log
+blessing-tree-api/celerybeat-schedule*
 
 # Frontend
 node_modules/
@@ -52,6 +53,8 @@ blessing-tree-ui/node_modules/
 blessing-tree-ui/dist/
 blessing-tree-ui/.vite/
 blessing-tree-ui/coverage/
+blessing-tree-ui/test-results/
+blessing-tree-ui/playwright-report/
 
 # Build / cache artifacts
 .cache/

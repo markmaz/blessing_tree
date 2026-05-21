@@ -46,7 +46,7 @@ Recommended first slice:
 
 Deliverables:
 
-- campaign-scoped RBAC foundation
+- campaign-scoped RBAC enforcement infrastructure on top of the existing foundation
 - backend CRUD/read endpoints
 - typed frontend API client
 - list/detail/create/edit screens
@@ -76,8 +76,8 @@ Goal: make the project safer to evolve.
 
 If momentum matters, start here:
 
-1. Implement the RBAC foundation from `docs/engineering/rbac-design.md`.
-2. Apply it to the first campaign-scoped APIs.
-3. Implement campaign/recipient/wishlist read APIs.
+1. Expand the next real domain slice into recipient groups, recipients, and wishlists.
+2. Decide whether campaign setup editing should also be available from the dashboard or remain centered on detail/studio.
+3. Decide whether team assignment editing should add role changes and deactivation directly in Studio.
 
-That sequence clears the largest current ambiguity and opens the path to real application work.
+The directory/search flow for Studio team assignment is now complete. The remaining sequence opens the path from campaign setup into the first real operating data slice.

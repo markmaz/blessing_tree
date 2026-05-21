@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-20
+Last updated: 2026-05-21
 
 ## Project Snapshot
 
@@ -13,14 +13,66 @@ Last updated: 2026-05-20
   - Flask API
   - auth routes live
   - domain models and migrations exist
+  - RBAC foundation now exists with campaign role persistence, capability bundles, and an authorization service
+  - campaign roster foundation now exists with a new `campaign_member` model and migration
+  - member-centric RBAC transition now exists with a new `campaign_member_access_role` model and member-first authorization resolution
+  - operational team foundation now exists with `campaign_team`, `campaign_team_member`, `campaign_team_role`, and backend team-role-aware services
+  - Team workspace API foundation now exists with member, access-role, team, membership, app-access, and aggregate workspace endpoints
+  - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
+  - Campaign Studio backend support now exists for assignments, campaign-scoped communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, aggregate studio payloads, and create-from-previous-campaign cloning support
+  - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
+  - local outbound email is now operational in development through a repo-owned SMTP sink plus configurable TLS/SSL flags, so invite delivery and scheduled communication dispatch can be exercised end to end without external SMTP credentials
+  - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
+  - admin LLM test/health now probes the real generation path against the configured model instead of treating `/models` reachability as sufficient
+  - invitation-centric onboarding now supports Google, Yahoo, and local password from the invite funnel; generic Google/Yahoo OAuth remains limited to already-linked returning users, and invite validation now exposes accepted-vs-pending onboarding state for cleaner frontend handling
+  - backend startup now imports the full SQLAlchemy model registry during app creation
+  - local auth compatibility now depends on `bcrypt 4.1.3` with `passlib 1.7.4`
   - runtime and dev dependency manifests now exist
   - checked-in `.env.example` now exists for local bootstrap
+  - checked-in `version.json` now exists for backend build versioning
   - env/config naming is now aligned more closely with Query Forge for auth, Valkey, pool settings, and frontend base URL
 - Frontend:
   - React + TypeScript + Vite
   - protected shell exists
-  - page shells exist for dashboard, families, donations, reports, and admin
-  - shared authenticated client exists for future protected data APIs
+  - the protected app shell now includes a footer with `QueryForge, LLC` copyright plus frontend/backend version display
+  - the admin page now supports user invitations, LLM configuration/testing, runtime health visibility, and app feature enable/disable controls
+  - Playwright browser E2E coverage now exists for invite onboarding, create-from-previous-campaign, and communications template save flows
+  - admin user management now uses a Query Forge-style searchable/sortable table workspace with row actions plus invite and detail drawers instead of the earlier combined invite card, includes top filter cards for `All`, `Active`, and `Invited`, and supports activate/deactivate directly from the menu
+  - the admin area now exposes child navigation in the left sidebar under `Admin` for user management, LLM configuration, health checks, and app capabilities, with feature toggles no longer mixed into the LLM page
+  - the Admin LLM page now has provider-specific behavior so `OpenAI` uses a default endpoint plus model presets instead of making admins type raw base URLs, while `OpenAI-Compatible` remains fully editable
+  - the Admin LLM page can now also load the configured provider's available models into a combo/input model field so admins can type custom models or choose from what the provider actually exposes, and it now surfaces provider catalog failures instead of silently showing only fallback presets
+  - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
+  - dashboard is now campaign-aware and loads live summary/access data from the backend
+  - Campaign Studio now has live Team, Communications, Schedule, Readiness, and Settings sections backed by the backend studio APIs
+  - Campaign Studio AI direction is now explicitly defined as a structured draft/review/apply action system rather than a mostly advisory prompt helper
+  - Campaign Studio Readiness now uses grouped lifecycle-aware backend output with summary cards, phase status, grouped findings, direct section actions, and AI prompt integration
+  - Campaign Studio Schedule is now calendar-first, with modal create/edit/delete for events, milestones, and communication schedules directly from the month grid
+  - Campaign Studio AI rail can now draft and apply schedule events, milestones, and communications from prompt input
+  - Campaign Studio AI phase 1 now uses a real backend draft contract through `POST /api/v1/campaigns/<campaign_id>/ai/draft`, and the frontend drawer now renders structured AI action cards instead of relying on a frontend-local schedule parser
+  - Campaign Studio AI phase 2 now supports Communications actions, including drafting a new template and optionally placing a linked communication on the campaign calendar through best-effort multi-action apply
+  - Campaign Studio AI phase 3 now supports Team actions, including drafting a new team, team roles, roster members, and dependent team assignments through the same best-effort draft/review/apply flow
+  - Campaign Studio AI phase 4 now supports Readiness fix bundles, including cross-section actions for settings, milestones, templates, schedule placement, and blocked fix-plan cards when user-specific input is still required
+  - Campaign Studio AI phase 5 now supports real Settings-section actions, including lifecycle/status suggestions, direct campaign settings update drafts, and inline edit-before-apply for settings/status payloads in the AI drawer
+  - Campaign Studio AI now uses the configured admin LLM as the primary draft engine and falls back to the deterministic backend draft logic when the LLM is missing, disabled, unavailable, or returns an invalid structured response
+  - the LLM draft normalizer now repairs common communications template field aliases like `subject`, `subject_line`, `body`, and `content` instead of dropping to deterministic fallback when the configured LLM omits the exact `subject_template` or `body_template` keys
+  - Campaign Studio now uses a compact icon-only section rail at medium widths, and the schedule calendar/AI draft controls have responsive overflow guards for narrower layouts
+  - Campaign Studio AI draft type selection now uses a compact horizontal segmented control in the rail instead of stacked mini-cards
+  - Campaign Studio AI now uses a more Query Forge-like drawer pattern with a conversation thread, prompt copy action, prompt suggestions, clear/new-session tools, and a generic composer instead of a schedule-only `Draft Calendar Change` action
+  - Schedule destructive actions now use custom in-app confirmation UI instead of native browser dialogs
+  - Campaign Studio Team now uses a member-centric roster workspace with separate People and Teams tables plus edit drawers for member profiles, fixed access roles, app access, operational teams, and team-scoped team roles
+  - Team memberships can now be plain `Member` participation or explicit team-role assignments, separate from app access roles
+  - the Team workspace now keeps glossary help inline through `?` controls beside terms like `Member Type`, `App Access`, `App Access Roles`, and `Teams`, and the Studio AI drawer still exposes the same Team concept definitions when the Team section is selected
+  - the Team workspace now reads app access role labels and descriptions from the backend `role_catalog` contract instead of duplicating fixed role definitions in the frontend
+  - Team UI responsibilities are now split more cleanly: person drawers handle profile and app access, while team drawers own team setup and membership changes
+  - the Team workspace now presents People and Teams as separate first-class tables instead of using a side team rail, which makes the two management modes easier to scan and understand
+  - the Team workspace is now intentionally simplified around search and sortable tables instead of a large filter surface, with compact top stats and lighter People/Teams cards
+  - Campaign Studio Communications now uses a template-only builder with a collapsible tool rail, tighter content editing layout, a builder-side merge-field drawer, a stronger rendered-email preview surface, a lightweight persisted block model for heading, text, and image content, and inline uploads for small embedded images such as maps; the Studio AI panel is now hidden by default and opens as a right-side drawer
+  - Campaign Studio can now save milestone dates from the frontend
+  - a Vitest + Testing Library harness now exists for automated frontend tests
+  - app admins can now create campaigns from the campaign library UI
+  - campaign managers and app admins can now update campaign metadata from the detail page and Studio settings section
+  - page shells still exist for families, donations, reports, and admin
+  - shared authenticated client exists for protected data APIs
 
 ## Current Runtime Facts
 
@@ -28,6 +80,8 @@ Last updated: 2026-05-20
 - Backend dependency manifests:
   - `blessing-tree-api/requirements.txt`
   - `blessing-tree-api/requirements-dev.txt`
+- Backend build version file:
+  - `blessing-tree-api/version.json`
 - Backend env bootstrap:
   - `blessing-tree-api/.env.example`
 - Canonical docs:
@@ -35,8 +89,13 @@ Last updated: 2026-05-20
   - `ROADMAP.md`
   - `blessing-tree-api/README.md`
   - `blessing-tree-ui/README.md`
+  - `docs/engineering/campaign-team-design.md`
+  - `docs/engineering/campaign-team-implementation-plan.md`
+  - `docs/engineering/campaign-readiness-design.md`
+  - `docs/engineering/campaign-studio-ai-actions-design.md`
   - `docs/engineering/rbac-design.md`
   - `docs/engineering/rbac-implementation-plan.md`
+  - `docs/engineering/campaign-schedule-design.md`
 
 ## Auth Reality
 
@@ -49,11 +108,210 @@ Last updated: 2026-05-20
 - Backend auth routes currently cover:
   - local login
   - Google login/callback
+  - invite-scoped Google login
   - Yahoo login/callback
+  - invite-scoped Yahoo login
   - refresh
   - logout
+  - invite validate/accept
+- Local stack verification:
+  - Blessing Tree backend now boots correctly on port `5000`
+  - Blessing Tree frontend now serves correctly on port `5173`
+  - local login, refresh, logout, and protected campaign API routes were smoke-tested successfully against the running stack on 2026-05-20
+- backend CORS now accepts both `localhost` and `127.0.0.1` loopback frontend origins for local Studio work
+- local invitation onboarding has now been browser-smoke-tested end to end through the invite funnel using the local-password path; live Google/Yahoo provider smoke still depends on local provider credentials being configured
 - Active-session automatic token refresh on 401 is now available through the shared frontend API client.
-- RBAC direction is now documented: minimal app roles, campaign-scoped assignments, and code-defined capability bundles.
+- RBAC foundation now exists:
+  - `db/migration/V003__Campaign_User_Roles.sql`
+  - `app/features/rbac/constants.py`
+  - `app/features/rbac/models/campaign_user_role.py`
+  - `app/features/rbac/services/authorization_service.py`
+  - `app/features/rbac/decorators.py`
+  - `app/features/rbac/scope.py`
+- Team transition layer now exists:
+  - `db/migration/V008__Campaign_Member_Access_Roles.sql`
+  - `app/models/campaign_member_access_role.py`
+  - `app/models/campaign_member.py`
+  - member-first authorization resolution with legacy fallback in `app/features/rbac/services/authorization_service.py`
+- Team foundation now exists:
+  - `db/migration/V009__Campaign_Teams.sql`
+  - `db/migration/V010__Campaign_Team_Roles.sql`
+  - `app/models/campaign_team.py`
+  - `app/models/campaign_team_member.py`
+  - `app/models/campaign_team_role.py`
+  - `app/features/campaigns/team_service.py`
+- Team workspace API now exists:
+  - `app/features/campaigns/team_api.py`
+  - `app/features/campaigns/member_service.py`
+  - `app/features/campaigns/team_workspace_service.py`
+  - `app/features/campaigns/team_serializers.py`
+  - `app/features/campaigns/team_validation.py`
+  - `GET /api/v1/campaigns/<campaign_id>/team-workspace` now includes `role_catalog` for frontend app access role metadata
+  - Team APIs now also cover:
+    - `POST /api/v1/campaigns/<campaign_id>/teams/<team_id>/roles`
+    - `PATCH /api/v1/campaigns/<campaign_id>/teams/<team_id>/roles/<role_id>`
+    - `PATCH /api/v1/campaigns/<campaign_id>/teams/<team_id>/members/<member_id>` for team-role changes
+- Team design direction now explicitly distinguishes:
+  - fixed app access roles for RBAC
+  - team-scoped team roles for operational responsibility
+  - role-less team membership rendered as plain `Member`
+  - those team-role concepts are now implemented in the Team backend and Team Studio drawer
+- Local MySQL verification:
+  - `V003__Campaign_User_Roles.sql` has been applied to the local `blessing_tree` database
+  - verified columns, indexes, and foreign keys for `campaign_user_role`
+- Campaign API foundation now exists:
+  - `db/migration/V004__Campaign_Metadata.sql`
+  - `db/migration/V013__Campaign_Scoped_Communication_Templates.sql`
+  - `app/features/campaigns/api.py`
+  - `app/features/campaigns/service.py`
+  - `app/features/campaigns/serializers.py`
+  - `app/features/campaigns/validation.py`
+  - `app/features/campaigns/constants.py`
+  - create now accepts optional `source_campaign_id` for setup cloning
+- Campaign Studio backend support now exists:
+  - `db/migration/V005__Campaign_Studio_Support.sql`
+  - `db/migration/V006__Campaign_Schedule.sql`
+  - `app/features/campaigns/ai_draft_service.py`
+  - `app/features/campaigns/ai_llm_draft_service.py`
+  - `app/features/campaigns/studio_api.py`
+  - `app/features/campaigns/studio_schedule_service.py`
+  - `app/features/campaigns/studio_service.py`
+  - `app/features/campaigns/studio_serializers.py`
+  - `app/features/campaigns/studio_validation.py`
+  - `app/features/campaigns/studio_constants.py`
+  - communication templates are now campaign-scoped rather than global/shared
+- Local MySQL verification:
+  - `V004__Campaign_Metadata.sql` has been applied to the local `blessing_tree` database
+  - verified `campaign.description`
+  - verified unique year constraint removal
+  - verified non-unique `idx_campaign_year`
+  - `V005__Campaign_Studio_Support.sql` has been applied to the local `blessing_tree` database
+  - verified `communication_template`
+  - verified `campaign_milestone`
+  - verified `campaign_communication_schedule`
+  - `V006__Campaign_Schedule.sql` has been applied to the local `blessing_tree` database
+  - verified `campaign_event`
+  - verified schedule indexes and foreign keys
+  - `V007__Campaign_Members.sql` has been applied to the local `blessing_tree` database
+  - verified `campaign_member`
+  - verified campaign/app-user unique scope, indexes, and foreign keys
+  - `V008__Campaign_Member_Access_Roles.sql` has been applied to the local `blessing_tree` database
+  - verified `campaign_member_access_role`
+  - verified member-role unique scope, indexes, and foreign keys
+  - `V009__Campaign_Teams.sql` has been applied to the local `blessing_tree` database
+  - verified `campaign_team`
+  - verified `campaign_team_member`
+  - verified team/team-member unique scopes, indexes, and foreign keys
+  - `V010__Campaign_Team_Roles.sql` has been applied to the local `blessing_tree` database
+  - verified `campaign_team_role`
+  - verified `campaign_team_member.team_role_id`
+  - verified new indexes and foreign keys for team roles and membership role links
+  - `V013__Campaign_Scoped_Communication_Templates.sql` has been applied to the local `blessing_tree` database
+  - verified `communication_template.campaign_id`
+  - verified `uq_communication_template_campaign_key`
+  - verified campaign-scoped audience/active indexes and campaign foreign key
+- Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
+- Readiness direction is now explicitly lifecycle-aware and backend-driven:
+  - grouped categories instead of one flat finding list
+  - phase-aware gating for `draft`, `activate`, `operations`, and `close`
+  - readiness items should carry `category`, `action_label`, and `blocking_for`
+  - current readiness now reflects real automation health through worker heartbeat and recent execution-issue checks instead of the older placeholder warning
+- Campaign automation runtime now exists:
+  - `db/migration/V011__Campaign_Automation_Runtime.sql`
+  - `app/tasks/campaign_tasks.py`
+  - `app/features/campaigns/automation_dispatch_service.py`
+  - `app/features/campaigns/automation_lifecycle_service.py`
+  - `scripts/dev_smtp_sink.py`
+  - `app/features/campaigns/automation_readiness_service.py`
+  - `app/features/campaigns/automation_repository.py`
+  - `app/features/campaigns/runtime_health.py`
+  - `app/features/campaigns/template_renderer.py`
+  - `app/features/campaigns/recipient_resolver.py`
+- Admin runtime now exists:
+  - `db/migration/V012__Admin_Runtime.sql`
+  - `app/features/admin/api.py`
+  - `app/features/admin/invitation_service.py`
+  - `app/features/admin/llm_service.py`
+  - `app/features/admin/llm_runtime_service.py`
+  - `app/features/admin/health_service.py`
+  - `app/features/admin/feature_flag_service.py`
+  - `app/tasks/admin_tasks.py`
+- Local MySQL verification:
+  - `V011__Campaign_Automation_Runtime.sql` has been applied to the local `blessing_tree` database
+  - verified campaign communication delivery metadata columns
+  - verified `campaign_automation_execution`
+  - verified execution indexes and foreign keys
+- Local automation smoke on 2026-05-21:
+  - Blessing Tree worker and beat both boot successfully through `./.venv/bin/python -m celery -A app.celery ...`
+  - a due communication schedule was processed through the live worker
+  - execution records and schedule delivery-attempt metadata were written to MySQL
+  - worker heartbeat now reports healthy through the readiness/runtime health path
+  - the backend now uses a dedicated Celery queue named `bt` to avoid cross-talk with Query Forge tasks on shared local Valkey
+- Local admin runtime smoke on 2026-05-21:
+  - local admin login succeeds against `blessing_tree`
+  - `GET /api/v1/admin/health` returns database/celery/llm status
+  - `GET /api/v1/admin/features` returns authenticated feature-flag state for frontend gating
+  - `GET /api/v1/admin/users` returns existing users plus invitation state
+- Auth/onboarding direction is now explicitly invitation-centric:
+  - invite is the only first-time entry funnel
+  - invited users should choose Google, Yahoo, or local password from the invite flow
+  - generic OAuth login should remain for already-linked returning users only
+  - phase 1 is now implemented: generic OAuth no longer auto-links pre-provisioned users from `/login`
+- Frontend campaign routes now exist:
+  - `/campaigns`
+  - `/campaigns/:campaignId`
+  - `/campaigns/:campaignId/studio`
+  - selected campaign is persisted in local storage per user
+- Frontend verification now includes:
+  - `npm run lint`
+  - `npm run build`
+  - `npm run test`
+- A backend metadata endpoint now exists:
+  - `GET /api/v1/meta/version`
+- Local backend env note:
+  - the ignored local `blessing-tree-api/.env` has been corrected to point at `blessing_tree` for local runtime verification
+- Team migration note:
+  - because the app has no real users yet, phase 2 shipped without SQL backfill; legacy `campaign_user_role` reads remain as a temporary compatibility fallback until Team write flows move to `campaign_member_access_role`
+- UI policy note:
+  - all product UI buttons should include icons; text-only buttons are now against project rules
+- Live frontend verification on 2026-05-20 now includes:
+  - Studio Team section rendering the new member-centric roster workspace
+  - Studio Team table row drawers for people and teams against the running backend workspace APIs
+  - Studio Communications section rendering real template/schedule state
+  - Studio Communications section creating a template and schedule in-browser against the running backend
+  - Studio Communications now uses a compact file-style template rail with delete support, and template deletion is blocked when schedules still reference the template
+  - Studio Schedule section wiring to the unified schedule read APIs and milestone save path
+  - Studio Schedule now uses the calendar as the primary planning tool and can create/edit/delete schedule records from the shared modal
+  - Studio AI rail now drafts and applies schedule records through the real campaign event, milestone, and communication save paths
+  - Studio readiness now includes schedule-specific warnings for missing manual planning coverage and missing milestone-linked communication timing
+  - Studio Readiness now renders grouped findings, phase status cards, and direct section action buttons from the richer backend payload
+  - Studio Readiness section rendering backend readiness findings
+  - campaign create/update UI wiring against the existing backend campaign routes
+- Live stack verification on 2026-05-20 now also includes:
+  - `GET /api/v1/campaigns/<campaign_id>/studio`
+  - `POST /api/v1/campaigns/<campaign_id>/ai/draft`
+  - `GET /api/v1/campaigns/<campaign_id>/assignments`
+  - `GET /api/v1/campaigns/<campaign_id>/directory-users`
+  - backend test coverage now includes `GET /api/v1/campaigns/<campaign_id>/team-workspace`
+  - backend test coverage now includes `GET|POST /api/v1/campaigns/<campaign_id>/members`
+  - backend test coverage now includes `GET|PATCH /api/v1/campaigns/<campaign_id>/members/<member_id>`
+  - backend test coverage now includes `GET /api/v1/campaigns/<campaign_id>/member-access-roles`
+  - backend test coverage now includes `POST|PATCH /api/v1/campaigns/<campaign_id>/members/<member_id>/access-roles`
+  - backend test coverage now includes `GET|POST /api/v1/campaigns/<campaign_id>/teams`
+  - backend test coverage now includes `PATCH /api/v1/campaigns/<campaign_id>/teams/<team_id>`
+  - backend test coverage now includes `POST|DELETE /api/v1/campaigns/<campaign_id>/teams/<team_id>/members`
+  - backend test coverage now includes `POST /api/v1/campaigns/<campaign_id>/members/<member_id>/link-app-user`
+  - backend test coverage now includes `POST /api/v1/campaigns/<campaign_id>/members/<member_id>/invite-app-access`
+  - backend test coverage now includes `DELETE /api/v1/campaigns/<campaign_id>/members/<member_id>/app-access`
+  - `GET /api/v1/campaigns/<campaign_id>/communications/templates`
+  - `GET /api/v1/campaigns/<campaign_id>/communications/schedules`
+  - backend test coverage now includes `GET /api/v1/campaigns/<campaign_id>/schedule`
+  - backend test coverage now includes `GET|POST|PATCH|DELETE /api/v1/campaigns/<campaign_id>/events`
+  - `GET /api/v1/campaigns/<campaign_id>/milestones`
+  - `GET /api/v1/campaigns/<campaign_id>/readiness`
+  - `POST /api/v1/campaigns`
+  - `PATCH /api/v1/campaigns/<campaign_id>`
+  - live readiness verification now confirms schedule-specific codes such as `missing_manual_schedule`
 
 ## Knowledge Graph
 

@@ -1,5 +1,6 @@
 -r requirements.txt
 
+aiosmtpd==1.4.6
 coverage>=7,<8
 pytest==9.0.2
 ruff==0.15.0

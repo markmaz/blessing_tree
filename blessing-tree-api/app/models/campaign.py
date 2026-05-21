@@ -4,13 +4,21 @@ import uuid
 from datetime import date, datetime
 from typing import List, Optional, TYPE_CHECKING
 
-from sqlalchemy import Date, DateTime, Enum, Integer, String
+from sqlalchemy import Date, DateTime, Enum, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 from .uuid_bin import UUIDBin
 
 if TYPE_CHECKING:
+    from .campaign_automation_execution import CampaignAutomationExecution
+    from .campaign_event import CampaignEvent
+    from .campaign_member import CampaignMember
+    from .campaign_team import CampaignTeam
+    from .campaign_communication_schedule import CampaignCommunicationSchedule
+    from .communication_template import CommunicationTemplate
+    from .campaign_milestone import CampaignMilestone
+    from app.features.rbac.models.campaign_user_role import CampaignUserRole
     from .donation import Donation
     from .label_print_job import LabelPrintJob
     from .pickup import Pickup
@@ -27,7 +35,8 @@ class Campaign(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUIDBin(), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    year: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
 
     start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
@@ -43,6 +52,24 @@ class Campaign(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     storage_locations: Mapped[List["StorageLocation"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    campaign_user_roles: Mapped[List["CampaignUserRole"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    campaign_members: Mapped[List["CampaignMember"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    teams: Mapped[List["CampaignTeam"]] = relationship(
         back_populates="campaign",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -89,4 +116,33 @@ class Campaign(Base):
         back_populates="campaign",
         cascade="all, delete-orphan",
         passive_deletes=True,
+    )
+    milestones: Mapped[List["CampaignMilestone"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    communication_schedules: Mapped[List["CampaignCommunicationSchedule"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    communication_templates: Mapped[List["CommunicationTemplate"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    events: Mapped[List["CampaignEvent"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    automation_executions: Mapped[List["CampaignAutomationExecution"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    __table_args__ = (
+        Index("idx_campaign_year", "year"),
     )

@@ -4,9 +4,10 @@ import os
 from urllib.parse import urlencode
 
 from authlib.integrations.flask_client import OAuth
-from flask import current_app, jsonify, make_response, redirect, request
+from flask import current_app, jsonify, make_response, redirect, request, session
 from flask_restx import Namespace, Resource, fields
 
+from app.features.admin.invitation_service import AdminInvitationService
 from app.config import (
     FRONTEND_BASE_URL,
     REFRESH_COOKIE_NAME,
@@ -32,8 +33,20 @@ local_login_model = auth_ns.model(
     },
 )
 
+invite_accept_model = auth_ns.model(
+    "InviteAccept",
+    {
+        "email": fields.String(required=True, description="Invited email address"),
+        "display_name": fields.String(required=True, description="Display name"),
+        "password": fields.String(required=True, description="Local account password"),
+    },
+)
+
 _oauth = OAuth()
 _oauth_service = OAuthService()
+_invitation_service = AdminInvitationService()
+_INVITE_TOKEN_SESSION_KEY = "bt_invite_token"
+_INVITE_PROVIDER_SESSION_KEY = "bt_invite_provider"
 
 
 def init_oauth(app):
@@ -61,8 +74,16 @@ def _frontend_base_url() -> str:
     return str(current_app.config.get("FRONTEND_BASE_URL") or FRONTEND_BASE_URL or "http://localhost:5173").rstrip("/")
 
 
-def _frontend_auth_callback_url() -> str:
-    return f"{_frontend_base_url()}/auth/callback"
+def _frontend_auth_callback_url(*, flow: str | None = None, provider: str | None = None) -> str:
+    base = f"{_frontend_base_url()}/auth/callback"
+    params: dict[str, str] = {}
+    if flow:
+        params["flow"] = flow
+    if provider:
+        params["provider"] = provider.lower()
+    if not params:
+        return base
+    return f"{base}?{urlencode(params)}"
 
 
 def _frontend_login_url(error: str | None = None) -> str:
@@ -70,6 +91,18 @@ def _frontend_login_url(error: str | None = None) -> str:
     if not error:
         return base
     return f"{base}?{urlencode({'error': error})}"
+
+
+def _frontend_register_url(token: str | None = None, error: str | None = None) -> str:
+    base = f"{_frontend_base_url()}/auth/register"
+    params: dict[str, str] = {}
+    if token:
+      params["token"] = token
+    if error:
+      params["error"] = error
+    if not params:
+      return base
+    return f"{base}?{urlencode(params)}"
 
 
 def _cookie_secure() -> bool:
@@ -115,6 +148,21 @@ def _refresh_ttl_seconds() -> int:
     return int(REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60)
 
 
+def _stash_invite_oauth(token: str, provider: str) -> None:
+    session[_INVITE_TOKEN_SESSION_KEY] = token
+    session[_INVITE_PROVIDER_SESSION_KEY] = provider
+
+
+def _pop_invite_oauth(provider: str) -> str | None:
+    stored_provider = session.get(_INVITE_PROVIDER_SESSION_KEY)
+    stored_token = session.get(_INVITE_TOKEN_SESSION_KEY)
+    if stored_provider != provider:
+        return None
+    session.pop(_INVITE_PROVIDER_SESSION_KEY, None)
+    session.pop(_INVITE_TOKEN_SESSION_KEY, None)
+    return str(stored_token) if stored_token else None
+
+
 @auth_ns.route("/google/login")
 class GoogleLogin(Resource):
     @auth_ns.doc(security=[])
@@ -129,12 +177,50 @@ class GoogleLogin(Resource):
             _handle_auth_error(exc)
 
 
+@auth_ns.route("/invite/google/login")
+class InviteGoogleLogin(Resource):
+    @auth_ns.doc(security=[])
+    def get(self):
+        token = str(request.args.get("token") or "").strip()
+        if not token:
+            raise ServiceError("Missing token", status_code=400)
+
+        with SessionLocal() as db:
+            _invitation_service.validate_invitation_token(db, token)
+
+        redirect_uri = _redirect_uri_for("GOOGLE")
+        if not redirect_uri:
+            raise ServiceError("Missing redirect_uri", status_code=400)
+
+        _stash_invite_oauth(token, "GOOGLE")
+        try:
+            return _oauth_service.authorize_redirect("GOOGLE", redirect_uri)
+        except AuthError as exc:
+            _handle_auth_error(exc)
+
+
 @auth_ns.route("/google/callback")
 class GoogleCallback(Resource):
     @auth_ns.doc(security=[])
     def get(self):
+        invite_token = _pop_invite_oauth("GOOGLE")
         try:
             userinfo = _oauth_service.fetch_userinfo_from_callback("GOOGLE")
+            if invite_token:
+                with SessionLocal() as db:
+                    _access_payload, refresh_raw = _invitation_service.accept_invitation_with_oauth(
+                        db,
+                        invite_token,
+                        provider="GOOGLE",
+                        userinfo=userinfo,
+                        ip=_client_ip(),
+                        user_agent=_user_agent(),
+                    )[1]
+                response = make_response(
+                    redirect(_frontend_auth_callback_url(flow="invite", provider="GOOGLE"))
+                )
+                _set_refresh_cookie(response, refresh_raw, _refresh_ttl_seconds())
+                return response
             auth_service = AuthService()
             with SessionLocal() as db:
                 _access_payload, refresh_raw = auth_service.login_with_oauth(
@@ -144,11 +230,17 @@ class GoogleCallback(Resource):
                     ip=_client_ip(),
                     user_agent=_user_agent(),
                 )
-            response = make_response(redirect(_frontend_auth_callback_url()))
+            response = make_response(redirect(_frontend_auth_callback_url(provider="GOOGLE")))
             _set_refresh_cookie(response, refresh_raw, _refresh_ttl_seconds())
             return response
         except AuthError as exc:
+            if invite_token:
+                return redirect(_frontend_register_url(invite_token, str(exc)))
             return redirect(_frontend_login_url(str(exc)))
+        except ServiceError as exc:
+            if invite_token:
+                return redirect(_frontend_register_url(invite_token, str(exc)))
+            raise
 
 
 @auth_ns.route("/yahoo/login")
@@ -165,12 +257,50 @@ class YahooLogin(Resource):
             _handle_auth_error(exc)
 
 
+@auth_ns.route("/invite/yahoo/login")
+class InviteYahooLogin(Resource):
+    @auth_ns.doc(security=[])
+    def get(self):
+        token = str(request.args.get("token") or "").strip()
+        if not token:
+            raise ServiceError("Missing token", status_code=400)
+
+        with SessionLocal() as db:
+            _invitation_service.validate_invitation_token(db, token)
+
+        redirect_uri = _redirect_uri_for("YAHOO")
+        if not redirect_uri:
+            raise ServiceError("Missing redirect_uri", status_code=400)
+
+        _stash_invite_oauth(token, "YAHOO")
+        try:
+            return _oauth_service.authorize_redirect("YAHOO", redirect_uri)
+        except AuthError as exc:
+            _handle_auth_error(exc)
+
+
 @auth_ns.route("/yahoo/callback")
 class YahooCallback(Resource):
     @auth_ns.doc(security=[])
     def get(self):
+        invite_token = _pop_invite_oauth("YAHOO")
         try:
             userinfo = _oauth_service.fetch_userinfo_from_callback("YAHOO")
+            if invite_token:
+                with SessionLocal() as db:
+                    _access_payload, refresh_raw = _invitation_service.accept_invitation_with_oauth(
+                        db,
+                        invite_token,
+                        provider="YAHOO",
+                        userinfo=userinfo,
+                        ip=_client_ip(),
+                        user_agent=_user_agent(),
+                    )[1]
+                response = make_response(
+                    redirect(_frontend_auth_callback_url(flow="invite", provider="YAHOO"))
+                )
+                _set_refresh_cookie(response, refresh_raw, _refresh_ttl_seconds())
+                return response
             auth_service = AuthService()
             with SessionLocal() as db:
                 _access_payload, refresh_raw = auth_service.login_with_oauth(
@@ -180,11 +310,17 @@ class YahooCallback(Resource):
                     ip=_client_ip(),
                     user_agent=_user_agent(),
                 )
-            response = make_response(redirect(_frontend_auth_callback_url()))
+            response = make_response(redirect(_frontend_auth_callback_url(provider="YAHOO")))
             _set_refresh_cookie(response, refresh_raw, _refresh_ttl_seconds())
             return response
         except AuthError as exc:
+            if invite_token:
+                return redirect(_frontend_register_url(invite_token, str(exc)))
             return redirect(_frontend_login_url(str(exc)))
+        except ServiceError as exc:
+            if invite_token:
+                return redirect(_frontend_register_url(invite_token, str(exc)))
+            raise
 
 
 @auth_ns.route("/local/login")
@@ -259,3 +395,34 @@ class Logout(Resource):
         response = make_response(("", 204))
         _clear_refresh_cookie(response)
         return response
+
+
+@auth_ns.route("/invite/validate/<string:token>")
+class InviteValidation(Resource):
+    @auth_ns.doc(security=[])
+    def get(self, token: str):
+        if not token:
+            raise ServiceError("Missing token", status_code=400)
+
+        with SessionLocal() as db:
+            return _invitation_service.validate_invitation_token(db, token), 200
+
+
+@auth_ns.route("/invite/accept")
+class InviteAccept(Resource):
+    @auth_ns.expect(invite_accept_model)
+    @auth_ns.doc(security=[])
+    def post(self):
+        payload = request.get_json(silent=True) or {}
+        token = str(request.args.get("token") or payload.get("token") or "").strip()
+        if not token:
+            raise ServiceError("Missing token", status_code=400)
+
+        with SessionLocal() as db:
+            user = _invitation_service.accept_invitation(db, token, payload)
+            return {
+                "user_id": str(user.id),
+                "email": user.email,
+                "display_name": user.display_name,
+                "status": "active",
+            }, 200

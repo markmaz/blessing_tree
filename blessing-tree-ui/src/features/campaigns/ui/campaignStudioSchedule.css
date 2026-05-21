@@ -1,0 +1,417 @@
+.campaign-studio__schedule-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.campaign-studio__schedule-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.campaign-studio__calendar-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.campaign-studio__calendar-period-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.campaign-studio__calendar-period-field {
+  margin: 0;
+  min-width: 0;
+}
+
+.campaign-studio__calendar-period-field .form-select {
+  width: 100%;
+  min-width: 14rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(214, 205, 189, 0.92);
+  background: rgba(255, 251, 245, 0.98);
+  color: var(--blessing-text-dark);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 10px 18px rgba(67, 41, 18, 0.06);
+}
+
+.campaign-studio__calendar-period-field.year-field .form-select {
+  min-width: 8.5rem;
+}
+
+.campaign-studio__calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.campaign-studio__calendar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.campaign-studio__calendar-legend-item i {
+  font-size: 0.95rem;
+}
+
+.campaign-studio__calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.campaign-studio__calendar-weekday,
+.campaign-studio__calendar-day {
+  min-width: 0;
+}
+
+.campaign-studio__calendar-weekday {
+  color: var(--blessing-text-light);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0 0.25rem;
+}
+
+.campaign-studio__calendar-day {
+  min-height: 12rem;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(226, 218, 205, 0.9);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.campaign-studio__calendar-day.is-outside-month {
+  background: rgba(248, 244, 238, 0.75);
+  color: rgba(109, 97, 84, 0.75);
+}
+
+.campaign-studio__calendar-day-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.campaign-studio__calendar-day-number {
+  font-weight: 700;
+}
+
+.campaign-studio__calendar-add-button {
+  border: 1px solid rgba(214, 205, 189, 0.92);
+  border-radius: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  background: rgba(250, 246, 239, 0.92);
+  color: var(--blessing-text-dark);
+}
+
+.campaign-studio__calendar-items {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.campaign-studio__calendar-item {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 0.9rem;
+  padding: 0.6rem 0.7rem;
+  text-align: left;
+  font-size: 0.8rem;
+  transition: var(--blessing-transition);
+}
+
+.campaign-studio__calendar-item:hover,
+.campaign-studio__calendar-add-button:hover,
+.campaign-studio__calendar-empty-slot:hover,
+.campaign-studio__modal-type-button:hover {
+  transform: translateY(-1px);
+}
+
+.campaign-studio__calendar-item-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.campaign-studio__calendar-item-title span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.campaign-studio__calendar-item-meta {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--blessing-text-light);
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+}
+
+.campaign-studio__calendar-empty-slot {
+  width: 100%;
+  min-width: 0;
+  border: 1px dashed rgba(214, 205, 189, 0.92);
+  border-radius: 0.9rem;
+  background: rgba(249, 245, 238, 0.72);
+  color: var(--blessing-text-light);
+  padding: 0.8rem 0.75rem;
+  text-align: left;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.campaign-studio__calendar-empty-slot:disabled {
+  cursor: default;
+  opacity: 0.8;
+}
+
+.tone-manual {
+  background: rgba(197, 223, 252, 0.65);
+  color: rgba(16, 50, 97, 0.95);
+}
+
+.campaign-studio__calendar-item.tone-manual {
+  border-color: rgba(111, 163, 226, 0.4);
+}
+
+.tone-milestone {
+  background: rgba(244, 221, 165, 0.72);
+  color: rgba(102, 67, 5, 0.95);
+}
+
+.campaign-studio__calendar-item.tone-milestone {
+  border-color: rgba(198, 157, 66, 0.42);
+}
+
+.tone-communication {
+  background: rgba(218, 211, 244, 0.78);
+  color: rgba(66, 42, 110, 0.96);
+}
+
+.campaign-studio__calendar-item.tone-communication {
+  border-color: rgba(138, 111, 196, 0.42);
+}
+
+.campaign-studio__modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 17, 14, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1050;
+}
+
+.campaign-studio__modal {
+  width: min(48rem, 100%);
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  border-radius: 1.3rem;
+  background: linear-gradient(180deg, rgba(255, 252, 248, 0.99), rgba(248, 243, 236, 0.99));
+  box-shadow: 0 24px 48px rgba(34, 23, 14, 0.25);
+  padding: 1.35rem;
+}
+
+.campaign-studio__modal-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.campaign-studio__modal-type-switch {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 1rem 0 1.15rem;
+}
+
+.campaign-studio__modal-type-button {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(223, 214, 202, 0.92);
+  border-radius: 1rem;
+  padding: 0.85rem 0.95rem;
+  background: rgba(250, 246, 239, 0.92);
+  text-align: left;
+}
+
+.campaign-studio__modal-type-button > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.campaign-studio__modal-type-button.is-selected {
+  border-color: rgba(93, 53, 129, 0.42);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.99), rgba(240, 234, 246, 0.96));
+  box-shadow: 0 10px 18px rgba(45, 21, 68, 0.07);
+}
+
+.campaign-studio__modal-form-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.campaign-studio__modal-form-span-2 {
+  grid-column: 1 / -1;
+}
+
+.campaign-studio__modal-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.campaign-studio__inline-confirm {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid rgba(214, 205, 189, 0.92);
+  border-radius: 0.9rem;
+  background: rgba(255, 248, 245, 0.96);
+}
+
+.campaign-studio__ai-inline-stats {
+  margin-bottom: 1rem;
+}
+
+.campaign-studio__ai-draft-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.campaign-studio__ai-draft-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-width: 0;
+  flex: 1 1 8rem;
+  border: 1px solid rgba(223, 214, 202, 0.92);
+  border-radius: 0.8rem;
+  padding: 0.65rem 0.8rem;
+  background: rgba(250, 246, 239, 0.92);
+  color: var(--blessing-text-dark);
+  text-align: center;
+  transition: var(--blessing-transition);
+}
+
+.campaign-studio__ai-draft-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(167, 143, 111, 0.75);
+  background: rgba(255, 251, 243, 0.98);
+}
+
+.campaign-studio__ai-draft-button.is-selected {
+  border-color: rgba(93, 53, 129, 0.42);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.99), rgba(240, 234, 246, 0.96));
+  box-shadow: 0 10px 18px rgba(45, 21, 68, 0.07);
+}
+
+.campaign-studio__ai-draft-button span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.campaign-studio__ai-draft-description {
+  padding: 0.75rem 0.9rem;
+  border: 1px dashed rgba(167, 143, 111, 0.72);
+  border-radius: 0.95rem;
+  background: rgba(252, 249, 243, 0.9);
+  color: var(--blessing-text-light);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 1320px) {
+  .campaign-studio__calendar-grid {
+    gap: 0.55rem;
+  }
+
+  .campaign-studio__calendar-day {
+    min-height: 9.75rem;
+    padding: 0.65rem;
+    gap: 0.6rem;
+  }
+
+  .campaign-studio__calendar-item {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  .campaign-studio__calendar-item-meta {
+    font-size: 0.68rem;
+  }
+
+  .campaign-studio__modal-type-switch {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .campaign-studio__ai-draft-button {
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 991px) {
+  .campaign-studio__calendar-grid,
+  .campaign-studio__modal-type-switch,
+  .campaign-studio__modal-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .campaign-studio__calendar-period-picker,
+  .campaign-studio__calendar-period-field,
+  .campaign-studio__calendar-period-field .form-select {
+    width: 100%;
+  }
+
+  .campaign-studio__calendar-day {
+    min-height: auto;
+  }
+
+  .campaign-studio__modal-backdrop {
+    padding: 0.75rem;
+  }
+
+  .campaign-studio__modal {
+    padding: 1rem;
+  }
+}

@@ -3,6 +3,7 @@ import {
   getStoredAuth,
   getToken,
   setEmail,
+  setRole,
   setToken,
   setUserId,
 } from '@/shared/lib/auth';
@@ -36,6 +37,7 @@ async function refreshAccessToken(): Promise<string> {
   const session = await refreshSession();
   setUserId(session.userId);
   setEmail(session.email);
+  setRole(session.role);
   setToken(session.token);
   return session.token;
 }

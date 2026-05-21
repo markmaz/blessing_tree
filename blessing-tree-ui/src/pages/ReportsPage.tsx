@@ -6,7 +6,10 @@ export function ReportsPage() {
           <h1 className="h3 mb-1">Reports</h1>
           <p className="text-muted mb-0">Measure impact with clear, printable summaries.</p>
         </div>
-        <button className="btn btn-outline-primary btn-sm">Generate report</button>
+        <button className="btn btn-outline-primary btn-sm">
+          <i className="bi bi-file-earmark-bar-graph me-2" aria-hidden="true" />
+          Generate report
+        </button>
       </div>
 
       <div className="content-card">

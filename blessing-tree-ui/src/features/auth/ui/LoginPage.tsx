@@ -6,28 +6,14 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { login } from '@/shared/api/authApi';
+import { getOAuthLoginUrl, login, type OAuthProvider } from '@/shared/api/authApi';
 import { useAuth } from '@/features/auth/model/authContext';
 import { routes } from '@/app/routes';
 import './AuthPages.css';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000').replace(
-  /\/+$/,
-  ''
-);
-const AUTH_BASE_PATH = '/api/v1/auth';
-
 interface LoginFormInputs {
   email: string;
   password: string;
-}
-
-type OAuthProvider = 'google' | 'yahoo';
-
-function getOAuthLoginUrl(provider: OAuthProvider): string {
-  const redirectUri = `${API_BASE_URL}${AUTH_BASE_PATH}/${provider}/callback`;
-  const params = new URLSearchParams({ redirect_uri: redirectUri });
-  return `${API_BASE_URL}${AUTH_BASE_PATH}/${provider}/login?${params.toString()}`;
 }
 
 export function LoginPage() {
@@ -64,7 +50,7 @@ export function LoginPage() {
 
     try {
       const response = await login(data.email, data.password);
-      contextLogin(response.userId, response.email, response.token);
+      contextLogin(response.userId, response.email, response.token, response.role);
       navigate(routes.HOME);
     } catch (error) {
       setApiError(
@@ -92,9 +78,12 @@ export function LoginPage() {
               {apiError}
               <button
                 type="button"
-                className="btn-close"
+                className="btn btn-link btn-sm text-danger p-0 ms-2 align-baseline"
                 onClick={() => setApiError(null)}
-              />
+                aria-label="Dismiss error"
+              >
+                <i className="bi bi-x-lg" aria-hidden="true" />
+              </button>
             </div>
           )}
 
@@ -186,7 +175,10 @@ export function LoginPage() {
                   Signing in...
                 </>
               ) : (
-                'Sign In'
+                <>
+                  <i className="bi bi-box-arrow-in-right me-2" aria-hidden="true" />
+                  Sign In
+                </>
               )}
             </button>
           </form>

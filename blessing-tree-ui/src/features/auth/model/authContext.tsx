@@ -8,6 +8,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import {
   getStoredAuth,
+  setRole as storeRole,
   setToken as storeToken,
   setUserId as storeUserId,
   setEmail as storeEmail,
@@ -22,10 +23,11 @@ export interface AuthState {
   token: string | null;
   userId: string | null;
   email: string | null;
+  role: string | null;
 }
 
 export interface AuthContextType extends AuthState {
-  login: (userId: string, email: string, token: string) => void;
+  login: (userId: string, email: string, token: string, role: string | null) => void;
   restoreSession: () => Promise<void>;
   logout: () => void;
 }
@@ -42,19 +44,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token: storedAuth.token,
       userId: storedAuth.userId,
       email: storedAuth.email,
+      role: storedAuth.role,
     };
   });
 
-  const login = useCallback((userId: string, email: string, token: string) => {
+  const login = useCallback((userId: string, email: string, token: string, role: string | null) => {
     setAuthState({
       bootstrapped: true,
       isAuthenticated: true,
       token,
       userId,
       email,
+      role,
     });
     storeUserId(userId);
     storeEmail(email);
+    storeRole(role);
     storeToken(token);
   }, []);
 
@@ -66,9 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token: session.token,
       userId: session.userId || null,
       email: session.email || null,
+      role: session.role || null,
     });
     storeUserId(session.userId);
     storeEmail(session.email);
+    storeRole(session.role || null);
     storeToken(session.token);
   }, []);
 
@@ -79,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token: null,
       userId: null,
       email: null,
+      role: null,
     });
     clearAuthStorage();
   }, []);
@@ -102,6 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           token: session.token,
           userId: session.userId || null,
           email: session.email || null,
+          role: session.role || null,
         });
         storeUserId(session.userId);
         storeEmail(session.email);
@@ -117,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           token: null,
           userId: null,
           email: null,
+          role: null,
         });
       }
     };
@@ -137,6 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token: storedAuth.token,
         userId: storedAuth.userId,
         email: storedAuth.email,
+        role: storedAuth.role,
       });
     });
   }, []);

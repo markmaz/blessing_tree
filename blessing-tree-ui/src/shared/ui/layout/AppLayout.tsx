@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { AppFooter } from './AppFooter';
 import { SidebarNav } from './SidebarNav';
 import { TopBar } from './TopBar';
 
@@ -9,6 +10,10 @@ const getIsDesktop = () =>
   window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`).matches;
 
 const getPageTitle = (pathname: string) => {
+  if (pathname.startsWith('/campaigns/') && pathname.endsWith('/studio')) {
+    return 'Campaign Studio';
+  }
+  if (pathname.startsWith('/campaigns')) return 'Campaigns';
   if (pathname.startsWith('/families')) return 'Families';
   if (pathname.startsWith('/donations')) return 'Donations';
   if (pathname.startsWith('/reports')) return 'Reports';
@@ -75,6 +80,8 @@ export function AppLayout() {
             <Outlet />
           </div>
         </main>
+
+        <AppFooter />
       </div>
 
       <button
@@ -82,7 +89,9 @@ export function AppLayout() {
         className={`app-sidebar-backdrop ${sidebarOpen ? 'show' : ''}`}
         onClick={() => setSidebarOpen(false)}
         aria-label="Close sidebar"
-      />
+      >
+        <i className="bi bi-x-lg visually-hidden" aria-hidden="true" />
+      </button>
     </div>
   );
 }

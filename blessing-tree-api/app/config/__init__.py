@@ -1,8 +1,16 @@
 import os
+import platform
 
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    return raw_value.strip().lower() in ("1", "true", "yes", "y", "on")
 
 DB_HOST = os.getenv("DB_HOST")
 DB_USER = os.getenv("DB_USER")
@@ -18,7 +26,7 @@ JWT_AUDIENCE = os.getenv("JWT_AUDIENCE")
 ACCESS_TOKEN_TTL_MINUTES = int(os.getenv("ACCESS_TOKEN_TTL_MINUTES", "10"))
 REFRESH_TOKEN_TTL_DAYS = int(os.getenv("REFRESH_TOKEN_TTL_DAYS", "21"))
 REFRESH_COOKIE_NAME = os.getenv("REFRESH_COOKIE_NAME", "bt_refresh")
-REFRESH_COOKIE_SECURE = os.getenv("REFRESH_COOKIE_SECURE", "").strip().lower() in ("1", "true", "yes", "y", "on")
+REFRESH_COOKIE_SECURE = _env_flag("REFRESH_COOKIE_SECURE", False)
 REFRESH_COOKIE_SAMESITE = os.getenv("REFRESH_COOKIE_SAMESITE", "Lax")
 REFRESH_COOKIE_PATH = os.getenv("REFRESH_COOKIE_PATH", "/api/v1/auth")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -29,11 +37,11 @@ YAHOO_CLIENT_SECRET = os.getenv("YAHOO_CLIENT_SECRET")
 YAHOO_REDIRECT_URI = os.getenv("YAHOO_REDIRECT_URI")
 JWT_EXP_DELTA_HOURS = 2
 JWT_LEEWAY_SECONDS = int(os.getenv("JWT_LEEWAY_SECONDS", "120"))
-JWT_VERIFY_IAT = os.getenv("JWT_VERIFY_IAT", "").strip().lower() in ("1", "true", "yes", "y", "on")
+JWT_VERIFY_IAT = _env_flag("JWT_VERIFY_IAT", False)
 ACCESS_TOKEN_TTL_SECONDS = int(os.getenv("ACCESS_TOKEN_TTL_SECONDS", "900"))
 REFRESH_TOKEN_TTL_SECONDS = int(os.getenv("REFRESH_TOKEN_TTL_SECONDS", "1209600"))
 OTP_VALID_WINDOW = int(os.getenv("OTP_VALID_WINDOW", "2"))
-COOKIE_SECURE = os.getenv("COOKIE_SECURE", "").strip().lower() in ("1", "true", "yes", "y", "on")
+COOKIE_SECURE = _env_flag("COOKIE_SECURE", False)
 COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "Lax")
 
 POOL_SIZE = int(os.getenv("POOL_SIZE", "10"))
@@ -55,10 +63,22 @@ SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = os.getenv("SMTP_PORT") or os.getenv("SMPT_PORT")
+SMTP_USE_TLS = _env_flag("SMTP_USE_TLS", True)
+SMTP_USE_SSL = _env_flag("SMTP_USE_SSL", False)
 DEFAULT_MAIL_SENDER = os.getenv("DEFAULT_MAIL_SENDER")
 INVITE_URL = os.getenv("INVITE_URL")
 PASSWORD_RESET_URL = os.getenv("PASSWORD_RESET_URL")
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+ORGANIZATION_NAME = os.getenv("ORGANIZATION_NAME", "Blessing Tree")
+
+IS_DARWIN = platform.system().lower() == "darwin"
+BT_CELERY_WORKER_POOL = os.getenv("BT_CELERY_WORKER_POOL", "solo" if IS_DARWIN else "prefork")
+BT_CELERY_WORKER_CONCURRENCY = int(os.getenv("BT_CELERY_WORKER_CONCURRENCY", "1"))
+BT_CAMPAIGN_AUTOMATION_POLL_SECONDS = int(os.getenv("BT_CAMPAIGN_AUTOMATION_POLL_SECONDS", "60"))
+BT_CAMPAIGN_LIFECYCLE_POLL_SECONDS = int(os.getenv("BT_CAMPAIGN_LIFECYCLE_POLL_SECONDS", "300"))
+BT_CAMPAIGN_AUTOMATION_HEARTBEAT_TTL_SECONDS = int(
+    os.getenv("BT_CAMPAIGN_AUTOMATION_HEARTBEAT_TTL_SECONDS", "180")
+)
 
 # Qdrant
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")

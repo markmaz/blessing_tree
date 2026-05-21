@@ -9,10 +9,25 @@ Key points:
 Works with SQLAlchemy 2.x.
 """
 
+from app.features.rbac.models import CampaignUserRole
+
+from .admin_llm_configuration import AdminLlmConfiguration
+from .admin_user_invitation import AdminUserInvitation
 from .app_user import AppUser
+from .app_feature_flag import AppFeatureFlag
 from .auth import AuthIdentity
 from .base import Base
 from .campaign import Campaign
+from .campaign_automation_execution import CampaignAutomationExecution
+from .campaign_communication_schedule import CampaignCommunicationSchedule
+from .campaign_event import CampaignEvent
+from .campaign_member import CampaignMember
+from .campaign_member_access_role import CampaignMemberAccessRole
+from .campaign_milestone import CampaignMilestone
+from .campaign_team import CampaignTeam
+from .campaign_team_member import CampaignTeamMember
+from .campaign_team_role import CampaignTeamRole
+from .communication_template import CommunicationTemplate
 from .donation import Donation
 from .donation_line import DonationLine
 from .fulfillment import Fulfillment
@@ -36,10 +51,24 @@ from .wishlist import Wishlist
 from .wishlist_item import WishlistItem
 
 __all__ = [
+    "AdminLlmConfiguration",
+    "AdminUserInvitation",
     "AppUser",
+    "AppFeatureFlag",
     "AuthIdentity",
     "Base",
+    "CampaignUserRole",
     "Campaign",
+    "CampaignAutomationExecution",
+    "CampaignCommunicationSchedule",
+    "CampaignEvent",
+    "CampaignMember",
+    "CampaignMemberAccessRole",
+    "CampaignMilestone",
+    "CampaignTeam",
+    "CampaignTeamMember",
+    "CampaignTeamRole",
+    "CommunicationTemplate",
     "Donation",
     "DonationLine",
     "Fulfillment",
