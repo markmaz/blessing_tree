@@ -74,8 +74,16 @@ def _frontend_base_url() -> str:
     return str(current_app.config.get("FRONTEND_BASE_URL") or FRONTEND_BASE_URL or "http://localhost:5173").rstrip("/")
 
 
-def _frontend_auth_callback_url() -> str:
-    return f"{_frontend_base_url()}/auth/callback"
+def _frontend_auth_callback_url(*, flow: str | None = None, provider: str | None = None) -> str:
+    base = f"{_frontend_base_url()}/auth/callback"
+    params: dict[str, str] = {}
+    if flow:
+        params["flow"] = flow
+    if provider:
+        params["provider"] = provider.lower()
+    if not params:
+        return base
+    return f"{base}?{urlencode(params)}"
 
 
 def _frontend_login_url(error: str | None = None) -> str:
@@ -208,7 +216,9 @@ class GoogleCallback(Resource):
                         ip=_client_ip(),
                         user_agent=_user_agent(),
                     )[1]
-                response = make_response(redirect(_frontend_auth_callback_url()))
+                response = make_response(
+                    redirect(_frontend_auth_callback_url(flow="invite", provider="GOOGLE"))
+                )
                 _set_refresh_cookie(response, refresh_raw, _refresh_ttl_seconds())
                 return response
             auth_service = AuthService()
@@ -220,7 +230,7 @@ class GoogleCallback(Resource):
                     ip=_client_ip(),
                     user_agent=_user_agent(),
                 )
-            response = make_response(redirect(_frontend_auth_callback_url()))
+            response = make_response(redirect(_frontend_auth_callback_url(provider="GOOGLE")))
             _set_refresh_cookie(response, refresh_raw, _refresh_ttl_seconds())
             return response
         except AuthError as exc:
@@ -286,7 +296,9 @@ class YahooCallback(Resource):
                         ip=_client_ip(),
                         user_agent=_user_agent(),
                     )[1]
-                response = make_response(redirect(_frontend_auth_callback_url()))
+                response = make_response(
+                    redirect(_frontend_auth_callback_url(flow="invite", provider="YAHOO"))
+                )
                 _set_refresh_cookie(response, refresh_raw, _refresh_ttl_seconds())
                 return response
             auth_service = AuthService()
@@ -298,7 +310,7 @@ class YahooCallback(Resource):
                     ip=_client_ip(),
                     user_agent=_user_agent(),
                 )
-            response = make_response(redirect(_frontend_auth_callback_url()))
+            response = make_response(redirect(_frontend_auth_callback_url(provider="YAHOO")))
             _set_refresh_cookie(response, refresh_raw, _refresh_ttl_seconds())
             return response
         except AuthError as exc:

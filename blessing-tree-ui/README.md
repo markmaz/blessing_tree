@@ -16,6 +16,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - `src/shared/api/authApi.ts` already calls the backend local login route.
 - The frontend now completes local login directly on `/login` and includes backend refresh-cookie handling.
 - The invite onboarding page at `/auth/register` now supports Google, Yahoo, and local password from the same invitation funnel.
+- The invite onboarding page now also distinguishes pending vs already-completed invitations and routes already-onboarded users back to sign-in cleanly.
 - The frontend now consumes the protected campaign APIs through a campaign provider, top-bar switcher, campaign list, campaign detail page, and a campaign-aware dashboard.
 - Campaign Studio now has real Team, Communications, Schedule, Readiness, and Settings sections backed by the new backend studio APIs.
 - The Schedule surface is now calendar-first, with a navigable month view, color-coded milestones/communications/events, and modal editing directly from the calendar grid.
@@ -118,6 +119,8 @@ Invitation sequence:
 4. invited user chooses Google, Yahoo, or local password
 5. the first successful auth binding marks the invitation accepted
 6. backend issues the refresh cookie and the frontend completes session bootstrap normally
+
+If the invite was already accepted, the page now switches into a completion state and sends the user back to standard sign-in instead of showing onboarding controls again.
 
 OAuth sequence:
 

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   acceptInvite,
   getInviteOAuthLoginUrl,
+  type InviteValidationResponse,
   validateInviteToken,
   type OAuthProvider,
 } from '@/shared/api/authApi';
@@ -19,6 +20,7 @@ export function InviteAcceptPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(true);
+  const [inviteStatus, setInviteStatus] = useState<InviteValidationResponse | null>(null);
 
   const token = useMemo(() => {
     const value = new URLSearchParams(location.search).get('token');
@@ -45,8 +47,12 @@ export function InviteAcceptPage() {
         if (!active) {
           return;
         }
+        setInviteStatus(invite);
         setDisplayName(invite.displayName);
         setEmail(invite.email);
+        if (invite.onboardingComplete) {
+          setMessage('This invitation has already been accepted. Sign in with your existing account.');
+        }
       } catch (validationError) {
         if (!active) {
           return;
@@ -72,11 +78,19 @@ export function InviteAcceptPage() {
       setError('Invite link invalid or expired.');
       return;
     }
+    if (inviteStatus?.onboardingComplete) {
+      setMessage('This invitation has already been accepted. Sign in with your existing account.');
+      return;
+    }
     setError(null);
     window.location.assign(getInviteOAuthLoginUrl(provider, token));
   };
 
   const submit = async () => {
+    if (inviteStatus?.onboardingComplete) {
+      setMessage('This invitation has already been accepted. Sign in with your existing account.');
+      return;
+    }
     setIsLoading(true);
     setError(null);
     setMessage(null);
@@ -103,6 +117,22 @@ export function InviteAcceptPage() {
           {message ? <div className="alert alert-success">{message}</div> : null}
           {isValidating ? (
             <p className="text-muted">Validating invitation…</p>
+          ) : inviteStatus?.onboardingComplete ? (
+            <div className="auth-complete-panel">
+              <div className="auth-complete-panel__label">Onboarding Complete</div>
+              <h2 className="auth-complete-panel__title">Your account is already set up</h2>
+              <p className="auth-complete-panel__body">
+                Sign in with the authentication method you already connected for{' '}
+                <strong>{email}</strong>.
+              </p>
+              <button
+                type="button"
+                className="btn btn-primary w-100"
+                onClick={() => navigate(routes.LOGIN)}
+              >
+                Go to Sign In
+              </button>
+            </div>
           ) : (
             <>
               <div className="auth-invite-summary">

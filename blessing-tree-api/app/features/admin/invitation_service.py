@@ -100,16 +100,25 @@ class AdminInvitationService:
         return replacement, invite_url
 
     def validate_invitation_token(self, db: Session, token: str) -> dict[str, object]:
-        invitation = self._resolve_token(db, token)
+        invitation = self._resolve_token_for_validation(db, token)
         user = invitation.user
         if user is None:
             raise ServiceError("Invitation is invalid", status_code=400)
+        has_local_identity = any(identity.provider == "LOCAL" for identity in user.auth_identities)
+        has_oauth_identity = any(
+            identity.provider in {"GOOGLE", "YAHOO"} for identity in user.auth_identities
+        )
         return {
             "invitation_id": str(invitation.id),
             "user_id": str(user.id),
             "email": user.email,
             "display_name": user.display_name,
             "expires_at": invitation.expires_at.isoformat(),
+            "status": "accepted" if invitation.accepted_at else "pending",
+            "accepted_at": invitation.accepted_at.isoformat() if invitation.accepted_at else None,
+            "onboarding_complete": invitation.accepted_at is not None,
+            "has_local_identity": has_local_identity,
+            "has_oauth_identity": has_oauth_identity,
         }
 
     def accept_invitation(self, db: Session, token: str, payload: dict[str, object]) -> AppUser:
@@ -131,7 +140,10 @@ class AdminInvitationService:
             .one_or_none()
         )
         if existing_local_identity is not None:
-            raise ServiceError("Invitation already accepted", status_code=409)
+            raise ServiceError(
+                "This invitation has already been accepted. Sign in with your existing account.",
+                status_code=409,
+            )
 
         try:
             self._auth_service.create_local_identity(db, user.id, user.email, password)
@@ -187,7 +199,47 @@ class AdminInvitationService:
 
     def _resolve_token(self, db: Session, token: str) -> AdminUserInvitation:
         payload = read_invitation_token(token, max_age_seconds=DEFAULT_INVITE_TTL_HOURS * 60 * 60)
-        invitation_id = payload["invitation_id"]
+        invitation = self._lookup_invitation(db, payload["invitation_id"])
+        self._assert_invitation_is_actionable(invitation)
+        return invitation
+
+    def _resolve_token_for_validation(self, db: Session, token: str) -> AdminUserInvitation:
+        payload = read_invitation_token(token, max_age_seconds=DEFAULT_INVITE_TTL_HOURS * 60 * 60)
+        invitation = self._lookup_invitation(db, payload["invitation_id"])
+        now = datetime.now(UTC).replace(tzinfo=None)
+        if invitation.revoked_at:
+            raise ServiceError(
+                "This invitation has been revoked. Ask an administrator for a new invitation.",
+                status_code=410,
+            )
+        if invitation.expires_at <= now:
+            raise ServiceError(
+                "This invitation has expired. Ask an administrator for a new invitation.",
+                status_code=410,
+            )
+        return invitation
+
+    @staticmethod
+    def _assert_invitation_is_actionable(invitation: AdminUserInvitation) -> None:
+        now = datetime.now(UTC).replace(tzinfo=None)
+        if invitation.revoked_at:
+            raise ServiceError(
+                "This invitation has been revoked. Ask an administrator for a new invitation.",
+                status_code=410,
+            )
+        if invitation.accepted_at:
+            raise ServiceError(
+                "This invitation has already been accepted. Sign in with your existing account.",
+                status_code=409,
+            )
+        if invitation.expires_at <= now:
+            raise ServiceError(
+                "This invitation has expired. Ask an administrator for a new invitation.",
+                status_code=410,
+            )
+
+    @staticmethod
+    def _lookup_invitation(db: Session, invitation_id: str) -> AdminUserInvitation:
         invitation = (
             db.query(AdminUserInvitation)
             .options(joinedload(AdminUserInvitation.user))
@@ -195,9 +247,6 @@ class AdminInvitationService:
             .one_or_none()
         )
         if invitation is None:
-            raise ServiceError("Invalid or expired invitation token", status_code=400)
-        now = datetime.now(UTC).replace(tzinfo=None)
-        if invitation.revoked_at or invitation.accepted_at or invitation.expires_at <= now:
             raise ServiceError("Invalid or expired invitation token", status_code=400)
         return invitation
 

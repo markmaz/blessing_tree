@@ -107,6 +107,7 @@ Last updated: 2026-05-21
 - Implemented invitation-centric onboarding phase 1 by limiting generic Google/Yahoo login to already-linked returning users and blocking auto-linking for merely pre-provisioned accounts
 - Implemented invitation-centric onboarding phase 2 by turning `/auth/register` into a multi-method onboarding screen that presents Google, Yahoo, and local password choices
 - Implemented invitation-centric onboarding phase 3 by adding invite-scoped Google/Yahoo login routes plus callback binding so the first successful OAuth identity can accept an invitation and complete onboarding
+- Implemented invitation-centric onboarding phase 4 by polishing invite validation state, accepted-invite handling, callback completion messaging, and clearer user-facing onboarding errors
 - Applied and verified the automation runtime migration against local MySQL `blessing_tree`
 - Live-smoke-tested worker/beat startup plus a real queued communication dispatch against the local Blessing Tree stack
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
@@ -126,7 +127,7 @@ Last updated: 2026-05-21
 3. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
 4. Extend AI editing-before-apply into higher-complexity bundles beyond the new Settings/status scalar editor
 5. After the Team write paths move over, retire the temporary legacy `campaign_user_role` fallback in authorization resolution
-6. Add follow-up UX polish for invitation onboarding, including clearer invite-state messaging and provider-specific error handling
+6. Add any remaining provider-specific onboarding error polish after live Google/Yahoo verification
 
 ## Blockers Or Ambiguities
 

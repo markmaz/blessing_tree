@@ -125,6 +125,8 @@ def test_admin_invitation_accept_flow(
     validate_response = client.get(f"/api/v1/auth/invite/validate/{token}")
     assert validate_response.status_code == 200
     assert validate_response.get_json()["email"] == "invitee@blessingtree.test"
+    assert validate_response.get_json()["status"] == "pending"
+    assert validate_response.get_json()["onboarding_complete"] is False
 
     accept_response = client.post(
         f"/api/v1/auth/invite/accept?token={token}",
@@ -137,6 +139,12 @@ def test_admin_invitation_accept_flow(
 
     assert accept_response.status_code == 200
     assert accept_response.get_json()["status"] == "active"
+
+    post_accept_validate_response = client.get(f"/api/v1/auth/invite/validate/{token}")
+    assert post_accept_validate_response.status_code == 200
+    assert post_accept_validate_response.get_json()["status"] == "accepted"
+    assert post_accept_validate_response.get_json()["onboarding_complete"] is True
+    assert post_accept_validate_response.get_json()["has_local_identity"] is True
 
 
 def test_invite_google_login_stashes_token_and_redirects(
@@ -230,7 +238,7 @@ def test_invite_google_callback_accepts_invitation_and_links_identity(
     response = client.get("/api/v1/auth/google/callback")
 
     assert response.status_code == 302
-    assert response.headers["Location"] == "http://localhost:5173/auth/callback"
+    assert response.headers["Location"] == "http://localhost:5173/auth/callback?flow=invite&provider=google"
     assert "bt_refresh=" in response.headers.get("Set-Cookie", "")
 
     with admin_api.SessionLocal() as db:

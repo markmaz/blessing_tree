@@ -85,6 +85,34 @@
   color: #6b645a;
 }
 
+.auth-complete-panel {
+  padding: 1.15rem 1.2rem;
+  border: 1px solid #ddd7cd;
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.auth-complete-panel__label {
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #766e63;
+  margin-bottom: 0.45rem;
+}
+
+.auth-complete-panel__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #2f2d29;
+  margin-bottom: 0.55rem;
+}
+
+.auth-complete-panel__body {
+  font-size: 0.95rem;
+  color: #5f584f;
+  margin-bottom: 1rem;
+}
+
 .oauth-buttons {
   display: flex;
   flex-direction: column;

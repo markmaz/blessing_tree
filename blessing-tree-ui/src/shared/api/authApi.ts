@@ -31,6 +31,11 @@ export interface InviteValidationResponse {
   email: string;
   displayName: string;
   expiresAt: string;
+  status: 'pending' | 'accepted';
+  acceptedAt: string | null;
+  onboardingComplete: boolean;
+  hasLocalIdentity: boolean;
+  hasOauthIdentity: boolean;
 }
 
 interface LocalLoginApiResponse {
@@ -237,6 +242,11 @@ export async function validateInviteToken(token: string): Promise<InviteValidati
     email: string;
     display_name: string;
     expires_at: string;
+    status: 'pending' | 'accepted';
+    accepted_at: string | null;
+    onboarding_complete: boolean;
+    has_local_identity: boolean;
+    has_oauth_identity: boolean;
   }>(response);
   return {
     invitationId: payload.invitation_id,
@@ -244,6 +254,11 @@ export async function validateInviteToken(token: string): Promise<InviteValidati
     email: payload.email,
     displayName: payload.display_name,
     expiresAt: payload.expires_at,
+    status: payload.status,
+    acceptedAt: payload.accepted_at,
+    onboardingComplete: payload.onboarding_complete,
+    hasLocalIdentity: payload.has_local_identity,
+    hasOauthIdentity: payload.has_oauth_identity,
   };
 }
 

@@ -103,6 +103,7 @@ Important current behavior:
 - OAuth callbacks issue the refresh cookie and then redirect to the frontend callback route for session completion
 - generic Google/Yahoo login is now for already-linked returning users only
 - invite-based onboarding now supports Google, Yahoo, or local-password acceptance from the invitation funnel
+- invite validation now returns onboarding/completion state so the frontend can distinguish a pending invite from an already-accepted account
 
 ## Data Model
 

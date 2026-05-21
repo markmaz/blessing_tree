@@ -24,6 +24,11 @@ describe('InviteAcceptPage', () => {
       email: 'invitee@example.com',
       displayName: 'Invited User',
       expiresAt: '2026-05-28T00:00:00Z',
+      status: 'pending',
+      acceptedAt: null,
+      onboardingComplete: false,
+      hasLocalIdentity: false,
+      hasOauthIdentity: false,
     });
     vi.mocked(acceptInvite).mockResolvedValue();
     vi.mocked(getInviteOAuthLoginUrl).mockReturnValue('http://localhost:5000/api/v1/auth/invite/google/login?token=invite-token-1');
@@ -70,5 +75,31 @@ describe('InviteAcceptPage', () => {
     await user.click(screen.getByRole('button', { name: /continue with google/i }));
 
     expect(getInviteOAuthLoginUrl).toHaveBeenCalledWith('google', 'invite-token-1');
+  });
+
+  it('shows a sign-in call to action when the invitation is already accepted', async () => {
+    vi.mocked(validateInviteToken).mockResolvedValueOnce({
+      invitationId: 'invite-1',
+      userId: 'user-1',
+      email: 'invitee@example.com',
+      displayName: 'Invited User',
+      expiresAt: '2026-05-28T00:00:00Z',
+      status: 'accepted',
+      acceptedAt: '2026-05-21T12:00:00Z',
+      onboardingComplete: true,
+      hasLocalIdentity: true,
+      hasOauthIdentity: false,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/auth/register?token=invite-token-1']}>
+        <InviteAcceptPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/your account is already set up/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /go to sign in/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /continue with google/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /set password & continue/i })).not.toBeInTheDocument();
   });
 });
