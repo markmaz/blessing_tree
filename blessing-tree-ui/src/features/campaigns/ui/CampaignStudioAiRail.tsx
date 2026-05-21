@@ -1,12 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { type CampaignStudioSectionId } from '@/features/campaigns/model/campaignStudio';
 import {
   buildScheduleAiDraft,
   type ScheduleAiDraftType,
 } from '@/features/campaigns/model/campaignStudioAiDraft';
 import {
+  buildAiAssistantResponse,
+  getAiPromptPlaceholder,
   getAiPromptStarters,
   getAiReadinessSignals,
+  getAiSuggestionHeading,
   getAiTeamGlossary,
 } from '@/features/campaigns/model/campaignStudioAi';
 import type {
@@ -19,7 +22,11 @@ import type {
   SaveCampaignMilestoneInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import type { Campaign } from '@/features/campaigns/model/campaignTypes';
-import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
+import {
+  CampaignStudioAiThread,
+  type CampaignAiTurn,
+} from '@/features/campaigns/ui/CampaignStudioAiThread';
+import { CampaignStudioAiComposer } from '@/features/campaigns/ui/CampaignStudioAiComposer';
 
 interface CampaignStudioAiRailProps {
   open: boolean;
@@ -59,32 +66,99 @@ export function CampaignStudioAiRail({
   const [draftPreview, setDraftPreview] = useState<ReturnType<typeof buildScheduleAiDraft> | null>(
     null
   );
+  const [history, setHistory] = useState<CampaignAiTurn[]>([]);
+  const [pendingPrompt, setPendingPrompt] = useState('');
+  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
+  const promptRef = useRef<HTMLTextAreaElement | null>(null);
+  const threadRef = useRef<HTMLDivElement | null>(null);
   const promptStarters = getAiPromptStarters(selectedSection, readiness, scheduleItems);
   const readinessSignals = getAiReadinessSignals(selectedSection, readiness);
   const teamGlossary = getAiTeamGlossary(selectedSection);
-  const scheduleSummary = useMemo(
-    () => ({
-      hasTemplates: templates.length > 0,
-      nextMilestone: milestones.find((milestone) => milestone.occursOn) ?? null,
-    }),
-    [milestones, templates]
-  );
+  const promptPlaceholder = getAiPromptPlaceholder(selectedSection);
+  const suggestionHeading = getAiSuggestionHeading(selectedSection);
 
-  const handleDraft = () => {
+  useEffect(() => {
+    if (threadRef.current) {
+      threadRef.current.scrollTop = threadRef.current.scrollHeight;
+    }
+  }, [history, pendingPrompt, draftError]);
+
+  useEffect(() => {
+    setDraftPrompt('');
+    setDraftError(null);
+    setDraftMessage(null);
+    setDraftPreview(null);
+    setHistory([]);
+    setPendingPrompt('');
+    setCopiedPromptId(null);
+  }, [selectedSection, campaign.id]);
+
+  const pushAssistantTurn = (prompt: string, responseMessage: string) => {
+    setHistory((currentHistory) => [
+      ...currentHistory,
+      {
+        id: `${Date.now()}-${currentHistory.length}`,
+        prompt,
+        responseMessage,
+      },
+    ]);
+  };
+
+  const handleDraft = async (nextPrompt = draftPrompt) => {
+    const trimmedPrompt = nextPrompt.trim();
+    if (!trimmedPrompt || isSaving) {
+      return;
+    }
+
+    setPendingPrompt(trimmedPrompt);
+    setDraftError(null);
+    setDraftMessage(null);
+
     try {
-      const nextDraft = buildScheduleAiDraft({
-        prompt: draftPrompt,
-        requestedType: draftType,
-        milestones,
-        templates,
-      });
-      setDraftPreview(nextDraft);
-      setDraftError(null);
-      setDraftMessage(null);
+      if (selectedSection === 'schedule') {
+        const nextDraft = buildScheduleAiDraft({
+          prompt: trimmedPrompt,
+          requestedType: draftType,
+          milestones,
+          templates,
+        });
+
+        setDraftPreview(nextDraft);
+        pushAssistantTurn(
+          trimmedPrompt,
+          buildAiAssistantResponse({
+            campaign,
+            selectedSection,
+            prompt: trimmedPrompt,
+            readiness,
+            scheduleItems,
+            templates,
+            milestones,
+            draftSummary: nextDraft.summary,
+          })
+        );
+      } else {
+        setDraftPreview(null);
+        pushAssistantTurn(
+          trimmedPrompt,
+          buildAiAssistantResponse({
+            campaign,
+            selectedSection,
+            prompt: trimmedPrompt,
+            readiness,
+            scheduleItems,
+            templates,
+            milestones,
+          })
+        );
+      }
+
+      setDraftPrompt('');
     } catch (error) {
       setDraftPreview(null);
-      setDraftError(error instanceof Error ? error.message : 'Unable to draft a calendar change.');
-      setDraftMessage(null);
+      setDraftError(error instanceof Error ? error.message : 'Unable to process that AI prompt.');
+    } finally {
+      setPendingPrompt('');
     }
   };
 
@@ -117,7 +191,28 @@ export function CampaignStudioAiRail({
       setDraftMessage(`${draftPreview.summary} added to ${campaign.name}.`);
       setDraftError(null);
       setDraftPreview(null);
-      setDraftPrompt('');
+    }
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    setCopiedPromptId(null);
+    setDraftPreview(null);
+    setDraftError(null);
+  };
+
+  const startNewSession = () => {
+    clearHistory();
+    setDraftPrompt('');
+  };
+
+  const copyPrompt = async (value: string, turnId: string) => {
+    try {
+      await navigator.clipboard?.writeText(value);
+      setCopiedPromptId(turnId);
+      window.setTimeout(() => setCopiedPromptId(null), 1200);
+    } catch {
+      setCopiedPromptId(null);
     }
   };
 
@@ -128,203 +223,71 @@ export function CampaignStudioAiRail({
       aria-hidden={!open}
     >
       <div className="campaign-studio__ai-rail-header">
-        <div>
-          <div className="campaign-studio__eyebrow">AI Builder</div>
-          <h2 className="h5 mb-2">Shape {campaign.name}</h2>
+        <div className="campaign-studio__ai-brand">
+          <h2 className="campaign-studio__ai-title">
+            <span>Campaign</span> <span className="campaign-studio__ai-title-accent">AI</span>
+          </h2>
+          <p className="campaign-studio__ai-context mb-0">
+            {selectedSection === 'schedule'
+              ? 'Draft and apply campaign calendar updates from one prompt.'
+              : `Focus the ${selectedSection} workspace with guided prompts and quick explanations.`}
+          </p>
         </div>
         <button
           type="button"
-          className="btn btn-sm btn-light"
+          className="btn btn-sm campaign-studio__ai-close-btn"
           aria-label="Close AI panel"
           onClick={onClose}
         >
           <i className="bi bi-x-lg" aria-hidden="true" />
         </button>
       </div>
-      <p className="text-muted small mb-4">
-        {selectedSection === 'schedule'
-          ? 'Draft and apply new calendar items directly from a prompt.'
-          : selectedSection === 'team'
-            ? 'Use this panel to understand Team concepts and draft Team-related prompts.'
-          : `Draft structured changes for the ${selectedSection} section.`}
-      </p>
 
-      {selectedSection === 'schedule' ? (
-        <>
-          <div className="campaign-studio__ai-inline-stats">
-            <div className="campaign-studio__inline-note">
-              <div className="fw-semibold small mb-1">Calendar Context</div>
-              <div className="small text-muted">
-                {scheduleSummary.hasTemplates
-                  ? `${templates.length} templates available for scheduling.`
-                  : 'No communication templates yet.'}
-              </div>
-              <div className="small text-muted">
-                {scheduleSummary.nextMilestone
-                  ? `Next milestone: ${scheduleSummary.nextMilestone.label} on ${scheduleSummary.nextMilestone.occursOn}`
-                  : 'No milestone dates have been placed yet.'}
-              </div>
-            </div>
-          </div>
-
-          <label className="form-label small fw-semibold">AI Draft Type</label>
-          <div className="campaign-studio__ai-draft-switch mb-2" role="tablist" aria-label="AI draft type">
-            {scheduleDraftTypeOptions.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                className={`campaign-studio__ai-draft-button ${
-                  draftType === option.id ? 'is-selected' : ''
-                }`}
-                onClick={() => setDraftType(option.id)}
-                aria-pressed={draftType === option.id}
-                aria-label={option.label}
-                title={option.label}
-              >
-                <i className={`bi ${option.icon}`} aria-hidden="true" />
-                <span className="fw-semibold">{option.label}</span>
-              </button>
-            ))}
-          </div>
-          <div className="campaign-studio__ai-draft-description mb-3">
-            {scheduleDraftTypeOptions.find((option) => option.id === draftType)?.description}
-          </div>
-        </>
-      ) : null}
-
-      <label className="form-label small fw-semibold" htmlFor="campaign-studio-prompt">
-        Campaign Prompt
-      </label>
-      <textarea
-        id="campaign-studio-prompt"
-        className="form-control mb-3"
-        rows={6}
-        value={draftPrompt}
-        onChange={(event) => setDraftPrompt(event.target.value)}
-        placeholder="Describe what you want to add or improve in this campaign."
-      />
-
-      <div className="d-grid gap-2 mb-4">
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          disabled={selectedSection !== 'schedule' || isSaving}
-          onClick={handleDraft}
-        >
-          Draft Calendar Change
-        </button>
-        <button
-          type="button"
-          className="btn btn-outline-secondary btn-sm"
-          disabled={!draftPreview || isSaving}
-          onClick={handleApply}
-        >
-          Apply Draft
-        </button>
-      </div>
-
-      {draftError ? (
-        <div className="alert alert-warning py-2 small" role="alert">
-          {draftError}
-        </div>
-      ) : null}
-      {draftMessage ? (
-        <AutoDismissAlert
-          key={draftMessage}
-          message={draftMessage}
-          onDismiss={() => setDraftMessage(null)}
-          className="py-2 small"
-          showDismissButton={false}
+      <div className="campaign-studio__ai-panel-body">
+        <CampaignStudioAiThread
+          selectedSection={selectedSection}
+          templates={templates}
+          milestones={milestones}
+          promptStarters={promptStarters}
+          suggestionHeading={suggestionHeading}
+          readinessSignals={readinessSignals}
+          teamGlossary={teamGlossary}
+          history={history}
+          pendingPrompt={pendingPrompt}
+          copiedPromptId={copiedPromptId}
+          draftError={draftError}
+          draftMessage={draftMessage}
+          draftPreview={draftPreview}
+          isSaving={isSaving}
+          draftType={draftType}
+          onDraftTypeChange={setDraftType}
+          onSelectPromptStarter={(prompt) => {
+            setDraftPrompt(prompt);
+            promptRef.current?.focus();
+          }}
+          onCopyPrompt={(prompt, turnId) => {
+            void copyPrompt(prompt, turnId);
+          }}
+          onDismissDraftMessage={() => setDraftMessage(null)}
+          onApplyDraft={handleApply}
+          threadRef={threadRef}
         />
-      ) : null}
 
-      {draftPreview ? (
-        <div className="campaign-studio__suggestions">
-          <div className="small fw-semibold mb-2">Draft Preview</div>
-          <div className="campaign-studio__inline-note">
-            <div className="fw-semibold small mb-1">{draftPreview.summary}</div>
-            <div className="small text-muted">
-              {draftPreview.type === 'communication'
-                ? 'This will create a communication schedule.'
-                : draftPreview.type === 'milestone'
-                  ? 'This will place or update a milestone date.'
-                  : 'This will create a manual calendar event.'}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {teamGlossary.length > 0 ? (
-        <div className="campaign-studio__suggestions">
-          <div className="small fw-semibold mb-2">Team Concepts</div>
-          <div className="d-grid gap-2">
-            {teamGlossary.map((entry) => (
-              <div key={entry.key} className="campaign-studio__inline-note">
-                <div className="fw-semibold small mb-1">{entry.label}</div>
-                <div className="small text-muted">{entry.description}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      <div className="campaign-studio__suggestions">
-        <div className="small fw-semibold mb-2">Prompt Starters</div>
-        <div className="d-grid gap-2">
-          {promptStarters.map((prompt) => (
-            <button
-              key={prompt}
-              type="button"
-              className="campaign-studio__prompt-chip"
-              onClick={() => setDraftPrompt(prompt)}
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
+        <CampaignStudioAiComposer
+          prompt={draftPrompt}
+          placeholder={promptPlaceholder}
+          isSaving={isSaving}
+          isPending={Boolean(pendingPrompt)}
+          canClearHistory={history.length > 0}
+          promptRef={promptRef}
+          onPromptChange={setDraftPrompt}
+          onSubmit={() => {
+            void handleDraft();
+          }}
+          onClearHistory={clearHistory}
+          onStartNewSession={startNewSession}
+        />
       </div>
-
-      {readinessSignals.length > 0 ? (
-        <div className="campaign-studio__suggestions">
-          <div className="small fw-semibold mb-2">Current Signals</div>
-          <div className="d-grid gap-2">
-            {readinessSignals.map((item) => (
-              <div key={item.code} className="campaign-studio__inline-note">
-                <div className="fw-semibold small mb-1">{item.message}</div>
-                <div className="small text-muted">
-                  Use the prompt panel to turn this signal into a concrete calendar action.
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </aside>
   );
 }
-
-const scheduleDraftTypeOptions: Array<{
-  id: ScheduleAiDraftType;
-  label: string;
-  description: string;
-  icon: string;
-}> = [
-  {
-    id: 'event',
-    label: 'Event',
-    description: 'Volunteer days, sorting blocks, pickup staffing, and other manual work.',
-    icon: 'bi-calendar-plus',
-  },
-  {
-    id: 'milestone',
-    label: 'Milestone',
-    description: 'Named checkpoints like registration opening or pickup weekend.',
-    icon: 'bi-signpost-2',
-  },
-  {
-    id: 'communication',
-    label: 'Communication',
-    description: 'Emails and reminders using one of the campaign templates.',
-    icon: 'bi-envelope-paper',
-  },
-];

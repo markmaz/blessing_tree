@@ -38,6 +38,7 @@ Last updated: 2026-05-21
   - Campaign Studio AI rail can now draft and apply schedule events, milestones, and communications from prompt input
   - Campaign Studio now uses a compact icon-only section rail at medium widths, and the schedule calendar/AI draft controls have responsive overflow guards for narrower layouts
   - Campaign Studio AI draft type selection now uses a compact horizontal segmented control in the rail instead of stacked mini-cards
+  - Campaign Studio AI now uses a more Query Forge-like drawer pattern with a conversation thread, prompt copy action, prompt suggestions, clear/new-session tools, and a generic composer instead of a schedule-only `Draft Calendar Change` action
   - Schedule destructive actions now use custom in-app confirmation UI instead of native browser dialogs
   - Campaign Studio Team now uses a member-centric roster workspace with separate People and Teams tables plus edit drawers for member profiles, fixed access roles, app access, operational teams, and team-scoped team roles
   - Team memberships can now be plain `Member` participation or explicit team-role assignments, separate from app access roles

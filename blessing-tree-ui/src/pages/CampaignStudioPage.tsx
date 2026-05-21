@@ -88,19 +88,27 @@ export function CampaignStudioPage() {
         <div className="d-flex flex-wrap gap-2">
           <button
             type="button"
-            className={`btn btn-sm ${isAiRailOpen ? 'btn-secondary' : 'btn-outline-secondary'}`}
+            className={`btn btn-sm d-inline-flex align-items-center gap-2 ${
+              isAiRailOpen ? 'btn-secondary' : 'btn-outline-secondary'
+            }`}
             onClick={() => setIsAiRailOpen((currentValue) => !currentValue)}
           >
-            {isAiRailOpen ? 'Hide AI Panel' : 'Open AI Panel'}
+            <i className={`bi ${isAiRailOpen ? 'bi-stars' : 'bi-robot'}`} aria-hidden="true" />
+            <span>{isAiRailOpen ? 'Hide AI Panel' : 'Open AI Panel'}</span>
           </button>
-          <Link to={routes.CAMPAIGNS} className="btn btn-outline-secondary btn-sm">
-            Back to Campaigns
+          <Link
+            to={routes.CAMPAIGNS}
+            className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
+          >
+            <i className="bi bi-arrow-left" aria-hidden="true" />
+            <span>Back to Campaigns</span>
           </Link>
           <Link
             to={`/campaigns/${studio.campaign.id}`}
-            className="btn btn-outline-secondary btn-sm"
+            className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
           >
-            Open Detail View
+            <i className="bi bi-layout-text-window-reverse" aria-hidden="true" />
+            <span>Open Detail View</span>
           </Link>
         </div>
       </div>

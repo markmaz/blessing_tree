@@ -81,6 +81,7 @@ Last updated: 2026-05-21
 - Refined the Team workspace so team setup and membership management now live in the team drawer instead of being duplicated across both person and team flows
 - Reworked the Team workspace layout so People and Teams now render as separate first-class tables instead of a people table plus side team rail
 - Simplified the Team workspace again so the top stats are smaller and the People/Teams cards now rely on search plus click-sort instead of a larger filter bar
+- Reworked the Campaign Studio AI drawer so it now follows a more Query Forge-like panel pattern with a threaded prompt history, prompt copy action, suggestion cards, and a generic composer that works cleanly on non-schedule sections like Team
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Added an explicit readiness warning when scheduled communications exist but automated delivery is not wired yet

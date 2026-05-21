@@ -154,7 +154,7 @@ describe('CampaignStudioAiRail', () => {
     expect(
       screen.getByText(/add communication timing for the key milestones/i)
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /draft calendar change/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /send ai prompt/i })).toBeDisabled();
   });
 
   it('drafts and applies a calendar event from a prompt', async () => {
@@ -179,16 +179,12 @@ describe('CampaignStudioAiRail', () => {
     );
 
     await user.type(
-      screen.getByLabelText(/campaign prompt/i),
+      screen.getByPlaceholderText(/ask campaign ai to draft or refine schedule changes/i),
       'Add volunteer orientation on 2026-11-03 at 6pm'
     );
-    await user.click(screen.getByRole('button', { name: /draft calendar change/i }));
+    await user.click(screen.getByRole('button', { name: /send ai prompt/i }));
 
-    expect(
-      screen.getByText(/volunteer orientation on 2026-11-03/i, {
-        selector: '.fw-semibold.small.mb-1',
-      })
-    ).toBeInTheDocument();
+    expect(screen.getAllByText(/volunteer orientation on 2026-11-03/i).length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('button', { name: /apply draft/i }));
 
@@ -260,6 +256,7 @@ describe('CampaignStudioAiRail', () => {
     expect(
       screen.getByRole('button', { name: /explain what member type means in this campaign workspace/i })
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send ai prompt/i })).toBeInTheDocument();
   });
 
   it('uses phase-aware readiness prompts when Readiness is selected', () => {

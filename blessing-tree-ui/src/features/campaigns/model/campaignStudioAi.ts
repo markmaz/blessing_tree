@@ -1,8 +1,11 @@
 import type {
   CampaignReadiness,
   CampaignScheduleItem,
+  CampaignMilestone,
+  CommunicationTemplate,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import type { CampaignStudioSectionId } from '@/features/campaigns/model/campaignStudio';
+import type { Campaign } from '@/features/campaigns/model/campaignTypes';
 import {
   campaignTeamGlossaryEntries,
   type CampaignTeamGlossaryEntry,
@@ -112,4 +115,138 @@ export function getAiTeamGlossary(
   }
 
   return campaignTeamGlossaryEntries;
+}
+
+export function getAiPromptPlaceholder(selectedSection: CampaignStudioSectionId): string {
+  if (selectedSection === 'schedule') {
+    return 'Ask Campaign AI to draft or refine schedule changes for this campaign.';
+  }
+
+  if (selectedSection === 'team') {
+    return 'Ask Campaign AI to explain team concepts or suggest roster structure.';
+  }
+
+  if (selectedSection === 'communications') {
+    return 'Ask Campaign AI to shape campaign messaging, template ideas, or audience strategy.';
+  }
+
+  if (selectedSection === 'readiness') {
+    return 'Ask Campaign AI to explain blockers, launch checks, and the fastest path forward.';
+  }
+
+  if (selectedSection === 'settings') {
+    return 'Ask Campaign AI to explain campaign controls, lifecycle states, or setup gaps.';
+  }
+
+  return 'Ask Campaign AI what to add or improve in this campaign workspace.';
+}
+
+export function getAiSuggestionHeading(selectedSection: CampaignStudioSectionId): string {
+  if (selectedSection === 'team') {
+    return 'What do you want to organize?';
+  }
+
+  if (selectedSection === 'readiness') {
+    return 'What do you want clarified?';
+  }
+
+  if (selectedSection === 'communications') {
+    return 'What do you want to draft?';
+  }
+
+  if (selectedSection === 'schedule') {
+    return 'What do you want to place on the calendar?';
+  }
+
+  return 'What do you want to plan next?';
+}
+
+interface BuildAiAssistantResponseInput {
+  campaign: Campaign;
+  selectedSection: CampaignStudioSectionId;
+  prompt: string;
+  readiness: CampaignReadiness;
+  scheduleItems: CampaignScheduleItem[];
+  templates: CommunicationTemplate[];
+  milestones: CampaignMilestone[];
+  draftSummary?: string | null;
+}
+
+export function buildAiAssistantResponse({
+  campaign,
+  selectedSection,
+  prompt,
+  readiness,
+  scheduleItems,
+  templates,
+  milestones,
+  draftSummary = null,
+}: BuildAiAssistantResponseInput): string {
+  if (selectedSection === 'schedule') {
+    const timingCount = scheduleItems.length;
+    const milestoneCount = milestones.filter((milestone) => milestone.occursOn).length;
+    const templateCount = templates.length;
+
+    return [
+      draftSummary
+        ? `${draftSummary} is ready as a draft for ${campaign.name}.`
+        : `I reviewed the schedule request for ${campaign.name}.`,
+      `Current schedule context: ${timingCount} calendar item${timingCount === 1 ? '' : 's'}, ${milestoneCount} milestone date${milestoneCount === 1 ? '' : 's'}, and ${templateCount} communication template${templateCount === 1 ? '' : 's'}.`,
+      'Use Apply Draft when the preview looks right.',
+    ].join('\n\n');
+  }
+
+  if (selectedSection === 'team') {
+    const normalizedPrompt = prompt.toLowerCase();
+    const glossaryEntry = campaignTeamGlossaryEntries.find((entry) =>
+      normalizedPrompt.includes(entry.label.toLowerCase())
+    );
+
+    if (glossaryEntry) {
+      return [
+        `${glossaryEntry.label} in ${campaign.name}:`,
+        glossaryEntry.description,
+        'Use the People table for roster records and app access. Use the Teams table and team drawer for operational grouping and team-specific roles.',
+      ].join('\n\n');
+    }
+
+    return [
+      `Campaign AI can help organize the ${campaign.name} roster into people, teams, and team roles.`,
+      'App Access Roles control permissions in the app. Team Roles describe responsibilities inside a team. Plain team membership without a role still counts as Member participation.',
+      'Use the team drawer to create team roles and manage membership. Use the people drawer for roster details and app access.',
+    ].join('\n\n');
+  }
+
+  if (selectedSection === 'readiness') {
+    const blockerCount = readiness.groups.blockers.length;
+    const launchCheckCount = readiness.groups.launch_checks.length;
+    const planningGapCount = readiness.groups.planning_gaps.length;
+
+    return [
+      `${campaign.name} readiness is currently ${readiness.overallStatus.replaceAll('_', ' ').toLowerCase()}.`,
+      `Current counts: ${blockerCount} blocker${blockerCount === 1 ? '' : 's'}, ${launchCheckCount} launch check${launchCheckCount === 1 ? '' : 's'}, and ${planningGapCount} planning gap${planningGapCount === 1 ? '' : 's'}.`,
+      'Open the matching Studio section from each readiness action to clear issues in order.',
+    ].join('\n\n');
+  }
+
+  if (selectedSection === 'communications') {
+    return [
+      `Campaign AI can help shape the ${campaign.name} communication plan.`,
+      `There ${templates.length === 1 ? 'is' : 'are'} currently ${templates.length} template${templates.length === 1 ? '' : 's'} available in this campaign.`,
+      'Use this panel for template ideas, audience strategy, and merge-field guidance. Template sending and scheduler wiring still live outside this screen.',
+    ].join('\n\n');
+  }
+
+  if (selectedSection === 'settings') {
+    return [
+      `Campaign AI can help explain lifecycle controls and setup decisions for ${campaign.name}.`,
+      `Current status: ${campaign.status}. Campaign dates run from ${campaign.startDate} to ${campaign.endDate}.`,
+      'Use Settings for campaign metadata and status changes. Use Readiness to understand whether the campaign is actually prepared for the next lifecycle step.',
+    ].join('\n\n');
+  }
+
+  return [
+    `Campaign AI is focused on the ${selectedSection} section for ${campaign.name}.`,
+    'Use the prompt suggestions and current signals to turn this section into a concrete next action.',
+  ].join('\n\n');
 }
