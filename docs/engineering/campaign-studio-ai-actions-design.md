@@ -462,7 +462,24 @@ Examples:
 Recommendation:
 
 - support lightweight inline edits first
-- defer full “AI draft opens native form editor” integration until later
+- route the user into the native section form when the change becomes structural,
+  multi-step, or layout-heavy
+
+Recommended inline-edit boundary:
+
+- keep editing inline for small scalar adjustments such as:
+  - template subject
+  - one event date or title
+  - one milestone date
+  - one team role label
+- route into the native form for:
+  - multi-block email content editing
+  - large calendar adjustments with several dependent dates
+  - multi-member team changes
+  - any action where the user needs the full section context to verify the result
+
+This keeps the AI drawer fast for simple corrections without turning it into a
+second full editor.
 
 ## Readiness Integration
 
@@ -532,10 +549,13 @@ Until then:
 
 ## Open Questions
 
-- should apply-all be best-effort or transactional across multiple actions
-- when should AI be allowed to update an existing template instead of creating a new one
-- how much inline editing is enough before the user should be routed into the native section form
-- whether future AI action drafts should be persisted server-side for longer review sessions
+- `Apply All` should be best-effort across multiple actions, not transactional
+- AI should ask before updating an existing template instead of defaulting to
+  overwriting one
+- inline editing should stay limited to small scalar adjustments; structural or
+  multi-step edits should route into the native section form
+- AI action drafts should remain transient and should not be persisted
+  server-side for longer review sessions by default
 
 ## Recommendation
 
