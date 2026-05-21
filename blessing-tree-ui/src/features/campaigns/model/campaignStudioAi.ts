@@ -25,6 +25,7 @@ export function getAiPromptStarters(
 ): string[] {
   if (selectedSection === 'readiness') {
     const starters = [
+      'Fix the activation blockers for me.',
       'Explain what is currently blocking this campaign from activation.',
       'Tell me the fastest path to clear the current launch checks.',
       'Summarize the planning gaps that still need attention.',
@@ -142,7 +143,7 @@ export function getAiPromptPlaceholder(selectedSection: CampaignStudioSectionId)
   }
 
   if (selectedSection === 'readiness') {
-    return 'Ask Campaign AI to explain blockers, launch checks, and the fastest path forward.';
+    return 'Ask Campaign AI to explain blockers or draft a fix bundle for readiness gaps.';
   }
 
   if (selectedSection === 'settings') {
@@ -236,7 +237,7 @@ export function buildAiAssistantResponse({
     return [
       `${campaign.name} readiness is currently ${readiness.overallStatus.replaceAll('_', ' ').toLowerCase()}.`,
       `Current counts: ${blockerCount} blocker${blockerCount === 1 ? '' : 's'}, ${launchCheckCount} launch check${launchCheckCount === 1 ? '' : 's'}, and ${planningGapCount} planning gap${planningGapCount === 1 ? '' : 's'}.`,
-      'Open the matching Studio section from each readiness action to clear issues in order.',
+      'Campaign AI can explain these findings or draft cross-section fixes for the ones it has enough information to resolve safely.',
     ].join('\n\n');
   }
 

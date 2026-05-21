@@ -144,6 +144,17 @@ function mapActionPayload(action: CampaignStudioAiActionResponse): Record<string
     };
   }
 
+  if (action.action_type === 'update_campaign_settings') {
+    return {
+      name: action.payload.name,
+      year: Number(action.payload.year),
+      description: action.payload.description ?? null,
+      status: action.payload.status,
+      startDate: action.payload.start_date ?? null,
+      endDate: action.payload.end_date ?? null,
+    };
+  }
+
   if (action.action_type === 'create_event' || action.action_type === 'update_event') {
     return {
       title: action.payload.title,

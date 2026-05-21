@@ -208,6 +208,27 @@ export function CampaignStudioPage() {
             setTeamWorkspaceRefreshToken((currentValue) => currentValue + 1);
             await reload();
           }}
+          onUpdateCampaignSettings={async (input) => {
+            setIsUpdatingCampaign(true);
+            setUpdateError(null);
+            setUpdateMessage(null);
+
+            try {
+              await updateCampaign(campaignId, input);
+              await Promise.all([reloadCampaigns(), reload()]);
+              setUpdateMessage('Campaign updated.');
+              return true;
+            } catch (updateCampaignError) {
+              setUpdateError(
+                updateCampaignError instanceof Error
+                  ? updateCampaignError.message
+                  : 'Unable to update campaign'
+              );
+              return false;
+            } finally {
+              setIsUpdatingCampaign(false);
+            }
+          }}
         />
       </div>
     </section>

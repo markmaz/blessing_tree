@@ -17,6 +17,10 @@ Last updated: 2026-05-21
   - Team prompts can now draft `create_team`, `create_team_role`, `create_member`, and `assign_member_to_team` actions
   - Team `Apply All` now resolves created team, team-role, and member IDs before applying dependent membership actions
   - explanatory Team prompts still stay advisory and action-free
+- Phase 4 is now implemented as of 2026-05-21:
+  - Readiness prompts can now draft cross-section fix bundles instead of staying advisory-only
+  - Readiness can now propose a mix of actionable fixes and blocked fix-plan cards when the app still needs a specific person, date range, or policy choice
+  - readiness-generated settings updates now apply through the normal campaign update path
 
 ## Purpose
 

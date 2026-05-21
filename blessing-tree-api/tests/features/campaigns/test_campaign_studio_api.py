@@ -451,6 +451,39 @@ def test_post_ai_draft_returns_team_bundle_actions(
     assert payload["actions"][5]["payload"]["team_role_ref"] == payload["actions"][3]["payload"]["role_ref"]
 
 
+def test_post_ai_draft_returns_readiness_fix_bundle(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    campaign.description = None
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ai/draft",
+        json={
+            "section": "readiness",
+            "prompt": "Fix the activation blockers for me.",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    action_types = [action["action_type"] for action in payload["actions"]]
+    assert "create_milestone" in action_types
+    assert "create_template" in action_types
+    assert "resolve_readiness_gap" in action_types
+
+
 def test_delete_communication_schedule_removes_schedule(
     app: Flask,
     monkeypatch: pytest.MonkeyPatch,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import date, timedelta
 import re
 from typing import Any
 import uuid
@@ -75,6 +76,14 @@ class CampaignStudioAiDraftService:
                 prompt=prompt,
             )
 
+        if section == "readiness":
+            return self._build_readiness_draft(
+                db,
+                campaign_id=campaign_id,
+                campaign=campaign,
+                prompt=prompt,
+            )
+
         return self._build_advisory_draft(
             db,
             campaign_id=campaign_id,
@@ -125,6 +134,72 @@ class CampaignStudioAiDraftService:
             "message": (
                 f"I drafted {len(actions)} schedule action"
                 f"{'s' if len(actions) != 1 else ''} for {campaign_name}."
+            ),
+            "assumptions": assumptions,
+            "warnings": warnings,
+            "actions": actions,
+        }
+
+    def _build_readiness_draft(
+        self,
+        db: Session,
+        *,
+        campaign_id: str,
+        campaign,
+        prompt: str,
+    ) -> dict[str, Any]:
+        if _is_readiness_explanation_prompt(prompt):
+            return self._build_advisory_draft(
+                db,
+                campaign_id=campaign_id,
+                section="readiness",
+                campaign_name=campaign.name,
+                prompt=prompt,
+            )
+
+        readiness = self.studio.get_readiness(db, campaign_id)
+        milestones = self.studio.list_milestones(db, campaign_id)
+        templates = self.studio.list_templates(db)
+        selected_items = _select_readiness_items_for_prompt(prompt, readiness)
+        readiness_context: dict[str, Any] = {
+            "created_template_ref": None,
+            "created_template_name": None,
+            "created_schedule": False,
+        }
+
+        assumptions: list[str] = []
+        warnings: list[str] = []
+        actions: list[dict[str, Any]] = []
+
+        for item in selected_items:
+            item_actions, item_assumptions, item_warnings = _build_actions_for_readiness_item(
+                item,
+                campaign=campaign,
+                milestones=milestones,
+                templates=templates,
+                readiness_context=readiness_context,
+            )
+            actions.extend(item_actions)
+            assumptions.extend(item_assumptions)
+            warnings.extend(item_warnings)
+
+        if not actions:
+            return {
+                "message": (
+                    f"I reviewed readiness for {campaign.name}, but I could not draft an actionable fix bundle from the current findings."
+                ),
+                "assumptions": assumptions,
+                "warnings": warnings
+                or [
+                    "The remaining readiness items still need a specific person, date range, or policy decision before Campaign AI can draft concrete actions."
+                ],
+                "actions": [],
+            }
+
+        return {
+            "message": (
+                f"I drafted {len(actions)} readiness action"
+                f"{'s' if len(actions) != 1 else ''} for {campaign.name}."
             ),
             "assumptions": assumptions,
             "warnings": warnings,
@@ -347,7 +422,7 @@ class CampaignStudioAiDraftService:
                 "message": (
                     f"{campaign_name} readiness is currently "
                     f"{readiness['overall_status'].replace('_', ' ').lower()}. "
-                    "Phase 1 keeps readiness AI advisory while the action contract is being generalized."
+                    "Campaign AI can explain readiness findings here, and it can now draft fix bundles when the prompt asks it to clear gaps or unblock the next phase."
                 ),
                 "assumptions": [],
                 "warnings": [],
@@ -631,6 +706,307 @@ def _build_communication_schedule_from_template_ref(
     )
 
 
+def _build_actions_for_readiness_item(
+    item: Mapping[str, Any],
+    *,
+    campaign,
+    milestones: list[Any],
+    templates: list[Any],
+    readiness_context: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[str], list[str]]:
+    code = str(item["code"])
+    assumptions: list[str] = []
+    warnings: list[str] = []
+    actions: list[dict[str, Any]] = []
+
+    if code == "missing_description":
+        actions.append(
+            _build_update_campaign_settings_action(
+                campaign,
+                description=f"{campaign.name} coordinates teams, communications, and fulfillment for the {campaign.year} campaign year.",
+            )
+        )
+        return actions, assumptions, warnings
+
+    if code == "missing_date_range":
+        return (
+            [
+                _build_blocked_readiness_action(
+                    item,
+                    summary="Campaign dates are still missing, so readiness cannot place milestone or lifecycle fixes automatically.",
+                    warning="Set the campaign start and end dates in Settings before asking Campaign AI to clear activation blockers automatically.",
+                )
+            ],
+            assumptions,
+            warnings,
+        )
+
+    if code == "missing_manager":
+        return (
+            [
+                _build_blocked_readiness_action(
+                    item,
+                    summary="A campaign manager is still required before activation can be cleared.",
+                    warning="Name a specific person to make manager, then use Team AI to create the member or assign the Campaign Manager app access role.",
+                )
+            ],
+            assumptions,
+            warnings,
+        )
+
+    if code == "missing_team_assignments":
+        return (
+            [
+                _build_blocked_readiness_action(
+                    item,
+                    summary="The campaign still needs at least one non-manager team assignment.",
+                    warning="Name a specific team or member so Campaign AI can draft the right Team bundle.",
+                )
+            ],
+            assumptions,
+            warnings,
+        )
+
+    if code == "missing_milestones":
+        milestone_keys = [str(key) for key in item.get("details", {}).get("missing_keys", [])]
+        if not campaign.start_date or not campaign.end_date:
+            return (
+                [
+                    _build_blocked_readiness_action(
+                        item,
+                        summary="Required milestone dates are missing, but the campaign date range is not available yet.",
+                        warning="Set the campaign start and end dates first so Campaign AI can infer milestone timing.",
+                    )
+                ],
+                assumptions,
+                warnings,
+            )
+
+        inferred_dates = _infer_required_milestone_dates(
+            campaign.start_date,
+            campaign.end_date,
+            milestone_keys,
+        )
+        existing_by_key = {milestone.milestone_key: milestone for milestone in milestones}
+        for key in milestone_keys:
+            if key not in inferred_dates:
+                continue
+            definition = _match_milestone_definition(key.replace("_", " ")) or {
+                "key": key,
+                "label": MILESTONE_DEFINITIONS.get(key, key.replace("_", " ").title()),
+                "sort_order": list(MILESTONE_DEFINITIONS.keys()).index(key) + 1
+                if key in MILESTONE_DEFINITIONS
+                else 0,
+            }
+            existing_notes = existing_by_key.get(key).notes if key in existing_by_key else None
+            actions.append(
+                {
+                    "id": f"draft-readiness-milestone-{uuid.uuid4()}",
+                    "action_type": "create_milestone",
+                    "section": "schedule",
+                    "title": f"Place Milestone: {definition['label']}",
+                    "summary": f"Places {definition['label']} on the calendar to satisfy readiness.",
+                    "status": "needs_review",
+                    "assumptions": [
+                        "Inferred this milestone date by distributing required milestones across the campaign date range."
+                    ],
+                    "warnings": [],
+                    "payload": {
+                        "milestone_key": definition["key"],
+                        "label": definition["label"],
+                        "occurs_on": inferred_dates[key],
+                        "notes": existing_notes or "Drafted from readiness fix plan.",
+                        "sort_order": definition["sort_order"],
+                    },
+                    "apply_target": {"api": "campaign_milestone.replace", "method": "PUT"},
+                }
+            )
+        return actions, assumptions, warnings
+
+    if code == "missing_manual_schedule":
+        if not campaign.start_date:
+            return (
+                [
+                    _build_blocked_readiness_action(
+                        item,
+                        summary="Manual planning events are missing, but the campaign start date is not available yet.",
+                        warning="Set the campaign start date before Campaign AI can place planning events automatically.",
+                    )
+                ],
+                assumptions,
+                warnings,
+            )
+
+        kickoff_date = (campaign.start_date + timedelta(days=7)).isoformat()
+        actions.append(
+            {
+                "id": f"draft-readiness-event-{uuid.uuid4()}",
+                "action_type": "create_event",
+                "section": "schedule",
+                "title": "Create Event: Volunteer Orientation",
+                "summary": "Adds a manual planning event to strengthen the campaign timeline.",
+                "status": "needs_review",
+                "assumptions": [
+                    "Placed the event one week after campaign start as a practical first planning block."
+                ],
+                "warnings": [],
+                "payload": {
+                    "title": "Volunteer Orientation",
+                    "event_type": "VOLUNTEER",
+                    "start_at": f"{kickoff_date}T18:00",
+                    "end_at": None,
+                    "all_day": False,
+                    "notes": "Drafted from readiness fix plan.",
+                },
+                "apply_target": {"api": "campaign_event.create", "method": "POST"},
+            }
+        )
+        return actions, assumptions, warnings
+
+    if code == "missing_templates":
+        template_action, template_assumptions, template_warnings, template_ref = (
+            _build_template_creation_action(
+                "Create a general campaign update template",
+                campaign_name=campaign.name,
+                templates=templates,
+            )
+        )
+        actions.append(template_action)
+        assumptions.extend(template_assumptions)
+        warnings.extend(template_warnings)
+        readiness_context["created_template_ref"] = template_ref
+        readiness_context["created_template_name"] = str(template_action["payload"]["name"])
+        return actions, assumptions, warnings
+
+    if code in {"missing_schedules", "missing_schedule_messaging"}:
+        schedule_actions, schedule_assumptions, schedule_warnings = _build_readiness_schedule_actions(
+            item,
+            milestones=milestones,
+            templates=templates,
+            readiness_context=readiness_context,
+        )
+        actions.extend(schedule_actions)
+        assumptions.extend(schedule_assumptions)
+        warnings.extend(schedule_warnings)
+        return actions, assumptions, warnings
+
+    if code == "automation_delivery_unavailable":
+        return (
+            [
+                _build_blocked_readiness_action(
+                    item,
+                    summary="The campaign still lacks automated delivery for scheduled communications.",
+                    warning="Campaign AI can place planned communications on the calendar, but the worker/scheduler execution layer still needs to be built separately.",
+                )
+            ],
+            assumptions,
+            warnings,
+        )
+
+    if code == "campaign_in_draft":
+        return (
+            [
+                _build_blocked_readiness_action(
+                    item,
+                    summary="The campaign is still in draft status.",
+                    warning="Review readiness first, then change the campaign status in Settings when you are ready to activate it.",
+                )
+            ],
+            assumptions,
+            warnings,
+        )
+
+    return actions, assumptions, warnings
+
+
+def _build_readiness_schedule_actions(
+    item: Mapping[str, Any],
+    *,
+    milestones: list[Any],
+    templates: list[Any],
+    readiness_context: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[str], list[str]]:
+    assumptions: list[str] = []
+    warnings = [
+        "This drafts planned calendar communications only. Automated delivery is not wired yet."
+    ]
+    actions: list[dict[str, Any]] = []
+    milestone_keys = [str(key) for key in item.get("details", {}).get("missing_keys", [])]
+
+    active_templates = [template for template in templates if template.is_active]
+    template_id: str | None = None
+    template_ref = readiness_context.get("created_template_ref")
+    template_name = readiness_context.get("created_template_name")
+    if active_templates:
+        template_id = str(active_templates[0].id)
+        template_name = active_templates[0].name
+        assumptions.append(
+            f"Used the first active template {active_templates[0].name} for readiness schedule placement."
+        )
+    elif template_ref:
+        template_name = template_name or "Campaign Update"
+    else:
+        return (
+            [
+                _build_blocked_readiness_action(
+                    item,
+                    summary="Communication timing is still missing, but no template is available for scheduling yet.",
+                    warning="Create or draft at least one template first so Campaign AI can place communication timing on the calendar.",
+                )
+            ],
+            assumptions,
+            warnings,
+        )
+
+    milestone_map = {
+        milestone.milestone_key: milestone
+        for milestone in milestones
+        if milestone.occurs_on is not None
+    }
+    target_keys = milestone_keys or list(milestone_map.keys())[:1]
+    if not target_keys:
+        return (
+            [
+                _build_blocked_readiness_action(
+                    item,
+                    summary="Communication timing is still missing, but there are no dated milestones to anchor it to yet.",
+                    warning="Place milestone dates first so Campaign AI can schedule communications against them.",
+                )
+            ],
+            assumptions,
+            warnings,
+        )
+
+    for key in target_keys:
+        milestone = milestone_map.get(key)
+        if milestone is None:
+            continue
+        actions.append(
+            {
+                "id": f"draft-readiness-communication-{uuid.uuid4()}",
+                "action_type": "create_communication_schedule",
+                "section": "communications",
+                "title": f"Schedule Communication: {template_name}",
+                "summary": f"Places {template_name} at {milestone.label}.",
+                "status": "needs_review",
+                "assumptions": assumptions.copy(),
+                "warnings": warnings.copy(),
+                "payload": {
+                    "template_id": template_id,
+                    "template_ref": template_ref if template_id is None else None,
+                    "milestone_key": milestone.milestone_key,
+                    "scheduled_for": None,
+                    "status": "DRAFT",
+                    "notes": "Drafted from readiness fix plan.",
+                },
+                "apply_target": {"api": "campaign_communication_schedule.create", "method": "POST"},
+            }
+        )
+    if actions:
+        readiness_context["created_schedule"] = True
+    return actions, assumptions, warnings
+
+
 def _build_team_action(
     *,
     campaign_name: str,
@@ -749,6 +1125,58 @@ def _build_member_assignment_action(
             "team_role_ref": team_role_ref,
         },
         "apply_target": {"api": "campaign_team_member.create", "method": "POST"},
+    }
+
+
+def _build_update_campaign_settings_action(
+    campaign,
+    *,
+    description: str,
+) -> dict[str, Any]:
+    return {
+        "id": f"draft-campaign-settings-{uuid.uuid4()}",
+        "action_type": "update_campaign_settings",
+        "section": "settings",
+        "title": "Update Campaign Settings",
+        "summary": "Adds missing campaign metadata needed for readiness.",
+        "status": "needs_review",
+        "assumptions": [
+            "Drafted a generic campaign description from the current campaign name and year."
+        ],
+        "warnings": [],
+        "payload": {
+            "name": campaign.name,
+            "year": campaign.year,
+            "description": description,
+            "status": campaign.status,
+            "start_date": campaign.start_date.isoformat() if campaign.start_date else None,
+            "end_date": campaign.end_date.isoformat() if campaign.end_date else None,
+        },
+        "apply_target": {"api": "campaign.update", "method": "PATCH"},
+    }
+
+
+def _build_blocked_readiness_action(
+    item: Mapping[str, Any],
+    *,
+    summary: str,
+    warning: str,
+) -> dict[str, Any]:
+    return {
+        "id": f"draft-readiness-{item['code']}-{uuid.uuid4()}",
+        "action_type": "resolve_readiness_gap",
+        "section": "readiness",
+        "title": f"Resolve Readiness Gap: {item['code'].replace('_', ' ').title()}",
+        "summary": summary,
+        "status": "blocked",
+        "assumptions": [],
+        "warnings": [warning],
+        "payload": {
+            "code": item["code"],
+            "section": item["section"],
+            "blocking_for": item.get("blocking_for", []),
+        },
+        "apply_target": {"api": "readiness.fix_plan", "method": "POST"},
     }
 
 
@@ -940,6 +1368,63 @@ def _extract_assignment_role_name(prompt: str, role_names: list[str]) -> str | N
         if _normalize_text(role_name) == requested_role:
             return role_name
     return None
+
+
+def _is_readiness_explanation_prompt(prompt: str) -> bool:
+    normalized = _normalize_text(prompt)
+    asks_for_fix = any(
+        term in normalized
+        for term in ("fix", "clear", "resolve", "unblock", "build", "add", "create")
+    )
+    asks_for_explanation = any(
+        term in normalized
+        for term in ("explain", "summarize", "what is", "what are", "tell me", "why")
+    )
+    return asks_for_explanation and not asks_for_fix
+
+
+def _select_readiness_items_for_prompt(
+    prompt: str,
+    readiness: Mapping[str, Any],
+) -> list[Mapping[str, Any]]:
+    normalized = _normalize_text(prompt)
+    items = list(readiness.get("items", []))
+    if any(term in normalized for term in ("activate", "activation", "launch", "blocker", "unblock")):
+        filtered = [
+            item
+            for item in items
+            if "activate" in item.get("blocking_for", [])
+            or item.get("category") in {"blockers", "launch_checks"}
+        ]
+        return filtered or items
+    if "operation" in normalized:
+        filtered = [
+            item
+            for item in items
+            if "operations" in item.get("blocking_for", [])
+            or item.get("category") == "operational_health"
+        ]
+        return filtered or items
+    return items
+
+
+def _infer_required_milestone_dates(
+    start_date: date,
+    end_date: date,
+    milestone_keys: list[str],
+) -> dict[str, str]:
+    ordered_keys = list(MILESTONE_DEFINITIONS.keys())
+    total_steps = max(len(ordered_keys) - 1, 1)
+    total_days = max((end_date - start_date).days, 0)
+    inferred: dict[str, str] = {}
+    for key in milestone_keys:
+        if key not in ordered_keys:
+            continue
+        index = ordered_keys.index(key)
+        offset_days = round(total_days * (index / total_steps)) if total_steps else 0
+        inferred_date = start_date + timedelta(days=offset_days)
+        inferred[key] = inferred_date.isoformat()
+    return inferred
 
 
 def _detect_event_type(prompt: str) -> str:

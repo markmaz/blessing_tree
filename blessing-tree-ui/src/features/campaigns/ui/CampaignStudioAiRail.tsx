@@ -23,6 +23,7 @@ import {
   isCreateMilestoneAction,
   isCreateTeamAction,
   isCreateTeamRoleAction,
+  isUpdateCampaignSettingsAction,
   type CampaignStudioAiAction,
   type CampaignStudioAiDraftResponse,
   type ScheduleAiDraftType,
@@ -38,6 +39,7 @@ import type {
   SaveCampaignMilestoneInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import type { Campaign } from '@/features/campaigns/model/campaignTypes';
+import type { CampaignUpsertInput } from '@/features/campaigns/model/campaignTypes';
 import {
   CampaignStudioAiThread,
   type CampaignAiTurn,
@@ -63,6 +65,7 @@ interface CampaignStudioAiRailProps {
   ) => Promise<boolean>;
   onSaveMilestones: (milestones: SaveCampaignMilestoneInput[]) => Promise<boolean>;
   onTeamWorkspaceChanged: () => Promise<void>;
+  onUpdateCampaignSettings: (input: CampaignUpsertInput) => Promise<boolean>;
 }
 
 export function CampaignStudioAiRail({
@@ -80,6 +83,7 @@ export function CampaignStudioAiRail({
   onCreateCommunicationSchedule,
   onSaveMilestones,
   onTeamWorkspaceChanged,
+  onUpdateCampaignSettings,
 }: CampaignStudioAiRailProps) {
   const [draftPrompt, setDraftPrompt] = useState('');
   const [draftType, setDraftType] = useState<ScheduleAiDraftType>('event');
@@ -356,6 +360,10 @@ export function CampaignStudioAiRail({
       await addCampaignTeamMember(campaign.id, teamId, memberId, teamRoleId ?? null);
       await onTeamWorkspaceChanged();
       return { success: true };
+    }
+
+    if (isUpdateCampaignSettingsAction(action)) {
+      return { success: await onUpdateCampaignSettings(action.payload) };
     }
 
     if (isCreateCampaignEventAction(action)) {

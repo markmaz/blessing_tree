@@ -155,6 +155,7 @@ function buildBaseProps() {
     onCreateCommunicationSchedule: vi.fn().mockResolvedValue(true),
     onSaveMilestones: vi.fn().mockResolvedValue(true),
     onTeamWorkspaceChanged: vi.fn().mockResolvedValue(undefined),
+    onUpdateCampaignSettings: vi.fn().mockResolvedValue(true),
   };
 }
 
@@ -288,6 +289,68 @@ describe('CampaignStudioAiRail', () => {
     expect(
       screen.getByRole('button', { name: /tell me exactly what i need to do to unblock campaign activation/i })
     ).toBeInTheDocument();
+  });
+
+  it('drafts and applies a readiness settings fix', async () => {
+    const user = userEvent.setup();
+    const onUpdateCampaignSettings = vi.fn().mockResolvedValue(true);
+
+    vi.mocked(draftCampaignStudioAi).mockResolvedValueOnce({
+      message: 'I drafted 1 readiness action for Blessing Tree 2026 Demo.',
+      assumptions: [],
+      warnings: [],
+      actions: [
+        {
+          id: 'draft-settings-1',
+          actionType: 'update_campaign_settings',
+          section: 'settings',
+          title: 'Update Campaign Settings',
+          summary: 'Adds missing campaign metadata needed for readiness.',
+          status: 'needs_review',
+          assumptions: ['Drafted a generic campaign description from the current campaign name and year.'],
+          warnings: [],
+          payload: {
+            name: 'Blessing Tree 2026 Demo',
+            year: 2026,
+            description: 'Blessing Tree 2026 Demo coordinates teams, communications, and fulfillment for the 2026 campaign year.',
+            status: 'ACTIVE',
+            startDate: '2026-11-01',
+            endDate: '2026-12-20',
+          },
+          applyTarget: {
+            api: 'campaign.update',
+            method: 'PATCH',
+          },
+        },
+      ],
+    });
+
+    render(
+      <CampaignStudioAiRail
+        {...buildBaseProps()}
+        selectedSection="readiness"
+        onUpdateCampaignSettings={onUpdateCampaignSettings}
+      />
+    );
+
+    await user.type(
+      screen.getByPlaceholderText(/ask campaign ai to explain blockers or draft a fix bundle for readiness gaps/i),
+      'Fix the activation blockers for me.'
+    );
+    await user.click(screen.getByRole('button', { name: /send ai prompt/i }));
+    await user.click(screen.getByRole('button', { name: /^apply$/i }));
+
+    await waitFor(() => {
+      expect(onUpdateCampaignSettings).toHaveBeenCalledWith({
+        name: 'Blessing Tree 2026 Demo',
+        year: 2026,
+        description:
+          'Blessing Tree 2026 Demo coordinates teams, communications, and fulfillment for the 2026 campaign year.',
+        status: 'ACTIVE',
+        startDate: '2026-11-01',
+        endDate: '2026-12-20',
+      });
+    });
   });
 
   it('drafts and applies a team bundle from the team section', async () => {

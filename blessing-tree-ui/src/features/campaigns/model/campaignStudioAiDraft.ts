@@ -1,4 +1,5 @@
 import type { CampaignStudioSectionId } from '@/features/campaigns/model/campaignStudio';
+import type { CampaignUpsertInput } from '@/features/campaigns/model/campaignTypes';
 import type {
   CreateCampaignEventInput,
   CreateCommunicationTemplateInput,
@@ -110,6 +111,8 @@ export interface AssignAppAccessRoleAiPayload
   memberRef?: string | null;
 }
 
+export type UpdateCampaignSettingsAiPayload = CampaignUpsertInput;
+
 export function isCreateCommunicationTemplateAction(
   action: CampaignStudioAiAction
 ): action is CampaignStudioAiAction & { payload: CreateCommunicationTemplateAiPayload } {
@@ -162,4 +165,10 @@ export function isAssignAppAccessRoleAction(
   action: CampaignStudioAiAction
 ): action is CampaignStudioAiAction & { payload: AssignAppAccessRoleAiPayload } {
   return action.actionType === 'assign_app_access_role';
+}
+
+export function isUpdateCampaignSettingsAction(
+  action: CampaignStudioAiAction
+): action is CampaignStudioAiAction & { payload: UpdateCampaignSettingsAiPayload } {
+  return action.actionType === 'update_campaign_settings';
 }
