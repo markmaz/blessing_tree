@@ -8,7 +8,6 @@ import type {
   CampaignRoleCatalogEntry,
   CampaignTeamMemberUpsertInput,
   CampaignTeamWorkspaceMember,
-  CampaignTeamWorkspaceTeam,
 } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
 import { CampaignStudioTeamMemberAccessRolesSection } from '@/features/campaigns/ui/CampaignStudioTeamMemberAccessRolesSection';
@@ -20,7 +19,6 @@ interface CampaignStudioTeamMemberDrawerProps {
   isOpen: boolean;
   isSaving: boolean;
   member: CampaignTeamWorkspaceMember | null;
-  teams: CampaignTeamWorkspaceTeam[];
   roleCatalog: CampaignRoleCatalogEntry[];
   directoryUsers: CampaignDirectoryUserOption[];
   canManageTeam: boolean;
@@ -31,8 +29,6 @@ interface CampaignStudioTeamMemberDrawerProps {
     input: { roleKey: string; isActive?: boolean },
     assignmentId?: string
   ) => Promise<boolean>;
-  onAddMemberToTeam: (teamId: string, memberId: string) => Promise<boolean>;
-  onRemoveMemberFromTeam: (teamId: string, memberId: string) => Promise<boolean>;
   onLinkAppUser: (
     memberId: string,
     input: CampaignMemberAppLinkInput
@@ -42,6 +38,7 @@ interface CampaignStudioTeamMemberDrawerProps {
     input: CampaignMemberAppInviteInput
   ) => Promise<boolean>;
   onRemoveAppAccess: (memberId: string) => Promise<boolean>;
+  onOpenTeam: (teamId: string) => void;
   onOpenCreateTeam: () => void;
 }
 
@@ -59,18 +56,16 @@ export function CampaignStudioTeamMemberDrawer({
   isOpen,
   isSaving,
   member,
-  teams,
   roleCatalog,
   directoryUsers,
   canManageTeam,
   onClose,
   onSave,
   onSaveAccessRole,
-  onAddMemberToTeam,
-  onRemoveMemberFromTeam,
   onLinkAppUser,
   onInviteAppAccess,
   onRemoveAppAccess,
+  onOpenTeam,
   onOpenCreateTeam,
 }: CampaignStudioTeamMemberDrawerProps) {
   const memberTypeHelp = getCampaignTeamGlossaryEntry('member_type');
@@ -99,8 +94,6 @@ export function CampaignStudioTeamMemberDrawer({
   const [selectedInviteStatus, setSelectedInviteStatus] = useState<
     CampaignMemberAppInviteInput['appAccessStatus']
   >(member?.appAccessStatus === 'active' ? 'active' : 'invited');
-
-  const memberTeamIds = new Set(member?.teams.map((team) => team.id) ?? []);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -238,12 +231,8 @@ export function CampaignStudioTeamMemberDrawer({
 
             <CampaignStudioTeamMemberTeamsSection
               member={member}
-              teams={teams}
-              memberTeamIds={memberTeamIds}
               canManageTeam={canManageTeam}
-              isSaving={isSaving}
-              onAddMemberToTeam={onAddMemberToTeam}
-              onRemoveMemberFromTeam={onRemoveMemberFromTeam}
+              onOpenTeam={onOpenTeam}
               onOpenCreateTeam={onOpenCreateTeam}
             />
 

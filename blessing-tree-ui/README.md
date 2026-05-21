@@ -21,6 +21,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - The Studio AI rail can now draft and apply new schedule events, milestones, and communication schedules from prompt input, and the readiness surface still includes schedule-specific warnings from the backend.
 - Success alerts in Studio and campaign management flows now fade and dismiss themselves automatically after a short interval.
 - The Team section is now a member-centric workspace with a roster table, filters, team management, and Query Forge-style edit drawers for people, access roles, app access, and operational teams.
+- The Team workspace now separates responsibilities more clearly: person drawers focus on profile and app access, while team drawers own team setup and membership changes.
 - The Team section now also includes inline concept help for roster terms such as `Member Type`, `App Access`, `App Access Roles`, and `Teams`, and the Studio AI drawer now exposes the same Team glossary when the Team section is active.
 - The Team workspace now consumes the backend-provided app access role catalog, so role labels and descriptions are no longer duplicated in the frontend.
 - The communications section is now a template-only builder with a collapsible tool rail, metadata/content editing, a stronger rendered preview surface, a builder-side merge-field drawer, heading/text/image content blocks, and inline uploads for small embedded images; the Studio AI panel now opens as a hidden right drawer instead of taking permanent page width.

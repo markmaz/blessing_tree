@@ -205,6 +205,9 @@ describe('CampaignStudioTeamSection', () => {
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText(/track campaign people/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/team setup and membership changes are managed from the team workspace/i)
+    ).toBeInTheDocument();
     expect(screen.getByDisplayValue('Volunteer User')).toBeInTheDocument();
   });
 

@@ -196,7 +196,9 @@ export function CampaignStudioTeamSection({
                         <button
                           key={team.id}
                           type="button"
-                          className="campaign-team-side-item"
+                          className={`campaign-team-side-item ${
+                            selectedTeamId === team.id && !isCreateTeamOpen ? 'is-selected' : ''
+                          }`}
                           onClick={() => {
                             setSelectedTeamId(team.id);
                             setIsCreateTeamOpen(false);
@@ -222,7 +224,6 @@ export function CampaignStudioTeamSection({
         isOpen={isCreateMemberOpen || selectedMember !== null}
         isSaving={isSaving}
         member={isCreateMemberOpen ? null : selectedMember}
-        teams={workspace?.teams ?? []}
         roleCatalog={workspace?.roleCatalog ?? []}
         directoryUsers={workspace?.directoryUsers ?? []}
         canManageTeam={canManageTeam}
@@ -235,8 +236,6 @@ export function CampaignStudioTeamSection({
           return didSave !== null;
         }}
         onSaveAccessRole={saveAccessRole}
-        onAddMemberToTeam={addMemberToTeam}
-        onRemoveMemberFromTeam={removeMemberFromTeam}
         onLinkAppUser={async (memberId, input) => {
           const result = await linkAppUser(memberId, input);
           return result !== null;
@@ -248,6 +247,10 @@ export function CampaignStudioTeamSection({
         onRemoveAppAccess={async (memberId) => {
           const result = await removeAppAccess(memberId);
           return result !== null;
+        }}
+        onOpenTeam={(teamId) => {
+          setSelectedTeamId(teamId);
+          setIsCreateTeamOpen(false);
         }}
         onOpenCreateTeam={() => {
           setSelectedTeamId(null);

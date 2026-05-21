@@ -84,13 +84,18 @@ export function CampaignStudioTeamTeamDrawer({
     <CampaignStudioDrawer
       isOpen={isOpen}
       title={team ? team.name : 'Add Team'}
-      description="Create operational groups for outreach, staffing, and communication audiences."
+      description="Configure the team first, then manage who belongs to it in one focused workflow."
       onClose={onClose}
     >
       <form className="campaign-team-drawer__stack" onSubmit={handleSubmit}>
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
-            <h4 className="h6 mb-0">Team Details</h4>
+            <div>
+              <h4 className="h6 mb-1">Team Setup</h4>
+              <p className="text-muted mb-0">
+                Define the team itself here before changing who belongs to it.
+              </p>
+            </div>
           </div>
           <div className="campaign-team-form-grid">
             <label className="form-label campaign-team-form-grid__span-2">
@@ -144,11 +149,12 @@ export function CampaignStudioTeamTeamDrawer({
             <div className="campaign-team-drawer__section-header">
               <div>
                 <h4 className="h6 mb-1">
-                  Team Members
+                  Membership Management
                   <InlineHelpPopover title={teamsHelp.label} body={teamsHelp.description} />
                 </h4>
                 <p className="text-muted mb-0">
-                  Add or remove campaign people from this operational group.
+                  Add or remove campaign people from this team here so membership changes stay
+                  attached to team management.
                 </p>
               </div>
             </div>
@@ -180,7 +186,7 @@ export function CampaignStudioTeamTeamDrawer({
                     }
                   }}
                 >
-                  Add to Team
+                  Add Member
                 </button>
               </div>
             ) : null}
