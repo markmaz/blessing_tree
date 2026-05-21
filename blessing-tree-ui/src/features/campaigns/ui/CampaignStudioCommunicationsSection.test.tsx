@@ -117,6 +117,7 @@ describe('CampaignStudioCommunicationsSection', () => {
     );
 
     expect(screen.queryByText(/schedule a communication/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /open template files/i }));
     expect(
       screen.getByRole('button', { name: /open template volunteer reminder/i })
     ).toBeInTheDocument();
@@ -155,10 +156,15 @@ describe('CampaignStudioCommunicationsSection', () => {
       />
     );
 
+    expect(screen.getByRole('button', { name: /open template files/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /open template files/i }));
+
+    expect(screen.getByText(/communication files/i)).toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: /collapse template files/i }));
 
     expect(screen.queryByText(/communication files/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /open template files/i })).toBeInTheDocument();
   });
 
   it('loads the selected saved template into the builder draft', async () => {
@@ -174,6 +180,7 @@ describe('CampaignStudioCommunicationsSection', () => {
       />
     );
 
+    await user.click(screen.getByRole('button', { name: /open template files/i }));
     await user.click(screen.getByRole('button', { name: /open template sponsor map/i }));
     await user.click(screen.getByRole('button', { name: /content blocks/i }));
 
@@ -242,6 +249,7 @@ describe('CampaignStudioCommunicationsSection', () => {
       />
     );
 
+    await user.click(screen.getByRole('button', { name: /open template files/i }));
     await user.click(screen.getByRole('button', { name: /open actions for volunteer reminder/i }));
     await user.click(screen.getByRole('button', { name: /delete template/i }));
     await user.click(screen.getByRole('button', { name: /^delete$/i }));

@@ -42,7 +42,7 @@ export function CampaignStudioCommunicationsSection({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
     templates[0]?.id ?? null
   );
-  const [isLibraryCollapsed, setIsLibraryCollapsed] = useState(false);
+  const [isLibraryCollapsed, setIsLibraryCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState<'metadata' | 'content'>('metadata');
   const [focusedTarget, setFocusedTarget] = useState<CommunicationTemplateFocusTarget>({
     kind: 'subject',
