@@ -172,3 +172,9 @@ export function isUpdateCampaignSettingsAction(
 ): action is CampaignStudioAiAction & { payload: UpdateCampaignSettingsAiPayload } {
   return action.actionType === 'update_campaign_settings';
 }
+
+export function isSuggestStatusChangeAction(
+  action: CampaignStudioAiAction
+): action is CampaignStudioAiAction & { payload: UpdateCampaignSettingsAiPayload } {
+  return action.actionType === 'suggest_status_change';
+}

@@ -5,7 +5,7 @@ Last updated: 2026-05-21
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Campaign Studio AI phases 1 through 4 are now implemented with a backend draft endpoint, normalized schedule action cards, Communications template-plus-schedule bundles, Team team/role/member assignment bundles, and Readiness cross-section fix bundles; the next focus is audiences based on teams/team roles/member filters, then real scheduling automation
+- Current step: Campaign Studio AI phases 1 through 5 are now implemented with a backend draft endpoint, normalized schedule action cards, Communications template-plus-schedule bundles, Team team/role/member assignment bundles, Readiness cross-section fix bundles, and Settings/status drafts with inline edit-before-apply; the next focus is audiences based on teams/team roles/member filters, then real scheduling automation
 
 ## Recently Completed
 
@@ -87,6 +87,7 @@ Last updated: 2026-05-21
 - Implemented Campaign Studio AI phase 2 with Communications template creation drafts, optional linked calendar communication drafts, and best-effort apply-all sequencing that resolves new template IDs before placing dependent communication schedules
 - Implemented Campaign Studio AI phase 3 with Team bundles that can draft a new team, its team roles, a roster member, and a dependent member-to-team assignment, while keeping explanatory Team prompts advisory
 - Implemented Campaign Studio AI phase 4 with Readiness fix bundles that can draft cross-section actions for settings, milestones, templates, and planned communications, while rendering blocked fix-plan cards when the app still lacks enough information to apply a safe automated fix
+- Implemented Campaign Studio AI phase 5 with real Settings drafts, readiness-aware lifecycle/status suggestions, and inline edit-before-apply for scalar campaign setting changes in the AI drawer
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Added an explicit readiness warning when scheduled communications exist but automated delivery is not wired yet
@@ -105,7 +106,7 @@ Last updated: 2026-05-21
 1. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
 2. Design and implement the actual scheduling execution layer for communications and lifecycle events
 3. Feed real automation health and execution failures back into Campaign Readiness
-4. Refine AI editing-before-apply for higher-complexity bundles and settings/status actions
+4. Extend AI editing-before-apply into higher-complexity bundles beyond the new Settings/status scalar editor
 5. After the Team write paths move over, retire the temporary legacy `campaign_user_role` fallback in authorization resolution
 
 ## Blockers Or Ambiguities

@@ -1,11 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { draftCampaignStudioAi } from '@/features/campaigns/api/campaignStudioAiApi';
-import {
-  addCampaignTeamMember,
-  createCampaignMember,
-  createCampaignTeam,
-  createCampaignTeamRole,
-} from '@/features/campaigns/api/campaignTeamWorkspaceApi';
 import { type CampaignStudioSectionId } from '@/features/campaigns/model/campaignStudio';
 import {
   getAiPromptPlaceholder,
@@ -15,19 +9,14 @@ import {
   getAiTeamGlossary,
 } from '@/features/campaigns/model/campaignStudioAi';
 import {
-  isAssignMemberToTeamAction,
-  isCreateMemberAction,
-  isCreateCommunicationTemplateAction,
-  isCreateCampaignEventAction,
-  isCreateCommunicationScheduleAction,
-  isCreateMilestoneAction,
-  isCreateTeamAction,
-  isCreateTeamRoleAction,
-  isUpdateCampaignSettingsAction,
   type CampaignStudioAiAction,
   type CampaignStudioAiDraftResponse,
   type ScheduleAiDraftType,
 } from '@/features/campaigns/model/campaignStudioAiDraft';
+import {
+  applyCampaignStudioAiAction,
+  createCampaignStudioAiCreatedRefs,
+} from '@/features/campaigns/model/campaignStudioAiApply';
 import type {
   CampaignMilestone,
   CampaignReadiness,
@@ -159,11 +148,22 @@ export function CampaignStudioAiRail({
   const handleApplyAction = async (action: CampaignStudioAiAction) => {
     let result;
     try {
-      result = await applyDraftAction(action, {
-        createdTemplateRefs: new Map(),
-        createdTeamRefs: new Map(),
-        createdRoleRefs: new Map(),
-        createdMemberRefs: new Map(),
+      result = await applyCampaignStudioAiAction(action, createCampaignStudioAiCreatedRefs(), {
+        campaignId: campaign.id,
+        milestones: milestones.map((milestone) => ({
+          milestoneKey: milestone.milestoneKey,
+          label: milestone.label,
+          occursOn: milestone.occursOn ?? '',
+          notes: milestone.notes ?? null,
+          sortOrder: milestone.sortOrder,
+        })),
+        onCreateScheduleEvent,
+        onCreateCommunicationTemplate,
+        onCreateCommunicationSchedule,
+        onSaveMilestones,
+        onTeamWorkspaceChanged,
+        onUpdateCampaignSettings,
+        onDraftError: setDraftError,
       });
     } catch (error) {
       setDraftError(error instanceof Error ? error.message : 'Unable to apply this AI action.');
@@ -199,12 +199,7 @@ export function CampaignStudioAiRail({
     }
 
     const successfulIds = new Set<string>();
-    const createdRefs = {
-      createdTemplateRefs: new Map<string, string>(),
-      createdTeamRefs: new Map<string, string>(),
-      createdRoleRefs: new Map<string, string>(),
-      createdMemberRefs: new Map<string, string>(),
-    };
+    const createdRefs = createCampaignStudioAiCreatedRefs();
     let appliedCount = 0;
     let failed = false;
 
@@ -216,7 +211,23 @@ export function CampaignStudioAiRail({
 
       let result;
       try {
-        result = await applyDraftAction(action, createdRefs);
+        result = await applyCampaignStudioAiAction(action, createdRefs, {
+          campaignId: campaign.id,
+          milestones: milestones.map((milestone) => ({
+            milestoneKey: milestone.milestoneKey,
+            label: milestone.label,
+            occursOn: milestone.occursOn ?? '',
+            notes: milestone.notes ?? null,
+            sortOrder: milestone.sortOrder,
+          })),
+          onCreateScheduleEvent,
+          onCreateCommunicationTemplate,
+          onCreateCommunicationSchedule,
+          onSaveMilestones,
+          onTeamWorkspaceChanged,
+          onUpdateCampaignSettings,
+          onDraftError: setDraftError,
+        });
       } catch (error) {
         setDraftError(error instanceof Error ? error.message : 'Some AI actions could not be applied.');
         failed = true;
@@ -254,163 +265,19 @@ export function CampaignStudioAiRail({
     setDraftError(failed ? 'Some AI actions could not be applied.' : null);
   };
 
-  const applyDraftAction = async (
-    action: CampaignStudioAiAction,
-    createdRefs: {
-      createdTemplateRefs: Map<string, string>;
-      createdTeamRefs: Map<string, string>;
-      createdRoleRefs: Map<string, string>;
-      createdMemberRefs: Map<string, string>;
-    }
-  ): Promise<{ success: boolean; templateId?: string }> => {
-    if (isCreateCommunicationTemplateAction(action)) {
-      const createdTemplate = await onCreateCommunicationTemplate({
-        templateKey: action.payload.templateKey,
-        name: action.payload.name,
-        audience: action.payload.audience,
-        subjectTemplate: action.payload.subjectTemplate,
-        bodyTemplate: action.payload.bodyTemplate,
-        isActive: action.payload.isActive,
-      });
-      if (!createdTemplate) {
-        return { success: false };
-      }
-
-      if (action.payload.templateRef) {
-        createdRefs.createdTemplateRefs.set(action.payload.templateRef, createdTemplate.id);
-      }
-      return { success: true, templateId: createdTemplate.id };
-    }
-
-    if (isCreateTeamAction(action)) {
-      const createdTeam = await createCampaignTeam(campaign.id, {
-        name: action.payload.name,
-        description: action.payload.description ?? null,
-        isActive: action.payload.isActive,
-      });
-      if (action.payload.teamRef) {
-        createdRefs.createdTeamRefs.set(action.payload.teamRef, createdTeam.id);
-      }
-      await onTeamWorkspaceChanged();
-      return { success: true };
-    }
-
-    if (isCreateTeamRoleAction(action)) {
-      const teamId =
-        action.payload.teamId ??
-        (action.payload.teamRef
-          ? createdRefs.createdTeamRefs.get(action.payload.teamRef) ?? null
-          : null);
-      if (!teamId) {
-        setDraftError('Apply the team draft first so this team role can be created.');
-        return { success: false };
-      }
-
-      const createdRole = await createCampaignTeamRole(campaign.id, teamId, {
-        name: action.payload.name,
-        description: action.payload.description ?? null,
-        sortOrder: action.payload.sortOrder ?? 0,
-        isActive: action.payload.isActive,
-      });
-      if (action.payload.roleRef) {
-        createdRefs.createdRoleRefs.set(action.payload.roleRef, createdRole.id);
-      }
-      await onTeamWorkspaceChanged();
-      return { success: true };
-    }
-
-    if (isCreateMemberAction(action)) {
-      const createdMember = await createCampaignMember(campaign.id, {
-        displayName: action.payload.displayName,
-        email: action.payload.email ?? null,
-        phone: action.payload.phone ?? null,
-        notes: action.payload.notes ?? null,
-        memberType: action.payload.memberType,
-        appAccessStatus: action.payload.appAccessStatus,
-        isActive: action.payload.isActive,
-      });
-      if (action.payload.memberRef) {
-        createdRefs.createdMemberRefs.set(action.payload.memberRef, createdMember.id);
-      }
-      await onTeamWorkspaceChanged();
-      return { success: true };
-    }
-
-    if (isAssignMemberToTeamAction(action)) {
-      const teamId =
-        action.payload.teamId ??
-        (action.payload.teamRef
-          ? createdRefs.createdTeamRefs.get(action.payload.teamRef) ?? null
-          : null);
-      const memberId =
-        action.payload.memberId ??
-        (action.payload.memberRef
-          ? createdRefs.createdMemberRefs.get(action.payload.memberRef) ?? null
-          : null);
-      const teamRoleId =
-        action.payload.teamRoleId ??
-        (action.payload.teamRoleRef
-          ? createdRefs.createdRoleRefs.get(action.payload.teamRoleRef) ?? null
-          : null);
-      if (!teamId || !memberId) {
-        setDraftError('Apply the team and member drafts first so this assignment can be created.');
-        return { success: false };
-      }
-
-      await addCampaignTeamMember(campaign.id, teamId, memberId, teamRoleId ?? null);
-      await onTeamWorkspaceChanged();
-      return { success: true };
-    }
-
-    if (isUpdateCampaignSettingsAction(action)) {
-      return { success: await onUpdateCampaignSettings(action.payload) };
-    }
-
-    if (isCreateCampaignEventAction(action)) {
-      return { success: await onCreateScheduleEvent(action.payload) };
-    }
-
-    if (isCreateCommunicationScheduleAction(action)) {
-      const templateId =
-        action.payload.templateId ??
-        (action.payload.templateRef
-          ? createdRefs.createdTemplateRefs.get(action.payload.templateRef) ?? null
-          : null);
-      if (!templateId) {
-        setDraftError('Apply the template draft first so this communication can be placed.');
-        return { success: false };
+  const handleActionChange = (nextAction: CampaignStudioAiAction) => {
+    setDraftResponse((currentDraft) => {
+      if (!currentDraft) {
+        return null;
       }
 
       return {
-        success: await onCreateCommunicationSchedule({
-          templateId,
-          milestoneKey: action.payload.milestoneKey ?? null,
-          scheduledFor: action.payload.scheduledFor ?? null,
-          status: action.payload.status,
-          notes: action.payload.notes ?? null,
-        }),
+        ...currentDraft,
+        actions: currentDraft.actions.map((action) =>
+          action.id === nextAction.id ? nextAction : action
+        ),
       };
-    }
-
-    if (isCreateMilestoneAction(action)) {
-      const nextMilestones = milestones
-        .filter((milestone) => milestone.milestoneKey !== action.payload.milestoneKey)
-        .map((milestone) => ({
-          milestoneKey: milestone.milestoneKey,
-          label: milestone.label,
-          occursOn: milestone.occursOn ?? '',
-          notes: milestone.notes ?? null,
-          sortOrder: milestone.sortOrder,
-        }));
-      nextMilestones.push({
-        ...action.payload,
-        notes: action.payload.notes ?? null,
-      });
-      nextMilestones.sort((left, right) => left.sortOrder - right.sortOrder);
-      return { success: await onSaveMilestones(nextMilestones) };
-    }
-
-    return { success: false };
+    });
   };
 
   const clearHistory = () => {
@@ -451,7 +318,9 @@ export function CampaignStudioAiRail({
               ? 'Draft and apply campaign calendar updates from one prompt.'
               : selectedSection === 'communications'
                 ? 'Draft templates and place them on the campaign calendar from one prompt.'
-              : `Focus the ${selectedSection} workspace with guided prompts and quick explanations.`}
+                : selectedSection === 'settings'
+                  ? 'Draft campaign setting changes and lifecycle moves before you apply them.'
+                : `Focus the ${selectedSection} workspace with guided prompts and quick explanations.`}
           </p>
         </div>
         <button
@@ -493,6 +362,7 @@ export function CampaignStudioAiRail({
           onApplyAction={(action) => {
             void handleApplyAction(action);
           }}
+          onActionChange={handleActionChange}
           onApplyAll={() => {
             void handleApplyAll();
           }}

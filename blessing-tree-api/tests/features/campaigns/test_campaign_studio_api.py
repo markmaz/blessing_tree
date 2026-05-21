@@ -484,6 +484,72 @@ def test_post_ai_draft_returns_readiness_fix_bundle(
     assert "resolve_readiness_gap" in action_types
 
 
+def test_post_ai_draft_returns_settings_update_action(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ai/draft",
+        json={
+            "section": "settings",
+            "prompt": "Set the campaign dates from 2026-11-10 to 2026-12-20 and add a description.",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["message"] == "I drafted 1 settings action for Studio Campaign."
+    assert payload["actions"][0]["action_type"] == "update_campaign_settings"
+    assert payload["actions"][0]["payload"]["start_date"] == "2026-11-10"
+    assert payload["actions"][0]["payload"]["end_date"] == "2026-12-20"
+    assert payload["actions"][0]["payload"]["description"]
+
+
+def test_post_ai_draft_returns_blocked_status_change_for_settings(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    campaign.status = "DRAFT"
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ai/draft",
+        json={
+            "section": "settings",
+            "prompt": "Activate this campaign.",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["actions"][0]["action_type"] == "suggest_status_change"
+    assert payload["actions"][0]["status"] == "blocked"
+    assert payload["actions"][0]["payload"]["status"] == "ACTIVE"
+    assert "activation" in payload["actions"][0]["warnings"][0].lower()
+
+
 def test_delete_communication_schedule_removes_schedule(
     app: Flask,
     monkeypatch: pytest.MonkeyPatch,

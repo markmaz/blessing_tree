@@ -584,6 +584,34 @@
   gap: 0.75rem;
 }
 
+.campaign-studio__ai-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.campaign-studio__ai-edit-btn {
+  padding-inline: 0;
+}
+
+.campaign-studio__ai-edit-form {
+  display: grid;
+  gap: 0.8rem;
+  border-top: 1px solid rgba(221, 213, 200, 0.85);
+  padding-top: 0.75rem;
+}
+
+.campaign-studio__ai-edit-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.campaign-studio__ai-edit-span-2 {
+  grid-column: 1 / -1;
+}
+
 .campaign-studio__eyebrow,
 .campaign-studio__card-eyebrow {
   color: var(--blessing-purple-light);
@@ -1026,7 +1054,8 @@
   .campaign-studio__placeholder-grid,
   .campaign-studio__section-grid,
   .campaign-studio__form-grid,
-  .campaign-studio__stat-grid {
+  .campaign-studio__stat-grid,
+  .campaign-studio__ai-edit-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1043,6 +1072,10 @@
   }
 
   .campaign-studio__form-span-2 {
+    grid-column: span 1;
+  }
+
+  .campaign-studio__ai-edit-span-2 {
     grid-column: span 1;
   }
 

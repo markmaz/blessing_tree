@@ -21,6 +21,10 @@ Last updated: 2026-05-21
   - Readiness prompts can now draft cross-section fix bundles instead of staying advisory-only
   - Readiness can now propose a mix of actionable fixes and blocked fix-plan cards when the app still needs a specific person, date range, or policy choice
   - readiness-generated settings updates now apply through the normal campaign update path
+- Phase 5 is now implemented as of 2026-05-21:
+  - Settings prompts can now draft concrete campaign setting updates and lifecycle/status suggestions
+  - lifecycle suggestions now respect readiness and transition rules, returning blocked status-change cards when the campaign is not ready
+  - the AI drawer now supports inline edit-before-apply for scalar settings/status changes
 
 ## Purpose
 
@@ -566,6 +570,12 @@ Status:
 - refine editing-before-apply
 - consider batch apply if UX pressure warrants it
 - connect to real automation execution once the scheduler layer exists
+
+Status:
+
+- implemented for Settings/status scalar edits on 2026-05-21
+- batch apply remains best-effort and non-transactional
+- broader edit-before-apply support for higher-complexity bundles is still future work
 
 ## Open Questions
 

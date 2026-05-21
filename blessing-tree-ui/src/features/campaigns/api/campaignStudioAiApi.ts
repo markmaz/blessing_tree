@@ -144,7 +144,10 @@ function mapActionPayload(action: CampaignStudioAiActionResponse): Record<string
     };
   }
 
-  if (action.action_type === 'update_campaign_settings') {
+  if (
+    action.action_type === 'update_campaign_settings' ||
+    action.action_type === 'suggest_status_change'
+  ) {
     return {
       name: action.payload.name,
       year: Number(action.payload.year),

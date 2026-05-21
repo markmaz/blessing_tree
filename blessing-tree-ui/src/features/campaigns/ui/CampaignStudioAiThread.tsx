@@ -12,6 +12,7 @@ import type {
   CommunicationTemplate,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import type { CampaignTeamGlossaryEntry } from '@/features/campaigns/model/campaignTeamWorkspaceGlossary';
+import { CampaignStudioAiActionCard } from '@/features/campaigns/ui/CampaignStudioAiActionCard';
 
 export interface CampaignAiTurn {
   id: string;
@@ -40,6 +41,7 @@ interface CampaignStudioAiThreadProps {
   onCopyPrompt: (prompt: string, turnId: string) => void;
   onDismissDraftMessage: () => void;
   onApplyAction: (action: CampaignStudioAiAction) => void;
+  onActionChange: (action: CampaignStudioAiAction) => void;
   onApplyAll: () => void;
   threadRef: RefObject<HTMLDivElement | null>;
 }
@@ -91,6 +93,7 @@ export function CampaignStudioAiThread({
   onCopyPrompt,
   onDismissDraftMessage,
   onApplyAction,
+  onActionChange,
   onApplyAll,
   threadRef,
 }: CampaignStudioAiThreadProps) {
@@ -293,43 +296,13 @@ export function CampaignStudioAiThread({
           {draftResponse.actions.length > 0 ? (
             <div className="campaign-studio__ai-action-list">
               {draftResponse.actions.map((action) => (
-                <div key={action.id} className="campaign-studio__ai-action-card">
-                  <div className="campaign-studio__ai-action-header">
-                    <div>
-                      <div className="fw-semibold small">{action.title}</div>
-                      <div className="small text-muted">{action.summary}</div>
-                    </div>
-                    <span className="campaign-chip campaign-chip-muted">
-                      {action.status.replaceAll('_', ' ')}
-                    </span>
-                  </div>
-
-                  {action.assumptions.length > 0 ? (
-                    <ul className="campaign-studio__ai-draft-list">
-                      {action.assumptions.map((assumption) => (
-                        <li key={assumption}>{assumption}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-
-                  {action.warnings.length > 0 ? (
-                    <ul className="campaign-studio__ai-draft-list">
-                      {action.warnings.map((warning) => (
-                        <li key={warning}>{warning}</li>
-                      ))}
-                    </ul>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary btn-sm"
-                    disabled={isSaving || action.status === 'blocked'}
-                    onClick={() => onApplyAction(action)}
-                  >
-                    <i className="bi bi-check2-square" aria-hidden="true" />
-                    <span>Apply</span>
-                  </button>
-                </div>
+                <CampaignStudioAiActionCard
+                  key={action.id}
+                  action={action}
+                  isSaving={isSaving}
+                  onApplyAction={onApplyAction}
+                  onActionChange={onActionChange}
+                />
               ))}
             </div>
           ) : null}

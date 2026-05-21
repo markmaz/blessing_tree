@@ -353,6 +353,89 @@ describe('CampaignStudioAiRail', () => {
     });
   });
 
+  it('shows settings-specific prompts when Settings is selected', () => {
+    render(
+      <CampaignStudioAiRail
+        {...buildBaseProps()}
+        selectedSection="settings"
+      />
+    );
+
+    expect(
+      screen.getByRole('button', { name: /set the campaign dates from november 1, 2026 through december 20, 2026/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/ask campaign ai to draft campaign setting changes or explain lifecycle impacts/i)
+    ).toBeInTheDocument();
+  });
+
+  it('lets the user edit a settings draft before apply', async () => {
+    const user = userEvent.setup();
+    const onUpdateCampaignSettings = vi.fn().mockResolvedValue(true);
+
+    vi.mocked(draftCampaignStudioAi).mockResolvedValueOnce({
+      message: 'I drafted 1 settings action for Blessing Tree 2026 Demo.',
+      assumptions: [],
+      warnings: [],
+      actions: [
+        {
+          id: 'draft-settings-2',
+          actionType: 'update_campaign_settings',
+          section: 'settings',
+          title: 'Update Campaign Settings',
+          summary: 'Updates the campaign description.',
+          status: 'needs_review',
+          assumptions: [],
+          warnings: [],
+          payload: {
+            name: 'Blessing Tree 2026 Demo',
+            year: 2026,
+            description: 'Initial draft description.',
+            status: 'ACTIVE',
+            startDate: '2026-11-01',
+            endDate: '2026-12-20',
+          },
+          applyTarget: {
+            api: 'campaign.update',
+            method: 'PATCH',
+          },
+        },
+      ],
+    });
+
+    render(
+      <CampaignStudioAiRail
+        {...buildBaseProps()}
+        selectedSection="settings"
+        onUpdateCampaignSettings={onUpdateCampaignSettings}
+      />
+    );
+
+    await user.type(
+      screen.getByPlaceholderText(/ask campaign ai to draft campaign setting changes or explain lifecycle impacts/i),
+      'Add a campaign description.'
+    );
+    await user.click(screen.getByRole('button', { name: /send ai prompt/i }));
+    await user.click(screen.getByRole('button', { name: /edit before apply/i }));
+
+    const descriptionField = screen.getByLabelText(/description/i);
+    await user.clear(descriptionField);
+    await user.type(descriptionField, 'Revised description for review.');
+    await user.click(screen.getByRole('button', { name: /save draft changes/i }));
+    await user.click(screen.getByRole('button', { name: /^apply$/i }));
+
+    await waitFor(() => {
+      expect(onUpdateCampaignSettings).toHaveBeenCalledWith({
+        name: 'Blessing Tree 2026 Demo',
+        year: 2026,
+        description: 'Revised description for review.',
+        status: 'ACTIVE',
+        startDate: '2026-11-01',
+        endDate: '2026-12-20',
+      });
+    });
+  });
+
   it('drafts and applies a team bundle from the team section', async () => {
     const user = userEvent.setup();
     const onTeamWorkspaceChanged = vi.fn().mockResolvedValue(undefined);

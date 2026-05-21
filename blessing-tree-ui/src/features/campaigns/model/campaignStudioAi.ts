@@ -67,6 +67,15 @@ export function getAiPromptStarters(
     ];
   }
 
+  if (selectedSection === 'settings') {
+    return [
+      'Add a campaign description for this year.',
+      'Set the campaign dates from November 1, 2026 through December 20, 2026.',
+      'Activate this campaign when it is ready.',
+      'Explain what happens when a campaign moves from DRAFT to ACTIVE.',
+    ];
+  }
+
   if (selectedSection !== 'schedule') {
     return [...defaultPromptStarters];
   }
@@ -147,7 +156,7 @@ export function getAiPromptPlaceholder(selectedSection: CampaignStudioSectionId)
   }
 
   if (selectedSection === 'settings') {
-    return 'Ask Campaign AI to explain campaign controls, lifecycle states, or setup gaps.';
+    return 'Ask Campaign AI to draft campaign setting changes or explain lifecycle impacts.';
   }
 
   return 'Ask Campaign AI what to add or improve in this campaign workspace.';
@@ -168,6 +177,10 @@ export function getAiSuggestionHeading(selectedSection: CampaignStudioSectionId)
 
   if (selectedSection === 'schedule') {
     return 'What do you want to place on the calendar?';
+  }
+
+  if (selectedSection === 'settings') {
+    return 'What do you want to change?';
   }
 
   return 'What do you want to plan next?';
@@ -251,9 +264,9 @@ export function buildAiAssistantResponse({
 
   if (selectedSection === 'settings') {
     return [
-      `Campaign AI can help explain lifecycle controls and setup decisions for ${campaign.name}.`,
+      `Campaign AI can help update lifecycle controls and setup decisions for ${campaign.name}.`,
       `Current status: ${campaign.status}. Campaign dates run from ${campaign.startDate} to ${campaign.endDate}.`,
-      'Use Settings for campaign metadata and status changes. Use Readiness to understand whether the campaign is actually prepared for the next lifecycle step.',
+      'Use Settings to draft metadata or status changes, then review Readiness before applying lifecycle moves like activation or closure.',
     ].join('\n\n');
   }
 

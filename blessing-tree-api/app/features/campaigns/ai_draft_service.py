@@ -12,6 +12,7 @@ from app.exceptions.service_error import ServiceError
 from app.features.campaigns.service import CampaignService
 from app.features.campaigns.studio_constants import MILESTONE_DEFINITIONS
 from app.features.campaigns.studio_service import CampaignStudioService
+from app.features.campaigns.validation import validate_status_transition
 from app.features.campaigns.team_workspace_service import CampaignTeamWorkspaceService
 from app.features.campaigns.studio_validation import require_short_text
 
@@ -79,6 +80,15 @@ class CampaignStudioAiDraftService:
         if section == "readiness":
             return self._build_readiness_draft(
                 db,
+                campaign_id=campaign_id,
+                campaign=campaign,
+                prompt=prompt,
+            )
+
+        if section == "settings":
+            return self._build_settings_draft(
+                db,
+                user_id=user_id,
                 campaign_id=campaign_id,
                 campaign=campaign,
                 prompt=prompt,
@@ -354,6 +364,123 @@ class CampaignStudioAiDraftService:
             "actions": actions,
         }
 
+    def _build_settings_draft(
+        self,
+        db: Session,
+        *,
+        user_id: str,
+        campaign_id: str,
+        campaign,
+        prompt: str,
+    ) -> dict[str, Any]:
+        if _is_settings_explanation_prompt(prompt):
+            return self._build_advisory_draft(
+                db,
+                campaign_id=campaign_id,
+                section="settings",
+                campaign_name=campaign.name,
+                prompt=prompt,
+            )
+
+        readiness = self.studio.get_readiness(db, campaign_id)
+        is_app_admin = self.campaigns.authorization.user_is_app_admin(db, user_id)
+        assumptions: list[str] = []
+        warnings: list[str] = []
+        actions: list[dict[str, Any]] = []
+        next_payload = _campaign_settings_payload(campaign)
+        changed_fields: list[str] = []
+
+        next_name = _extract_campaign_name(prompt)
+        if next_name and next_name != next_payload["name"]:
+            next_payload["name"] = next_name
+            changed_fields.append("name")
+
+        next_year = _extract_campaign_year(prompt)
+        if next_year and next_year != next_payload["year"]:
+            next_payload["year"] = next_year
+            changed_fields.append("year")
+
+        next_description = _extract_campaign_description(prompt, campaign_name=campaign.name, campaign_year=campaign.year)
+        if next_description is not None and next_description != next_payload["description"]:
+            next_payload["description"] = next_description
+            changed_fields.append("description")
+            if "description" not in _normalize_text(prompt):
+                assumptions.append("Drafted a campaign description from the prompt because no explicit description text was supplied.")
+
+        date_range = _extract_campaign_date_range(prompt, default_year=campaign.year)
+        if date_range is not None:
+            start_date, end_date = date_range
+            if start_date != next_payload["start_date"]:
+                next_payload["start_date"] = start_date
+                changed_fields.append("start_date")
+            if end_date != next_payload["end_date"]:
+                next_payload["end_date"] = end_date
+                changed_fields.append("end_date")
+
+        target_status = _extract_campaign_status_target(prompt)
+        if target_status is not None:
+            status_action = _build_status_change_action(
+                campaign,
+                readiness=readiness,
+                next_payload=next_payload,
+                target_status=target_status,
+                is_app_admin=is_app_admin,
+            )
+            actions.append(status_action)
+            if status_action["status"] == "blocked" and changed_fields:
+                actions.insert(
+                    0,
+                    _build_campaign_settings_update_action(
+                        next_payload,
+                        title="Update Campaign Settings",
+                        summary="Updates campaign settings that can be saved before the lifecycle change is resolved.",
+                        assumptions=assumptions,
+                        warnings=warnings,
+                    ),
+                )
+            return {
+                "message": (
+                    f"I drafted {len(actions)} settings action"
+                    f"{'s' if len(actions) != 1 else ''} for {campaign.name}."
+                ),
+                "assumptions": assumptions,
+                "warnings": warnings,
+                "actions": actions,
+            }
+
+        if changed_fields:
+            actions.append(
+                _build_campaign_settings_update_action(
+                    next_payload,
+                    title="Update Campaign Settings",
+                    summary=_build_settings_summary(changed_fields),
+                    assumptions=assumptions,
+                    warnings=warnings,
+                )
+            )
+
+        if not actions:
+            return {
+                "message": (
+                    f"I reviewed the settings request for {campaign.name}, but I still need a more specific change to draft."
+                ),
+                "assumptions": [],
+                "warnings": [
+                    "Try naming the lifecycle change, description, or date range you want so Campaign AI can draft a concrete Settings action."
+                ],
+                "actions": [],
+            }
+
+        return {
+            "message": (
+                f"I drafted {len(actions)} settings action"
+                f"{'s' if len(actions) != 1 else ''} for {campaign.name}."
+            ),
+            "assumptions": assumptions,
+            "warnings": warnings,
+            "actions": actions,
+        }
+
     def _build_communications_draft(
         self,
         db: Session,
@@ -423,6 +550,17 @@ class CampaignStudioAiDraftService:
                     f"{campaign_name} readiness is currently "
                     f"{readiness['overall_status'].replace('_', ' ').lower()}. "
                     "Campaign AI can explain readiness findings here, and it can now draft fix bundles when the prompt asks it to clear gaps or unblock the next phase."
+                ),
+                "assumptions": [],
+                "warnings": [],
+                "actions": [],
+            }
+
+        if section == "settings":
+            return {
+                "message": (
+                    f"I reviewed the settings request for {campaign_name}. "
+                    "Campaign AI can explain lifecycle controls here, and it now drafts concrete settings updates and status suggestions when the prompt names the change you want."
                 ),
                 "assumptions": [],
                 "warnings": [],
@@ -721,9 +859,23 @@ def _build_actions_for_readiness_item(
 
     if code == "missing_description":
         actions.append(
-            _build_update_campaign_settings_action(
-                campaign,
-                description=f"{campaign.name} coordinates teams, communications, and fulfillment for the {campaign.year} campaign year.",
+            _build_campaign_settings_update_action(
+                {
+                    "name": campaign.name,
+                    "year": campaign.year,
+                    "description": (
+                        f"{campaign.name} coordinates teams, communications, and fulfillment for the {campaign.year} campaign year."
+                    ),
+                    "status": campaign.status,
+                    "start_date": campaign.start_date.isoformat() if campaign.start_date else None,
+                    "end_date": campaign.end_date.isoformat() if campaign.end_date else None,
+                },
+                title="Update Campaign Settings",
+                summary="Adds missing campaign metadata needed for readiness.",
+                assumptions=[
+                    "Drafted a generic campaign description from the current campaign name and year."
+                ],
+                warnings=[],
             )
         )
         return actions, assumptions, warnings
@@ -1128,32 +1280,126 @@ def _build_member_assignment_action(
     }
 
 
-def _build_update_campaign_settings_action(
-    campaign,
+def _build_campaign_settings_update_action(
+    payload: Mapping[str, Any],
     *,
-    description: str,
+    title: str,
+    summary: str,
+    assumptions: list[str],
+    warnings: list[str],
 ) -> dict[str, Any]:
     return {
         "id": f"draft-campaign-settings-{uuid.uuid4()}",
         "action_type": "update_campaign_settings",
         "section": "settings",
-        "title": "Update Campaign Settings",
-        "summary": "Adds missing campaign metadata needed for readiness.",
+        "title": title,
+        "summary": summary,
         "status": "needs_review",
-        "assumptions": [
-            "Drafted a generic campaign description from the current campaign name and year."
-        ],
-        "warnings": [],
+        "assumptions": assumptions.copy(),
+        "warnings": warnings.copy(),
         "payload": {
-            "name": campaign.name,
-            "year": campaign.year,
-            "description": description,
-            "status": campaign.status,
-            "start_date": campaign.start_date.isoformat() if campaign.start_date else None,
-            "end_date": campaign.end_date.isoformat() if campaign.end_date else None,
+            "name": payload["name"],
+            "year": payload["year"],
+            "description": payload["description"],
+            "status": payload["status"],
+            "start_date": payload["start_date"],
+            "end_date": payload["end_date"],
         },
         "apply_target": {"api": "campaign.update", "method": "PATCH"},
     }
+
+
+def _build_status_change_action(
+    campaign,
+    *,
+    readiness: Mapping[str, Any],
+    next_payload: Mapping[str, Any],
+    target_status: str,
+    is_app_admin: bool,
+) -> dict[str, Any]:
+    phase_key = _status_phase_key(target_status)
+    blocking_warnings: list[str] = []
+    status = "needs_review"
+
+    if target_status == campaign.status:
+        status = "blocked"
+        blocking_warnings.append(f"{campaign.name} is already {campaign.status}.")
+    else:
+        try:
+            validate_status_transition(campaign.status, target_status, is_app_admin=is_app_admin)
+        except ServiceError:
+            status = "blocked"
+            blocking_warnings.append(
+                f"The transition from {campaign.status} to {target_status} is not allowed for your current campaign role."
+            )
+
+    if phase_key is not None:
+        phase_status = str(readiness.get("phase_status", {}).get(phase_key, "READY")).upper()
+        if phase_status != "READY":
+            status = "blocked"
+            if phase_key == "activate":
+                blocking_warnings.append(
+                    "Review readiness first, then change the campaign status in Settings when activation is ready."
+                )
+            elif phase_key == "close":
+                blocking_warnings.append(
+                    "Operational closure checks still need attention before Campaign AI recommends closing this campaign."
+                )
+
+    return {
+        "id": f"draft-campaign-status-{uuid.uuid4()}",
+        "action_type": "suggest_status_change",
+        "section": "settings",
+        "title": f"Change Campaign Status: {target_status}",
+        "summary": (
+            f"Moves the campaign from {campaign.status} to {target_status}."
+            if target_status != campaign.status
+            else f"Keeps the campaign at {target_status}."
+        ),
+        "status": status,
+        "assumptions": []
+        if target_status == campaign.status
+        else [f"Kept the current campaign settings and drafted only the lifecycle move to {target_status}."],
+        "warnings": blocking_warnings,
+        "payload": {
+            "name": next_payload["name"],
+            "year": next_payload["year"],
+            "description": next_payload["description"],
+            "status": target_status,
+            "start_date": next_payload["start_date"],
+            "end_date": next_payload["end_date"],
+        },
+        "apply_target": {"api": "campaign.update", "method": "PATCH"},
+    }
+
+
+def _campaign_settings_payload(campaign) -> dict[str, Any]:
+    return {
+        "name": campaign.name,
+        "year": campaign.year,
+        "description": campaign.description,
+        "status": campaign.status,
+        "start_date": campaign.start_date.isoformat() if campaign.start_date else None,
+        "end_date": campaign.end_date.isoformat() if campaign.end_date else None,
+    }
+
+
+def _build_settings_summary(changed_fields: list[str]) -> str:
+    field_labels = {
+        "name": "campaign name",
+        "year": "campaign year",
+        "description": "campaign description",
+        "start_date": "start date",
+        "end_date": "end date",
+    }
+    ordered = [field_labels[field] for field in changed_fields if field in field_labels]
+    if not ordered:
+        return "Updates the campaign settings."
+    if len(ordered) == 1:
+        return f"Updates the {ordered[0]}."
+    if len(ordered) == 2:
+        return f"Updates the {ordered[0]} and {ordered[1]}."
+    return f"Updates the {', '.join(ordered[:-1])}, and {ordered[-1]}."
 
 
 def _build_blocked_readiness_action(
@@ -1383,6 +1629,28 @@ def _is_readiness_explanation_prompt(prompt: str) -> bool:
     return asks_for_explanation and not asks_for_fix
 
 
+def _is_settings_explanation_prompt(prompt: str) -> bool:
+    normalized = _normalize_text(prompt)
+    asks_for_change = any(
+        term in normalized
+        for term in (
+            "set ",
+            "change ",
+            "update ",
+            "rename ",
+            "activate",
+            "close",
+            "archive",
+            "draft ",
+        )
+    )
+    asks_for_explanation = any(
+        term in normalized
+        for term in ("explain", "what happens", "what does", "should i", "when should")
+    )
+    return asks_for_explanation and not asks_for_change
+
+
 def _select_readiness_items_for_prompt(
     prompt: str,
     readiness: Mapping[str, Any],
@@ -1425,6 +1693,99 @@ def _infer_required_milestone_dates(
         inferred_date = start_date + timedelta(days=offset_days)
         inferred[key] = inferred_date.isoformat()
     return inferred
+
+
+def _extract_campaign_name(prompt: str) -> str | None:
+    if not re.search(r"\b(rename|call|name)\b", prompt, flags=re.IGNORECASE):
+        return None
+    quoted_match = re.search(r'"([^"]+)"', prompt)
+    if quoted_match and quoted_match.group(1):
+        return quoted_match.group(1).strip()
+    return None
+
+
+def _extract_campaign_year(prompt: str) -> int | None:
+    if not re.search(r"\b(year|campaign)\b", prompt, flags=re.IGNORECASE):
+        return None
+    year_match = re.search(r"\b(20\d{2})\b", prompt)
+    if not year_match:
+        return None
+    return int(year_match.group(1))
+
+
+def _extract_campaign_description(
+    prompt: str,
+    *,
+    campaign_name: str,
+    campaign_year: int,
+) -> str | None:
+    if not re.search(r"\bdescription\b", prompt, flags=re.IGNORECASE):
+        return None
+
+    quoted_match = re.search(r"\bdescription(?:\s+to|\s+as|:)?\s*\"([^\"]+)\"", prompt, flags=re.IGNORECASE)
+    if quoted_match and quoted_match.group(1):
+        return quoted_match.group(1).strip()
+
+    return f"{campaign_name} coordinates teams, communications, and fulfillment for the {campaign_year} campaign year."
+
+
+def _extract_campaign_date_range(prompt: str, *, default_year: int) -> tuple[str | None, str | None] | None:
+    ordered_dates = _extract_all_dates(prompt, default_year=default_year)
+    if len(ordered_dates) < 2:
+        return None
+    return ordered_dates[0], ordered_dates[1]
+
+
+def _extract_all_dates(prompt: str, *, default_year: int) -> list[str]:
+    matches: list[tuple[int, str]] = []
+    for match in re.finditer(r"\b(20\d{2}-\d{2}-\d{2})\b", prompt):
+        matches.append((match.start(), match.group(1)))
+
+    for match in re.finditer(r"\b(\d{1,2})/(\d{1,2})/(20\d{2})\b", prompt):
+        month, day, year = match.group(1), match.group(2), match.group(3)
+        matches.append((match.start(), f"{year}-{month.zfill(2)}-{day.zfill(2)}"))
+
+    month_pattern = (
+        r"\b(january|february|march|april|may|june|july|august|september|october|november|december)"
+        r"\s+(\d{1,2})(?:,\s*(20\d{2}))?\b"
+    )
+    for match in re.finditer(month_pattern, prompt, flags=re.IGNORECASE):
+        month_name = match.group(1).lower()
+        day = match.group(2)
+        year = match.group(3) or str(default_year)
+        month_index = _MONTH_NAMES.index(month_name) + 1
+        matches.append((match.start(), f"{year}-{str(month_index).zfill(2)}-{day.zfill(2)}"))
+
+    matches.sort(key=lambda item: item[0])
+    ordered_dates: list[str] = []
+    seen: set[str] = set()
+    for _, date_key in matches:
+        if date_key in seen:
+            continue
+        seen.add(date_key)
+        ordered_dates.append(date_key)
+    return ordered_dates
+
+
+def _extract_campaign_status_target(prompt: str) -> str | None:
+    normalized = _normalize_text(prompt)
+    if any(term in normalized for term in ("archive", "archived")):
+        return "ARCHIVED"
+    if any(term in normalized for term in ("close", "closed")):
+        return "CLOSED"
+    if any(term in normalized for term in ("activate", "active", "go live", "launch")):
+        return "ACTIVE"
+    if "draft" in normalized:
+        return "DRAFT"
+    return None
+
+
+def _status_phase_key(target_status: str) -> str | None:
+    if target_status == "ACTIVE":
+        return "activate"
+    if target_status == "CLOSED":
+        return "close"
+    return None
 
 
 def _detect_event_type(prompt: str) -> str:
