@@ -48,6 +48,7 @@ export interface CampaignDirectoryUser {
 
 export interface CommunicationTemplate {
   id: string;
+  campaignId: string;
   templateKey: string;
   name: string;
   audience: string;

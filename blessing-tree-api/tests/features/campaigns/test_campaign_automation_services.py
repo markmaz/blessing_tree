@@ -51,7 +51,7 @@ def test_repository_lists_due_schedules_for_absolute_and_milestone_dates(
     db_session: Session,
 ) -> None:
     campaign = _seed_campaign(db_session, status="ACTIVE")
-    template = _seed_template(db_session)
+    template = _seed_template(db_session, campaign_id=campaign.id)
     past_milestone = CampaignMilestone(
         id=uuid.uuid4(),
         campaign_id=campaign.id,
@@ -106,7 +106,7 @@ def test_dispatch_schedule_sends_email_and_records_success(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     campaign = _seed_campaign(db_session, status="ACTIVE")
-    template = _seed_template(db_session, audience="VOLUNTEER")
+    template = _seed_template(db_session, campaign_id=campaign.id, audience="VOLUNTEER")
     member = CampaignMember(
         id=uuid.uuid4(),
         campaign_id=campaign.id,
@@ -202,7 +202,7 @@ def test_readiness_reports_worker_health_and_recent_automation_issues(
         is_active=True,
     )
     campaign = _seed_campaign(db_session, status="ACTIVE")
-    template = _seed_template(db_session, audience="MANAGER")
+    template = _seed_template(db_session, campaign_id=campaign.id, audience="MANAGER")
     member = CampaignMember(
         id=uuid.uuid4(),
         campaign_id=campaign.id,
@@ -279,10 +279,12 @@ def _seed_campaign(
 def _seed_template(
     db_session: Session,
     *,
+    campaign_id,
     audience: str = "GENERAL",
 ) -> CommunicationTemplate:
     template = CommunicationTemplate(
         id=uuid.uuid4(),
+        campaign_id=campaign_id,
         template_key=f"volunteer_welcome_{uuid.uuid4().hex[:6]}",
         name="Volunteer Welcome",
         audience=audience,

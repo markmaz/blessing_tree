@@ -59,9 +59,16 @@
 ## Campaign Studio V1 Direction
 
 - Status: active
-- Decision: make Campaign Studio a card-based campaign composition surface at `/campaigns/:campaignId/studio`, with left-rail section navigation, a visible center work surface, and a persistent AI builder rail. Treat team, communications, milestone dates, and readiness as first-class campaign-building cards. Use global mail templates with campaign bindings, fixed named milestone fields in v1, role-assignment-based volunteer management first, and AI suggestions that require human approval before apply.
-- Rationale: the project needs a visible “build the campaign” cockpit rather than another settings form, and the Query Forge Workflow Studio interaction model is a strong reference for keeping overview, detail, and AI assistance in one operator-facing workspace.
-- Consequence: the next frontend step should be the Campaign Studio shell and overview cards, while the next backend steps should add campaign assignment, communication template binding, schedule, milestone, and readiness APIs to support that shell.
+- Decision: make Campaign Studio a card-based campaign composition surface at `/campaigns/:campaignId/studio`, with left-rail section navigation, a visible center work surface, and a persistent AI builder rail. Treat team, communications, milestone dates, and readiness as first-class campaign-building cards. Use campaign-scoped mail templates, fixed named milestone fields in v1, role-assignment-based volunteer management first, and AI suggestions that require human approval before apply.
+- Rationale: the project needs a visible “build the campaign” cockpit rather than another settings form, and the Query Forge Workflow Studio interaction model is a strong reference for keeping overview, detail, and AI assistance in one operator-facing workspace. Campaign-owned templates fit the real operating need better than shared global templates because campaigns need to clone and tailor prior-season communication sets without cross-campaign coupling.
+- Consequence: the next frontend step should be the Campaign Studio shell and overview cards, while the next backend steps should add campaign assignment, campaign-owned communication template, schedule, milestone, and readiness APIs to support that shell.
+
+## Campaign Copy Direction
+
+- Status: active
+- Decision: campaign creation should optionally support `source_campaign_id` so a new campaign can start from a previous campaign's setup. The clone should copy campaign-owned setup such as roster members, access roles, teams, team roles, team memberships, campaign-scoped communication templates, milestones, communication schedules, and manual schedule events.
+- Rationale: Blessing Tree campaigns are often repeated seasonally, and rebuilding the same operational setup each year would create avoidable admin overhead.
+- Consequence: the campaign create API should accept an optional source campaign reference, default missing dates from the source campaign shifted into the target year, keep clone operations campaign-scoped, and treat communication templates as campaign-owned assets rather than global shared templates.
 
 ## Campaign Schedule Direction
 

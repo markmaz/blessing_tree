@@ -48,6 +48,7 @@ def serialize_directory_user(payload: dict[str, Any]) -> dict[str, Any]:
 def serialize_communication_template(template: CommunicationTemplate) -> dict[str, Any]:
     return {
         "id": str(template.id),
+        "campaign_id": str(template.campaign_id),
         "template_key": template.template_key,
         "name": template.name,
         "audience": template.audience,

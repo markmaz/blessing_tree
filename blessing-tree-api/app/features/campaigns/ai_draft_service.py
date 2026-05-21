@@ -136,7 +136,7 @@ class CampaignStudioAiDraftService:
         requested_action_type: str | None,
     ) -> dict[str, Any]:
         milestones = self.studio.list_milestones(db, campaign_id)
-        templates = self.studio.list_templates(db)
+        templates = self.studio.list_templates(db, campaign_id)
         draft_kind = requested_action_type or _infer_schedule_action_type(prompt)
 
         assumptions: list[str] = []
@@ -192,7 +192,7 @@ class CampaignStudioAiDraftService:
 
         readiness = self.studio.get_readiness(db, campaign_id)
         milestones = self.studio.list_milestones(db, campaign_id)
-        templates = self.studio.list_templates(db)
+        templates = self.studio.list_templates(db, campaign_id)
         selected_items = _select_readiness_items_for_prompt(prompt, readiness)
         readiness_context: dict[str, Any] = {
             "created_template_ref": None,
@@ -513,7 +513,7 @@ class CampaignStudioAiDraftService:
         campaign_year: int,
         prompt: str,
     ) -> dict[str, Any]:
-        templates = self.studio.list_templates(db)
+        templates = self.studio.list_templates(db, campaign_id)
         template_action, assumptions, warnings, template_ref = _build_template_creation_action(
             prompt,
             campaign_name=campaign_name,

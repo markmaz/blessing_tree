@@ -100,7 +100,7 @@ class CampaignStudioLlmDraftService:
                     section=section,
                     allowed_actions=allowed_actions,
                     campaign=campaign,
-                    templates=self.studio.list_templates(db),
+                    templates=self.studio.list_templates(db, campaign_id),
                     milestones=self.studio.list_milestones(db, campaign_id),
                     teams=workspace["teams"],
                     members=workspace["members"],
@@ -163,7 +163,7 @@ class CampaignStudioLlmDraftService:
                     "audience": template.audience,
                     "is_active": bool(template.is_active),
                 }
-                for template in self.studio.list_templates(db)
+                for template in self.studio.list_templates(db, campaign_id)
             ]
             context["milestones"] = [
                 {

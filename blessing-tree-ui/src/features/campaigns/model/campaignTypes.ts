@@ -47,4 +47,5 @@ export interface CampaignUpsertInput {
   status: CampaignStatus;
   startDate: string | null;
   endDate: string | null;
+  sourceCampaignId?: string | null;
 }

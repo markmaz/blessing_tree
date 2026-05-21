@@ -15,6 +15,7 @@ interface CampaignEditorFormProps {
   submitLabel: string;
   isSaving: boolean;
   showHeader?: boolean;
+  sourceCampaignOptions?: Campaign[];
   onSubmit: (values: ReturnType<typeof toCampaignUpsertInput>) => Promise<boolean>;
 }
 
@@ -25,6 +26,7 @@ export function CampaignEditorForm({
   submitLabel,
   isSaving,
   showHeader = true,
+  sourceCampaignOptions = [],
   onSubmit,
 }: CampaignEditorFormProps) {
   const {
@@ -116,6 +118,23 @@ export function CampaignEditorForm({
           End Date
           <input type="date" className="form-control" {...register('endDate')} />
         </label>
+
+        {!campaign && sourceCampaignOptions.length > 0 ? (
+          <label className="form-label campaign-studio__form-span-2">
+            Start From Previous Campaign
+            <select className="form-select" {...register('sourceCampaignId')}>
+              <option value="">Start from scratch</option>
+              {sourceCampaignOptions.map((sourceCampaign) => (
+                <option key={sourceCampaign.id} value={sourceCampaign.id}>
+                  {sourceCampaign.name} ({sourceCampaign.year})
+                </option>
+              ))}
+            </select>
+            <div className="form-text">
+              Copies campaign setup into the new campaign, including roster, teams, communications, milestones, and manual schedule events.
+            </div>
+          </label>
+        ) : null}
 
         <label className="form-label campaign-studio__form-span-2">
           Description

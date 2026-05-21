@@ -8,6 +8,7 @@ import type { CommunicationTemplate } from '@/features/campaigns/model/campaignS
 const templates: CommunicationTemplate[] = [
   {
     id: 'template-1',
+    campaignId: 'campaign-123',
     templateKey: 'volunteer_reminder',
     name: 'Volunteer Reminder',
     audience: 'VOLUNTEER',
@@ -21,6 +22,7 @@ const templates: CommunicationTemplate[] = [
   },
   {
     id: 'template-2',
+    campaignId: 'campaign-123',
     templateKey: 'sponsor_map',
     name: 'Sponsor Map',
     audience: 'SPONSOR',

@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from .campaign_member import CampaignMember
     from .campaign_team import CampaignTeam
     from .campaign_communication_schedule import CampaignCommunicationSchedule
+    from .communication_template import CommunicationTemplate
     from .campaign_milestone import CampaignMilestone
     from app.features.rbac.models.campaign_user_role import CampaignUserRole
     from .donation import Donation
@@ -122,6 +123,11 @@ class Campaign(Base):
         passive_deletes=True,
     )
     communication_schedules: Mapped[List["CampaignCommunicationSchedule"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    communication_templates: Mapped[List["CommunicationTemplate"]] = relationship(
         back_populates="campaign",
         cascade="all, delete-orphan",
         passive_deletes=True,

@@ -53,6 +53,7 @@ const studio: CampaignStudioData = {
       templates: [
       {
         id: 'template-1',
+        campaignId: 'campaign-1',
         templateKey: 'volunteer_reminder',
         name: 'Volunteer Reminder',
         audience: 'VOLUNTEER',

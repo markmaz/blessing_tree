@@ -41,7 +41,7 @@ class CampaignStudioService:
         access = self.campaigns.get_campaign_access_payload(db, user_id, campaign_id)
         summary = self.campaigns.get_campaign_summary_counts(db, campaign_id)
         team = self.team.get_team_snapshot(db, campaign_id)
-        templates = self.list_templates(db)
+        templates = self.list_templates(db, campaign_id)
         schedules = self.list_schedules(db, campaign_id)
         milestones = self.list_milestones(db, campaign_id)
         schedule_items = self.schedule.list_schedule_items(db, campaign_id)
@@ -58,14 +58,22 @@ class CampaignStudioService:
             "readiness": readiness,
         }
 
-    def list_templates(self, db: Session) -> list[CommunicationTemplate]:
-        return db.query(CommunicationTemplate).order_by(CommunicationTemplate.name.asc()).all()
+    def list_templates(self, db: Session, campaign_id: str) -> list[CommunicationTemplate]:
+        return (
+            db.query(CommunicationTemplate)
+            .filter(CommunicationTemplate.campaign_id == campaign_id)
+            .order_by(CommunicationTemplate.name.asc())
+            .all()
+        )
 
-    def create_template(self, db: Session, user_id: str, payload: Mapping[str, object]) -> CommunicationTemplate:
+    def create_template(self, db: Session, user_id: str, campaign_id: str, payload: Mapping[str, object]) -> CommunicationTemplate:
         template_key = validate_template_key(payload.get("template_key"))
         existing = (
             db.query(CommunicationTemplate)
-            .filter(CommunicationTemplate.template_key == template_key)
+            .filter(
+                CommunicationTemplate.campaign_id == campaign_id,
+                CommunicationTemplate.template_key == template_key,
+            )
             .one_or_none()
         )
         if existing is not None:
@@ -73,6 +81,7 @@ class CampaignStudioService:
 
         template = CommunicationTemplate(
             id=uuid.uuid4(),
+            campaign_id=campaign_id,
             template_key=template_key,
             name=require_short_text(payload.get("name"), "name"),
             audience=validate_audience(payload.get("audience")),
@@ -87,13 +96,17 @@ class CampaignStudioService:
         db.refresh(template)
         return template
 
-    def update_template(self, db: Session, template_id: str, payload: Mapping[str, object]) -> CommunicationTemplate:
-        template = self._get_template(db, template_id)
+    def update_template(self, db: Session, campaign_id: str, template_id: str, payload: Mapping[str, object]) -> CommunicationTemplate:
+        template = self._get_template(db, campaign_id, template_id)
         if "template_key" in payload:
             next_key = validate_template_key(payload.get("template_key"))
             duplicate = (
                 db.query(CommunicationTemplate)
-                .filter(CommunicationTemplate.template_key == next_key, CommunicationTemplate.id != template.id)
+                .filter(
+                    CommunicationTemplate.campaign_id == campaign_id,
+                    CommunicationTemplate.template_key == next_key,
+                    CommunicationTemplate.id != template.id,
+                )
                 .one_or_none()
             )
             if duplicate is not None:
@@ -115,11 +128,14 @@ class CampaignStudioService:
         db.refresh(template)
         return template
 
-    def delete_template(self, db: Session, template_id: str) -> None:
-        template = self._get_template(db, template_id)
+    def delete_template(self, db: Session, campaign_id: str, template_id: str) -> None:
+        template = self._get_template(db, campaign_id, template_id)
         has_schedules = (
             db.query(CampaignCommunicationSchedule.id)
-            .filter(CampaignCommunicationSchedule.template_id == template.id)
+            .filter(
+                CampaignCommunicationSchedule.campaign_id == campaign_id,
+                CampaignCommunicationSchedule.template_id == template.id,
+            )
             .first()
             is not None
         )
@@ -142,7 +158,7 @@ class CampaignStudioService:
 
     def create_schedule(self, db: Session, campaign_id: str, payload: Mapping[str, object]) -> CampaignCommunicationSchedule:
         self.campaigns.get_campaign(db, campaign_id)
-        template = self._get_template(db, payload.get("template_id"))
+        template = self._get_template(db, campaign_id, payload.get("template_id"))
         milestone_key = self._optional_milestone_key(payload.get("milestone_key"))
         scheduled_for = parse_optional_datetime(payload.get("scheduled_for"), "scheduled_for")
         self._validate_schedule_timing(milestone_key, scheduled_for)
@@ -168,7 +184,7 @@ class CampaignStudioService:
     ) -> CampaignCommunicationSchedule:
         schedule = self._get_schedule(db, campaign_id, schedule_id)
         if "template_id" in payload:
-            schedule.template_id = self._get_template(db, payload.get("template_id")).id
+            schedule.template_id = self._get_template(db, campaign_id, payload.get("template_id")).id
         if "milestone_key" in payload:
             schedule.milestone_key = self._optional_milestone_key(payload.get("milestone_key"))
         if "scheduled_for" in payload:
@@ -229,7 +245,7 @@ class CampaignStudioService:
         team = self.team.get_team_snapshot(db, campaign_id)
         milestones = self.list_milestones(db, campaign_id)
         schedules = self.list_schedules(db, campaign_id)
-        templates = self.list_templates(db)
+        templates = self.list_templates(db, campaign_id)
         manual_events = self.schedule.list_events(db, campaign_id)
         automation_snapshot = self.automation_readiness.build_snapshot(
             db,
@@ -252,13 +268,20 @@ class CampaignStudioService:
         return require_short_text(value, "notes", max_length=5000) if value not in (None, "") else None
 
     @staticmethod
-    def _get_template(db: Session, template_id: object) -> CommunicationTemplate:
+    def _get_template(db: Session, campaign_id: str, template_id: object) -> CommunicationTemplate:
         try:
             template_uuid = uuid.UUID(str(template_id))
         except (TypeError, ValueError, AttributeError):
             raise ServiceError("Valid template_id is required", status_code=400, details={"field": "template_id"})
 
-        template = db.get(CommunicationTemplate, template_uuid)
+        template = (
+            db.query(CommunicationTemplate)
+            .filter(
+                CommunicationTemplate.id == template_uuid,
+                CommunicationTemplate.campaign_id == campaign_id,
+            )
+            .one_or_none()
+        )
         if template is None:
             raise ServiceError("Communication template not found", status_code=404, details={"template_id": str(template_uuid)})
         return template

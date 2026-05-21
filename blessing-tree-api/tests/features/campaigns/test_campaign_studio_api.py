@@ -50,6 +50,7 @@ def test_get_campaign_studio_returns_aggregate_payload(
     assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
     template = CommunicationTemplate(
         id=uuid.uuid4(),
+        campaign_id=campaign.id,
         template_key="sponsor_reminder",
         name="Sponsor Reminder",
         audience="SPONSOR",
@@ -273,6 +274,7 @@ def test_delete_template_removes_unscheduled_template(
     assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
     template = CommunicationTemplate(
         id=uuid.uuid4(),
+        campaign_id=campaign.id,
         template_key="volunteer_follow_up",
         name="Volunteer Follow Up",
         audience="VOLUNTEER",
@@ -313,6 +315,7 @@ def test_delete_template_rejects_scheduled_template(
     assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
     template = CommunicationTemplate(
         id=uuid.uuid4(),
+        campaign_id=campaign.id,
         template_key="volunteer_follow_up",
         name="Volunteer Follow Up",
         audience="VOLUNTEER",
@@ -556,6 +559,7 @@ def test_post_ai_draft_returns_schedule_communication_action_with_warning(
     assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
     template = CommunicationTemplate(
         id=uuid.uuid4(),
+        campaign_id=campaign.id,
         template_key="volunteer_reminder",
         name="Volunteer Reminder",
         audience="VOLUNTEER",
@@ -826,6 +830,7 @@ def test_delete_communication_schedule_removes_schedule(
     assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
     template = CommunicationTemplate(
         id=uuid.uuid4(),
+        campaign_id=campaign.id,
         template_key="volunteer_reminder",
         name="Volunteer Reminder",
         audience="VOLUNTEER",
@@ -875,6 +880,7 @@ def test_readiness_flags_missing_manual_schedule_and_missing_schedule_messaging(
     assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
     template = CommunicationTemplate(
         id=uuid.uuid4(),
+        campaign_id=campaign.id,
         template_key="volunteer_welcome",
         name="Volunteer Welcome",
         audience="VOLUNTEER",
@@ -921,6 +927,7 @@ def test_readiness_clears_schedule_warnings_after_manual_event_and_milestone_sch
     assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
     template = CommunicationTemplate(
         id=uuid.uuid4(),
+        campaign_id=campaign.id,
         template_key="sponsor_reminder",
         name="Sponsor Reminder",
         audience="SPONSOR",

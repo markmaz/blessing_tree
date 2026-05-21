@@ -17,7 +17,7 @@ The backend is a Flask application built around:
 - The broader domain model exists in SQLAlchemy and SQL migration form.
 - The initial RBAC foundation now exists as a feature package with campaign role persistence, a capability matrix, an authorization service, and reusable enforcement decorators.
 - The first campaign business routes now exist as a feature package with protected list, detail, access, summary, create, and update endpoints.
-- Campaign Studio backend support now exists for team assignments, communication templates/schedules, milestone dates, readiness evaluation, aggregate studio payloads, manual campaign events, and unified schedule reads.
+- Campaign Studio backend support now exists for team assignments, campaign-scoped communication templates/schedules, milestone dates, readiness evaluation, aggregate studio payloads, manual campaign events, unified schedule reads, and clone-from-previous campaign creation support.
 - Campaign automation runtime now exists for scheduled communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness health checks.
 - Admin runtime support now exists for Query Forge-style user invitations, global LLM configuration, runtime health probes, and app feature flags.
 - Campaign Studio now also exposes a campaign-scoped active-user directory search endpoint to support assignment creation from the frontend.
@@ -140,6 +140,7 @@ Core DDL lives in:
 - `db/migration/V010__Campaign_Team_Roles.sql`
 - `db/migration/V011__Campaign_Automation_Runtime.sql`
 - `db/migration/V012__Admin_Runtime.sql`
+- `db/migration/V013__Campaign_Scoped_Communication_Templates.sql`
 
 ## Campaign Routes
 
@@ -159,6 +160,7 @@ Current routes under `/api/v1/campaigns`:
 - `GET /<campaign_id>/communications/templates`
 - `POST /<campaign_id>/communications/templates`
 - `PATCH /<campaign_id>/communications/templates/<template_id>`
+- `DELETE /<campaign_id>/communications/templates/<template_id>`
 - `GET /<campaign_id>/team-workspace`
 - `GET /<campaign_id>/members`
 - `POST /<campaign_id>/members`
@@ -192,6 +194,7 @@ Current behavior:
 
 - list is filtered to campaigns visible to the current user
 - create is app-admin only
+- create can optionally clone setup from an earlier campaign through `source_campaign_id`
 - detail, access, and summary require campaign visibility via RBAC
 - update requires the `campaign.admin` capability
 - directory-user search requires the `campaign.admin` capability and returns active users plus current/inactive role context for that campaign

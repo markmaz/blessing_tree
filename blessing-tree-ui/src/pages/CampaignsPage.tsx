@@ -88,6 +88,7 @@ export function CampaignsPage() {
               description="App admins can create a campaign here and make it immediately available for assignment and setup."
               submitLabel="Create Campaign"
               isSaving={isCreating}
+              sourceCampaignOptions={campaigns}
               onSubmit={handleCreateCampaign}
             />
           </section>
@@ -123,6 +124,7 @@ export function CampaignsPage() {
             description="Use this form to start a new season, set its operating window, and define the initial lifecycle state."
             submitLabel="Create Campaign"
             isSaving={isCreating}
+            sourceCampaignOptions={campaigns}
             onSubmit={handleCreateCampaign}
           />
         </section>

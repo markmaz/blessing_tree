@@ -5,7 +5,7 @@ Last updated: 2026-05-21
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Campaign Studio AI now runs through the configured admin LLM with deterministic fallback and verification; the next focus is communications audiences based on teams/team roles/member filters plus deeper automation/admin polish
+- Current step: Campaign Studio AI now runs through the configured admin LLM with deterministic fallback and verification; campaign templates are being corrected to campaign scope and campaign creation can now seed a new season from a previous campaign's setup
 
 ## Recently Completed
 
@@ -92,6 +92,8 @@ Last updated: 2026-05-21
 - Tightened Campaign Studio AI normalization so configured-LLM communications drafts can recover common alias fields like `subject` and `body` without falling back when the model omits the exact `subject_template` and `body_template` keys
 - Tightened admin LLM validation so `Test Connection` now exercises the configured model on the same generation path used by Campaign Studio AI instead of only checking provider reachability at `/models`
 - Added a provider-backed Admin LLM model catalog endpoint and wired the LLM page to use it for a combo/input model field when available, with explicit warning text when the provider catalog cannot be loaded and the UI is using fallback presets
+- Changed communication templates from a global/shared model to a campaign-scoped model so each campaign owns and can clone its own communication set
+- Added create-from-previous-campaign support so a new campaign can clone setup from an earlier campaign, including roster, teams, campaign communications, milestones, schedules, and manual events
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Replaced the old placeholder automation warning with a real execution layer:

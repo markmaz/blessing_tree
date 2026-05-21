@@ -11,6 +11,7 @@ export interface CampaignEditorValues {
   status: CampaignStatus;
   startDate: string;
   endDate: string;
+  sourceCampaignId: string;
 }
 
 export const campaignStatusOptions: CampaignStatus[] = [
@@ -30,6 +31,7 @@ export function buildCampaignEditorValues(
     status: campaign?.status ?? 'DRAFT',
     startDate: campaign?.startDate ?? '',
     endDate: campaign?.endDate ?? '',
+    sourceCampaignId: '',
   };
 }
 
@@ -43,5 +45,6 @@ export function toCampaignUpsertInput(
     status: values.status,
     startDate: values.startDate || null,
     endDate: values.endDate || null,
+    sourceCampaignId: values.sourceCampaignId || null,
   };
 }

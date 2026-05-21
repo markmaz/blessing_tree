@@ -77,6 +77,7 @@ interface CampaignTeamSnapshotResponse {
 
 interface CommunicationTemplateResponse {
   id: string;
+  campaign_id: string;
   template_key: string;
   name: string;
   audience: string;
@@ -432,6 +433,7 @@ function mapCommunicationTemplate(
 ): CommunicationTemplate {
   return {
     id: template.id,
+    campaignId: template.campaign_id,
     templateKey: template.template_key,
     name: template.name,
     audience: template.audience,

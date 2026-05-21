@@ -368,7 +368,7 @@ Communications should be visible in the studio because they are part of campaign
 
 Recommendation:
 
-- global templates with campaign bindings
+- campaign-scoped templates
 
 Meaning:
 
@@ -575,7 +575,7 @@ Add AI structured drafting:
 - Communications are visible and managed in the studio.
 - Milestones use fixed named fields in v1.
 - AI proposes structured campaign changes and humans approve apply.
-- Mail templates should be global templates with campaign bindings.
+- Mail templates should be campaign-scoped so a campaign can clone, tailor, and own its own communication set.
 - Team should evolve into a roster-plus-access-plus-teams workspace, not stay a role-assignment-only editor.
 
 ## Recommended Next Step

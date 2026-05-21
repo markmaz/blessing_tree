@@ -66,6 +66,7 @@ const milestones: CampaignMilestone[] = [
 const templates: CommunicationTemplate[] = [
   {
     id: 'template-1',
+    campaignId: 'campaign-123',
     templateKey: 'volunteer_reminder',
     name: 'Volunteer Reminder',
     audience: 'VOLUNTEER',

@@ -110,6 +110,7 @@ def test_get_schedule_returns_unified_manual_milestone_and_communication_items(
     assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
     template = CommunicationTemplate(
         id=uuid.uuid4(),
+        campaign_id=campaign.id,
         template_key="pickup_reminder",
         name="Pickup Reminder",
         audience="FAMILY",

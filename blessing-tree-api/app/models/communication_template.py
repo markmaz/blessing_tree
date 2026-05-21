@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List, Optional, TYPE_CHECKING
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,6 +14,7 @@ from .uuid_bin import UUIDBin
 
 if TYPE_CHECKING:
     from .app_user import AppUser
+    from .campaign import Campaign
     from .campaign_communication_schedule import CampaignCommunicationSchedule
 
 
@@ -20,7 +22,12 @@ class CommunicationTemplate(Base):
     __tablename__ = "communication_template"
 
     id: Mapped[uuid.UUID] = mapped_column(UUIDBin(), primary_key=True)
-    template_key: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    campaign_id: Mapped[uuid.UUID] = mapped_column(
+        UUIDBin(),
+        ForeignKey("campaign.id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=False,
+    )
+    template_key: Mapped[str] = mapped_column(String(100), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     audience: Mapped[str] = mapped_column(
         Enum("SPONSOR", "VOLUNTEER", "MANAGER", "FAMILY", "GENERAL", name="communication_template_audience"),
@@ -43,6 +50,7 @@ class CommunicationTemplate(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    campaign: Mapped["Campaign"] = relationship(back_populates="communication_templates")
     created_by_user: Mapped[Optional["AppUser"]] = relationship()
     schedules: Mapped[List["CampaignCommunicationSchedule"]] = relationship(
         back_populates="template",
@@ -50,6 +58,8 @@ class CommunicationTemplate(Base):
     )
 
     __table_args__ = (
-        Index("idx_communication_template_audience", "audience"),
-        Index("idx_communication_template_active", "is_active"),
+        UniqueConstraint("campaign_id", "template_key", name="uq_communication_template_campaign_key"),
+        Index("idx_communication_template_campaign", "campaign_id"),
+        Index("idx_communication_template_audience", "campaign_id", "audience"),
+        Index("idx_communication_template_active", "campaign_id", "is_active"),
     )

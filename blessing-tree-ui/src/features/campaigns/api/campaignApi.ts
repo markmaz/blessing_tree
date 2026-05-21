@@ -131,6 +131,7 @@ function serializeCampaignUpsertInput(input: CampaignUpsertInput) {
     status: input.status,
     start_date: input.startDate,
     end_date: input.endDate,
+    source_campaign_id: input.sourceCampaignId ?? null,
   };
 }
 

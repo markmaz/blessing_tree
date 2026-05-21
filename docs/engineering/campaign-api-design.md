@@ -271,7 +271,8 @@ Request:
   "description": "Main 2026 Christmas campaign.",
   "start_date": "2026-11-01",
   "end_date": "2026-12-31",
-  "status": "DRAFT"
+  "status": "DRAFT",
+  "source_campaign_id": "c4e8e604-3d48-4d18-9b63-0d8f4561b061"
 }
 ```
 
@@ -279,6 +280,7 @@ Behavior:
 
 - validates lifecycle and date ordering
 - creates campaign
+- optionally clones setup from `source_campaign_id`, including roster, teams, campaign-scoped communication templates, milestones, schedules, and manual events
 - creates creator `CAMPAIGN_MANAGER` assignment unless creator is operating only through global app-admin authority and assignment creation is intentionally skipped
 
 Response:

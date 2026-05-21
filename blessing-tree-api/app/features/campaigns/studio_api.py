@@ -84,14 +84,14 @@ class CommunicationTemplateListResource(Resource):
     @require_campaign_capability("campaign.view")
     def get(self, campaign_id: str):
         with SessionLocal() as db:
-            templates = _studio_service.list_templates(db)
+            templates = _studio_service.list_templates(db, campaign_id)
         return [serialize_communication_template(template) for template in templates]
 
     @require_campaign_capability("campaign.admin")
     def post(self, campaign_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
-            template = _studio_service.create_template(db, getattr(g, "user_id"), payload)
+            template = _studio_service.create_template(db, getattr(g, "user_id"), campaign_id, payload)
         return serialize_communication_template(template), 201
 
 
@@ -101,13 +101,13 @@ class CommunicationTemplateDetailResource(Resource):
     def patch(self, campaign_id: str, template_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
-            template = _studio_service.update_template(db, template_id, payload)
+            template = _studio_service.update_template(db, campaign_id, template_id, payload)
         return serialize_communication_template(template)
 
     @require_campaign_capability("campaign.admin")
     def delete(self, campaign_id: str, template_id: str):
         with SessionLocal() as db:
-            _studio_service.delete_template(db, template_id)
+            _studio_service.delete_template(db, campaign_id, template_id)
         return "", 204
 
 

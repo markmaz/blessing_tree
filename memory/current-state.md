@@ -19,7 +19,7 @@ Last updated: 2026-05-21
   - operational team foundation now exists with `campaign_team`, `campaign_team_member`, `campaign_team_role`, and backend team-role-aware services
   - Team workspace API foundation now exists with member, access-role, team, membership, app-access, and aggregate workspace endpoints
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
-  - Campaign Studio backend support now exists for assignments, communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, and aggregate studio payloads
+  - Campaign Studio backend support now exists for assignments, campaign-scoped communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, aggregate studio payloads, and create-from-previous-campaign cloning support
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
   - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
   - admin LLM test/health now probes the real generation path against the configured model instead of treating `/models` reachability as sufficient
@@ -158,11 +158,13 @@ Last updated: 2026-05-21
   - verified columns, indexes, and foreign keys for `campaign_user_role`
 - Campaign API foundation now exists:
   - `db/migration/V004__Campaign_Metadata.sql`
+  - `db/migration/V013__Campaign_Scoped_Communication_Templates.sql`
   - `app/features/campaigns/api.py`
   - `app/features/campaigns/service.py`
   - `app/features/campaigns/serializers.py`
   - `app/features/campaigns/validation.py`
   - `app/features/campaigns/constants.py`
+  - create now accepts optional `source_campaign_id` for setup cloning
 - Campaign Studio backend support now exists:
   - `db/migration/V005__Campaign_Studio_Support.sql`
   - `db/migration/V006__Campaign_Schedule.sql`
@@ -174,6 +176,7 @@ Last updated: 2026-05-21
   - `app/features/campaigns/studio_serializers.py`
   - `app/features/campaigns/studio_validation.py`
   - `app/features/campaigns/studio_constants.py`
+  - communication templates are now campaign-scoped rather than global/shared
 - Local MySQL verification:
   - `V004__Campaign_Metadata.sql` has been applied to the local `blessing_tree` database
   - verified `campaign.description`
@@ -200,6 +203,10 @@ Last updated: 2026-05-21
   - verified `campaign_team_role`
   - verified `campaign_team_member.team_role_id`
   - verified new indexes and foreign keys for team roles and membership role links
+  - `V013__Campaign_Scoped_Communication_Templates.sql` has been applied to the local `blessing_tree` database
+  - verified `communication_template.campaign_id`
+  - verified `uq_communication_template_campaign_key`
+  - verified campaign-scoped audience/active indexes and campaign foreign key
 - Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
 - Readiness direction is now explicitly lifecycle-aware and backend-driven:
   - grouped categories instead of one flat finding list
