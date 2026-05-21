@@ -75,6 +75,7 @@ Last updated: 2026-05-20
 - Revised the Team design and implementation plan so teams can carry their own operational roles separately from app access roles, and so plain team membership without a role is valid
 - Added inline Team glossary help in the workspace and mirrored those definitions into the Studio AI drawer for Team prompts
 - Finished the Team workspace role-catalog cutover so frontend app access role labels and descriptions now come from the backend `team-workspace` payload
+- Fixed local backend CORS so both `localhost:5173` and `127.0.0.1:5173` can call campaign APIs during development
 - Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Fixed backend runtime gaps discovered during live stack verification:

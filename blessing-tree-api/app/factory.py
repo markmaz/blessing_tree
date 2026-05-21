@@ -4,6 +4,7 @@ import json
 import logging
 import time
 import uuid
+from urllib.parse import urlsplit, urlunsplit
 
 import valkey
 from flask import Flask, g, jsonify, request
@@ -31,6 +32,23 @@ VERSION = "v1"
 mail = Mail()
 auth_service = AuthService()
 BACKEND_VERSION = get_backend_version()
+
+
+def build_cors_origins(frontend_base_url: str | None) -> list[str]:
+    origins = {
+        "https://blessing-tree.com",
+        "http://localhost:3000",
+        "http://localhost:5173",
+    }
+    if frontend_base_url:
+        origins.add(frontend_base_url)
+        parts = urlsplit(frontend_base_url)
+        if parts.hostname == "localhost":
+            origins.add(urlunsplit((parts.scheme, f"127.0.0.1:{parts.port or ''}".rstrip(":"), parts.path, parts.query, parts.fragment)))
+        elif parts.hostname == "127.0.0.1":
+            origins.add(urlunsplit((parts.scheme, f"localhost:{parts.port or ''}".rstrip(":"), parts.path, parts.query, parts.fragment)))
+
+    return sorted(origin for origin in origins if origin)
 
 def try_get_json_body(req):
     try:
@@ -81,16 +99,7 @@ def create_app():
         authorizations=authorizations,
     )
 
-    cors_origins = [
-        origin
-        for origin in {
-            "https://blessing-tree.com",
-            "http://localhost:5173",
-            "http://localhost:3000",
-            FRONTEND_BASE_URL,
-        }
-        if origin
-    ]
+    cors_origins = build_cors_origins(FRONTEND_BASE_URL)
 
     CORS(
         app,

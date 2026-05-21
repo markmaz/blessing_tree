@@ -89,6 +89,7 @@ Last updated: 2026-05-20
   - Blessing Tree backend now boots correctly on port `5000`
   - Blessing Tree frontend now serves correctly on port `5173`
   - local login, refresh, logout, and protected campaign API routes were smoke-tested successfully against the running stack on 2026-05-20
+  - backend CORS now accepts both `localhost` and `127.0.0.1` loopback frontend origins for local Studio work
 - Active-session automatic token refresh on 401 is now available through the shared frontend API client.
 - RBAC foundation now exists:
   - `db/migration/V003__Campaign_User_Roles.sql`
