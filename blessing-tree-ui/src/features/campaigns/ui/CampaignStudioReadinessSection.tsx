@@ -56,19 +56,19 @@ export function CampaignStudioReadinessSection({
         description="These checks come from the backend readiness evaluator and are grouped by what they mean for the campaign lifecycle."
       >
         <div className="campaign-studio__stat-grid campaign-studio__readiness-stat-grid mb-4">
-          <div className="campaign-studio__stat-card">
+          <div className="campaign-studio__stat-card campaign-studio__readiness-summary-card campaign-studio__readiness-summary-card--overall">
             <span className="campaign-studio__stat-label">Overall</span>
             <strong>{toDisplayLabel(readiness.overallStatus)}</strong>
           </div>
-          <div className="campaign-studio__stat-card">
+          <div className="campaign-studio__stat-card campaign-studio__readiness-summary-card">
             <span className="campaign-studio__stat-label">Blockers</span>
             <strong>{readiness.categoryCounts.blockers}</strong>
           </div>
-          <div className="campaign-studio__stat-card">
+          <div className="campaign-studio__stat-card campaign-studio__readiness-summary-card">
             <span className="campaign-studio__stat-label">Launch Checks</span>
             <strong>{readiness.categoryCounts.launch_checks}</strong>
           </div>
-          <div className="campaign-studio__stat-card">
+          <div className="campaign-studio__stat-card campaign-studio__readiness-summary-card">
             <span className="campaign-studio__stat-label">Planning Gaps</span>
             <strong>{readiness.categoryCounts.planning_gaps}</strong>
           </div>
