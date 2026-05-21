@@ -55,6 +55,11 @@ export function getOAuthLoginUrl(provider: OAuthProvider): string {
   return `${API_BASE_URL}${AUTH_BASE_PATH}/${provider}/login?${params.toString()}`;
 }
 
+export function getInviteOAuthLoginUrl(provider: OAuthProvider, token: string): string {
+  const params = new URLSearchParams({ token });
+  return `${API_BASE_URL}${AUTH_BASE_PATH}/invite/${provider}/login?${params.toString()}`;
+}
+
 function readErrorMessage(payload: unknown, fallback: string): string {
   if (payload && typeof payload === 'object') {
     const error = (payload as { error?: unknown }).error;

@@ -3,10 +3,15 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InviteAcceptPage } from '@/features/auth/ui/InviteAcceptPage';
-import { acceptInvite, validateInviteToken } from '@/shared/api/authApi';
+import {
+  acceptInvite,
+  getInviteOAuthLoginUrl,
+  validateInviteToken,
+} from '@/shared/api/authApi';
 
 vi.mock('@/shared/api/authApi', () => ({
   acceptInvite: vi.fn(),
+  getInviteOAuthLoginUrl: vi.fn(),
   validateInviteToken: vi.fn(),
 }));
 
@@ -21,6 +26,7 @@ describe('InviteAcceptPage', () => {
       expiresAt: '2026-05-28T00:00:00Z',
     });
     vi.mocked(acceptInvite).mockResolvedValue();
+    vi.mocked(getInviteOAuthLoginUrl).mockReturnValue('http://localhost:5000/api/v1/auth/invite/google/login?token=invite-token-1');
   });
 
   it('validates the invite token and submits the accept flow', async () => {
@@ -51,7 +57,7 @@ describe('InviteAcceptPage', () => {
     });
   });
 
-  it('shows a clear message when invite-page oauth is selected before phase 3', async () => {
+  it('redirects to the invite-scoped oauth onboarding route', async () => {
     const user = userEvent.setup();
 
     render(
@@ -63,8 +69,6 @@ describe('InviteAcceptPage', () => {
     await screen.findByDisplayValue('Invited User');
     await user.click(screen.getByRole('button', { name: /continue with google/i }));
 
-    expect(
-      screen.getByText(/invite-based google onboarding is not enabled yet/i)
-    ).toBeInTheDocument();
+    expect(getInviteOAuthLoginUrl).toHaveBeenCalledWith('google', 'invite-token-1');
   });
 });

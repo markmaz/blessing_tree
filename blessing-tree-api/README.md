@@ -86,8 +86,10 @@ Current routes under `/api/v1/auth`:
 
 - `POST /local/login`
 - `GET /google/login`
+- `GET /invite/google/login`
 - `GET /google/callback`
 - `GET /yahoo/login`
+- `GET /invite/yahoo/login`
 - `GET /yahoo/callback`
 - `POST /refresh`
 - `POST /logout`
@@ -99,7 +101,8 @@ Important current behavior:
 - local login returns an access token payload
 - refresh token handling is cookie-based
 - OAuth callbacks issue the refresh cookie and then redirect to the frontend callback route for session completion
-- generic Google/Yahoo login is now for already-linked returning users only; first-time invite-based OAuth onboarding is a separate pending flow
+- generic Google/Yahoo login is now for already-linked returning users only
+- invite-based onboarding now supports Google, Yahoo, or local-password acceptance from the invitation funnel
 
 ## Data Model
 

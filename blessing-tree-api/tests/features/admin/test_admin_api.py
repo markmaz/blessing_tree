@@ -45,6 +45,8 @@ def app(monkeypatch: pytest.MonkeyPatch) -> Generator[Flask, None, None]:
     monkeypatch.setattr("app.tasks.admin_tasks.send_admin_invite_email_task.delay", lambda *args, **kwargs: None)
 
     app = Flask(__name__)
+    app.config["SECRET_KEY"] = "test-secret-key"
+    app.config["FRONTEND_BASE_URL"] = "http://localhost:5173"
     api = Api(app)
     api.add_namespace(admin_ns, path="/api/v1/admin")
     api.add_namespace(auth_ns, path="/api/v1/auth")
@@ -135,6 +137,117 @@ def test_admin_invitation_accept_flow(
 
     assert accept_response.status_code == 200
     assert accept_response.get_json()["status"] == "active"
+
+
+def test_invite_google_login_stashes_token_and_redirects(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    from app.features.admin import api as admin_api
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="admin-invite@blessingtree.test", role="ADMIN", name="Admin User")
+        admin_user_id = str(admin_user.id)
+        db.commit()
+
+    create_response = client.post(
+        "/api/v1/admin/users",
+        json={
+            "email": "oauth-invitee@blessingtree.test",
+            "display_name": "OAuth Invitee",
+            "role": "COORDINATOR",
+        },
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+    token = create_response.get_json()["invitation"]["invite_url"].split("token=", 1)[1]
+
+    monkeypatch.setattr(
+        "app.routes.auth_routes._oauth_service.authorize_redirect",
+        lambda provider, redirect_uri: jsonify(
+            {"provider": provider, "redirect_uri": redirect_uri}
+        ),
+    )
+
+    response = client.get(
+        f"/api/v1/auth/invite/google/login?token={token}&redirect_uri=http://localhost:5000/api/v1/auth/google/callback"
+    )
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        "provider": "GOOGLE",
+        "redirect_uri": "http://localhost:5000/api/v1/auth/google/callback",
+    }
+
+    with client.session_transaction() as session:
+        assert session["bt_invite_token"] == token
+        assert session["bt_invite_provider"] == "GOOGLE"
+
+
+def test_invite_google_callback_accepts_invitation_and_links_identity(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    from app.features.admin import api as admin_api
+    from app.models.admin_user_invitation import AdminUserInvitation
+    from app.models.auth import AuthIdentity
+    from app.services.auth.oauth_service import OAuthUserInfo
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="admin-oauth@blessingtree.test", role="ADMIN", name="Admin User")
+        admin_user_id = str(admin_user.id)
+        db.commit()
+
+    create_response = client.post(
+        "/api/v1/admin/users",
+        json={
+            "email": "oauth-complete@blessingtree.test",
+            "display_name": "OAuth Complete",
+            "role": "COORDINATOR",
+        },
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+    token = create_response.get_json()["invitation"]["invite_url"].split("token=", 1)[1]
+
+    monkeypatch.setattr(
+        "app.routes.auth_routes._oauth_service.fetch_userinfo_from_callback",
+        lambda provider: OAuthUserInfo(
+            sub="google-sub-123",
+            email="oauth-complete@blessingtree.test",
+            name="OAuth Complete",
+        ),
+    )
+
+    with client.session_transaction() as session:
+        session["bt_invite_token"] = token
+        session["bt_invite_provider"] = "GOOGLE"
+
+    response = client.get("/api/v1/auth/google/callback")
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == "http://localhost:5173/auth/callback"
+    assert "bt_refresh=" in response.headers.get("Set-Cookie", "")
+
+    with admin_api.SessionLocal() as db:
+        invitation = db.query(AdminUserInvitation).filter(AdminUserInvitation.email == "oauth-complete@blessingtree.test").one()
+        identity = (
+            db.query(AuthIdentity)
+            .filter(AuthIdentity.user_id == invitation.user_id, AuthIdentity.provider == "GOOGLE")
+            .one()
+        )
+
+        assert invitation.accepted_at is not None
+        assert identity.provider_sub == "google-sub-123"
+        assert identity.email == "oauth-complete@blessingtree.test"
+
+    with client.session_transaction() as session:
+        assert "bt_invite_token" not in session
+        assert "bt_invite_provider" not in session
 
 
 def test_feature_flags_list_and_update(

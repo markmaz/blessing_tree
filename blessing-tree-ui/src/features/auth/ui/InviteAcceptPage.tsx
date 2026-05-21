@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   acceptInvite,
+  getInviteOAuthLoginUrl,
   validateInviteToken,
   type OAuthProvider,
 } from '@/shared/api/authApi';
@@ -19,15 +20,16 @@ export function InviteAcceptPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(true);
 
-  const handleOAuthSelection = (provider: OAuthProvider) => {
-    setError(
-      `Invite-based ${provider === 'google' ? 'Google' : 'Yahoo'} onboarding is not enabled yet. Use the local password option for now.`
-    );
-  };
-
   const token = useMemo(() => {
     const value = new URLSearchParams(location.search).get('token');
     return typeof value === 'string' ? value.trim() : '';
+  }, [location.search]);
+
+  useEffect(() => {
+    const errorValue = new URLSearchParams(location.search).get('error');
+    if (typeof errorValue === 'string' && errorValue.trim()) {
+      setError(errorValue.trim());
+    }
   }, [location.search]);
 
   useEffect(() => {
@@ -64,6 +66,15 @@ export function InviteAcceptPage() {
       active = false;
     };
   }, [token]);
+
+  const handleOAuthSelection = (provider: OAuthProvider) => {
+    if (!token) {
+      setError('Invite link invalid or expired.');
+      return;
+    }
+    setError(null);
+    window.location.assign(getInviteOAuthLoginUrl(provider, token));
+  };
 
   const submit = async () => {
     setIsLoading(true);
@@ -125,12 +136,6 @@ export function InviteAcceptPage() {
                   </span>
                   Continue with Yahoo
                 </button>
-              </div>
-
-              <div className="auth-hint auth-hint--panel">
-                <small className="text-muted">
-                  OAuth onboarding will complete through this invite flow in the next auth phase. Right now, invited users should finish with a local password.
-                </small>
               </div>
 
               <div className="auth-divider" role="separator" aria-label="or">

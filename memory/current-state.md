@@ -22,7 +22,7 @@ Last updated: 2026-05-21
   - Campaign Studio backend support now exists for assignments, communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, and aggregate studio payloads
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
   - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
-  - current onboarding is still transitional: the invite page now presents Google, Yahoo, and local password as onboarding choices, but only the local password path is active; generic Google/Yahoo OAuth is limited to already-linked returning users and invite-scoped OAuth onboarding is still pending
+  - invitation-centric onboarding now supports Google, Yahoo, and local password from the invite funnel; generic Google/Yahoo OAuth remains limited to already-linked returning users
   - backend startup now imports the full SQLAlchemy model registry during app creation
   - local auth compatibility now depends on `bcrypt 4.1.3` with `passlib 1.7.4`
   - runtime and dev dependency manifests now exist
