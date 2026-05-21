@@ -676,6 +676,16 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.campaign-studio__readiness-stat-grid .campaign-studio__stat-card {
+  padding: 0.8rem 0.85rem;
+}
+
+.campaign-studio__readiness-stat-grid .campaign-studio__stat-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
 .campaign-studio__readiness-group-card,
 .campaign-studio__readiness-phase-card {
   border: 1px solid rgba(226, 218, 205, 0.88);
