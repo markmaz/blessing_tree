@@ -70,6 +70,7 @@ Last updated: 2026-05-20
   - `blessing-tree-ui/README.md`
   - `docs/engineering/campaign-team-design.md`
   - `docs/engineering/campaign-team-implementation-plan.md`
+  - `docs/engineering/campaign-readiness-design.md`
   - `docs/engineering/rbac-design.md`
   - `docs/engineering/rbac-implementation-plan.md`
   - `docs/engineering/campaign-schedule-design.md`
@@ -164,6 +165,10 @@ Last updated: 2026-05-20
   - verified `campaign_team_member`
   - verified team/team-member unique scopes, indexes, and foreign keys
 - Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
+- Readiness direction is now explicitly lifecycle-aware and backend-driven:
+  - grouped categories instead of one flat finding list
+  - phase-aware gating for `draft`, `activate`, `operations`, and `close`
+  - readiness items should carry `category`, `action_label`, and `blocking_for`
 - Frontend campaign routes now exist:
   - `/campaigns`
   - `/campaigns/:campaignId`

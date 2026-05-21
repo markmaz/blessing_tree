@@ -140,6 +140,10 @@ Schedule is now further specified in:
 
 - `docs/engineering/campaign-schedule-design.md`
 
+Readiness is now further specified in:
+
+- `docs/engineering/campaign-readiness-design.md`
+
 ### Center Work Surface
 
 Purpose:

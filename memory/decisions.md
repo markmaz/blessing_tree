@@ -70,6 +70,13 @@
 - Rationale: campaign managers need the schedule to behave more like a real calendar than a collection of alternate views, and the old `Timeline | Calendar | Milestones` split still made the calendar feel secondary. Prompt-driven add flows are also most useful when they land directly on the primary planning surface instead of generating disconnected suggestions.
 - Consequence: keep milestones and communications as their own source-of-truth records, but allow them to be edited through the shared calendar modal; maintain distinct visual treatment for each source type; support deleting communication schedules from the backend; and treat deeper AI/model-backed schedule drafting as an enhancement on top of the now-functional prompt-to-calendar path.
 
+## Campaign Readiness Direction
+
+- Status: active
+- Decision: evolve Campaign Readiness from a flat backend finding list into a lifecycle-aware, backend-driven control surface with grouped categories, phase-specific gating, explicit action labels, and future automation-health checks.
+- Rationale: the current readiness model is useful for early scaffolding, but it will become noisy and hard to reason about once scheduling, communications, recipient workflows, and automation execution all exist. Operators need to know what blocks activation, what is still a planning gap, and what is wrong during live operations.
+- Consequence: readiness items should eventually include `category`, `action_label`, and `blocking_for`; the UI should group findings into `blockers`, `launch_checks`, `planning_gaps`, and `operational_health`; readiness should report phase status for `draft`, `activate`, `operations`, and `close`; and future scheduling/automation work should report health back through readiness instead of inventing a separate warning surface.
+
 ## Communications Builder Direction
 
 - Status: active
