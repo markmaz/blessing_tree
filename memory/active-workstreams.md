@@ -104,6 +104,7 @@ Last updated: 2026-05-21
   - app feature flag reads/toggles for frontend route and UI gating
 - Split the admin frontend into left-sidebar child sections under `Admin` so user management, LLM configuration, health checks, and app capabilities are no longer stacked on one screen
 - Reworked Admin → User Management into a Query Forge-style workspace with a searchable/sortable user table, row action menu, and invite/detail drawers
+- Added real activate/deactivate user controls to Admin → User Management through a backend status endpoint plus row action menu wiring
 - Documented invitation-centric onboarding so invite acceptance, Google/Yahoo OAuth, and local password setup now have a single target model instead of the current split behavior
 - Implemented invitation-centric onboarding phase 1 by limiting generic Google/Yahoo login to already-linked returning users and blocking auto-linking for merely pre-provisioned accounts
 - Implemented invitation-centric onboarding phase 2 by turning `/auth/register` into a multi-method onboarding screen that presents Google, Yahoo, and local password choices

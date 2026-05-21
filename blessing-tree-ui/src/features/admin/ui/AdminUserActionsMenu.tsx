@@ -7,12 +7,14 @@ interface AdminUserActionsMenuProps {
   row: AdminUserWorkspaceRow;
   onOpenDetails: (row: AdminUserWorkspaceRow) => void;
   onResendInvite: (invitationId: string) => void;
+  onUpdateStatus: (userId: string, isActive: boolean) => void;
 }
 
 export function AdminUserActionsMenu({
   row,
   onOpenDetails,
   onResendInvite,
+  onUpdateStatus,
 }: AdminUserActionsMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -83,6 +85,20 @@ export function AdminUserActionsMenu({
           Resend invite
         </button>
       ) : null}
+      <button
+        type="button"
+        className="admin-users-actions-menu__item"
+        onClick={() => {
+          setIsOpen(false);
+          onUpdateStatus(row.id, !row.isActive);
+        }}
+      >
+        <i
+          className={`bi ${row.isActive ? 'bi-person-dash' : 'bi-person-check'} me-2`}
+          aria-hidden="true"
+        />
+        {row.isActive ? 'Deactivate user' : 'Activate user'}
+      </button>
     </div>
   ) : null;
 

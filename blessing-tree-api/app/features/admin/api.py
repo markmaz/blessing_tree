@@ -56,6 +56,21 @@ class AdminUsersResource(Resource):
             }, 201
 
 
+@admin_ns.route("/users/<string:user_id>/status")
+class AdminUserStatusResource(Resource):
+    @token_required
+    @require_app_admin()
+    def patch(self, user_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            user = _invitation_service.update_user_status(
+                db,
+                user_id,
+                is_active=bool(payload.get("is_active")),
+            )
+            return {"user": serialize_admin_user(user)}, 200
+
+
 @admin_ns.route("/invitations/<string:invitation_id>/resend")
 class AdminInvitationResendResource(Resource):
     @token_required

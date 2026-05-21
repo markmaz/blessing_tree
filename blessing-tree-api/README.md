@@ -210,6 +210,7 @@ Current routes under `/api/v1/admin`:
 
 - `GET /users`
 - `POST /users`
+- `PATCH /users/<user_id>/status`
 - `POST /invitations/<invitation_id>/resend`
 - `GET /llm`
 - `PUT /llm`
@@ -223,6 +224,7 @@ Current behavior:
 - most admin routes require the app-admin capability
 - `GET /features` is readable by authenticated users so the frontend can gate nav/routes consistently
 - invitations create local app users and deliver signed invite-accept URLs through the mailer/task path
+- app admins can activate or deactivate users without deleting the account record
 - LLM settings are stored globally with the API key encrypted at rest
 - health reports cover database connectivity, Celery worker state/heartbeat, and the configured LLM endpoint
 

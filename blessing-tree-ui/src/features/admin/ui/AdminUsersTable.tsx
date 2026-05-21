@@ -13,6 +13,7 @@ interface AdminUsersTableProps {
   onSort: (sortKey: AdminUserWorkspaceSortKey) => void;
   onOpenDetails: (row: AdminUserWorkspaceRow) => void;
   onResendInvite: (invitationId: string) => void;
+  onUpdateStatus: (userId: string, isActive: boolean) => void;
 }
 
 function headerArrow(
@@ -27,6 +28,9 @@ function headerArrow(
 }
 
 function statusToneClass(status: AdminUserWorkspaceRow['status']) {
+  if (status === 'inactive') {
+    return 'is-inactive';
+  }
   return status === 'invited' ? 'is-invited' : 'is-active';
 }
 
@@ -37,6 +41,7 @@ export function AdminUsersTable({
   onSort,
   onOpenDetails,
   onResendInvite,
+  onUpdateStatus,
 }: AdminUsersTableProps) {
   return (
     <div className="table-responsive">
@@ -128,6 +133,7 @@ export function AdminUsersTable({
                     row={row}
                     onOpenDetails={onOpenDetails}
                     onResendInvite={onResendInvite}
+                    onUpdateStatus={onUpdateStatus}
                   />
                 </td>
               </tr>

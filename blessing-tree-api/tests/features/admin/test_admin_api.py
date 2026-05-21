@@ -341,3 +341,35 @@ def test_llm_config_and_health(
     )
     assert health_response.status_code == 200
     assert "checks" in health_response.get_json()
+
+
+def test_admin_can_deactivate_and_reactivate_user(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    from app.features.admin import api as admin_api
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="admin-status@blessingtree.test", role="ADMIN", name="Admin User")
+        member_user = seed_user(db, email="member-status@blessingtree.test", role="COORDINATOR", name="Member User")
+        admin_user_id = str(admin_user.id)
+        member_user_id = str(member_user.id)
+        db.commit()
+
+    deactivate_response = client.patch(
+        f"/api/v1/admin/users/{member_user_id}/status",
+        json={"is_active": False},
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+    assert deactivate_response.status_code == 200
+    assert deactivate_response.get_json()["user"]["is_active"] is False
+
+    reactivate_response = client.patch(
+        f"/api/v1/admin/users/{member_user_id}/status",
+        json={"is_active": True},
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+    assert reactivate_response.status_code == 200
+    assert reactivate_response.get_json()["user"]["is_active"] is True

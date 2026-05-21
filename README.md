@@ -20,6 +20,7 @@ Blessing Tree is a split frontend/backend application for managing a church gift
 - The frontend now has a live Campaign Studio at `/campaigns/:campaignId/studio` with Team, Communications, Schedule, Readiness, and Settings sections backed by the new backend studio APIs.
 - The admin area now supports Query Forge-style user invitations, global LLM configuration, runtime health checks for database/Celery/LLM, and app feature enable/disable controls.
 - The admin user-management area now uses a Query Forge-style workspace with a searchable/sortable user table, row actions, and drawers for invite/create and user details.
+- Admins can now also activate and deactivate users directly from the user-management row action menu.
 - Generic Google/Yahoo sign-in is now restricted to already-linked returning users, while invitation onboarding now lets invited users choose Google, Yahoo, or a local password from the invite page.
 - Invitation validation now distinguishes pending vs already-accepted onboarding state, and the invite/callback UI now shows clearer completion and error messaging.
 - The Communications section is now template-only and uses a Query Forge-inspired template-builder workspace with a collapsible tool rail, heading/text/image content blocks, inline uploads for small embedded images such as maps, a builder-side merge-field drawer, and a stronger rendered-preview surface; the Studio AI panel is now hidden by default and opens as a right-side drawer when needed.

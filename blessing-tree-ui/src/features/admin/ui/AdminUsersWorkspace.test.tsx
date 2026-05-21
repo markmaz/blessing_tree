@@ -2,11 +2,16 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminUsersWorkspace } from '@/features/admin/ui/AdminUsersWorkspace';
-import { createAdminInvite, resendAdminInvite } from '@/features/admin/api/adminApi';
+import {
+  createAdminInvite,
+  resendAdminInvite,
+  updateAdminUserStatus,
+} from '@/features/admin/api/adminApi';
 
 vi.mock('@/features/admin/api/adminApi', () => ({
   createAdminInvite: vi.fn(),
   resendAdminInvite: vi.fn(),
+  updateAdminUserStatus: vi.fn(),
 }));
 
 const roleCatalog = [
@@ -78,6 +83,10 @@ describe('AdminUsersWorkspace', () => {
     vi.mocked(resendAdminInvite).mockResolvedValue({
       ...invitations[0],
     });
+    vi.mocked(updateAdminUserStatus).mockResolvedValue({
+      ...users[1],
+      isActive: false,
+    });
   });
 
   it('filters, sorts, and opens the detail drawer', async () => {
@@ -137,6 +146,28 @@ describe('AdminUsersWorkspace', () => {
 
     await waitFor(() => {
       expect(resendAdminInvite).toHaveBeenCalledWith('invite-2');
+      expect(onDataChanged).toHaveBeenCalled();
+    });
+  });
+
+  it('deactivates a user from the row action menu', async () => {
+    const user = userEvent.setup();
+    const onDataChanged = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <AdminUsersWorkspace
+        users={users}
+        invitations={invitations}
+        roleCatalog={roleCatalog}
+        onDataChanged={onDataChanged}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /open actions for bob smith/i }));
+    await user.click(screen.getByRole('button', { name: /deactivate user/i }));
+
+    await waitFor(() => {
+      expect(updateAdminUserStatus).toHaveBeenCalledWith('user-2', false);
       expect(onDataChanged).toHaveBeenCalled();
     });
   });

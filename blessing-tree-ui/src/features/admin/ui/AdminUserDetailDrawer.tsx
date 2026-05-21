@@ -10,6 +10,9 @@ interface AdminUserDetailDrawerProps {
 }
 
 function statusToneClass(status: AdminUserWorkspaceRow['status']) {
+  if (status === 'inactive') {
+    return 'is-inactive';
+  }
   return status === 'invited' ? 'is-invited' : 'is-active';
 }
 
@@ -93,7 +96,6 @@ export function AdminUserDetailDrawer({
             </div>
           </dl>
         </section>
-
         <div className="admin-users-drawer__actions">
           {user.latestInvitation?.status === 'pending' ? (
             <button

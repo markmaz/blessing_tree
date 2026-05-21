@@ -193,6 +193,22 @@ class AdminInvitationService:
         )
         return user, (access_payload, refresh_raw)
 
+    def update_user_status(
+        self,
+        db: Session,
+        user_id: str,
+        *,
+        is_active: bool,
+    ) -> AppUser:
+        user = db.query(AppUser).filter(AppUser.id == user_id).one_or_none()
+        if user is None:
+            raise ServiceError("User not found", status_code=404, details={"user_id": user_id})
+
+        user.is_active = bool(is_active)
+        db.commit()
+        db.refresh(user)
+        return user
+
     @staticmethod
     def list_global_role_catalog() -> list[dict[str, str]]:
         return [dict(item) for item in GLOBAL_APP_ROLE_CATALOG]

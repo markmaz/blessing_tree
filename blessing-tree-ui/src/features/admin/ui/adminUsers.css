@@ -95,6 +95,11 @@
   color: #5b2d8b;
 }
 
+.admin-users-status-badge.is-inactive {
+  background: rgba(120, 120, 120, 0.14);
+  color: #616161;
+}
+
 .admin-users-actions-menu {
   border: 1px solid rgba(47, 45, 41, 0.12);
   border-radius: 0.65rem;

@@ -147,6 +147,26 @@ export async function resendAdminInvite(invitationId: string): Promise<AdminInvi
   }).invitations[0];
 }
 
+export async function updateAdminUserStatus(
+  userId: string,
+  isActive: boolean
+): Promise<AdminUsersPayload['users'][number]> {
+  const payload = await apiFetchJson<{ user: AdminUsersPayload['users'][number] }>(
+    `/api/v1/admin/users/${userId}/status`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_active: isActive }),
+    }
+  );
+
+  return normalizeUserPayload({
+    users: [payload.user],
+    invitations: [],
+    roleCatalog: [],
+  }).users[0];
+}
+
 export async function fetchAdminLlmConfig(): Promise<AdminLlmPayload> {
   return normalizeLlmPayload(await apiFetchJson<AdminLlmPayload>('/api/v1/admin/llm'));
 }

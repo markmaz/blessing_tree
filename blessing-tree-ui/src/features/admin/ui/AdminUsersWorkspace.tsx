@@ -13,7 +13,11 @@ import {
   type AdminUserWorkspaceSortDirection,
   type AdminUserWorkspaceSortKey,
 } from '@/features/admin/model/adminUsersWorkspace';
-import { createAdminInvite, resendAdminInvite } from '@/features/admin/api/adminApi';
+import {
+  createAdminInvite,
+  resendAdminInvite,
+  updateAdminUserStatus,
+} from '@/features/admin/api/adminApi';
 import { AdminUserInviteDrawer } from '@/features/admin/ui/AdminUserInviteDrawer';
 import { AdminUserDetailDrawer } from '@/features/admin/ui/AdminUserDetailDrawer';
 import { AdminUsersTable } from '@/features/admin/ui/AdminUsersTable';
@@ -105,6 +109,24 @@ export function AdminUsersWorkspace({
     }
   };
 
+  const handleUpdateUserStatus = async (userId: string, isActive: boolean) => {
+    setIsSaving(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await updateAdminUserStatus(userId, isActive);
+      await onDataChanged();
+      setSuccessMessage(isActive ? 'User activated.' : 'User deactivated.');
+    } catch (statusError) {
+      setErrorMessage(
+        statusError instanceof Error ? statusError.message : 'Unable to update user status.'
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <>
       <div className="content-card admin-users-workspace">
@@ -160,6 +182,7 @@ export function AdminUsersWorkspace({
           onSort={handleSort}
           onOpenDetails={setSelectedUser}
           onResendInvite={(invitationId) => void handleResendInvite(invitationId)}
+          onUpdateStatus={(userId, isActive) => void handleUpdateUserStatus(userId, isActive)}
         />
       </div>
 

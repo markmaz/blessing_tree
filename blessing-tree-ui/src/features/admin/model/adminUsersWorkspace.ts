@@ -4,7 +4,7 @@ import type {
   AdminUser,
 } from '@/features/admin/model/adminTypes';
 
-export type AdminUserWorkspaceStatus = 'active' | 'invited';
+export type AdminUserWorkspaceStatus = 'active' | 'invited' | 'inactive';
 export type AdminUserWorkspaceSortKey =
   | 'displayName'
   | 'email'
@@ -67,6 +67,13 @@ export function buildAdminUserWorkspaceRows(
   return users.map((user) => {
     const latestInvitation = selectLatestInvitation(invitations, user.id);
     const isPendingInvite = latestInvitation?.status === 'pending';
+    const status: AdminUserWorkspaceStatus = !user.isActive
+      ? 'inactive'
+      : isPendingInvite
+        ? 'invited'
+        : 'active';
+    const statusLabel =
+      status === 'inactive' ? 'Inactive' : status === 'invited' ? 'Invited' : 'Active';
 
     return {
       id: user.id,
@@ -75,8 +82,8 @@ export function buildAdminUserWorkspaceRows(
       roleKey: user.role,
       roleLabel: roleLabelMap.get(user.role) ?? user.role,
       isActive: user.isActive,
-      status: isPendingInvite ? 'invited' : 'active',
-      statusLabel: isPendingInvite ? 'Invited' : 'Active',
+      status,
+      statusLabel,
       lastActivityAt:
         user.lastLoginAt ??
         latestInvitation?.acceptedAt ??
