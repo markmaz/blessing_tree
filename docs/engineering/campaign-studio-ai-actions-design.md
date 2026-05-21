@@ -5,6 +5,10 @@ Last updated: 2026-05-21
 ## Status
 
 - Proposed and accepted for implementation planning on 2026-05-21
+- Phase 1 is now implemented as of 2026-05-21:
+  - backend `POST /api/v1/campaigns/<campaign_id>/ai/draft`
+  - normalized schedule draft actions
+  - frontend AI action-card rendering and apply wiring for schedule actions
 
 ## Purpose
 
@@ -525,6 +529,10 @@ Until then:
 - define AI draft contract
 - add backend draft endpoint
 - generalize the current Schedule draft/apply path into normalized actions
+
+Status:
+
+- implemented on 2026-05-21
 
 ### Phase 2
 

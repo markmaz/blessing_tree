@@ -37,6 +37,7 @@ Last updated: 2026-05-21
   - Campaign Studio Readiness now uses grouped lifecycle-aware backend output with summary cards, phase status, grouped findings, direct section actions, and AI prompt integration
   - Campaign Studio Schedule is now calendar-first, with modal create/edit/delete for events, milestones, and communication schedules directly from the month grid
   - Campaign Studio AI rail can now draft and apply schedule events, milestones, and communications from prompt input
+  - Campaign Studio AI phase 1 now uses a real backend draft contract through `POST /api/v1/campaigns/<campaign_id>/ai/draft`, and the frontend drawer now renders structured AI action cards instead of relying on a frontend-local schedule parser
   - Campaign Studio now uses a compact icon-only section rail at medium widths, and the schedule calendar/AI draft controls have responsive overflow guards for narrower layouts
   - Campaign Studio AI draft type selection now uses a compact horizontal segmented control in the rail instead of stacked mini-cards
   - Campaign Studio AI now uses a more Query Forge-like drawer pattern with a conversation thread, prompt copy action, prompt suggestions, clear/new-session tools, and a generic composer instead of a schedule-only `Draft Calendar Change` action
@@ -147,6 +148,7 @@ Last updated: 2026-05-21
 - Campaign Studio backend support now exists:
   - `db/migration/V005__Campaign_Studio_Support.sql`
   - `db/migration/V006__Campaign_Schedule.sql`
+  - `app/features/campaigns/ai_draft_service.py`
   - `app/features/campaigns/studio_api.py`
   - `app/features/campaigns/studio_schedule_service.py`
   - `app/features/campaigns/studio_service.py`
@@ -214,6 +216,7 @@ Last updated: 2026-05-21
   - campaign create/update UI wiring against the existing backend campaign routes
 - Live stack verification on 2026-05-20 now also includes:
   - `GET /api/v1/campaigns/<campaign_id>/studio`
+  - `POST /api/v1/campaigns/<campaign_id>/ai/draft`
   - `GET /api/v1/campaigns/<campaign_id>/assignments`
   - `GET /api/v1/campaigns/<campaign_id>/directory-users`
   - backend test coverage now includes `GET /api/v1/campaigns/<campaign_id>/team-workspace`

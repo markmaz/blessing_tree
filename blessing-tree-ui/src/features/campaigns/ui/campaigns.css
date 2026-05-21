@@ -550,6 +550,40 @@
   background: rgba(252, 249, 243, 0.96);
 }
 
+.campaign-studio__ai-draft-meta {
+  margin-bottom: 0.9rem;
+}
+
+.campaign-studio__ai-draft-list {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.35rem;
+  color: var(--blessing-text-light);
+  font-size: 0.72rem;
+}
+
+.campaign-studio__ai-action-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.campaign-studio__ai-action-card {
+  display: grid;
+  gap: 0.65rem;
+  border: 1px solid rgba(221, 213, 200, 0.94);
+  border-radius: 0.9rem;
+  padding: 0.8rem 0.9rem;
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.campaign-studio__ai-action-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .campaign-studio__eyebrow,
 .campaign-studio__card-eyebrow {
   color: var(--blessing-purple-light);

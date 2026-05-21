@@ -1,7 +1,11 @@
 import type { RefObject } from 'react';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 import { type CampaignStudioSectionId } from '@/features/campaigns/model/campaignStudio';
-import { type ScheduleAiDraftType } from '@/features/campaigns/model/campaignStudioAiDraft';
+import {
+  type CampaignStudioAiAction,
+  type CampaignStudioAiDraftResponse,
+  type ScheduleAiDraftType,
+} from '@/features/campaigns/model/campaignStudioAiDraft';
 import type {
   CampaignMilestone,
   CampaignReadiness,
@@ -28,14 +32,15 @@ interface CampaignStudioAiThreadProps {
   copiedPromptId: string | null;
   draftError: string | null;
   draftMessage: string | null;
-  draftPreview: { summary: string } | null;
+  draftResponse: CampaignStudioAiDraftResponse | null;
   isSaving: boolean;
   draftType: ScheduleAiDraftType;
   onDraftTypeChange: (draftType: ScheduleAiDraftType) => void;
   onSelectPromptStarter: (prompt: string) => void;
   onCopyPrompt: (prompt: string, turnId: string) => void;
   onDismissDraftMessage: () => void;
-  onApplyDraft: () => void;
+  onApplyAction: (action: CampaignStudioAiAction) => void;
+  onApplyAll: () => void;
   threadRef: RefObject<HTMLDivElement | null>;
 }
 
@@ -78,14 +83,15 @@ export function CampaignStudioAiThread({
   copiedPromptId,
   draftError,
   draftMessage,
-  draftPreview,
+  draftResponse,
   isSaving,
   draftType,
   onDraftTypeChange,
   onSelectPromptStarter,
   onCopyPrompt,
   onDismissDraftMessage,
-  onApplyDraft,
+  onApplyAction,
+  onApplyAll,
   threadRef,
 }: CampaignStudioAiThreadProps) {
   const hasTemplates = templates.length > 0;
@@ -257,19 +263,88 @@ export function CampaignStudioAiThread({
         />
       ) : null}
 
-      {draftPreview ? (
+      {draftResponse ? (
         <div className="campaign-studio__ai-draft-preview">
           <div className="fw-semibold small mb-1">Draft Preview</div>
-          <div className="small text-muted mb-3">{draftPreview.summary}</div>
-          <button
-            type="button"
-            className="btn btn-outline-secondary btn-sm"
-            disabled={isSaving}
-            onClick={onApplyDraft}
-          >
-            <i className="bi bi-check2-square" aria-hidden="true" />
-            <span>Apply Draft</span>
-          </button>
+          <div className="small text-muted mb-3">{draftResponse.message}</div>
+
+          {draftResponse.assumptions.length > 0 ? (
+            <div className="campaign-studio__ai-draft-meta">
+              <div className="fw-semibold small mb-1">Assumptions</div>
+              <ul className="campaign-studio__ai-draft-list">
+                {draftResponse.assumptions.map((assumption) => (
+                  <li key={assumption}>{assumption}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {draftResponse.warnings.length > 0 ? (
+            <div className="campaign-studio__ai-draft-meta">
+              <div className="fw-semibold small mb-1">Warnings</div>
+              <ul className="campaign-studio__ai-draft-list">
+                {draftResponse.warnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {draftResponse.actions.length > 0 ? (
+            <div className="campaign-studio__ai-action-list">
+              {draftResponse.actions.map((action) => (
+                <div key={action.id} className="campaign-studio__ai-action-card">
+                  <div className="campaign-studio__ai-action-header">
+                    <div>
+                      <div className="fw-semibold small">{action.title}</div>
+                      <div className="small text-muted">{action.summary}</div>
+                    </div>
+                    <span className="campaign-chip campaign-chip-muted">
+                      {action.status.replaceAll('_', ' ')}
+                    </span>
+                  </div>
+
+                  {action.assumptions.length > 0 ? (
+                    <ul className="campaign-studio__ai-draft-list">
+                      {action.assumptions.map((assumption) => (
+                        <li key={assumption}>{assumption}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+
+                  {action.warnings.length > 0 ? (
+                    <ul className="campaign-studio__ai-draft-list">
+                      {action.warnings.map((warning) => (
+                        <li key={warning}>{warning}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    disabled={isSaving || action.status === 'blocked'}
+                    onClick={() => onApplyAction(action)}
+                  >
+                    <i className="bi bi-check2-square" aria-hidden="true" />
+                    <span>Apply</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {draftResponse.actions.length > 1 ? (
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm mt-3"
+              disabled={isSaving}
+              onClick={onApplyAll}
+            >
+              <i className="bi bi-check2-all" aria-hidden="true" />
+              <span>Apply All</span>
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>

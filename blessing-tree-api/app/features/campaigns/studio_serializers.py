@@ -127,6 +127,10 @@ def serialize_readiness(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
+def serialize_ai_draft(payload: dict[str, Any]) -> dict[str, Any]:
+    return payload
+
+
 def serialize_studio_payload(
     *,
     campaign,

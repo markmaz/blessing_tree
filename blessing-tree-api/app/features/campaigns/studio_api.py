@@ -6,6 +6,7 @@ from flask_restx import Resource
 from app.db import SessionLocal
 from app.features.campaigns import campaign_ns
 from app.features.campaigns.studio_serializers import (
+    serialize_ai_draft,
     serialize_campaign_event,
     serialize_campaign_assignment,
     serialize_communication_schedule,
@@ -17,6 +18,7 @@ from app.features.campaigns.studio_serializers import (
     serialize_studio_payload,
     serialize_team_snapshot,
 )
+from app.features.campaigns.ai_draft_service import CampaignStudioAiDraftService
 from app.features.campaigns.studio_schedule_service import CampaignStudioScheduleService
 from app.features.campaigns.studio_service import CampaignStudioService
 from app.features.campaigns.studio_team_service import CampaignStudioTeamService
@@ -25,6 +27,7 @@ from app.features.rbac.decorators import require_campaign_capability
 _studio_service = CampaignStudioService()
 _schedule_service = CampaignStudioScheduleService()
 _team_service = CampaignStudioTeamService()
+_ai_draft_service = CampaignStudioAiDraftService()
 
 
 @campaign_ns.route("/<string:campaign_id>/studio")
@@ -201,6 +204,21 @@ class CampaignReadinessResource(Resource):
         with SessionLocal() as db:
             readiness = _studio_service.get_readiness(db, campaign_id)
         return serialize_readiness(readiness)
+
+
+@campaign_ns.route("/<string:campaign_id>/ai/draft")
+class CampaignAiDraftResource(Resource):
+    @require_campaign_capability("campaign.view")
+    def post(self, campaign_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            draft = _ai_draft_service.draft(
+                db,
+                user_id=str(getattr(g, "user_id")),
+                campaign_id=campaign_id,
+                payload=payload,
+            )
+        return serialize_ai_draft(draft)
 
 
 def _parse_limit(value: str | None) -> int:

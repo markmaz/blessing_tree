@@ -1,17 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
+import { draftCampaignStudioAi } from '@/features/campaigns/api/campaignStudioAiApi';
 import { type CampaignStudioSectionId } from '@/features/campaigns/model/campaignStudio';
 import {
-  buildScheduleAiDraft,
-  type ScheduleAiDraftType,
-} from '@/features/campaigns/model/campaignStudioAiDraft';
-import {
-  buildAiAssistantResponse,
   getAiPromptPlaceholder,
   getAiPromptStarters,
   getAiReadinessSignals,
   getAiSuggestionHeading,
   getAiTeamGlossary,
 } from '@/features/campaigns/model/campaignStudioAi';
+import {
+  isCreateCampaignEventAction,
+  isCreateCommunicationScheduleAction,
+  isCreateMilestoneAction,
+  type CampaignStudioAiAction,
+  type CampaignStudioAiDraftResponse,
+  type ScheduleAiDraftType,
+} from '@/features/campaigns/model/campaignStudioAiDraft';
 import type {
   CampaignMilestone,
   CampaignReadiness,
@@ -63,9 +67,7 @@ export function CampaignStudioAiRail({
   const [draftType, setDraftType] = useState<ScheduleAiDraftType>('event');
   const [draftError, setDraftError] = useState<string | null>(null);
   const [draftMessage, setDraftMessage] = useState<string | null>(null);
-  const [draftPreview, setDraftPreview] = useState<ReturnType<typeof buildScheduleAiDraft> | null>(
-    null
-  );
+  const [draftResponse, setDraftResponse] = useState<CampaignStudioAiDraftResponse | null>(null);
   const [history, setHistory] = useState<CampaignAiTurn[]>([]);
   const [pendingPrompt, setPendingPrompt] = useState('');
   const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
@@ -81,13 +83,13 @@ export function CampaignStudioAiRail({
     if (threadRef.current) {
       threadRef.current.scrollTop = threadRef.current.scrollHeight;
     }
-  }, [history, pendingPrompt, draftError]);
+  }, [history, pendingPrompt, draftError, draftResponse]);
 
   useEffect(() => {
     setDraftPrompt('');
     setDraftError(null);
     setDraftMessage(null);
-    setDraftPreview(null);
+    setDraftResponse(null);
     setHistory([]);
     setPendingPrompt('');
     setCopiedPromptId(null);
@@ -115,66 +117,108 @@ export function CampaignStudioAiRail({
     setDraftMessage(null);
 
     try {
-      if (selectedSection === 'schedule') {
-        const nextDraft = buildScheduleAiDraft({
-          prompt: trimmedPrompt,
-          requestedType: draftType,
-          milestones,
-          templates,
-        });
+      const nextDraft = await draftCampaignStudioAi(campaign.id, {
+        section: selectedSection,
+        prompt: trimmedPrompt,
+        requestedActionType: selectedSection === 'schedule' ? draftType : null,
+      });
 
-        setDraftPreview(nextDraft);
-        pushAssistantTurn(
-          trimmedPrompt,
-          buildAiAssistantResponse({
-            campaign,
-            selectedSection,
-            prompt: trimmedPrompt,
-            readiness,
-            scheduleItems,
-            templates,
-            milestones,
-            draftSummary: nextDraft.summary,
-          })
-        );
-      } else {
-        setDraftPreview(null);
-        pushAssistantTurn(
-          trimmedPrompt,
-          buildAiAssistantResponse({
-            campaign,
-            selectedSection,
-            prompt: trimmedPrompt,
-            readiness,
-            scheduleItems,
-            templates,
-            milestones,
-          })
-        );
-      }
-
+      setDraftResponse(nextDraft);
+      pushAssistantTurn(trimmedPrompt, nextDraft.message);
       setDraftPrompt('');
     } catch (error) {
-      setDraftPreview(null);
+      setDraftResponse(null);
       setDraftError(error instanceof Error ? error.message : 'Unable to process that AI prompt.');
     } finally {
       setPendingPrompt('');
     }
   };
 
-  const handleApply = async () => {
-    if (!draftPreview) {
+  const handleApplyAction = async (action: CampaignStudioAiAction) => {
+    const didSave = await applyDraftAction(action);
+    if (!didSave) {
       return;
     }
 
-    let didSave = false;
-    if (draftPreview.eventInput) {
-      didSave = await onCreateScheduleEvent(draftPreview.eventInput);
-    } else if (draftPreview.communicationInput) {
-      didSave = await onCreateCommunicationSchedule(draftPreview.communicationInput);
-    } else if (draftPreview.milestoneInput) {
-      const nextMilestones: SaveCampaignMilestoneInput[] = milestones
-        .filter((milestone) => milestone.milestoneKey !== draftPreview.milestoneInput?.milestoneKey)
+    setDraftMessage(`${action.title} applied to ${campaign.name}.`);
+    setDraftError(null);
+    setDraftResponse((currentDraft) => {
+      if (!currentDraft) {
+        return null;
+      }
+
+      const nextActions = currentDraft.actions.filter((entry) => entry.id !== action.id);
+      if (nextActions.length === 0) {
+        return null;
+      }
+
+      return {
+        ...currentDraft,
+        actions: nextActions,
+      };
+    });
+  };
+
+  const handleApplyAll = async () => {
+    if (!draftResponse) {
+      return;
+    }
+
+    const successfulIds = new Set<string>();
+    let appliedCount = 0;
+    let failed = false;
+
+    for (const action of draftResponse.actions) {
+      if (action.status === 'blocked') {
+        failed = true;
+        continue;
+      }
+
+      const didSave = await applyDraftAction(action);
+      if (didSave) {
+        successfulIds.add(action.id);
+        appliedCount += 1;
+      } else {
+        failed = true;
+      }
+    }
+
+    if (appliedCount > 0) {
+      setDraftMessage(
+        `${appliedCount} AI action${appliedCount === 1 ? '' : 's'} applied to ${campaign.name}.`
+      );
+      setDraftResponse((currentDraft) => {
+        if (!currentDraft) {
+          return null;
+        }
+
+        const nextActions = currentDraft.actions.filter((action) => !successfulIds.has(action.id));
+        if (nextActions.length === 0) {
+          return null;
+        }
+
+        return {
+          ...currentDraft,
+          actions: nextActions,
+        };
+      });
+    }
+
+    setDraftError(failed ? 'Some AI actions could not be applied.' : null);
+  };
+
+  const applyDraftAction = async (action: CampaignStudioAiAction): Promise<boolean> => {
+    if (isCreateCampaignEventAction(action)) {
+      return onCreateScheduleEvent(action.payload);
+    }
+
+    if (isCreateCommunicationScheduleAction(action)) {
+      return onCreateCommunicationSchedule(action.payload);
+    }
+
+    if (isCreateMilestoneAction(action)) {
+      const nextMilestones = milestones
+        .filter((milestone) => milestone.milestoneKey !== action.payload.milestoneKey)
         .map((milestone) => ({
           milestoneKey: milestone.milestoneKey,
           label: milestone.label,
@@ -182,22 +226,21 @@ export function CampaignStudioAiRail({
           notes: milestone.notes ?? null,
           sortOrder: milestone.sortOrder,
         }));
-      nextMilestones.push(draftPreview.milestoneInput);
+      nextMilestones.push({
+        ...action.payload,
+        notes: action.payload.notes ?? null,
+      });
       nextMilestones.sort((left, right) => left.sortOrder - right.sortOrder);
-      didSave = await onSaveMilestones(nextMilestones);
+      return onSaveMilestones(nextMilestones);
     }
 
-    if (didSave) {
-      setDraftMessage(`${draftPreview.summary} added to ${campaign.name}.`);
-      setDraftError(null);
-      setDraftPreview(null);
-    }
+    return false;
   };
 
   const clearHistory = () => {
     setHistory([]);
     setCopiedPromptId(null);
-    setDraftPreview(null);
+    setDraftResponse(null);
     setDraftError(null);
   };
 
@@ -257,7 +300,7 @@ export function CampaignStudioAiRail({
           copiedPromptId={copiedPromptId}
           draftError={draftError}
           draftMessage={draftMessage}
-          draftPreview={draftPreview}
+          draftResponse={draftResponse}
           isSaving={isSaving}
           draftType={draftType}
           onDraftTypeChange={setDraftType}
@@ -269,7 +312,12 @@ export function CampaignStudioAiRail({
             void copyPrompt(prompt, turnId);
           }}
           onDismissDraftMessage={() => setDraftMessage(null)}
-          onApplyDraft={handleApply}
+          onApplyAction={(action) => {
+            void handleApplyAction(action);
+          }}
+          onApplyAll={() => {
+            void handleApplyAll();
+          }}
           threadRef={threadRef}
         />
 

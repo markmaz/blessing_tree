@@ -240,6 +240,129 @@ def test_create_template_and_schedule_then_readiness_reflects_changes(
     assert automation_item["blocking_for"] == ["operations"]
 
 
+def test_post_ai_draft_returns_schedule_event_action(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    campaign_name = campaign.name
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ai/draft",
+        json={
+            "section": "schedule",
+            "prompt": "Add volunteer orientation on 2026-11-03 at 6pm",
+            "requested_action_type": "event",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["message"] == f"I drafted 1 schedule action for {campaign_name}."
+    assert payload["actions"][0]["action_type"] == "create_event"
+    assert payload["actions"][0]["payload"] == {
+        "title": "Volunteer Orientation",
+        "event_type": "VOLUNTEER",
+        "start_at": "2026-11-03T18:00",
+        "end_at": None,
+        "all_day": False,
+        "notes": "Add volunteer orientation on 2026-11-03 at 6pm",
+    }
+
+
+def test_post_ai_draft_returns_schedule_communication_action_with_warning(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    template = CommunicationTemplate(
+        id=uuid.uuid4(),
+        template_key="volunteer_reminder",
+        name="Volunteer Reminder",
+        audience="VOLUNTEER",
+        channel="EMAIL",
+        subject_template="Reminder",
+        body_template="Please join us.",
+        is_active=True,
+        created_by_user_id=manager.id,
+    )
+    session.add(template)
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    template_id = str(template.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ai/draft",
+        json={
+            "section": "schedule",
+            "prompt": "Schedule Volunteer Reminder on 2026-11-08 at 9am",
+            "requested_action_type": "communication",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["actions"][0]["action_type"] == "create_communication_schedule"
+    assert payload["warnings"] == [
+        "This drafts a planned calendar communication only. Automated delivery is not wired yet."
+    ]
+    assert payload["actions"][0]["payload"] == {
+        "template_id": template_id,
+        "milestone_key": None,
+        "scheduled_for": "2026-11-08T09:00",
+        "status": "SCHEDULED",
+        "notes": "Schedule Volunteer Reminder on 2026-11-08 at 9am",
+    }
+
+
+def test_post_ai_draft_returns_advisory_response_for_team_section(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ai/draft",
+        json={
+            "section": "team",
+            "prompt": "Set up a warehouse crew team.",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["actions"] == []
+    assert "Phase 1 only drafts normalized schedule actions." in payload["message"]
+
+
 def test_delete_communication_schedule_removes_schedule(
     app: Flask,
     monkeypatch: pytest.MonkeyPatch,

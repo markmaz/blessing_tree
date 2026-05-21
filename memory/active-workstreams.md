@@ -5,7 +5,7 @@ Last updated: 2026-05-21
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: team-scoped team roles and readiness redesign are implemented; the next design/implementation focus is Campaign Studio AI structured actions, communications audiences based on teams, team roles, and member filters, then real scheduling automation
+- Current step: Campaign Studio AI phase 1 is now implemented with a backend draft endpoint and normalized schedule action cards; the next design/implementation focus is Communications AI actions, then audiences based on teams/team roles/member filters, then real scheduling automation
 
 ## Recently Completed
 
@@ -83,6 +83,7 @@ Last updated: 2026-05-21
 - Simplified the Team workspace again so the top stats are smaller and the People/Teams cards now rely on search plus click-sort instead of a larger filter bar
 - Reworked the Campaign Studio AI drawer so it now follows a more Query Forge-like panel pattern with a threaded prompt history, prompt copy action, suggestion cards, and a generic composer that works cleanly on non-schedule sections like Team
 - Documented Campaign Studio AI as a structured draft/review/apply action system with a backend draft endpoint, normalized action cards, multi-action bundles, and apply-through-existing-feature-APIs instead of direct AI writes
+- Implemented Campaign Studio AI phase 1 with a real backend `ai/draft` contract, normalized schedule action payloads, and frontend AI action-card rendering/apply wiring for schedule actions
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Added an explicit readiness warning when scheduled communications exist but automated delivery is not wired yet
@@ -98,7 +99,7 @@ Last updated: 2026-05-21
 
 ## Immediate Next Steps
 
-1. Implement the Campaign Studio AI action draft contract and backend draft endpoint, starting by generalizing the current Schedule draft/apply flow
+1. Implement Campaign Studio AI phase 2 for Communications templates and schedule-placement bundles
 2. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
 3. Design and implement the actual scheduling execution layer for communications and lifecycle events
 4. Feed real automation health and execution failures back into Campaign Readiness

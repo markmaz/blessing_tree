@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { draftCampaignStudioAi } from '@/features/campaigns/api/campaignStudioAiApi';
 import { CampaignStudioAiRail } from '@/features/campaigns/ui/CampaignStudioAiRail';
 import type {
   CampaignMilestone,
@@ -9,6 +10,10 @@ import type {
   CommunicationTemplate,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import type { Campaign } from '@/features/campaigns/model/campaignTypes';
+
+vi.mock('@/features/campaigns/api/campaignStudioAiApi', () => ({
+  draftCampaignStudioAi: vi.fn(),
+}));
 
 const campaign: Campaign = {
   id: 'campaign-123',
@@ -127,6 +132,10 @@ const templates: CommunicationTemplate[] = [
 
 const scheduleItems: CampaignScheduleItem[] = [];
 
+beforeEach(() => {
+  vi.mocked(draftCampaignStudioAi).mockReset();
+});
+
 describe('CampaignStudioAiRail', () => {
   it('shows schedule-specific prompt starters and signals', () => {
     render(
@@ -151,15 +160,42 @@ describe('CampaignStudioAiRail', () => {
         name: /add volunteer orientation, sorting, and pickup planning blocks/i,
       })
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/add communication timing for the key milestones/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/add communication timing for the key milestones/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /send ai prompt/i })).toBeDisabled();
   });
 
   it('drafts and applies a calendar event from a prompt', async () => {
     const user = userEvent.setup();
     const onCreateScheduleEvent = vi.fn().mockResolvedValue(true);
+    vi.mocked(draftCampaignStudioAi).mockResolvedValueOnce({
+      message: 'I drafted 1 schedule action for Blessing Tree 2026 Demo.',
+      assumptions: [],
+      warnings: [],
+      actions: [
+        {
+          id: 'draft-event-1',
+          actionType: 'create_event',
+          section: 'schedule',
+          title: 'Create Event: Volunteer Orientation',
+          summary: 'Adds Volunteer Orientation to the campaign calendar for Blessing Tree 2026 Demo.',
+          status: 'ready',
+          assumptions: [],
+          warnings: [],
+          payload: {
+            title: 'Volunteer Orientation',
+            eventType: 'VOLUNTEER',
+            startAt: '2026-11-03T18:00',
+            endAt: null,
+            allDay: false,
+            notes: 'Add volunteer orientation on 2026-11-03 at 6pm',
+          },
+          applyTarget: {
+            api: 'campaign_event.create',
+            method: 'POST',
+          },
+        },
+      ],
+    });
 
     render(
       <CampaignStudioAiRail
@@ -184,9 +220,9 @@ describe('CampaignStudioAiRail', () => {
     );
     await user.click(screen.getByRole('button', { name: /send ai prompt/i }));
 
-    expect(screen.getAllByText(/volunteer orientation on 2026-11-03/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/i drafted 1 schedule action/i).length).toBeGreaterThan(0);
 
-    await user.click(screen.getByRole('button', { name: /apply draft/i }));
+    await user.click(screen.getByRole('button', { name: /^apply$/i }));
 
     expect(onCreateScheduleEvent).toHaveBeenCalledWith({
       title: 'Volunteer Orientation',
@@ -195,6 +231,10 @@ describe('CampaignStudioAiRail', () => {
       endAt: null,
       allDay: false,
       notes: 'Add volunteer orientation on 2026-11-03 at 6pm',
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /^apply$/i })).not.toBeInTheDocument();
     });
   });
 
@@ -222,9 +262,7 @@ describe('CampaignStudioAiRail', () => {
 
     await user.click(screen.getByRole('button', { name: /^communication$/i }));
 
-    expect(
-      screen.getByText(/emails and reminders using one of the campaign templates/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/emails and reminders using one of the campaign templates/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^communication$/i })).toHaveAttribute(
       'aria-pressed',
       'true'
@@ -278,12 +316,7 @@ describe('CampaignStudioAiRail', () => {
     );
 
     expect(
-      screen.getByRole('button', {
-        name: /tell me exactly what i need to do to unblock campaign activation/i,
-      })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/add communication timing for the key milestones already on the calendar/i)
+      screen.getByRole('button', { name: /tell me exactly what i need to do to unblock campaign activation/i })
     ).toBeInTheDocument();
   });
 });
