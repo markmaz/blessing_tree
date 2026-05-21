@@ -308,8 +308,8 @@
 
 .campaign-template-workspace__merge-edge-toggle {
   position: absolute;
-  left: -2.2rem;
-  top: 1rem;
+  left: calc(-2.2rem - 10px);
+  top: calc(1rem + 40px);
   z-index: 3;
   display: inline-flex;
   align-items: center;
