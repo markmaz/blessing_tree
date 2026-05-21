@@ -6,28 +6,14 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { login } from '@/shared/api/authApi';
+import { getOAuthLoginUrl, login, type OAuthProvider } from '@/shared/api/authApi';
 import { useAuth } from '@/features/auth/model/authContext';
 import { routes } from '@/app/routes';
 import './AuthPages.css';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000').replace(
-  /\/+$/,
-  ''
-);
-const AUTH_BASE_PATH = '/api/v1/auth';
-
 interface LoginFormInputs {
   email: string;
   password: string;
-}
-
-type OAuthProvider = 'google' | 'yahoo';
-
-function getOAuthLoginUrl(provider: OAuthProvider): string {
-  const redirectUri = `${API_BASE_URL}${AUTH_BASE_PATH}/${provider}/callback`;
-  const params = new URLSearchParams({ redirect_uri: redirectUri });
-  return `${API_BASE_URL}${AUTH_BASE_PATH}/${provider}/login?${params.toString()}`;
 }
 
 export function LoginPage() {

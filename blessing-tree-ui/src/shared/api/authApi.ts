@@ -9,6 +9,8 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:500
 );
 const AUTH_BASE_PATH = '/api/v1/auth';
 
+export type OAuthProvider = 'google' | 'yahoo';
+
 export interface LoginResponse {
   userId: string;
   email: string;
@@ -45,6 +47,12 @@ interface TokenClaims {
 
 function authUrl(path: string): string {
   return `${API_BASE_URL}${AUTH_BASE_PATH}${path}`;
+}
+
+export function getOAuthLoginUrl(provider: OAuthProvider): string {
+  const redirectUri = `${API_BASE_URL}${AUTH_BASE_PATH}/${provider}/callback`;
+  const params = new URLSearchParams({ redirect_uri: redirectUri });
+  return `${API_BASE_URL}${AUTH_BASE_PATH}/${provider}/login?${params.toString()}`;
 }
 
 function readErrorMessage(payload: unknown, fallback: string): string {

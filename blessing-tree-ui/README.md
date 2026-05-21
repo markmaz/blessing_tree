@@ -15,6 +15,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - `src/app/App.tsx` uses nested protected routes with `AppLayout`.
 - `src/shared/api/authApi.ts` already calls the backend local login route.
 - The frontend now completes local login directly on `/login` and includes backend refresh-cookie handling.
+- The invite onboarding page at `/auth/register` now presents Google, Yahoo, and local password as auth choices, but only the local password path is active until invite-scoped OAuth onboarding is implemented on the backend.
 - The frontend now consumes the protected campaign APIs through a campaign provider, top-bar switcher, campaign list, campaign detail page, and a campaign-aware dashboard.
 - Campaign Studio now has real Team, Communications, Schedule, Readiness, and Settings sections backed by the new backend studio APIs.
 - The Schedule surface is now calendar-first, with a navigable month view, color-coded milestones/communications/events, and modal editing directly from the calendar grid.

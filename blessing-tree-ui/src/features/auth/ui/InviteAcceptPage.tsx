@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { acceptInvite, validateInviteToken } from '@/shared/api/authApi';
+import {
+  acceptInvite,
+  validateInviteToken,
+  type OAuthProvider,
+} from '@/shared/api/authApi';
 import { routes } from '@/app/routes';
 import './AuthPages.css';
 
@@ -14,6 +18,12 @@ export function InviteAcceptPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(true);
+
+  const handleOAuthSelection = (provider: OAuthProvider) => {
+    setError(
+      `Invite-based ${provider === 'google' ? 'Google' : 'Yahoo'} onboarding is not enabled yet. Use the local password option for now.`
+    );
+  };
 
   const token = useMemo(() => {
     const value = new URLSearchParams(location.search).get('token');
@@ -76,7 +86,7 @@ export function InviteAcceptPage() {
         <div className="auth-form-content">
           <div className="auth-header">
             <h1 className="auth-title">Accept Invitation</h1>
-            <p className="auth-subtitle">Finish creating your Blessing Tree account.</p>
+            <p className="auth-subtitle">Choose how you want to sign in to Blessing Tree.</p>
           </div>
           {error ? <div className="alert alert-danger">{error}</div> : null}
           {message ? <div className="alert alert-success">{message}</div> : null}
@@ -84,6 +94,49 @@ export function InviteAcceptPage() {
             <p className="text-muted">Validating invitation…</p>
           ) : (
             <>
+              <div className="auth-invite-summary">
+                <div className="auth-invite-summary__label">Invited Account</div>
+                <div className="auth-invite-summary__name">{displayName}</div>
+                <div className="auth-invite-summary__email">{email}</div>
+              </div>
+
+              <div className="oauth-buttons">
+                <button
+                  type="button"
+                  className="btn oauth-btn oauth-google-btn w-100"
+                  disabled={isLoading || !token}
+                  onClick={() => handleOAuthSelection('google')}
+                  data-auth-method="google"
+                >
+                  <span className="oauth-logo-wrap" aria-hidden="true">
+                    <i className="bi bi-google oauth-google-icon" />
+                  </span>
+                  Continue with Google
+                </button>
+                <button
+                  type="button"
+                  className="btn oauth-btn oauth-yahoo-btn w-100"
+                  disabled={isLoading || !token}
+                  onClick={() => handleOAuthSelection('yahoo')}
+                  data-auth-method="yahoo"
+                >
+                  <span className="oauth-logo-wrap oauth-yahoo-logo" aria-hidden="true">
+                    Y!
+                  </span>
+                  Continue with Yahoo
+                </button>
+              </div>
+
+              <div className="auth-hint auth-hint--panel">
+                <small className="text-muted">
+                  OAuth onboarding will complete through this invite flow in the next auth phase. Right now, invited users should finish with a local password.
+                </small>
+              </div>
+
+              <div className="auth-divider" role="separator" aria-label="or">
+                <span>or set a password</span>
+              </div>
+
               <div className="mb-3">
                 <label className="form-label" htmlFor="invite-display-name">Display Name</label>
                 <input
@@ -119,7 +172,7 @@ export function InviteAcceptPage() {
                 disabled={isLoading || !token}
                 onClick={() => void submit()}
               >
-                {isLoading ? 'Accepting…' : 'Accept Invite'}
+                {isLoading ? 'Accepting…' : 'Set Password & Continue'}
               </button>
             </>
           )}

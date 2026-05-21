@@ -48,6 +48,43 @@
   margin-top: 1rem;
 }
 
+.auth-hint--panel {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #ddd7cd;
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.7);
+  text-align: left;
+}
+
+.auth-invite-summary {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #ddd7cd;
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.auth-invite-summary__label {
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #766e63;
+  margin-bottom: 0.35rem;
+}
+
+.auth-invite-summary__name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2f2d29;
+}
+
+.auth-invite-summary__email {
+  font-size: 0.93rem;
+  color: #6b645a;
+}
+
 .oauth-buttons {
   display: flex;
   flex-direction: column;

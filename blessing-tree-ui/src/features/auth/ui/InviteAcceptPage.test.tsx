@@ -37,7 +37,10 @@ describe('InviteAcceptPage', () => {
     expect(screen.getByDisplayValue('invitee@example.com')).toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/password/i), 'BlessingTree12345!');
-    await user.click(screen.getByRole('button', { name: /accept invite/i }));
+    expect(screen.getByRole('button', { name: /continue with google/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /continue with yahoo/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /set password & continue/i }));
 
     await waitFor(() => {
       expect(acceptInvite).toHaveBeenCalledWith('invite-token-1', {
@@ -46,5 +49,22 @@ describe('InviteAcceptPage', () => {
         password: 'BlessingTree12345!',
       });
     });
+  });
+
+  it('shows a clear message when invite-page oauth is selected before phase 3', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={['/auth/register?token=invite-token-1']}>
+        <InviteAcceptPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByDisplayValue('Invited User');
+    await user.click(screen.getByRole('button', { name: /continue with google/i }));
+
+    expect(
+      screen.getByText(/invite-based google onboarding is not enabled yet/i)
+    ).toBeInTheDocument();
   });
 });

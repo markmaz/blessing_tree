@@ -14,7 +14,7 @@ describe('AppFooter', () => {
     render(<AppFooter />);
 
     expect(screen.getByText(/queryforge, llc/i)).toBeInTheDocument();
-    expect(screen.getByText(/frontend v0\.0\.53/i)).toBeInTheDocument();
+    expect(screen.getByText(/frontend v0\.0\.54/i)).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText(/backend v0\.1\.24/i)).toBeInTheDocument();
