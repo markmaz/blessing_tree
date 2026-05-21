@@ -58,27 +58,15 @@ class AuthService:
 
         email = self._normalize_email(self._get_userinfo_field(userinfo, "email"))
         if not email:
-            raise NotApproved(details={"email": None, "provider": provider_key})
+            raise NotApproved(
+                "Use your invitation link to finish setup",
+                details={"email": None, "provider": provider_key},
+            )
 
-        user = self._find_user_by_email(db, email)
-        if user is None or not user.is_active:
-            raise NotApproved(details={"email": email, "provider": provider_key})
-
-        identity = AuthIdentity(
-            id=uuid.uuid4(),
-            user_id=user.id,
-            provider=provider_key,
-            provider_sub=sub,
-            email=email,
-            password_hash=None,
-            is_active=True,
+        raise NotApproved(
+            "Use your invitation link to finish setup",
+            details={"email": email, "provider": provider_key},
         )
-        db.add(identity)
-
-        user.last_login_at = datetime.utcnow()
-        db.commit()
-
-        return self._issue_tokens(user, provider_key, ip, user_agent)
 
     def login_local(self, db: Session, email: str, password: str, ip: str | None, user_agent: str | None) -> tuple[dict, str]:
         email_norm = self._normalize_email(email)

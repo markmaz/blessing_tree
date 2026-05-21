@@ -99,6 +99,7 @@ Important current behavior:
 - local login returns an access token payload
 - refresh token handling is cookie-based
 - OAuth callbacks issue the refresh cookie and then redirect to the frontend callback route for session completion
+- generic Google/Yahoo login is now for already-linked returning users only; first-time invite-based OAuth onboarding is a separate pending flow
 
 ## Data Model
 
