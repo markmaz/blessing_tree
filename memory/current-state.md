@@ -33,6 +33,7 @@ Last updated: 2026-05-21
   - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
   - dashboard is now campaign-aware and loads live summary/access data from the backend
   - Campaign Studio now has live Team, Communications, Schedule, Readiness, and Settings sections backed by the backend studio APIs
+  - Campaign Studio AI direction is now explicitly defined as a structured draft/review/apply action system rather than a mostly advisory prompt helper
   - Campaign Studio Readiness now uses grouped lifecycle-aware backend output with summary cards, phase status, grouped findings, direct section actions, and AI prompt integration
   - Campaign Studio Schedule is now calendar-first, with modal create/edit/delete for events, milestones, and communication schedules directly from the month grid
   - Campaign Studio AI rail can now draft and apply schedule events, milestones, and communications from prompt input
@@ -73,6 +74,7 @@ Last updated: 2026-05-21
   - `docs/engineering/campaign-team-design.md`
   - `docs/engineering/campaign-team-implementation-plan.md`
   - `docs/engineering/campaign-readiness-design.md`
+  - `docs/engineering/campaign-studio-ai-actions-design.md`
   - `docs/engineering/rbac-design.md`
   - `docs/engineering/rbac-implementation-plan.md`
   - `docs/engineering/campaign-schedule-design.md`

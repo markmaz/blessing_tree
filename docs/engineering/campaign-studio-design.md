@@ -140,6 +140,10 @@ Schedule is now further specified in:
 
 - `docs/engineering/campaign-schedule-design.md`
 
+Studio AI actions are now further specified in:
+
+- `docs/engineering/campaign-studio-ai-actions-design.md`
+
 Readiness is now further specified in:
 
 - `docs/engineering/campaign-readiness-design.md`

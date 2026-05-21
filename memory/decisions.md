@@ -91,6 +91,13 @@
 - Rationale: the earlier Team flow assumed every person was an app user and overloaded roles as the only grouping mechanism. That still left a gap once the new roster workspace landed, because campaign managers also need to assign people to teams without granting app permissions and may want team-specific responsibilities such as `Lead`, `Caller`, or `Gift Check-In` inside a given team.
 - Consequence: keep `campaign_member` as the roster source of truth, make app access optional, keep RBAC code-defined and backend-authoritative, rename UI language to `App Access Roles` where applicable, add team-owned role definitions, allow plain team membership with no explicit role, and evolve communications audiences to target teams and team roles separately from RBAC.
 
+## Campaign Studio AI Actions Direction
+
+- Status: active
+- Decision: evolve Campaign Studio AI from a mostly advisory drawer into a structured section-scoped action system. AI should draft concrete actions such as creating templates, placing communications on the calendar, creating milestones, creating teams, creating team roles, and generating readiness fix bundles, but users must review and apply those actions explicitly.
+- Rationale: the current Studio AI is strongest on Schedule and much weaker elsewhere, which makes the feature feel inconsistent. Operators want AI to actually do work on the current screen, not just explain it. A draft/review/apply model preserves trust while still making the feature useful.
+- Consequence: add a backend AI draft endpoint, normalize AI action payloads, keep existing feature APIs authoritative for persistence, support multi-action bundles for prompts like "create a template and schedule it," and keep readiness and automation warnings visible when AI creates planned schedule records that still depend on a future execution layer.
+
 ## Team Phase 2 Transition Policy
 
 - Status: active
