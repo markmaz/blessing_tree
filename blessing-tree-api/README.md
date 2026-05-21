@@ -19,6 +19,7 @@ The backend is a Flask application built around:
 - The first campaign business routes now exist as a feature package with protected list, detail, access, summary, create, and update endpoints.
 - Campaign Studio backend support now exists for team assignments, campaign-scoped communication templates/schedules, milestone dates, readiness evaluation, aggregate studio payloads, manual campaign events, unified schedule reads, and clone-from-previous campaign creation support.
 - Campaign automation runtime now exists for scheduled communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness health checks.
+- Local development mail delivery can now run through a checked-in SMTP sink script so invite emails and scheduled communications can be exercised end to end without external SMTP credentials.
 - Admin runtime support now exists for Query Forge-style user invitations, global LLM configuration, runtime health probes, and app feature flags.
 - Campaign Studio now also exposes a campaign-scoped active-user directory search endpoint to support assignment creation from the frontend.
 - The Team redesign backend now also exposes member, access-role, team, membership, and aggregate Team workspace APIs alongside the older transitional assignment endpoints.
@@ -73,6 +74,12 @@ Optional local auth providers:
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`
 - `YAHOO_CLIENT_ID`, `YAHOO_CLIENT_SECRET`, `YAHOO_REDIRECT_URI`
 
+Optional local mail transport tuning:
+
+- `SMTP_SERVER`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`
+- `SMTP_USE_TLS`, `SMTP_USE_SSL`
+- `DEFAULT_MAIL_SENDER`
+
 The `.env.example` contract now follows the same broad setup conventions as Query Forge for:
 
 - database and pool settings
@@ -104,6 +111,7 @@ Important current behavior:
 - generic Google/Yahoo login is now for already-linked returning users only
 - invite-based onboarding now supports Google, Yahoo, or local-password acceptance from the invitation funnel
 - invite validation now returns onboarding/completion state so the frontend can distinguish a pending invite from an already-accepted account
+- generic Google/Yahoo returning-login verification is implemented, but a true live provider smoke test still depends on local provider credentials being configured
 
 ## Data Model
 
@@ -245,6 +253,7 @@ scripts/lint.sh
 scripts/coverage.sh
 ./.venv/bin/python -m celery -A app.celery worker --loglevel=INFO
 ./.venv/bin/python -m celery -A app.celery beat --loglevel=INFO --schedule=/tmp/blessing-tree-celerybeat-schedule
+./.venv/bin/python scripts/dev_smtp_sink.py
 ```
 
 ## Environment Notes
@@ -258,6 +267,22 @@ Current configuration expects values for at least:
 - refresh cookie/auth options
 - Valkey: `VALKEY_ADDRESS`, `VALKEY_PORT`, `LOG_QUEUE`
 - OAuth providers as needed
+- mail transport: `SMTP_SERVER`, `SMTP_PORT`, `SMTP_USE_TLS`, `SMTP_USE_SSL`, `DEFAULT_MAIL_SENDER`
+
+For local development without a real SMTP relay, start the sink and point `.env` at it:
+
+```bash
+./.venv/bin/python scripts/dev_smtp_sink.py
+```
+
+Then use:
+
+- `SMTP_SERVER=127.0.0.1`
+- `SMTP_PORT=1025`
+- `SMTP_USE_TLS=false`
+- `SMTP_USE_SSL=false`
+
+Captured messages are written under `tmp/dev-mail/`.
 - mail settings as needed
 
 Config cleanup notes:

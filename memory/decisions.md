@@ -126,6 +126,13 @@
 - Rationale: scheduled communications and lifecycle transitions now need a real execution path, and local development already shares broker infrastructure with Query Forge. Using the default Celery queue caused Blessing Tree workers to receive Query Forge task envelopes, which is operationally noisy and unsafe.
 - Consequence: communication schedules now record delivery attempts and dispatch outcomes, lifecycle transitions can be advanced by worker tasks, readiness reflects actual worker health and recent execution issues, and all Blessing Tree automation tasks must publish and consume on the dedicated `bt` queue.
 
+## Local Mail Runtime Direction
+
+- Status: active
+- Decision: local development mail should run through a checked-in SMTP sink with configurable TLS/SSL flags before relying on any external SMTP relay.
+- Rationale: invitation onboarding and scheduled communications both need real end-to-end execution in development, but external SMTP credentials are not guaranteed on every machine.
+- Consequence: the backend config now exposes `SMTP_USE_TLS` and `SMTP_USE_SSL`, local `.env` can point to `127.0.0.1:1025`, `scripts/dev_smtp_sink.py` is the standard dev mail target, and captured mail is written under `blessing-tree-api/tmp/dev-mail/`.
+
 ## Admin Runtime Direction
 
 - Status: active

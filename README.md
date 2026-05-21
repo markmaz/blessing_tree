@@ -4,8 +4,8 @@ Blessing Tree is a split frontend/backend application for managing a church gift
 
 ## Current Status
 
-- `blessing-tree-api/` is a Flask API with authentication, SQLAlchemy models, MySQL migrations, Celery-backed campaign automation, Valkey-backed audit logging, the RBAC foundation, Campaign Studio backend APIs, and a new admin runtime slice for invitations, LLM configuration, health, and feature flags.
-- `blessing-tree-ui/` is a React 19 + TypeScript + Vite frontend with a protected app shell, Campaign Studio, and a working admin workspace for invitations, LLM configuration, health, and feature flags.
+- `blessing-tree-api/` is a Flask API with authentication, SQLAlchemy models, MySQL migrations, Celery-backed campaign automation, Valkey-backed audit logging, the RBAC foundation, Campaign Studio backend APIs, and an admin runtime slice for invitations, LLM configuration, health, and feature flags.
+- `blessing-tree-ui/` is a React 19 + TypeScript + Vite frontend with a protected app shell, Campaign Studio, a working admin workspace, and Playwright-backed browser E2E coverage for critical flows.
 - `files/` is legacy/reference material and is not part of the active application surface. Ignore it for normal development work.
 
 ## Important Reality Check
@@ -33,6 +33,8 @@ Blessing Tree is a split frontend/backend application for managing a church gift
 - The backend now also supports manual campaign events and unified schedule reads for the next Campaign Studio `Schedule` phase.
 - The backend now has checked-in dependency manifests, an `.env.example`, the RBAC foundation layer, reusable RBAC enforcement helpers, and Campaign Studio backend support, but the broader app is still in stabilization rather than feature delivery.
 - The backend now also has a real automation execution layer for scheduled communications and campaign lifecycle transitions, including Celery worker/beat wiring, execution logs, worker heartbeat, and readiness signals for worker health and failed runs.
+- Local outbound email is now operational in development through a repo-owned SMTP sink, so invitation emails and scheduled communication dispatch can be exercised end to end without external SMTP credentials.
+- The browser regression layer now includes Playwright E2E coverage for invite onboarding, campaign cloning, and the communications builder.
 
 ## Project Layout
 
@@ -62,6 +64,7 @@ npm run dev
 npm run build
 npm run lint
 npm run test
+npm run test:e2e
 ```
 
 The frontend expects `VITE_API_BASE_URL`, defaulting to `http://localhost:5000`.
@@ -93,6 +96,7 @@ Helper scripts from `blessing-tree-api/`:
 scripts/test.sh
 scripts/lint.sh
 scripts/coverage.sh
+./.venv/bin/python scripts/dev_smtp_sink.py
 ```
 
 See the backend README for current env var requirements and auth route details.

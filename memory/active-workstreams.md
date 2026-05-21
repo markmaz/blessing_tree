@@ -5,7 +5,7 @@ Last updated: 2026-05-21
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Campaign Studio AI now runs through the configured admin LLM with deterministic fallback and verification; campaign templates are being corrected to campaign scope and campaign creation can now seed a new season from a previous campaign's setup
+- Current step: Stabilization pass completed around dev mail delivery, create-from-previous-campaign coverage, browser E2E coverage, and RBAC visibility tightening; next work can return to feature delivery on a cleaner foundation
 
 ## Recently Completed
 
@@ -94,6 +94,9 @@ Last updated: 2026-05-21
 - Added a provider-backed Admin LLM model catalog endpoint and wired the LLM page to use it for a combo/input model field when available, with explicit warning text when the provider catalog cannot be loaded and the UI is using fallback presets
 - Changed communication templates from a global/shared model to a campaign-scoped model so each campaign owns and can clone its own communication set
 - Added create-from-previous-campaign support so a new campaign can clone setup from an earlier campaign, including roster, teams, campaign communications, milestones, schedules, and manual events
+- Added configurable SMTP TLS/SSL flags plus a local SMTP sink so invitation emails and scheduled communications can be exercised end to end in development without external SMTP credentials
+- Added Playwright browser E2E coverage for invite onboarding, create-from-previous-campaign, and the communications template builder
+- Tightened campaign visibility and campaign-creator setup so member/access-role visibility is the preferred path and newly created campaigns always seed the creator as a campaign member with `CAMPAIGN_MANAGER`
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Replaced the old placeholder automation warning with a real execution layer:
@@ -138,8 +141,8 @@ Last updated: 2026-05-21
 2. Expand communications audiences to use teams, team roles, and member filters as first-class targets
 3. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
 4. Extend AI editing-before-apply into higher-complexity bundles beyond the new Settings/status scalar editor
-5. After the Team write paths move over, retire the temporary legacy `campaign_user_role` fallback in authorization resolution
-6. Add any remaining provider-specific onboarding error polish after live Google/Yahoo verification
+5. Retire the remaining legacy `campaign_user_role` compatibility paths after the Team/member model is fully authoritative everywhere
+6. Add any remaining provider-specific onboarding polish once real Google/Yahoo credentials are available for a live smoke pass
 
 ## Blockers Or Ambiguities
 

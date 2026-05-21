@@ -132,6 +132,30 @@ def _assign_role(db: Session, user: AppUser, campaign: Campaign, role_key: str) 
     db.flush()
 
 
+def _assign_member_access_role(db: Session, user: AppUser, campaign: Campaign, role_key: str) -> None:
+    member = CampaignMember(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        display_name=user.display_name,
+        email=user.email,
+        member_type="staff",
+        app_user_id=user.id,
+        app_access_status="active",
+        is_active=True,
+    )
+    db.add(member)
+    db.flush()
+    db.add(
+        CampaignMemberAccessRole(
+            id=uuid.uuid4(),
+            campaign_member_id=member.id,
+            role_key=role_key,
+            is_active=True,
+        )
+    )
+    db.flush()
+
+
 def test_list_campaigns_returns_only_visible_campaigns(
     app: Flask,
     monkeypatch: pytest.MonkeyPatch,
@@ -141,7 +165,7 @@ def test_list_campaigns_returns_only_visible_campaigns(
     user = _seed_user(session)
     visible = _seed_campaign(session, year=2026, name="Visible Campaign")
     _seed_campaign(session, year=2026, name="Hidden Campaign")
-    _assign_role(session, user, visible, "DONATION_ENTRY")
+    _assign_member_access_role(session, user, visible, "DONATION_ENTRY")
     user_id = str(user.id)
     session.commit()
     session.close()
@@ -257,7 +281,22 @@ def test_create_campaign_allows_duplicate_year_and_creates_manager_assignment(
         .filter(CampaignUserRole.campaign_id == created.id, CampaignUserRole.user_id == admin_id)
         .one()
     )
+    creator_member = (
+        verify.query(CampaignMember)
+        .filter(CampaignMember.campaign_id == created.id, CampaignMember.app_user_id == admin_id)
+        .one()
+    )
+    creator_access_role = (
+        verify.query(CampaignMemberAccessRole)
+        .filter(
+            CampaignMemberAccessRole.campaign_member_id == creator_member.id,
+            CampaignMemberAccessRole.role_key == "CAMPAIGN_MANAGER",
+        )
+        .one()
+    )
     assert assignment.role_key == "CAMPAIGN_MANAGER"
+    assert creator_member.app_access_status == "active"
+    assert bool(creator_access_role.is_active) is True
     verify.close()
 
 
@@ -287,11 +326,31 @@ def test_create_campaign_from_source_clones_campaign_setup(
     )
     session.add(member)
     session.flush()
+    source_admin_member = CampaignMember(
+        id=uuid.uuid4(),
+        campaign_id=source_campaign.id,
+        display_name="Admin Member",
+        email=admin.email,
+        member_type="staff",
+        app_user_id=admin.id,
+        app_access_status="active",
+        is_active=True,
+    )
+    session.add(source_admin_member)
+    session.flush()
     session.add(
         CampaignMemberAccessRole(
             id=uuid.uuid4(),
             campaign_member_id=member.id,
             role_key="VOLUNTEER_VIEWER",
+            is_active=True,
+        )
+    )
+    session.add(
+        CampaignMemberAccessRole(
+            id=uuid.uuid4(),
+            campaign_member_id=source_admin_member.id,
+            role_key="CAMPAIGN_MANAGER",
             is_active=True,
         )
     )
@@ -396,11 +455,28 @@ def test_create_campaign_from_source_clones_campaign_setup(
 
     verify = campaign_api_module.SessionLocal()
     created = verify.query(Campaign).filter(Campaign.id == payload["id"]).one()
-    cloned_member = verify.query(CampaignMember).filter(CampaignMember.campaign_id == created.id).one()
+    cloned_member = (
+        verify.query(CampaignMember)
+        .filter(
+            CampaignMember.campaign_id == created.id,
+            CampaignMember.display_name == "Volunteer One",
+        )
+        .one()
+    )
     cloned_access_role = (
         verify.query(CampaignMemberAccessRole)
         .filter(CampaignMemberAccessRole.campaign_member_id == cloned_member.id)
         .one()
+    )
+    creator_member = (
+        verify.query(CampaignMember)
+        .filter(CampaignMember.campaign_id == created.id, CampaignMember.app_user_id == admin_id)
+        .one()
+    )
+    creator_member_count = (
+        verify.query(CampaignMember)
+        .filter(CampaignMember.campaign_id == created.id, CampaignMember.app_user_id == admin_id)
+        .count()
     )
     cloned_team = verify.query(CampaignTeam).filter(CampaignTeam.campaign_id == created.id).one()
     cloned_team_role = verify.query(CampaignTeamRole).filter(CampaignTeamRole.team_id == cloned_team.id).one()
@@ -428,6 +504,8 @@ def test_create_campaign_from_source_clones_campaign_setup(
     assert cloned_schedule.status == "DRAFT"
     assert cloned_milestone.occurs_on == date(2027, 9, 15)
     assert cloned_event.start_at == datetime(2027, 10, 1, 18, 0, 0)
+    assert creator_member_count == 1
+    assert creator_member.display_name == "Admin Member"
     verify.close()
 
 

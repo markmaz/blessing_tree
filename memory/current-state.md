@@ -21,6 +21,7 @@ Last updated: 2026-05-21
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
   - Campaign Studio backend support now exists for assignments, campaign-scoped communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, aggregate studio payloads, and create-from-previous-campaign cloning support
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
+  - local outbound email is now operational in development through a repo-owned SMTP sink plus configurable TLS/SSL flags, so invite delivery and scheduled communication dispatch can be exercised end to end without external SMTP credentials
   - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
   - admin LLM test/health now probes the real generation path against the configured model instead of treating `/models` reachability as sufficient
   - invitation-centric onboarding now supports Google, Yahoo, and local password from the invite funnel; generic Google/Yahoo OAuth remains limited to already-linked returning users, and invite validation now exposes accepted-vs-pending onboarding state for cleaner frontend handling
@@ -35,6 +36,7 @@ Last updated: 2026-05-21
   - protected shell exists
   - the protected app shell now includes a footer with `QueryForge, LLC` copyright plus frontend/backend version display
   - the admin page now supports user invitations, LLM configuration/testing, runtime health visibility, and app feature enable/disable controls
+  - Playwright browser E2E coverage now exists for invite onboarding, create-from-previous-campaign, and communications template save flows
   - admin user management now uses a Query Forge-style searchable/sortable table workspace with row actions plus invite and detail drawers instead of the earlier combined invite card, includes top filter cards for `All`, `Active`, and `Invited`, and supports activate/deactivate directly from the menu
   - the admin area now exposes child navigation in the left sidebar under `Admin` for user management, LLM configuration, health checks, and app capabilities, with feature toggles no longer mixed into the LLM page
   - the Admin LLM page now has provider-specific behavior so `OpenAI` uses a default endpoint plus model presets instead of making admins type raw base URLs, while `OpenAI-Compatible` remains fully editable
@@ -116,7 +118,8 @@ Last updated: 2026-05-21
   - Blessing Tree backend now boots correctly on port `5000`
   - Blessing Tree frontend now serves correctly on port `5173`
   - local login, refresh, logout, and protected campaign API routes were smoke-tested successfully against the running stack on 2026-05-20
-  - backend CORS now accepts both `localhost` and `127.0.0.1` loopback frontend origins for local Studio work
+- backend CORS now accepts both `localhost` and `127.0.0.1` loopback frontend origins for local Studio work
+- local invitation onboarding has now been browser-smoke-tested end to end through the invite funnel using the local-password path; live Google/Yahoo provider smoke still depends on local provider credentials being configured
 - Active-session automatic token refresh on 401 is now available through the shared frontend API client.
 - RBAC foundation now exists:
   - `db/migration/V003__Campaign_User_Roles.sql`
@@ -218,6 +221,7 @@ Last updated: 2026-05-21
   - `app/tasks/campaign_tasks.py`
   - `app/features/campaigns/automation_dispatch_service.py`
   - `app/features/campaigns/automation_lifecycle_service.py`
+  - `scripts/dev_smtp_sink.py`
   - `app/features/campaigns/automation_readiness_service.py`
   - `app/features/campaigns/automation_repository.py`
   - `app/features/campaigns/runtime_health.py`

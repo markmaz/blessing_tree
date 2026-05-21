@@ -17,7 +17,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/setup-vitest.ts',
-    exclude: ['node_modules/**', 'dist/**'],
+    exclude: ['node_modules/**', 'dist/**', 'e2e/**', 'test-results/**', 'playwright-report/**'],
     maxWorkers: 1,
     testTimeout: 40_000,
   },

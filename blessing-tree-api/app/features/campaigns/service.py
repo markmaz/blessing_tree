@@ -4,7 +4,7 @@ import uuid
 from collections.abc import Mapping
 from datetime import date, datetime
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.exceptions.service_error import ServiceError
@@ -20,6 +20,7 @@ from app.features.campaigns.validation import (
 from app.features.rbac.constants import CAMPAIGN_MANAGER_ROLE
 from app.features.rbac.models.campaign_user_role import CampaignUserRole
 from app.features.rbac.services.authorization_service import AuthorizationService
+from app.models.app_user import AppUser
 from app.models.campaign import Campaign
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
 from app.models.campaign_event import CampaignEvent
@@ -58,13 +59,29 @@ class CampaignService:
     ) -> list[Campaign]:
         query = db.query(Campaign)
         if not self.authorization.user_is_app_admin(db, user_id):
-            query = (
-                query.join(CampaignUserRole, CampaignUserRole.campaign_id == Campaign.id)
+            member_visibility = (
+                db.query(CampaignMemberAccessRole.id)
+                .join(CampaignMember, CampaignMember.id == CampaignMemberAccessRole.campaign_member_id)
                 .filter(
+                    CampaignMember.campaign_id == Campaign.id,
+                    CampaignMember.app_user_id == user_id,
+                    CampaignMember.is_active == 1,
+                    CampaignMember.app_access_status == "active",
+                    CampaignMemberAccessRole.is_active == 1,
+                )
+                .exists()
+            )
+            legacy_visibility = (
+                db.query(CampaignUserRole.id)
+                .filter(
+                    CampaignUserRole.campaign_id == Campaign.id,
                     CampaignUserRole.user_id == user_id,
                     CampaignUserRole.is_active == 1,
                 )
-                .distinct()
+                .exists()
+            )
+            query = (
+                query.filter(or_(member_visibility, legacy_visibility)).distinct()
             )
 
         if not include_archived:
@@ -167,7 +184,9 @@ class CampaignService:
                 year_delta=year_delta,
                 initial_legacy_roles={(str(user_id), CAMPAIGN_MANAGER_ROLE)},
             )
+            db.flush()
 
+        self._ensure_creator_campaign_manager_access(db, campaign.id, user_id)
         db.commit()
         db.refresh(campaign)
         return campaign
@@ -417,6 +436,63 @@ class CampaignService:
                     source_type="manual",
                     source_id=None,
                     created_by_user_id=source_event.created_by_user_id,
+                )
+            )
+
+    def _ensure_creator_campaign_manager_access(self, db: Session, campaign_id: uuid.UUID, user_id: str) -> None:
+        try:
+            user_uuid = uuid.UUID(str(user_id))
+        except (TypeError, ValueError, AttributeError):
+            return
+
+        user = db.get(AppUser, user_uuid)
+        if user is None:
+            return
+
+        member = (
+            db.query(CampaignMember)
+            .filter(
+                CampaignMember.campaign_id == campaign_id,
+                CampaignMember.app_user_id == user_uuid,
+            )
+            .one_or_none()
+        )
+        if member is None:
+            member = CampaignMember(
+                id=uuid.uuid4(),
+                campaign_id=campaign_id,
+                display_name=user.display_name,
+                email=user.email,
+                member_type="staff",
+                app_user_id=user.id,
+                app_access_status="active",
+                is_active=True,
+            )
+            db.add(member)
+            db.flush()
+        else:
+            member.is_active = True
+            member.app_access_status = "active"
+            if not member.display_name:
+                member.display_name = user.display_name
+            if not member.email:
+                member.email = user.email
+
+        existing_access_role = (
+            db.query(CampaignMemberAccessRole.id)
+            .filter(
+                CampaignMemberAccessRole.campaign_member_id == member.id,
+                CampaignMemberAccessRole.role_key == CAMPAIGN_MANAGER_ROLE,
+            )
+            .one_or_none()
+        )
+        if existing_access_role is None:
+            db.add(
+                CampaignMemberAccessRole(
+                    id=uuid.uuid4(),
+                    campaign_member_id=member.id,
+                    role_key=CAMPAIGN_MANAGER_ROLE,
+                    is_active=True,
                 )
             )
 

@@ -17,6 +17,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - The frontend now completes local login directly on `/login` and includes backend refresh-cookie handling.
 - The invite onboarding page at `/auth/register` now supports Google, Yahoo, and local password from the same invitation funnel.
 - The invite onboarding page now also distinguishes pending vs already-completed invitations and routes already-onboarded users back to sign-in cleanly.
+- The frontend now has Playwright browser E2E coverage for invite onboarding, create-from-previous-campaign, and communications template save flows against the local running stack.
 - The frontend now consumes the protected campaign APIs through a campaign provider, top-bar switcher, campaign list, campaign detail page, and a campaign-aware dashboard.
 - Campaign Studio now has real Team, Communications, Schedule, Readiness, and Settings sections backed by the new backend studio APIs.
 - The Schedule surface is now calendar-first, with a navigable month view, color-coded milestones/communications/events, and modal editing directly from the calendar grid.
@@ -89,6 +90,7 @@ npm run dev
 npm run build
 npm run lint
 npm run test
+npm run test:e2e
 npm run preview
 ```
 
