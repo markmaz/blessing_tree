@@ -11,6 +11,48 @@
   gap: 1rem;
 }
 
+.admin-users-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.admin-users-filter-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid rgba(47, 45, 41, 0.1);
+  border-radius: 0.8rem;
+  background: #fff;
+  color: #2f2d29;
+  padding: 0.9rem 1rem;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(36, 26, 18, 0.06);
+}
+
+.admin-users-filter-card.is-active {
+  border-color: rgba(91, 45, 139, 0.35);
+  background: #f7f2fb;
+}
+
+.admin-users-filter-card__label {
+  font-weight: 700;
+}
+
+.admin-users-filter-card__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  border-radius: 0.45rem;
+  background: rgba(91, 45, 139, 0.12);
+  color: #5b2d8b;
+  padding: 0.22rem 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .admin-users-toolbar {
   display: flex;
   align-items: center;
@@ -226,6 +268,10 @@
   .admin-users-toolbar {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .admin-users-filters {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

@@ -108,6 +108,15 @@ describe('AdminUsersWorkspace', () => {
     ];
     expect(rowLinks[0]).toHaveTextContent('Alice Doe');
     expect(rowLinks[1]).toHaveTextContent('Bob Smith');
+    expect(screen.getByRole('button', { name: /all/i })).toHaveTextContent('2');
+    expect(screen.getByRole('button', { name: /active/i })).toHaveTextContent('1');
+    expect(screen.getByRole('button', { name: /invited/i })).toHaveTextContent('1');
+
+    await user.click(screen.getByRole('button', { name: /invited/i }));
+    expect(screen.getByRole('button', { name: 'Bob Smith' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Alice Doe' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /all/i }));
 
     await user.click(screen.getByRole('button', { name: /^name/i }));
     const sortedRowLinks = [

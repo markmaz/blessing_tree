@@ -34,7 +34,7 @@ Last updated: 2026-05-21
   - protected shell exists
   - the protected app shell now includes a footer with `QueryForge, LLC` copyright plus frontend/backend version display
   - the admin page now supports user invitations, LLM configuration/testing, runtime health visibility, and app feature enable/disable controls
-  - admin user management now uses a Query Forge-style searchable/sortable table workspace with row actions plus invite and detail drawers instead of the earlier combined invite card, and admins can activate/deactivate users directly from the menu
+  - admin user management now uses a Query Forge-style searchable/sortable table workspace with row actions plus invite and detail drawers instead of the earlier combined invite card, includes top filter cards for `All`, `Active`, and `Invited`, and supports activate/deactivate directly from the menu
   - the admin area now exposes child navigation in the left sidebar under `Admin` for user management, LLM configuration, health checks, and app capabilities, with feature toggles no longer mixed into the LLM page
   - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
   - dashboard is now campaign-aware and loads live summary/access data from the backend

@@ -30,6 +30,8 @@ interface AdminUsersWorkspaceProps {
   onDataChanged: () => Promise<void>;
 }
 
+type AdminUsersFilter = 'all' | 'active' | 'invited';
+
 export function AdminUsersWorkspace({
   users,
   invitations,
@@ -37,6 +39,7 @@ export function AdminUsersWorkspace({
   onDataChanged,
 }: AdminUsersWorkspaceProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<AdminUsersFilter>('all');
   const [sortKey, setSortKey] = useState<AdminUserWorkspaceSortKey>('displayName');
   const [sortDirection, setSortDirection] = useState<AdminUserWorkspaceSortDirection>('asc');
   const [isInviteDrawerOpen, setIsInviteDrawerOpen] = useState(false);
@@ -50,9 +53,27 @@ export function AdminUsersWorkspace({
     return buildAdminUserWorkspaceRows(users, invitations, roleCatalog);
   }, [users, invitations, roleCatalog]);
 
+  const filterCounts = useMemo(() => {
+    return {
+      all: rows.length,
+      active: rows.filter((row) => row.status === 'active').length,
+      invited: rows.filter((row) => row.status === 'invited').length,
+    };
+  }, [rows]);
+
+  const statusFilteredRows = useMemo(() => {
+    if (selectedFilter === 'active') {
+      return rows.filter((row) => row.status === 'active');
+    }
+    if (selectedFilter === 'invited') {
+      return rows.filter((row) => row.status === 'invited');
+    }
+    return rows;
+  }, [rows, selectedFilter]);
+
   const filteredRows = useMemo(() => {
-    return filterAdminUserWorkspaceRows(rows, searchTerm);
-  }, [rows, searchTerm]);
+    return filterAdminUserWorkspaceRows(statusFilteredRows, searchTerm);
+  }, [statusFilteredRows, searchTerm]);
 
   const sortedRows = useMemo(() => {
     return sortAdminUserWorkspaceRows(filteredRows, sortKey, sortDirection);
@@ -162,6 +183,33 @@ export function AdminUsersWorkspace({
         {errorMessage ? (
           <div className="alert alert-danger mb-3">{errorMessage}</div>
         ) : null}
+
+        <div className="admin-users-filters" role="tablist" aria-label="User status filters">
+          <button
+            type="button"
+            className={`admin-users-filter-card ${selectedFilter === 'all' ? 'is-active' : ''}`}
+            onClick={() => setSelectedFilter('all')}
+          >
+            <span className="admin-users-filter-card__label">All</span>
+            <span className="admin-users-filter-card__count">{filterCounts.all}</span>
+          </button>
+          <button
+            type="button"
+            className={`admin-users-filter-card ${selectedFilter === 'active' ? 'is-active' : ''}`}
+            onClick={() => setSelectedFilter('active')}
+          >
+            <span className="admin-users-filter-card__label">Active</span>
+            <span className="admin-users-filter-card__count">{filterCounts.active}</span>
+          </button>
+          <button
+            type="button"
+            className={`admin-users-filter-card ${selectedFilter === 'invited' ? 'is-active' : ''}`}
+            onClick={() => setSelectedFilter('invited')}
+          >
+            <span className="admin-users-filter-card__label">Invited</span>
+            <span className="admin-users-filter-card__count">{filterCounts.invited}</span>
+          </button>
+        </div>
 
         <div className="admin-users-toolbar">
           <div className="admin-users-toolbar__search">
