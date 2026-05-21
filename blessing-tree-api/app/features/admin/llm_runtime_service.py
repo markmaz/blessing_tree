@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import requests
 from requests import RequestException, Response
 from sqlalchemy.orm import Session
 
-from app.features.admin.llm_service import AdminLlmService
 from app.models.admin_llm_configuration import AdminLlmConfiguration
 from app.utils.secret_encryption import decrypt_secret
+
+if TYPE_CHECKING:
+    from app.features.admin.llm_service import AdminLlmService
 
 
 class LlmRuntimeUnavailableError(RuntimeError):
@@ -19,7 +21,11 @@ class LlmRuntimeUnavailableError(RuntimeError):
 
 class AdminLlmRuntimeService:
     def __init__(self, llm_service: AdminLlmService | None = None) -> None:
-        self._llm_service = llm_service or AdminLlmService()
+        if llm_service is None:
+            from app.features.admin.llm_service import AdminLlmService
+
+            llm_service = AdminLlmService()
+        self._llm_service = llm_service
 
     def draft_json(
         self,

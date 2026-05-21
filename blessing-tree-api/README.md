@@ -229,6 +229,7 @@ Current behavior:
 - LLM settings are stored globally with the API key encrypted at rest
 - health reports cover database connectivity, Celery worker state/heartbeat, and the configured LLM endpoint
 - the same configured LLM is now the primary draft engine for Campaign Studio AI, while the older deterministic draft logic remains in place as fallback and verification guardrails
+- admin LLM test/health now validates the real generation path against the configured model instead of only checking `/models`, so model-access problems surface before users hit the Campaign Studio AI drawer
 
 ## Local Commands
 

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 import app.models.models  # noqa: F401
 from app.exceptions.service_error import ServiceError
+from app.features.admin.llm_runtime_service import LlmRuntimeUnavailableError
 from app.features.admin import admin_ns
 from app.routes.auth_routes import auth_ns
 
@@ -306,6 +307,10 @@ def test_llm_config_and_health(
         def json(self):
             return {"data": [{"id": "demo-model"}]}
 
+    monkeypatch.setattr(
+        "app.features.admin.llm_runtime_service.AdminLlmRuntimeService._request_json",
+        lambda *args, **kwargs: {"ok": True, "message": "ready"},
+    )
     monkeypatch.setattr("app.features.admin.llm_service.requests.get", lambda *args, **kwargs: _FakeResponse())
 
     with admin_api.SessionLocal() as db:
@@ -334,6 +339,7 @@ def test_llm_config_and_health(
     )
     assert test_response.status_code == 200
     assert test_response.get_json()["status"] == "ok"
+    assert test_response.get_json()["message"] == "LLM connection and generation test succeeded."
 
     health_response = client.get(
         "/api/v1/admin/health",
@@ -341,6 +347,62 @@ def test_llm_config_and_health(
     )
     assert health_response.status_code == 200
     assert "checks" in health_response.get_json()
+
+
+def test_llm_test_surfaces_model_access_failure(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    from app.features.admin import api as admin_api
+
+    class _FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self):
+            return {"data": [{"id": "gpt-4o-mini"}]}
+
+    monkeypatch.setattr(
+        "app.features.admin.llm_runtime_service.AdminLlmRuntimeService._request_json",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            LlmRuntimeUnavailableError(
+                "Configured LLM request failed: 403 Client Error: Forbidden for url: https://api.openai.com/v1/chat/completions"
+            )
+        ),
+    )
+    monkeypatch.setattr("app.features.admin.llm_service.requests.get", lambda *args, **kwargs: _FakeResponse())
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="admin4@blessingtree.test", role="ADMIN", name="Admin User")
+        admin_user_id = str(admin_user.id)
+        db.commit()
+
+    client.put(
+        "/api/v1/admin/llm",
+        json={
+            "provider": "OPENAI",
+            "label": "Primary LLM",
+            "base_url": "https://api.openai.com/v1",
+            "model": "gpt-4.1",
+            "api_key": "secret-key",
+            "is_enabled": True,
+        },
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+
+    test_response = client.post(
+        "/api/v1/admin/llm/test",
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+
+    assert test_response.status_code == 200
+    payload = test_response.get_json()
+    assert payload["status"] == "error"
+    assert "Selected model `gpt-4.1` was not returned" in payload["message"]
 
 
 def test_admin_can_deactivate_and_reactivate_user(
