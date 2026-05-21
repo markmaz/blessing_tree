@@ -172,6 +172,12 @@ def _template_action(payload: Mapping[str, Any], state: NormalizationState) -> d
     audience = (_optional_text(payload.get("audience")) or "GENERAL").upper()
     template_ref = f"draft-template-ref-{uuid.uuid4()}"
     state.template_refs[name.casefold()] = template_ref
+    subject_template = _resolve_template_subject(
+        payload,
+        template_name=name,
+        campaign_name=state.campaign_name,
+    )
+    body_template = _resolve_template_body(payload, template_name=name)
     return _action(
         "create_template",
         "communications",
@@ -182,8 +188,8 @@ def _template_action(payload: Mapping[str, Any], state: NormalizationState) -> d
             "template_key": _derive_template_key(name),
             "name": name,
             "audience": audience,
-            "subject_template": _required_text(payload.get("subject_template"), "subject_template"),
-            "body_template": _required_text(payload.get("body_template"), "body_template"),
+            "subject_template": subject_template,
+            "body_template": body_template,
             "is_active": bool(payload.get("is_active", True)),
         },
         {"api": "communication_template.create", "method": "POST"},
@@ -340,6 +346,46 @@ def _derive_template_key(name: str) -> str:
     cleaned = "".join(ch.lower() if ch.isalnum() else "_" for ch in name)
     normalized = "_".join(part for part in cleaned.split("_") if part)
     return normalized[:64] or f"template_{uuid.uuid4().hex[:8]}"
+
+
+def _resolve_template_subject(
+    payload: Mapping[str, Any],
+    *,
+    template_name: str,
+    campaign_name: str,
+) -> str:
+    for candidate_key in (
+        "subject_template",
+        "subject",
+        "subject_line",
+        "subjectLine",
+        "email_subject",
+        "emailSubject",
+        "title",
+    ):
+        text = _optional_text(payload.get(candidate_key))
+        if text:
+            return text
+    return f"{template_name} for {campaign_name}"
+
+
+def _resolve_template_body(payload: Mapping[str, Any], *, template_name: str) -> str:
+    for candidate_key in (
+        "body_template",
+        "body",
+        "content",
+        "message",
+        "email_body",
+        "emailBody",
+        "html_body",
+        "htmlBody",
+        "text_body",
+        "textBody",
+    ):
+        text = _optional_text(payload.get(candidate_key))
+        if text:
+            return text
+    raise ValueError(f"body_template is required for template {template_name}")
 
 
 def _required_text(value: object, field: str) -> str:

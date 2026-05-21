@@ -123,6 +123,7 @@ class CampaignStudioLlmDraftService:
             "Prefer fewer, concrete actions over broad speculation. "
             "Never create update_template actions. If the user seems to want to modify an existing template, "
             "return a warning and no action unless the request clearly asks to create a new template instead. "
+            "For create_template, always include payload.name, payload.subject_template, and payload.body_template. "
             "For create_communication_schedule, this is calendar planning only, not guaranteed delivery execution. "
             "Use milestone keys from context.milestone_catalog when possible. "
             "For assign_member_to_team, team_role_name is optional and can be omitted to mean plain Member participation."

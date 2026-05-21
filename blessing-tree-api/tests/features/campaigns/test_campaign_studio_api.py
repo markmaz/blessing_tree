@@ -364,6 +364,61 @@ def test_post_ai_draft_uses_configured_llm_when_available(
     assert payload["assumptions"] == ["Used the configured LLM for richer email drafting."]
 
 
+def test_post_ai_draft_repairs_common_llm_template_field_aliases(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    seed_llm_config(session)
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    monkeypatch.setattr(
+        campaign_studio_api_module._ai_draft_service.llm_drafts.runtime,
+        "_request_json",
+        lambda *args, **kwargs: {
+            "message": "Drafted with configured LLM.",
+            "assumptions": [],
+            "warnings": [],
+            "actions": [
+                {
+                    "action_type": "create_template",
+                    "payload": {
+                        "name": "Volunteer Welcome",
+                        "audience": "VOLUNTEER",
+                        "subject": "Welcome to {{campaign.name}}",
+                        "body": "Hello {{member.display_name}}, thanks for helping.",
+                    },
+                },
+            ],
+        },
+    )
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ai/draft",
+        json={
+            "section": "communications",
+            "prompt": "Create a volunteer welcome template",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["message"] == "Drafted with configured LLM."
+    assert payload["warnings"] == []
+    assert payload["actions"][0]["action_type"] == "create_template"
+    assert payload["actions"][0]["payload"]["subject_template"] == "Welcome to {{campaign.name}}"
+    assert payload["actions"][0]["payload"]["body_template"] == "Hello {{member.display_name}}, thanks for helping."
+
+
 def test_post_ai_draft_falls_back_when_configured_llm_fails(
     app: Flask,
     monkeypatch: pytest.MonkeyPatch,

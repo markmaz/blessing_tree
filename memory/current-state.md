@@ -52,6 +52,7 @@ Last updated: 2026-05-21
   - Campaign Studio AI phase 4 now supports Readiness fix bundles, including cross-section actions for settings, milestones, templates, schedule placement, and blocked fix-plan cards when user-specific input is still required
   - Campaign Studio AI phase 5 now supports real Settings-section actions, including lifecycle/status suggestions, direct campaign settings update drafts, and inline edit-before-apply for settings/status payloads in the AI drawer
   - Campaign Studio AI now uses the configured admin LLM as the primary draft engine and falls back to the deterministic backend draft logic when the LLM is missing, disabled, unavailable, or returns an invalid structured response
+  - the LLM draft normalizer now repairs common communications template field aliases like `subject`, `subject_line`, `body`, and `content` instead of dropping to deterministic fallback when the configured LLM omits the exact `subject_template` or `body_template` keys
   - Campaign Studio now uses a compact icon-only section rail at medium widths, and the schedule calendar/AI draft controls have responsive overflow guards for narrower layouts
   - Campaign Studio AI draft type selection now uses a compact horizontal segmented control in the rail instead of stacked mini-cards
   - Campaign Studio AI now uses a more Query Forge-like drawer pattern with a conversation thread, prompt copy action, prompt suggestions, clear/new-session tools, and a generic composer instead of a schedule-only `Draft Calendar Change` action
