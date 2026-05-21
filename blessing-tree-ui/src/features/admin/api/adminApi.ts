@@ -4,6 +4,7 @@ import type {
   AdminFeaturesPayload,
   AdminHealthPayload,
   AdminInvitation,
+  AdminLlmModelsPayload,
   AdminLlmPayload,
   AdminUsersPayload,
 } from '@/features/admin/model/adminTypes';
@@ -204,6 +205,10 @@ export async function testAdminLlmConfig(): Promise<AdminHealthPayload['checks']
   return apiFetchJson<AdminHealthPayload['checks']['llm']>('/api/v1/admin/llm/test', {
     method: 'POST',
   });
+}
+
+export async function fetchAdminLlmModels(): Promise<AdminLlmModelsPayload> {
+  return apiFetchJson<AdminLlmModelsPayload>('/api/v1/admin/llm/models');
 }
 
 export async function fetchAdminHealth(): Promise<AdminHealthPayload> {

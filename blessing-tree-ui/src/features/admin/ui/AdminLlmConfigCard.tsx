@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  fetchAdminLlmModels,
   fetchAdminLlmConfig,
   saveAdminLlmConfig,
   testAdminLlmConfig,
@@ -23,6 +24,7 @@ export function AdminLlmConfigCard() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState('');
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -31,6 +33,10 @@ export function AdminLlmConfigCard() {
         const nextPayload = await fetchAdminLlmConfig();
         if (active) {
           setPayload(nextPayload);
+        }
+        const modelPayload = await fetchAdminLlmModels().catch(() => null);
+        if (active && modelPayload) {
+          setAvailableModels(modelPayload.models ?? []);
         }
       } catch (loadError) {
         if (active) {
@@ -57,8 +63,13 @@ export function AdminLlmConfigCard() {
 
   const { configuration, providerCatalog } = payload;
   const showOpenAiPresets = isOpenAiProvider(configuration.provider);
-  const openAiModelSelectValue = getOpenAiModelSelectValue(configuration.model);
-  const showCustomOpenAiModel = showOpenAiPresets && openAiModelSelectValue === CUSTOM_MODEL_VALUE;
+  const providerModels = availableModels.length > 0 ? availableModels : showOpenAiPresets ? [...OPENAI_MODEL_PRESETS] : [];
+  const openAiModelSelectValue = providerModels.includes(configuration.model)
+    ? configuration.model
+    : getOpenAiModelSelectValue(configuration.model);
+  const showCustomOpenAiModel = providerModels.length > 0
+    ? openAiModelSelectValue === CUSTOM_MODEL_VALUE
+    : showOpenAiPresets && openAiModelSelectValue === CUSTOM_MODEL_VALUE;
 
   const save = async () => {
     setIsSaving(true);
@@ -74,6 +85,10 @@ export function AdminLlmConfigCard() {
         isEnabled: configuration.isEnabled,
       });
       setPayload({ ...payload, configuration: nextConfiguration });
+      const modelPayload = await fetchAdminLlmModels().catch(() => null);
+      if (modelPayload) {
+        setAvailableModels(modelPayload.models ?? []);
+      }
       setApiKey('');
       setMessage('LLM configuration saved.');
     } catch (saveError) {
@@ -90,6 +105,10 @@ export function AdminLlmConfigCard() {
     try {
       const result = await testAdminLlmConfig();
       setMessage(result.message ?? 'LLM connection test complete.');
+      const modelPayload = await fetchAdminLlmModels().catch(() => null);
+      if (modelPayload) {
+        setAvailableModels(modelPayload.models ?? []);
+      }
     } catch (testError) {
       setError(testError instanceof Error ? testError.message : 'Unable to test LLM configuration.');
     } finally {
@@ -203,13 +222,16 @@ export function AdminLlmConfigCard() {
                   })
                 }
               >
-                {OPENAI_MODEL_PRESETS.map((model) => (
+                {providerModels.map((model) => (
                   <option key={model} value={model}>
                     {model}
                   </option>
                 ))}
                 <option value={CUSTOM_MODEL_VALUE}>Custom model</option>
               </select>
+              {availableModels.length > 0 ? (
+                <div className="form-text">Loaded from the configured provider.</div>
+              ) : null}
               {showCustomOpenAiModel ? (
                 <input
                   id="admin-llm-model-custom"
@@ -226,18 +248,62 @@ export function AdminLlmConfigCard() {
               ) : null}
             </>
           ) : (
-            <input
-              id="admin-llm-model"
-              className="form-control"
-              value={configuration.model}
-              onChange={(event) =>
-                setPayload({
-                  ...payload,
-                  configuration: { ...configuration, model: event.target.value },
-                })
-              }
-              placeholder="gpt-4o-mini"
-            />
+            providerModels.length > 0 ? (
+              <>
+                <select
+                  id="admin-llm-model"
+                  className="form-select"
+                  value={providerModels.includes(configuration.model) ? configuration.model : CUSTOM_MODEL_VALUE}
+                  onChange={(event) =>
+                    setPayload({
+                      ...payload,
+                      configuration: {
+                        ...configuration,
+                        model:
+                          event.target.value === CUSTOM_MODEL_VALUE
+                            ? ''
+                            : event.target.value,
+                      },
+                    })
+                  }
+                >
+                  {providerModels.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                  <option value={CUSTOM_MODEL_VALUE}>Custom model</option>
+                </select>
+                <div className="form-text">Loaded from the configured provider.</div>
+                {configuration.model === '' || !providerModels.includes(configuration.model) ? (
+                  <input
+                    id="admin-llm-model-custom"
+                    className="form-control mt-2"
+                    value={configuration.model}
+                    onChange={(event) =>
+                      setPayload({
+                        ...payload,
+                        configuration: { ...configuration, model: event.target.value },
+                      })
+                    }
+                    placeholder="Enter custom model"
+                  />
+                ) : null}
+              </>
+            ) : (
+              <input
+                id="admin-llm-model"
+                className="form-control"
+                value={configuration.model}
+                onChange={(event) =>
+                  setPayload({
+                    ...payload,
+                    configuration: { ...configuration, model: event.target.value },
+                  })
+                }
+                placeholder="gpt-4o-mini"
+              />
+            )
           )}
         </div>
         <div className="col-12 col-md-6">

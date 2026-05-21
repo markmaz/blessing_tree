@@ -117,6 +117,15 @@ class AdminLlmTestResource(Resource):
             return _llm_service.test_configuration(db), 200
 
 
+@admin_ns.route("/llm/models")
+class AdminLlmModelsResource(Resource):
+    @token_required
+    @require_app_admin()
+    def get(self):
+        with SessionLocal() as db:
+            return _llm_service.list_available_models(db), 200
+
+
 @admin_ns.route("/health")
 class AdminHealthResource(Resource):
     @token_required

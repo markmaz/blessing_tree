@@ -75,6 +75,21 @@ class AdminLlmService:
             }
         return self._probe_config(config)
 
+    def list_available_models(self, db: Session) -> dict[str, object]:
+        config = self.get_configuration(db)
+        if config is None:
+            return {
+                "configured": False,
+                "models": [],
+                "message": "LLM is not configured.",
+            }
+        return {
+            "configured": True,
+            "provider": config.provider,
+            "model": config.model,
+            "models": self._fetch_available_models(config),
+        }
+
     def _probe_config(self, config: AdminLlmConfiguration) -> dict[str, object]:
         start = datetime.now(UTC)
         generation_message = "LLM connection and generation test succeeded."

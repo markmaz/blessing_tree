@@ -3,12 +3,14 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminLlmConfigCard } from '@/features/admin/ui/AdminLlmConfigCard';
 import {
+  fetchAdminLlmModels,
   fetchAdminLlmConfig,
   saveAdminLlmConfig,
   testAdminLlmConfig,
 } from '@/features/admin/api/adminApi';
 
 vi.mock('@/features/admin/api/adminApi', () => ({
+  fetchAdminLlmModels: vi.fn(),
   fetchAdminLlmConfig: vi.fn(),
   saveAdminLlmConfig: vi.fn(),
   testAdminLlmConfig: vi.fn(),
@@ -39,6 +41,12 @@ describe('AdminLlmConfigCard', () => {
         },
       ],
     });
+    vi.mocked(fetchAdminLlmModels).mockResolvedValue({
+      configured: true,
+      provider: 'OPENAI',
+      model: 'gpt-4.1-mini',
+      models: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4o', 'gpt-4o-mini'],
+    });
     vi.mocked(saveAdminLlmConfig).mockResolvedValue({
       configured: true,
       provider: 'OPENAI',
@@ -64,6 +72,7 @@ describe('AdminLlmConfigCard', () => {
     expect(screen.getByText(/using the default openai api endpoint/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/^base url$/i)).not.toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /model/i })).toHaveValue('gpt-4.1-mini');
+    expect(screen.getByText(/loaded from the configured provider/i)).toBeInTheDocument();
   });
 
   it('sends the default OpenAI base url on save', async () => {
@@ -87,12 +96,18 @@ describe('AdminLlmConfigCard', () => {
 
   it('shows editable base url and freeform model for OpenAI-compatible providers', async () => {
     const user = userEvent.setup();
+    vi.mocked(fetchAdminLlmModels).mockResolvedValue({
+      configured: true,
+      provider: 'OPENAI_COMPATIBLE',
+      model: 'demo-model',
+      models: ['demo-model', 'alt-model'],
+    });
     render(<AdminLlmConfigCard />);
 
     expect(await screen.findByText(/llm configuration/i)).toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText(/provider/i), 'OPENAI_COMPATIBLE');
 
     expect(screen.getByLabelText(/^base url$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^model$/i)).toHaveAttribute('placeholder', 'gpt-4o-mini');
+    expect(screen.getByRole('combobox', { name: /model/i })).toBeInTheDocument();
   });
 });

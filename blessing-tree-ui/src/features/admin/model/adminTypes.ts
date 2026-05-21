@@ -89,6 +89,14 @@ export interface AdminLlmPayload {
   providerCatalog: AdminLlmProviderCatalogItem[];
 }
 
+export interface AdminLlmModelsPayload {
+  configured: boolean;
+  provider?: string;
+  model?: string;
+  models: string[];
+  message?: string;
+}
+
 export interface AdminFeaturesPayload {
   features: AdminFeatureFlag[];
 }
