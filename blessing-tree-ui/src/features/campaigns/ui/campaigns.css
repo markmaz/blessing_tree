@@ -683,7 +683,7 @@
 .campaign-studio__readiness-summary-card {
   flex: 0 0 auto;
   padding: 0.8rem 0.85rem;
-  min-width: 7rem;
+  min-width: 8.5rem;
 }
 
 .campaign-studio__readiness-summary-card .campaign-studio__stat-label {
@@ -704,7 +704,7 @@
 }
 
 .campaign-studio__readiness-summary-card--overall {
-  min-width: 10rem;
+  min-width: 12rem;
 }
 
 .campaign-studio__readiness-group-card,
