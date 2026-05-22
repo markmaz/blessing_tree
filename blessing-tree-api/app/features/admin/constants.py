@@ -5,8 +5,8 @@ DEFAULT_INVITE_TTL_HOURS = 24 * 7
 FEATURE_FLAG_CATALOG = (
     {
         "feature_key": "families",
-        "label": "Families",
-        "description": "Show the Families area in the main application navigation.",
+        "label": "People",
+        "description": "Show the campaign-aware People workspace in the main application navigation.",
         "default_enabled": True,
     },
     {

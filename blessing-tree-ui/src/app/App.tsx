@@ -17,7 +17,7 @@ import { DashboardPage } from '@/pages/DashboardPage';
 import { CampaignsPage } from '@/pages/CampaignsPage';
 import { CampaignDetailPage } from '@/pages/CampaignDetailPage';
 import { CampaignStudioPage } from '@/pages/CampaignStudioPage';
-import { FamiliesPage } from '@/pages/FamiliesPage';
+import { LegacyFamiliesRedirectPage, PeoplePage } from '@/pages/PeoplePage';
 import { DonationsPage } from '@/pages/DonationsPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { AdminPage } from '@/pages/AdminPage';
@@ -59,10 +59,18 @@ export function App() {
                   element={<CampaignStudioPage />}
                 />
                 <Route
+                  path={routes.CAMPAIGN_PEOPLE.slice(1)}
+                  element={
+                    <FeatureGate featureKey="families">
+                      <PeoplePage />
+                    </FeatureGate>
+                  }
+                />
+                <Route
                   path={routes.FAMILIES.slice(1)}
                   element={
                     <FeatureGate featureKey="families">
-                      <FamiliesPage />
+                      <LegacyFamiliesRedirectPage />
                     </FeatureGate>
                   }
                 />

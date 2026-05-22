@@ -1,0 +1,40 @@
+.campaign-people-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+.campaign-people-stats .campaign-studio__stat-card {
+  padding: 0.8rem 0.9rem;
+}
+
+.campaign-people-stats .campaign-studio__stat-label {
+  font-size: 0.72rem;
+  margin-bottom: 0.2rem;
+}
+
+.campaign-people-stats .campaign-studio__stat-value {
+  font-size: 1.55rem;
+}
+
+.campaign-people-drawer__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.campaign-people-table__status {
+  color: var(--blessing-text-light);
+}
+
+@media (max-width: 991.98px) {
+  .campaign-people-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575.98px) {
+  .campaign-people-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

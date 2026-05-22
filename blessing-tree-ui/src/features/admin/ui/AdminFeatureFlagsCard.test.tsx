@@ -20,8 +20,8 @@ describe('AdminFeatureFlagsCard', () => {
       features: [
         {
           featureKey: 'families',
-          label: 'Families',
-          description: 'Show the Families area.',
+          label: 'People',
+          description: 'Show the campaign-aware People workspace in the main application navigation.',
           isEnabled: true,
           createdAt: '',
           updatedAt: '',
@@ -34,8 +34,8 @@ describe('AdminFeatureFlagsCard', () => {
     });
     vi.mocked(updateFeatureFlag).mockResolvedValue({
       featureKey: 'families',
-      label: 'Families',
-      description: 'Show the Families area.',
+      label: 'People',
+      description: 'Show the campaign-aware People workspace in the main application navigation.',
       isEnabled: false,
       createdAt: '',
       updatedAt: '',
@@ -49,8 +49,8 @@ describe('AdminFeatureFlagsCard', () => {
       features: [
         {
           featureKey: 'families',
-          label: 'Families',
-          description: 'Show the Families area.',
+          label: 'People',
+          description: 'Show the campaign-aware People workspace in the main application navigation.',
           isEnabled: true,
           createdAt: '',
           updatedAt: '',

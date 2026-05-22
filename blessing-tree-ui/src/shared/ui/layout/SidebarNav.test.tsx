@@ -5,6 +5,7 @@ import { SidebarNav } from '@/shared/ui/layout/SidebarNav';
 
 const mockUseAuth = vi.fn();
 const mockUseAppFeatures = vi.fn();
+const mockUseCampaigns = vi.fn();
 
 vi.mock('@/features/auth/model/authContext', () => ({
   useAuth: () => mockUseAuth(),
@@ -14,13 +15,21 @@ vi.mock('@/features/admin/model/appFeaturesContext', () => ({
   useAppFeatures: () => mockUseAppFeatures(),
 }));
 
+vi.mock('@/features/campaigns/model/campaignContext', () => ({
+  useCampaigns: () => mockUseCampaigns(),
+}));
+
 describe('SidebarNav', () => {
   beforeEach(() => {
     mockUseAuth.mockReset();
     mockUseAppFeatures.mockReset();
+    mockUseCampaigns.mockReset();
     mockUseAuth.mockReturnValue({ role: 'ADMIN' });
     mockUseAppFeatures.mockReturnValue({
       isFeatureEnabled: () => true,
+    });
+    mockUseCampaigns.mockReturnValue({
+      selectedCampaignId: 'campaign-123',
     });
   });
 

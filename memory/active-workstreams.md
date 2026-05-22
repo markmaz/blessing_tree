@@ -5,7 +5,7 @@ Last updated: 2026-05-21
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Recipient backend phases 1 through 3 are implemented, and the next step is the frontend campaign-aware `People` workspace on top of the new aggregate and CRUD APIs
+- Current step: Recipient phase 4 is now implemented with the campaign-aware `People` workspace, and the next step is phase 5 wishlist/fulfillment alignment plus communications audience integration
 
 ## Recently Completed
 
@@ -101,6 +101,7 @@ Last updated: 2026-05-21
 - Documented the concrete recipient implementation sequence, from schema refinement through APIs, the campaign-aware `People` workspace, wishlist/fulfillment alignment, and communications audience integration
 - Implemented recipient phase 1 backend refinement with `V014__Recipient_Refinement.sql`, refined ORM models, recipient-domain constants, and backend model tests
 - Implemented recipient backend phases 2 and 3 with a new recipient feature package, aggregate `people-workspace` payload, and campaign-scoped group/contact/recipient/wishlist CRUD APIs
+- Implemented recipient phase 4 with a campaign-aware `People` workspace, selected-campaign `People` navigation, sortable `Households & Facilities` and `People` tables, right-side group/recipient drawers, contact management, and recipient-centered wishlist editing
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Replaced the old placeholder automation warning with a real execution layer:

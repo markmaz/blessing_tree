@@ -72,7 +72,8 @@ Last updated: 2026-05-21
   - a Vitest + Testing Library harness now exists for automated frontend tests
   - app admins can now create campaigns from the campaign library UI
   - campaign managers and app admins can now update campaign metadata from the detail page and Studio settings section
-  - page shells still exist for families, donations, reports, and admin
+  - the placeholder Families surface is now replaced by a campaign-aware People workspace with separate `Households & Facilities` and `People` tables plus drawers for groups, contacts, recipients, and wishlists
+  - page shells still exist for donations, reports, and admin
   - shared authenticated client exists for protected data APIs
 
 ## Current Runtime Facts

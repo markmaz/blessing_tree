@@ -12,6 +12,7 @@ export const routes = {
   CAMPAIGNS: '/campaigns',
   CAMPAIGN_DETAIL: '/campaigns/:campaignId',
   CAMPAIGN_STUDIO: '/campaigns/:campaignId/studio',
+  CAMPAIGN_PEOPLE: '/campaigns/:campaignId/people',
   FAMILIES: '/families',
   DONATIONS: '/donations',
   REPORTS: '/reports',
@@ -28,4 +29,8 @@ export function buildCampaignDetailPath(campaignId: string): string {
 
 export function buildCampaignStudioPath(campaignId: string): string {
   return `/campaigns/${campaignId}/studio`;
+}
+
+export function buildCampaignPeoplePath(campaignId: string): string {
+  return `/campaigns/${campaignId}/people`;
 }

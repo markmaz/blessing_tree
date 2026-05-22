@@ -1,7 +1,8 @@
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { routes } from '@/app/routes';
+import { buildCampaignPeoplePath, routes } from '@/app/routes';
 import { useAppFeatures } from '@/features/admin/model/appFeaturesContext';
 import { useAuth } from '@/features/auth/model/authContext';
+import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { isAppAdminRole } from '@/features/campaigns/model/campaignPermissions';
 
 interface SidebarNavProps {
@@ -22,8 +23,8 @@ const navItems = [
     icon: 'bi-stars',
   },
   {
-    label: 'Families',
-    to: routes.FAMILIES,
+    label: 'People',
+    to: routes.CAMPAIGNS,
     icon: 'bi-people',
   },
   {
@@ -69,8 +70,17 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
   const location = useLocation();
   const { role } = useAuth();
   const { isFeatureEnabled } = useAppFeatures();
-  const visibleItems = navItems.filter((item) => {
-    if (item.to === routes.FAMILIES) return isFeatureEnabled('families');
+  const { selectedCampaignId } = useCampaigns();
+  const resolvedNavItems = navItems.map((item) =>
+    item.label === 'People'
+      ? {
+          ...item,
+          to: selectedCampaignId ? buildCampaignPeoplePath(selectedCampaignId) : routes.CAMPAIGNS,
+        }
+      : item
+  );
+  const visibleItems = resolvedNavItems.filter((item) => {
+    if (item.label === 'People') return isFeatureEnabled('families');
     if (item.to === routes.DONATIONS) return isFeatureEnabled('donations');
     if (item.to === routes.REPORTS) return isFeatureEnabled('reports');
     if (item.to === routes.ADMIN) return isAppAdminRole(role);
@@ -97,8 +107,11 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
               end={item.end}
               className={() =>
                 `sidebar-link nav-link ${
+                  (item.label === 'People' &&
+                    (location.pathname.startsWith('/campaigns/') && location.pathname.endsWith('/people'))) ||
                   item.children?.some((child) => location.pathname.startsWith(child.to)) ||
-                  (!item.children?.length &&
+                  (item.label !== 'People' &&
+                    !item.children?.length &&
                     (item.end ? location.pathname === item.to : location.pathname.startsWith(item.to)))
                     ? 'active'
                     : ''

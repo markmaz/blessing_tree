@@ -15,11 +15,22 @@ class FeatureFlagService:
         }
         changed = False
         for item in FEATURE_FLAG_CATALOG:
-            if item["feature_key"] in existing:
+            feature_key = str(item["feature_key"])
+            if feature_key in existing:
+                existing_flag = existing[feature_key]
+                next_label = str(item["label"])
+                next_description = str(item["description"])
+                if (
+                    existing_flag.label != next_label
+                    or existing_flag.description != next_description
+                ):
+                    existing_flag.label = next_label
+                    existing_flag.description = next_description
+                    changed = True
                 continue
             db.add(
                 AppFeatureFlag(
-                    feature_key=str(item["feature_key"]),
+                    feature_key=feature_key,
                     label=str(item["label"]),
                     description=str(item["description"]),
                     is_enabled=bool(item["default_enabled"]),
