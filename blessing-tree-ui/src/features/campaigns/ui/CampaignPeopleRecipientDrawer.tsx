@@ -84,6 +84,17 @@ const genderOptions = [
   { value: 'OTHER', label: 'Other' },
 ] as const;
 
+function buildDisplayLabel(firstName: string | null | undefined, lastName: string | null | undefined): string {
+  return [firstName?.trim(), lastName?.trim()].filter(Boolean).join(' ');
+}
+
+function deriveBirthYear(age: number | null | undefined): number | null {
+  if (age === null || age === undefined || Number.isNaN(age)) {
+    return null;
+  }
+  return new Date().getFullYear() - age;
+}
+
 function buildRecipientDraft(
   recipient: CampaignRecipient | null,
   initialGroupId: string | null
@@ -164,6 +175,13 @@ export function CampaignPeopleRecipientDrawer({
       { value: currentGender, label: `Current value: ${currentGender}` },
     ];
   }, [recipientDraft.gender]);
+  const computedDisplayLabel = useMemo(() => {
+    const generated = buildDisplayLabel(recipientDraft.firstName, recipientDraft.lastName);
+    return generated || recipientDraft.displayLabel || '';
+  }, [recipientDraft.displayLabel, recipientDraft.firstName, recipientDraft.lastName]);
+  const computedBirthYear = useMemo(() => {
+    return deriveBirthYear(recipientDraft.age) ?? recipientDraft.birthYear ?? null;
+  }, [recipientDraft.age, recipientDraft.birthYear]);
 
   const recipientProgram = selectedGroup?.groupType === 'ADULT_PROGRAM'
     ? { recipientKind: 'ADULT' as const, programType: 'ADULT_PROGRAM' as const }
@@ -199,8 +217,8 @@ export function CampaignPeopleRecipientDrawer({
       setRecipientError('Choose a household or adult program first.');
       return;
     }
-    if (!recipientDraft.displayLabel.trim()) {
-      setRecipientError('Display name is required.');
+    if (!computedDisplayLabel.trim()) {
+      setRecipientError('First or last name is required.');
       return;
     }
     if (!recipientProgram) {
@@ -213,11 +231,12 @@ export function CampaignPeopleRecipientDrawer({
       {
         ...recipientDraft,
         recipientGroupId: lockedGroupId ?? recipientDraft.recipientGroupId,
-        displayLabel: recipientDraft.displayLabel.trim(),
+        displayLabel: computedDisplayLabel.trim(),
         recipientKind: recipientProgram.recipientKind,
         programType: recipientProgram.programType,
         firstName: recipientDraft.firstName?.trim() || null,
         lastName: recipientDraft.lastName?.trim() || null,
+        birthYear: computedBirthYear,
         gender: recipientDraft.gender?.trim() || null,
         addressLine1: recipientDraft.addressLine1?.trim() || null,
         addressLine2: recipientDraft.addressLine2?.trim() || null,
@@ -419,14 +438,8 @@ export function CampaignPeopleRecipientDrawer({
                   : 'Display Name'}
               <input
                 className="form-control mt-2"
-                value={recipientDraft.displayLabel}
-                onChange={(event) =>
-                  setRecipientDraft((currentValue) => ({
-                    ...currentValue,
-                    displayLabel: event.target.value,
-                  }))
-                }
-                disabled={!canEdit}
+                value={computedDisplayLabel}
+                disabled
               />
             </label>
 
@@ -471,6 +484,7 @@ export function CampaignPeopleRecipientDrawer({
                   setRecipientDraft((currentValue) => ({
                     ...currentValue,
                     age: event.target.value ? Number(event.target.value) : null,
+                    birthYear: event.target.value ? deriveBirthYear(Number(event.target.value)) : null,
                   }))
                 }
                 disabled={!canEdit}
@@ -484,14 +498,8 @@ export function CampaignPeopleRecipientDrawer({
                 type="number"
                 min="1900"
                 max="3000"
-                value={recipientDraft.birthYear ?? ''}
-                onChange={(event) =>
-                  setRecipientDraft((currentValue) => ({
-                    ...currentValue,
-                    birthYear: event.target.value ? Number(event.target.value) : null,
-                  }))
-                }
-                disabled={!canEdit}
+                value={computedBirthYear ?? ''}
+                disabled
               />
             </label>
 
