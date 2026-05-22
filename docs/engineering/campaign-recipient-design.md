@@ -5,6 +5,8 @@ Last updated: 2026-05-21
 ## Status
 
 - Proposed and accepted for implementation planning on 2026-05-21
+- Implementation sequencing is now documented in:
+  - `docs/engineering/campaign-recipient-implementation-plan.md`
 
 Related design:
 

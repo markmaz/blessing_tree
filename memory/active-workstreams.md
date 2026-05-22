@@ -5,7 +5,7 @@ Last updated: 2026-05-21
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Stabilization is complete and the next feature slice is the recipient domain, starting from a refined unified model that supports both family children and nursing-home adults without splitting the downstream gift pipeline
+- Current step: Stabilization is complete and the next feature slice is the recipient domain, with the refined unified model and phased implementation plan now defined for the future `People` workspace
 
 ## Recently Completed
 
@@ -98,6 +98,7 @@ Last updated: 2026-05-21
 - Added Playwright browser E2E coverage for invite onboarding, create-from-previous-campaign, and the communications template builder
 - Tightened campaign visibility and campaign-creator setup so member/access-role visibility is the preferred path and newly created campaigns always seed the creator as a campaign member with `CAMPAIGN_MANAGER`
 - Documented the concrete recipient-domain direction: keep a unified campaign-scoped recipient model, treat parents/guardians/facility staff as contacts rather than recipients, and evolve the schema toward explicit `program_type` support for `CHILD_FAMILY` and `NURSING_HOME`
+- Documented the concrete recipient implementation sequence, from schema refinement through APIs, the campaign-aware `People` workspace, wishlist/fulfillment alignment, and communications audience integration
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Replaced the old placeholder automation warning with a real execution layer:
@@ -138,12 +139,12 @@ Last updated: 2026-05-21
 
 ## Immediate Next Steps
 
-1. Turn the recipient design into an implementation plan and begin the backend recipient refinement slice
-2. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
-3. Expand communications audiences to use teams, team roles, and member filters as first-class targets
-4. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
-5. Retire the remaining legacy `campaign_user_role` compatibility paths after the Team/member model is fully authoritative everywhere
-6. Add any remaining provider-specific onboarding polish once real Google/Yahoo credentials are available for a live smoke pass
+1. Begin recipient phase 1: schema refinement for groups, contacts, recipients, wishlists, and wishlist items
+2. Build the backend recipient feature package and aggregate People workspace APIs
+3. Replace the placeholder family UI with the campaign-aware `People` workspace
+4. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
+5. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
+6. Retire the remaining legacy `campaign_user_role` compatibility paths after the Team/member model is fully authoritative everywhere
 
 ## Blockers Or Ambiguities
 

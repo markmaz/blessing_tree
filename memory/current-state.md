@@ -95,6 +95,7 @@ Last updated: 2026-05-21
   - `docs/engineering/campaign-readiness-design.md`
   - `docs/engineering/campaign-studio-ai-actions-design.md`
   - `docs/engineering/campaign-recipient-design.md`
+  - `docs/engineering/campaign-recipient-implementation-plan.md`
   - `docs/engineering/rbac-design.md`
   - `docs/engineering/rbac-implementation-plan.md`
   - `docs/engineering/campaign-schedule-design.md`
