@@ -4,11 +4,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { CampaignPeopleGroupDrawer } from '@/features/campaigns/ui/CampaignPeopleGroupDrawer';
 import type { CampaignPeopleGroup } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 
-const adultProgramGroup: CampaignPeopleGroup = {
+const organizationGroup: CampaignPeopleGroup = {
   id: 'group-1',
   campaignId: 'campaign-1',
-  groupType: 'ADULT_PROGRAM',
+  groupType: 'ORGANIZATION',
   groupName: 'Maple Grove',
+  organizationType: 'SENIOR_PROGRAM',
   programAbbreviation: 'MG',
   intakeSource: null,
   externalReference: null,
@@ -61,7 +62,7 @@ describe('CampaignPeopleGroupDrawer', () => {
     expect(screen.getByLabelText('Family Name')).toBeInTheDocument();
   });
 
-  it('uses facility-specific labels and can apply an address suggestion', async () => {
+  it('uses organization-specific labels and can apply an address suggestion', async () => {
     const user = userEvent.setup();
     const onSearchAddresses = vi.fn().mockResolvedValue([
       {
@@ -80,7 +81,7 @@ describe('CampaignPeopleGroupDrawer', () => {
         canEdit
         group={null}
         groups={[]}
-        initialGroupType="ADULT_PROGRAM"
+        initialGroupType="ORGANIZATION"
         onClose={vi.fn()}
         onSaveGroup={vi.fn()}
         onSaveContact={vi.fn()}
@@ -92,8 +93,8 @@ describe('CampaignPeopleGroupDrawer', () => {
       />
     );
 
-    expect(screen.getByRole('heading', { name: 'Add Adult Program' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Program Name')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Add Organization' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Organization Name')).toBeInTheDocument();
     expect(screen.getByLabelText('Program Abbreviation')).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Address Line 1'), '123 Main');
@@ -110,7 +111,7 @@ describe('CampaignPeopleGroupDrawer', () => {
     expect(screen.getByDisplayValue('78701')).toBeInTheDocument();
   });
 
-  it('uses adult-program-specific labels for program intake', () => {
+  it('uses organization-specific labels for organization intake', () => {
     render(
       <CampaignPeopleGroupDrawer
         isOpen
@@ -118,7 +119,7 @@ describe('CampaignPeopleGroupDrawer', () => {
         canEdit
         group={null}
         groups={[]}
-        initialGroupType="ADULT_PROGRAM"
+        initialGroupType="ORGANIZATION"
         onClose={vi.fn()}
         onSaveGroup={vi.fn()}
         onSaveContact={vi.fn()}
@@ -130,11 +131,11 @@ describe('CampaignPeopleGroupDrawer', () => {
       />
     );
 
-    expect(screen.getByRole('heading', { name: 'Add Adult Program' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Program Name')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Add Organization' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Organization Name')).toBeInTheDocument();
   });
 
-  it('does not search just by opening an existing facility record with an address', async () => {
+  it('does not search just by opening an existing organization record with an address', async () => {
     const onSearchAddresses = vi.fn().mockResolvedValue([]);
 
     render(
@@ -142,8 +143,8 @@ describe('CampaignPeopleGroupDrawer', () => {
         isOpen
         isSaving={false}
         canEdit
-        group={adultProgramGroup}
-        groups={[adultProgramGroup]}
+        group={organizationGroup}
+        groups={[organizationGroup]}
         onClose={vi.fn()}
         onSaveGroup={vi.fn()}
         onSaveContact={vi.fn()}
@@ -162,7 +163,7 @@ describe('CampaignPeopleGroupDrawer', () => {
     expect(onSearchAddresses).not.toHaveBeenCalled();
   });
 
-  it('shows possible duplicate groups while creating a new adult program', async () => {
+  it('shows possible duplicate groups while creating a new organization', async () => {
     const user = userEvent.setup();
     const onSelectGroup = vi.fn();
 
@@ -172,8 +173,8 @@ describe('CampaignPeopleGroupDrawer', () => {
         isSaving={false}
         canEdit
         group={null}
-        groups={[adultProgramGroup]}
-        initialGroupType="ADULT_PROGRAM"
+        groups={[organizationGroup]}
+        initialGroupType="ORGANIZATION"
         onClose={vi.fn()}
         onSaveGroup={vi.fn()}
         onSaveContact={vi.fn()}
@@ -185,7 +186,7 @@ describe('CampaignPeopleGroupDrawer', () => {
       />
     );
 
-    await user.type(screen.getByLabelText('Program Name'), 'Maple Grove');
+    await user.type(screen.getByLabelText('Organization Name'), 'Maple Grove');
 
     expect(screen.getByText('Possible existing records')).toBeInTheDocument();
     await user.click(screen.getAllByRole('button', { name: /maple grove/i })[0]);

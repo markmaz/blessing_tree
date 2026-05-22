@@ -1849,8 +1849,8 @@ def _detect_template_audience(prompt: str) -> str:
         return "MANAGER"
     if any(term in normalized for term in ("parent", "guardian", "household", "family")):
         return "HOUSEHOLD_CONTACT"
-    if any(term in normalized for term in ("facility", "resident", "nursing home", "care facility")):
-        return "ADULT_PROGRAM_CONTACT"
+    if any(term in normalized for term in ("facility", "resident", "nursing home", "care facility", "organization", "orphanage")):
+        return "ORGANIZATION_CONTACT"
     if any(term in normalized for term in ("primary contact", "coordinator contact", "group contact")):
         return "GROUP_PRIMARY_CONTACT"
     if any(term in normalized for term in ("adult recipient", "recipient direct", "senior at home")):
@@ -1974,7 +1974,7 @@ def _build_template_body(
         "VOLUNTEER": "{{volunteer.first_name}}",
         "MANAGER": "{{manager.name}}",
         "HOUSEHOLD_CONTACT": "{{contact.first_name}}",
-        "ADULT_PROGRAM_CONTACT": "{{contact.first_name}}",
+        "ORGANIZATION_CONTACT": "{{contact.first_name}}",
         "GROUP_PRIMARY_CONTACT": "{{contact.first_name}}",
         "ADULT_RECIPIENT_DIRECT": "{{recipient.first_name}}",
         "GENERAL": "there",

@@ -17,7 +17,7 @@ export function toRecipientGroupTypeLabel(value: RecipientGroupType): string {
   if (value === 'HOUSEHOLD') {
     return 'Household';
   }
-  return 'Adult Program';
+  return 'Organization';
 }
 
 export function toRecipientGroupStatusLabel(value: RecipientGroupStatus): string {
@@ -28,7 +28,10 @@ export function toRecipientProgramTypeLabel(value: RecipientProgramType): string
   if (value === 'CHILD_FAMILY') {
     return 'Family Child';
   }
-  return 'Adult Program Participant';
+  if (value === 'ORGANIZATION_CHILD') {
+    return 'Organization Child';
+  }
+  return 'Organization Adult';
 }
 
 export function toRecipientKindLabel(value: RecipientKind): string {

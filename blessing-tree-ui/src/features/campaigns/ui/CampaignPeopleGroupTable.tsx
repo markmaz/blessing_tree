@@ -60,7 +60,7 @@ export function CampaignPeopleGroupTable({
   };
 
   if (groups.length === 0) {
-    return <div className="campaign-studio__empty-note">No households or adult programs match the current search.</div>;
+    return <div className="campaign-studio__empty-note">No households or organizations match the current search.</div>;
   }
 
   return (

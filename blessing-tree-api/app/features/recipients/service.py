@@ -17,6 +17,7 @@ from app.features.recipients.validation import (
     validate_group_status,
     validate_group_type,
     validate_intake_method,
+    validate_organization_type,
     validate_optional_datetime,
     validate_optional_email,
     validate_optional_int,
@@ -43,8 +44,10 @@ from app.models.wishlist import Wishlist
 from app.models.wishlist_item import WishlistItem
 from app.models.fulfillment import Fulfillment
 from app.models.recipient_constants import (
+    RECIPIENT_GROUP_TYPE_ORGANIZATION,
     RECIPIENT_GROUP_STATUS_ACTIVE,
     RECIPIENT_KIND_ADULT,
+    RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
     WISHLIST_ITEM_TYPE_GIFT,
 )
 
@@ -110,15 +113,17 @@ class CampaignRecipientService:
 
     def create_group(self, db: Session, campaign_id: str, payload: dict[str, object]) -> RecipientGroup:
         self.campaigns.get_campaign(db, campaign_id)
+        group_type = validate_group_type(payload.get("group_type"))
         group = RecipientGroup(
             id=uuid.uuid4(),
             campaign_id=uuid.UUID(campaign_id),
-            group_type=validate_group_type(payload.get("group_type")),
+            group_type=group_type,
             group_name=require_short_text(payload.get("group_name"), "group_name"),
-            program_abbreviation=validate_program_abbreviation(
-                payload.get("program_abbreviation"),
-                required=validate_group_type(payload.get("group_type")) == "ADULT_PROGRAM",
+            organization_type=validate_organization_type(
+                payload.get("organization_type"),
+                required=group_type == RECIPIENT_GROUP_TYPE_ORGANIZATION,
             ),
+            program_abbreviation=validate_program_abbreviation(payload.get("program_abbreviation")),
             intake_source=validate_optional_text(payload.get("intake_source"), "intake_source"),
             external_reference=validate_optional_text(payload.get("external_reference"), "external_reference"),
             notes=validate_optional_long_text(payload.get("notes"), "notes"),
@@ -146,15 +151,20 @@ class CampaignRecipientService:
                 )
             group.group_type = next_group_type
             if next_group_type == "HOUSEHOLD":
+                group.organization_type = None
                 group.program_abbreviation = None
             elif group.program_abbreviation is None:
                 group.program_abbreviation = self._derive_group_abbreviation(group.group_name)
+        if "organization_type" in payload or ("group_type" in payload and group.group_type == RECIPIENT_GROUP_TYPE_ORGANIZATION):
+            group.organization_type = validate_organization_type(
+                payload.get("organization_type", group.organization_type),
+                required=group.group_type == RECIPIENT_GROUP_TYPE_ORGANIZATION,
+            )
         if "group_name" in payload:
             group.group_name = require_short_text(payload.get("group_name"), "group_name")
-        if "program_abbreviation" in payload or ("group_type" in payload and group.group_type == "ADULT_PROGRAM"):
+        if "program_abbreviation" in payload or "group_type" in payload:
             group.program_abbreviation = validate_program_abbreviation(
                 payload.get("program_abbreviation", group.program_abbreviation),
-                required=group.group_type == "ADULT_PROGRAM",
             )
         if "intake_source" in payload:
             group.intake_source = validate_optional_text(payload.get("intake_source"), "intake_source")
@@ -174,7 +184,7 @@ class CampaignRecipientService:
             if field_name in payload:
                 setattr(group, field_name, validate_optional_text(payload.get(field_name), field_name, max_length=max_length))
         self._validate_program_abbreviation_uniqueness(db, group)
-        if group.group_type == "ADULT_PROGRAM":
+        if group.group_type == RECIPIENT_GROUP_TYPE_ORGANIZATION:
             self._sync_group_program_recipient_ids(db, group)
         else:
             self._clear_group_program_recipient_ids(group)
@@ -603,10 +613,10 @@ class CampaignRecipientService:
     @staticmethod
     def _derive_group_abbreviation(group_name: str) -> str:
         cleaned = "".join(character for character in group_name.upper() if character.isalnum())
-        return (cleaned[:12] or "ADULT")
+        return cleaned[:12] or "ORG"
 
     def _validate_program_abbreviation_uniqueness(self, db: Session, group: RecipientGroup) -> None:
-        if group.group_type != "ADULT_PROGRAM" or not group.program_abbreviation:
+        if group.group_type != RECIPIENT_GROUP_TYPE_ORGANIZATION or not group.program_abbreviation:
             return
         existing = (
             db.query(RecipientGroup.id)
@@ -671,7 +681,7 @@ class CampaignRecipientService:
                 ) from error
             if "uq_recipient_program_id" in message:
                 raise ServiceError(
-                    "An adult recipient ID collision was detected. Please retry the save.",
+                    "An organization recipient ID collision was detected. Please retry the save.",
                     status_code=409,
                     details={"field": "program_recipient_id"},
                 ) from error
@@ -683,7 +693,10 @@ class CampaignRecipientService:
         group: RecipientGroup,
         recipient: Recipient,
     ) -> None:
-        if group.group_type != "ADULT_PROGRAM" or recipient.recipient_kind != RECIPIENT_KIND_ADULT:
+        if (
+            group.group_type != RECIPIENT_GROUP_TYPE_ORGANIZATION
+            or recipient.program_type != RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT
+        ):
             recipient.program_recipient_number = None
             recipient.program_recipient_id = None
             return
@@ -715,7 +728,7 @@ class CampaignRecipientService:
             )
         )
         for index, recipient in enumerate(recipients, start=1):
-            if recipient.recipient_kind != RECIPIENT_KIND_ADULT:
+            if recipient.program_type != RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT:
                 recipient.program_recipient_number = None
                 recipient.program_recipient_id = None
                 continue
@@ -783,7 +796,7 @@ class CampaignRecipientService:
             "group_count": len(groups),
             "active_group_count": sum(1 for group in groups if group.status == RECIPIENT_GROUP_STATUS_ACTIVE),
             "household_count": group_counts.get("HOUSEHOLD", 0),
-            "adult_program_count": group_counts.get("ADULT_PROGRAM", 0),
+            "organization_count": group_counts.get(RECIPIENT_GROUP_TYPE_ORGANIZATION, 0),
             "recipient_count": len(recipients),
             "child_count": recipient_counts.get("CHILD", 0),
             "adult_count": recipient_counts.get("ADULT", 0),

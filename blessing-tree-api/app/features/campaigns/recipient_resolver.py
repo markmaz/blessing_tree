@@ -7,10 +7,10 @@ from sqlalchemy.orm import Session
 
 from app.features.campaigns.studio_constants import (
     COMMUNICATION_AUDIENCE_ADULT_RECIPIENT_DIRECT,
-    COMMUNICATION_AUDIENCE_ADULT_PROGRAM_CONTACT,
     COMMUNICATION_AUDIENCE_GROUP_PRIMARY_CONTACT,
     COMMUNICATION_AUDIENCE_HOUSEHOLD_CONTACT,
     COMMUNICATION_AUDIENCE_MANAGER,
+    COMMUNICATION_AUDIENCE_ORGANIZATION_CONTACT,
     COMMUNICATION_AUDIENCE_SPONSOR,
     COMMUNICATION_AUDIENCE_VOLUNTEER,
 )
@@ -21,8 +21,8 @@ from app.models.campaign_member_access_role import CampaignMemberAccessRole
 from app.models.group_contact import GroupContact
 from app.models.recipient import Recipient
 from app.models.recipient_constants import (
-    RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+    RECIPIENT_GROUP_TYPE_ORGANIZATION,
     RECIPIENT_KIND_ADULT,
 )
 from app.models.recipient_group import RecipientGroup
@@ -58,11 +58,11 @@ class CampaignRecipientResolver:
                 campaign_id=campaign_id,
                 group_type=RECIPIENT_GROUP_TYPE_HOUSEHOLD,
             )
-        if normalized_audience == COMMUNICATION_AUDIENCE_ADULT_PROGRAM_CONTACT:
+        if normalized_audience == COMMUNICATION_AUDIENCE_ORGANIZATION_CONTACT:
             return self._resolve_group_contacts(
                 db,
                 campaign_id=campaign_id,
-                group_type=RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
+                group_type=RECIPIENT_GROUP_TYPE_ORGANIZATION,
             )
         if normalized_audience == COMMUNICATION_AUDIENCE_GROUP_PRIMARY_CONTACT:
             return self._resolve_group_contacts(

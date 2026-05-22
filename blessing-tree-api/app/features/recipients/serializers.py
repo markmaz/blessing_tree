@@ -180,6 +180,7 @@ def serialize_recipient(recipient: Recipient) -> dict[str, Any]:
                 "id": str(recipient.recipient_group.id),
                 "group_name": recipient.recipient_group.group_name,
                 "group_type": recipient.recipient_group.group_type,
+                "organization_type": recipient.recipient_group.organization_type,
                 "status": recipient.recipient_group.status,
             }
             if recipient.recipient_group is not None
@@ -207,6 +208,7 @@ def serialize_recipient_group(group: RecipientGroup) -> dict[str, Any]:
         "campaign_id": str(group.campaign_id),
         "group_type": group.group_type,
         "group_name": group.group_name,
+        "organization_type": group.organization_type,
         "program_abbreviation": group.program_abbreviation,
         "intake_source": group.intake_source,
         "external_reference": group.external_reference,

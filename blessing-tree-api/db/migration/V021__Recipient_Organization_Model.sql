@@ -1,0 +1,72 @@
+ALTER TABLE recipient_group
+  ADD COLUMN organization_type ENUM(
+    'NURSING_HOME',
+    'ORPHANAGE',
+    'SENIOR_PROGRAM',
+    'CHILDRENS_HOME',
+    'PARTNER_ORG',
+    'OTHER'
+  ) NULL AFTER group_name;
+
+ALTER TABLE recipient_group
+  MODIFY COLUMN group_type ENUM('HOUSEHOLD', 'ADULT_PROGRAM', 'ORGANIZATION') NOT NULL;
+
+UPDATE recipient_group
+SET group_type = 'ORGANIZATION'
+WHERE group_type = 'ADULT_PROGRAM';
+
+UPDATE recipient_group
+SET organization_type = 'OTHER'
+WHERE group_type = 'ORGANIZATION'
+  AND organization_type IS NULL;
+
+ALTER TABLE recipient_group
+  MODIFY COLUMN group_type ENUM('HOUSEHOLD', 'ORGANIZATION') NOT NULL;
+
+ALTER TABLE recipient
+  MODIFY COLUMN program_type ENUM(
+    'CHILD_FAMILY',
+    'ADULT_PROGRAM',
+    'ORGANIZATION_CHILD',
+    'ORGANIZATION_ADULT'
+  ) NOT NULL;
+
+UPDATE recipient
+SET program_type = 'ORGANIZATION_ADULT'
+WHERE program_type = 'ADULT_PROGRAM';
+
+ALTER TABLE recipient
+  MODIFY COLUMN program_type ENUM(
+    'CHILD_FAMILY',
+    'ORGANIZATION_CHILD',
+    'ORGANIZATION_ADULT'
+  ) NOT NULL;
+
+ALTER TABLE communication_template
+  MODIFY COLUMN audience ENUM(
+    'SPONSOR',
+    'VOLUNTEER',
+    'MANAGER',
+    'HOUSEHOLD_CONTACT',
+    'ADULT_PROGRAM_CONTACT',
+    'ORGANIZATION_CONTACT',
+    'GROUP_PRIMARY_CONTACT',
+    'ADULT_RECIPIENT_DIRECT',
+    'GENERAL'
+  ) NOT NULL DEFAULT 'GENERAL';
+
+UPDATE communication_template
+SET audience = 'ORGANIZATION_CONTACT'
+WHERE audience = 'ADULT_PROGRAM_CONTACT';
+
+ALTER TABLE communication_template
+  MODIFY COLUMN audience ENUM(
+    'SPONSOR',
+    'VOLUNTEER',
+    'MANAGER',
+    'HOUSEHOLD_CONTACT',
+    'ORGANIZATION_CONTACT',
+    'GROUP_PRIMARY_CONTACT',
+    'ADULT_RECIPIENT_DIRECT',
+    'GENERAL'
+  ) NOT NULL DEFAULT 'GENERAL';

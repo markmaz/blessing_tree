@@ -114,6 +114,7 @@ interface RecipientResponse {
     id: string;
     group_name: string;
     group_type: CampaignPeopleGroup['groupType'];
+    organization_type: CampaignPeopleGroup['organizationType'];
     status: CampaignPeopleGroup['status'];
   } | null;
   wishlist: WishlistResponse | null;
@@ -127,6 +128,7 @@ interface GroupResponse {
   campaign_id: string;
   group_type: CampaignPeopleGroup['groupType'];
   group_name: string;
+  organization_type: CampaignPeopleGroup['organizationType'];
   program_abbreviation: string | null;
   intake_source: string | null;
   external_reference: string | null;
@@ -220,6 +222,7 @@ export async function createRecipientGroup(
     withJson('POST', {
       group_type: input.groupType,
       group_name: input.groupName,
+      organization_type: input.organizationType ?? null,
       program_abbreviation: input.programAbbreviation ?? null,
       intake_source: input.intakeSource ?? null,
       external_reference: input.externalReference ?? null,
@@ -244,6 +247,7 @@ export async function updateRecipientGroup(
   const payload: Record<string, unknown> = {};
   if ('groupType' in input) payload.group_type = input.groupType;
   if ('groupName' in input) payload.group_name = input.groupName;
+  if ('organizationType' in input) payload.organization_type = input.organizationType ?? null;
   if ('programAbbreviation' in input) payload.program_abbreviation = input.programAbbreviation ?? null;
   if ('intakeSource' in input) payload.intake_source = input.intakeSource ?? null;
   if ('externalReference' in input) payload.external_reference = input.externalReference ?? null;
@@ -389,6 +393,7 @@ function mapGroup(response: GroupResponse): CampaignPeopleGroup {
     campaignId: response.campaign_id,
     groupType: response.group_type,
     groupName: response.group_name,
+    organizationType: response.organization_type,
     programAbbreviation: response.program_abbreviation,
     intakeSource: response.intake_source,
     externalReference: response.external_reference,
@@ -443,6 +448,7 @@ function mapRecipient(response: RecipientResponse): CampaignRecipient {
           id: response.group.id,
           groupName: response.group.group_name,
           groupType: response.group.group_type,
+          organizationType: response.group.organization_type,
           status: response.group.status,
         }
       : null,

@@ -294,7 +294,7 @@ def test_create_template_accepts_recipient_aware_audience_key(
 
     assert response.status_code == 201
     payload = response.get_json()
-    assert payload["audience"] == "ADULT_PROGRAM_CONTACT"
+    assert payload["audience"] == "ORGANIZATION_CONTACT"
 
 
 def test_delete_template_removes_unscheduled_template(

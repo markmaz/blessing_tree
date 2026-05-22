@@ -1,4 +1,12 @@
-export type RecipientGroupType = 'HOUSEHOLD' | 'ADULT_PROGRAM';
+export type RecipientGroupType = 'HOUSEHOLD' | 'ORGANIZATION';
+
+export type RecipientOrganizationType =
+  | 'NURSING_HOME'
+  | 'ORPHANAGE'
+  | 'SENIOR_PROGRAM'
+  | 'CHILDRENS_HOME'
+  | 'PARTNER_ORG'
+  | 'OTHER';
 
 export type RecipientGroupStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 
@@ -14,7 +22,7 @@ export type PreferredContact = 'EMAIL' | 'PHONE' | 'TEXT' | 'NONE';
 
 export type RecipientKind = 'CHILD' | 'ADULT';
 
-export type RecipientProgramType = 'CHILD_FAMILY' | 'ADULT_PROGRAM';
+export type RecipientProgramType = 'CHILD_FAMILY' | 'ORGANIZATION_CHILD' | 'ORGANIZATION_ADULT';
 
 export type RecipientPrivacyLevel = 'ANONYMOUS' | 'INITIALS' | 'FULL_NAME';
 
@@ -110,6 +118,7 @@ export interface CampaignPeopleGroupSummary {
   id: string;
   groupName: string;
   groupType: RecipientGroupType;
+  organizationType: RecipientOrganizationType | null;
   status: RecipientGroupStatus;
 }
 
@@ -152,6 +161,7 @@ export interface CampaignPeopleGroup {
   campaignId: string;
   groupType: RecipientGroupType;
   groupName: string;
+  organizationType: RecipientOrganizationType | null;
   programAbbreviation: string | null;
   intakeSource: string | null;
   externalReference: string | null;
@@ -176,7 +186,7 @@ export interface CampaignPeopleWorkspaceCounts {
   groupCount: number;
   activeGroupCount: number;
   householdCount: number;
-  adultProgramCount: number;
+  organizationCount: number;
   recipientCount: number;
   childCount: number;
   adultCount: number;
@@ -218,6 +228,7 @@ export interface CampaignAddressSuggestion {
 export interface RecipientGroupUpsertInput {
   groupType: RecipientGroupType;
   groupName: string;
+  organizationType?: RecipientOrganizationType | null;
   programAbbreviation?: string | null;
   intakeSource?: string | null;
   externalReference?: string | null;

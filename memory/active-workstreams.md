@@ -5,7 +5,7 @@ Last updated: 2026-05-22
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Recipient workflow rollups, organization-style recipient IDs, and duplicate-intake guardrails are now in place; the next step is replacing the current non-household runtime naming/model from `ADULT_PROGRAM` to `ORGANIZATION` plus `organization_type`, then adding action-oriented sponsorship/fulfillment/pickup surfaces on top of that data
+- Current step: The recipient runtime is now aligned to `HOUSEHOLD | ORGANIZATION` plus `organization_type`, recipient workflow rollups and organization-style recipient IDs are in place, and the next step is adding action-oriented sponsorship/fulfillment/pickup surfaces on top of that data
 
 ## Recently Completed
 

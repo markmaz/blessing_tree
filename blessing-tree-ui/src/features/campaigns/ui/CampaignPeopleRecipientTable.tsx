@@ -141,7 +141,7 @@ export function CampaignPeopleRecipientTable({
                     >
                       <span className="campaign-people-row__name">{recipient.displayLabel}</span>
                       <span className="campaign-people-row__meta">
-                        {recipient.group?.groupType === 'ADULT_PROGRAM' && recipient.facilityRoom
+                        {recipient.group?.groupType === 'ORGANIZATION' && recipient.facilityRoom
                           ? `Room ${recipient.facilityRoom}`
                           : recipient.gender
                             ? `Gender ${recipient.gender}`

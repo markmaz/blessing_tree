@@ -9,11 +9,17 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 from .recipient_constants import (
-    RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
     RECIPIENT_GROUP_STATUS_ACTIVE,
     RECIPIENT_GROUP_STATUS_ARCHIVED,
     RECIPIENT_GROUP_STATUS_INACTIVE,
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+    RECIPIENT_GROUP_TYPE_ORGANIZATION,
+    RECIPIENT_ORGANIZATION_TYPE_CHILDRENS_HOME,
+    RECIPIENT_ORGANIZATION_TYPE_NURSING_HOME,
+    RECIPIENT_ORGANIZATION_TYPE_ORPHANAGE,
+    RECIPIENT_ORGANIZATION_TYPE_OTHER,
+    RECIPIENT_ORGANIZATION_TYPE_PARTNER_ORG,
+    RECIPIENT_ORGANIZATION_TYPE_SENIOR_PROGRAM,
 )
 from .uuid_bin import UUIDBin
 
@@ -38,12 +44,24 @@ class RecipientGroup(Base):
     group_type: Mapped[str] = mapped_column(
         Enum(
             RECIPIENT_GROUP_TYPE_HOUSEHOLD,
-            RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
+            RECIPIENT_GROUP_TYPE_ORGANIZATION,
             name="recipient_group_type",
         ),
         nullable=False,
     )
     group_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    organization_type: Mapped[Optional[str]] = mapped_column(
+        Enum(
+            RECIPIENT_ORGANIZATION_TYPE_NURSING_HOME,
+            RECIPIENT_ORGANIZATION_TYPE_ORPHANAGE,
+            RECIPIENT_ORGANIZATION_TYPE_SENIOR_PROGRAM,
+            RECIPIENT_ORGANIZATION_TYPE_CHILDRENS_HOME,
+            RECIPIENT_ORGANIZATION_TYPE_PARTNER_ORG,
+            RECIPIENT_ORGANIZATION_TYPE_OTHER,
+            name="recipient_organization_type",
+        ),
+        nullable=True,
+    )
     program_abbreviation: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
     intake_source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     external_reference: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -91,6 +109,7 @@ class RecipientGroup(Base):
     __table_args__ = (
         Index("idx_recipient_group_campaign", "campaign_id"),
         Index("idx_recipient_group_type", "campaign_id", "group_type"),
+        Index("idx_recipient_group_organization_type", "campaign_id", "organization_type"),
         Index("idx_recipient_group_name", "campaign_id", "group_name"),
         Index("idx_recipient_group_program_abbreviation", "campaign_id", "program_abbreviation"),
         Index("idx_recipient_group_status", "campaign_id", "status"),

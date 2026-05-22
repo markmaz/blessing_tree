@@ -84,19 +84,19 @@
 - Rationale: the simplified non-household model is most useful when downstream operators can see workflow readiness directly instead of inferring it repeatedly in frontend code.
 - Consequence: recipient rows, group rows, and workspace-level counts should carry workflow rollups, People Reports should use those rollups directly, and future sponsorship/fulfillment/pickup surfaces should build on the same contract instead of recalculating their own summaries.
 
-## Adult Program Recipient ID Direction
+## Organization Recipient ID Direction
 
 - Status: active
-- Decision: require a program abbreviation on organization groups when printed recipient IDs are needed, and generate recipient IDs from that abbreviation plus a group-local sequence number.
+- Decision: support an optional program abbreviation on organization groups when printed recipient IDs are needed, and generate recipient IDs from that abbreviation plus a group-local sequence number, falling back to a derived abbreviation when the workflow does not capture one up front.
 - Rationale: intake operators want stable, printable identifiers for adult recipients, and the program abbreviation plus number matches how coordinators already think about these lists.
-- Consequence: `recipient_group` now carries `program_abbreviation`, organization-submitted recipients now carry generated `program_recipient_number` and `program_recipient_id`, the People intake UI must collect the abbreviation when an organization uses printed IDs, and recipient tables/drawers should surface the generated ID read-only instead of asking users to type it manually.
+- Consequence: `recipient_group` now carries `program_abbreviation`, organization-submitted adult recipients now carry generated `program_recipient_number` and `program_recipient_id`, the People intake UI should allow teams to capture the abbreviation when an organization uses printed IDs, and recipient tables/drawers should surface the generated ID read-only instead of asking users to type it manually.
 
 ## Recipient Duplicate Protection Direction
 
 - Status: active
 - Decision: protect the People intake flow with two layers: hard backend conflict protection for exact duplicate recipients within the same group, and frontend duplicate hints that surface possible existing groups or people before a new intake record is created.
 - Rationale: seasonal data-entry operators are likely to create duplicate records when working from overlapping paper lists or parallel intake sessions, and the system needs to prevent silent collisions without over-modeling a full master-data matching engine yet.
-- Consequence: exact duplicate person saves within the same group now return a `409` instead of relying on raw database failures, and the Family/Adult Program plus person drawers now show candidate existing matches based on entered name/address/abbreviation details so users can reopen an existing record instead of creating a new one.
+- Consequence: exact duplicate person saves within the same group now return a `409` instead of relying on raw database failures, and the Family/Organization plus person drawers now show candidate existing matches based on entered name/address/abbreviation details so users can reopen an existing record instead of creating a new one.
 
 ## Campaign Schedule Direction
 

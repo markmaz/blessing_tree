@@ -6,7 +6,6 @@ from datetime import datetime
 
 from app.exceptions.service_error import ServiceError
 from app.models.recipient_constants import (
-    RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
     GROUP_CONTACT_ROLE_COORDINATOR,
     GROUP_CONTACT_ROLE_GUARDIAN,
     GROUP_CONTACT_ROLE_OTHER,
@@ -21,13 +20,21 @@ from app.models.recipient_constants import (
     RECIPIENT_GROUP_STATUS_ARCHIVED,
     RECIPIENT_GROUP_STATUS_INACTIVE,
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+    RECIPIENT_GROUP_TYPE_ORGANIZATION,
     RECIPIENT_KIND_ADULT,
     RECIPIENT_KIND_CHILD,
+    RECIPIENT_ORGANIZATION_TYPE_CHILDRENS_HOME,
+    RECIPIENT_ORGANIZATION_TYPE_NURSING_HOME,
+    RECIPIENT_ORGANIZATION_TYPE_ORPHANAGE,
+    RECIPIENT_ORGANIZATION_TYPE_OTHER,
+    RECIPIENT_ORGANIZATION_TYPE_PARTNER_ORG,
+    RECIPIENT_ORGANIZATION_TYPE_SENIOR_PROGRAM,
     RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
     RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
     RECIPIENT_PRIVACY_LEVEL_INITIALS,
-    RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+    RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
+    RECIPIENT_PROGRAM_TYPE_ORGANIZATION_CHILD,
     RECIPIENT_STATUS_ACTIVE,
     RECIPIENT_STATUS_INACTIVE,
     WISHLIST_INTAKE_METHOD_FORM,
@@ -48,11 +55,20 @@ from app.models.recipient_constants import (
 
 GROUP_TYPES = {
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
-    RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
+    RECIPIENT_GROUP_TYPE_ORGANIZATION,
 }
 GROUP_TYPE_ALIASES = {
-    "CARE_FACILITY": RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
-    "PARTNER_PROGRAM": RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
+    "ADULT_PROGRAM": RECIPIENT_GROUP_TYPE_ORGANIZATION,
+    "CARE_FACILITY": RECIPIENT_GROUP_TYPE_ORGANIZATION,
+    "PARTNER_PROGRAM": RECIPIENT_GROUP_TYPE_ORGANIZATION,
+}
+ORGANIZATION_TYPES = {
+    RECIPIENT_ORGANIZATION_TYPE_NURSING_HOME,
+    RECIPIENT_ORGANIZATION_TYPE_ORPHANAGE,
+    RECIPIENT_ORGANIZATION_TYPE_SENIOR_PROGRAM,
+    RECIPIENT_ORGANIZATION_TYPE_CHILDRENS_HOME,
+    RECIPIENT_ORGANIZATION_TYPE_PARTNER_ORG,
+    RECIPIENT_ORGANIZATION_TYPE_OTHER,
 }
 GROUP_STATUSES = {
     RECIPIENT_GROUP_STATUS_ACTIVE,
@@ -79,12 +95,14 @@ RECIPIENT_KINDS = {
 }
 PROGRAM_TYPES = {
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
-    RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
+    RECIPIENT_PROGRAM_TYPE_ORGANIZATION_CHILD,
+    RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
 }
 PROGRAM_TYPE_ALIASES = {
-    "NURSING_HOME": RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
-    "SENIOR_FACILITY": RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
-    "SENIOR_PARTNER_PROGRAM": RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
+    "ADULT_PROGRAM": RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
+    "NURSING_HOME": RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
+    "SENIOR_FACILITY": RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
+    "SENIOR_PARTNER_PROGRAM": RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
 }
 RECIPIENT_PRIVACY_LEVELS = {
     RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
@@ -228,6 +246,21 @@ def validate_group_status(value: object, *, default: str = RECIPIENT_GROUP_STATU
     return normalized
 
 
+def validate_organization_type(value: object, *, required: bool = False) -> str | None:
+    if value in (None, ""):
+        if required:
+            raise ServiceError(
+                "organization_type is required",
+                status_code=400,
+                details={"field": "organization_type"},
+            )
+        return None
+    normalized = str(value).strip().upper()
+    if normalized not in ORGANIZATION_TYPES:
+        raise ServiceError("Invalid organization_type", status_code=400, details={"field": "organization_type"})
+    return normalized
+
+
 def validate_program_abbreviation(value: object, *, required: bool = False) -> str | None:
     if value in (None, ""):
         if required:
@@ -356,17 +389,11 @@ def validate_optional_datetime(value: object, field_name: str) -> datetime | Non
 
 
 def validate_program_alignment(*, group_type: str, recipient_kind: str, program_type: str) -> None:
-    if recipient_kind == RECIPIENT_KIND_CHILD and program_type != RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY:
+    if group_type == RECIPIENT_GROUP_TYPE_HOUSEHOLD and recipient_kind != RECIPIENT_KIND_CHILD:
         raise ServiceError(
-            "Child recipients must use CHILD_FAMILY program_type",
+            "Household groups may only contain child recipients",
             status_code=400,
-            details={"field": "program_type"},
-        )
-    if recipient_kind == RECIPIENT_KIND_ADULT and program_type != RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM:
-        raise ServiceError(
-            "Adult recipients must use ADULT_PROGRAM program_type",
-            status_code=400,
-            details={"field": "program_type"},
+            details={"field": "recipient_kind"},
         )
     if group_type == RECIPIENT_GROUP_TYPE_HOUSEHOLD and program_type != RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY:
         raise ServiceError(
@@ -374,9 +401,31 @@ def validate_program_alignment(*, group_type: str, recipient_kind: str, program_
             status_code=400,
             details={"field": "program_type"},
         )
-    if group_type == RECIPIENT_GROUP_TYPE_ADULT_PROGRAM and program_type != RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM:
+    if group_type == RECIPIENT_GROUP_TYPE_ORGANIZATION and recipient_kind == RECIPIENT_KIND_CHILD:
+        if program_type != RECIPIENT_PROGRAM_TYPE_ORGANIZATION_CHILD:
+            raise ServiceError(
+                "Organization child recipients must use ORGANIZATION_CHILD program_type",
+                status_code=400,
+                details={"field": "program_type"},
+            )
+        return
+    if group_type == RECIPIENT_GROUP_TYPE_ORGANIZATION and recipient_kind == RECIPIENT_KIND_ADULT:
+        if program_type != RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT:
+            raise ServiceError(
+                "Organization adult recipients must use ORGANIZATION_ADULT program_type",
+                status_code=400,
+                details={"field": "program_type"},
+            )
+        return
+    if recipient_kind == RECIPIENT_KIND_CHILD and program_type != RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY:
         raise ServiceError(
-            "Adult program groups may only contain ADULT_PROGRAM recipients",
+            "Child recipients must use CHILD_FAMILY program_type unless they belong to an organization",
+            status_code=400,
+            details={"field": "program_type"},
+        )
+    if recipient_kind == RECIPIENT_KIND_ADULT and program_type != RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT:
+        raise ServiceError(
+            "Adult recipients must use ORGANIZATION_ADULT program_type",
             status_code=400,
             details={"field": "program_type"},
         )

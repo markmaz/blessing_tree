@@ -9,6 +9,7 @@ const householdGroup: CampaignPeopleGroup = {
   campaignId: 'campaign-1',
   groupType: 'HOUSEHOLD',
   groupName: 'Johnson Household',
+  organizationType: null,
   programAbbreviation: null,
   intakeSource: null,
   externalReference: null,
@@ -36,11 +37,12 @@ const householdGroup: CampaignPeopleGroup = {
   updatedAt: null,
 };
 
-const partnerProgramGroup: CampaignPeopleGroup = {
+const organizationGroup: CampaignPeopleGroup = {
   id: 'group-program',
   campaignId: 'campaign-1',
-  groupType: 'ADULT_PROGRAM',
+  groupType: 'ORGANIZATION',
   groupName: 'Senior At Home',
+  organizationType: 'SENIOR_PROGRAM',
   programAbbreviation: 'SAH',
   intakeSource: null,
   externalReference: null,
@@ -73,7 +75,7 @@ const existingAdultRecipient: CampaignRecipient = {
   campaignId: 'campaign-1',
   recipientGroupId: 'group-program',
   recipientKind: 'ADULT',
-  programType: 'ADULT_PROGRAM',
+  programType: 'ORGANIZATION_ADULT',
   privacyLevel: 'FULL_NAME',
   displayLabel: 'Mary Smith',
   programRecipientNumber: 1,
@@ -98,7 +100,8 @@ const existingAdultRecipient: CampaignRecipient = {
   group: {
     id: 'group-program',
     groupName: 'Senior At Home',
-    groupType: 'ADULT_PROGRAM',
+    groupType: 'ORGANIZATION',
+    organizationType: 'SENIOR_PROGRAM',
     status: 'ACTIVE',
   },
   wishlist: null,
@@ -143,7 +146,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
     expect(screen.queryByLabelText('Direct Phone')).not.toBeInTheDocument();
   });
 
-  it('uses adult-program framing and shows direct contact fields for adult intake', () => {
+  it('uses organization framing and shows direct contact fields for adult intake', () => {
     render(
       <CampaignPeopleRecipientDrawer
         isOpen
@@ -152,7 +155,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
         recipient={null}
         initialGroupId="group-program"
         lockedGroupId="group-program"
-        groups={[partnerProgramGroup]}
+        groups={[organizationGroup]}
         recipients={[]}
         onClose={vi.fn()}
         onSaveRecipient={vi.fn()}
@@ -216,7 +219,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
         recipient={null}
         initialGroupId="group-program"
         lockedGroupId="group-program"
-        groups={[partnerProgramGroup]}
+        groups={[organizationGroup]}
         recipients={[existingAdultRecipient]}
         onClose={vi.fn()}
         onSaveRecipient={vi.fn()}

@@ -42,6 +42,7 @@ interface CampaignPeopleGroupDrawerProps {
 const emptyGroupDraft = (groupType: RecipientGroupType = 'HOUSEHOLD'): RecipientGroupUpsertInput => ({
   groupType,
   groupName: '',
+  organizationType: null,
   programAbbreviation: '',
   intakeSource: '',
   externalReference: '',
@@ -89,6 +90,7 @@ export function CampaignPeopleGroupDrawer({
       ? {
           groupType: group.groupType,
           groupName: group.groupName,
+          organizationType: group.organizationType,
           programAbbreviation: group.programAbbreviation ?? '',
           intakeSource: group.intakeSource ?? '',
           externalReference: group.externalReference ?? '',
@@ -117,18 +119,18 @@ export function CampaignPeopleGroupDrawer({
     [editingContactId, group]
   );
   const currentGroupType = groupDraft.groupType;
-  const isAdultProgramGroup = currentGroupType === 'ADULT_PROGRAM';
-  const groupNameLabel = isAdultProgramGroup ? 'Program Name' : 'Family Name';
+  const isOrganizationGroup = currentGroupType === 'ORGANIZATION';
+  const groupNameLabel = isOrganizationGroup ? 'Organization Name' : 'Family Name';
   const programAbbreviationLabel = 'Program Abbreviation';
   const drawerTitle = group
     ? group.groupName
-    : isAdultProgramGroup
-      ? 'Add Adult Program'
+    : isOrganizationGroup
+      ? 'Add Organization'
       : 'Add Family';
   const drawerDescription = group
     ? 'Update the intake record, contacts, and linked people for this campaign.'
-    : isAdultProgramGroup
-      ? 'Create the adult program first, then add coordinator contacts and participating adults.'
+    : isOrganizationGroup
+      ? 'Create the organization first, then add coordinator contacts and participating people.'
       : 'Create the family first, then add parent or guardian contacts and children.';
   const possibleDuplicateGroups = useMemo(() => {
     const normalizedName = groupDraft.groupName.trim().toLowerCase();
@@ -159,7 +161,7 @@ export function CampaignPeopleGroupDrawer({
           candidateAddress === normalizedAddress &&
           (!normalizedPostal || candidatePostal === normalizedPostal);
         const matchingAbbreviation =
-          isAdultProgramGroup &&
+          isOrganizationGroup &&
           normalizedAbbreviation.length >= 2 &&
           candidateAbbreviation === normalizedAbbreviation;
 
@@ -174,7 +176,7 @@ export function CampaignPeopleGroupDrawer({
     groupDraft.postalCode,
     groupDraft.programAbbreviation,
     groups,
-    isAdultProgramGroup,
+    isOrganizationGroup,
   ]);
 
   useEffect(() => {
@@ -221,18 +223,14 @@ export function CampaignPeopleGroupDrawer({
       setGroupError(`${groupNameLabel} is required.`);
       return;
     }
-    if (isAdultProgramGroup && !groupDraft.programAbbreviation?.trim()) {
-      setGroupError(`${programAbbreviationLabel} is required.`);
-      return;
-    }
-
     setGroupError(null);
     try {
       const savedGroup = await onSaveGroup(
         {
           ...groupDraft,
           groupName: groupDraft.groupName.trim(),
-          programAbbreviation: isAdultProgramGroup ? (groupDraft.programAbbreviation?.trim() || null) : null,
+          organizationType: isOrganizationGroup ? (groupDraft.organizationType ?? 'OTHER') : null,
+          programAbbreviation: isOrganizationGroup ? (groupDraft.programAbbreviation?.trim() || null) : null,
         },
         group?.id
       );
@@ -241,6 +239,7 @@ export function CampaignPeopleGroupDrawer({
         setGroupDraft({
           groupType: savedGroup.groupType,
           groupName: savedGroup.groupName,
+          organizationType: savedGroup.organizationType,
           programAbbreviation: savedGroup.programAbbreviation ?? '',
           intakeSource: savedGroup.intakeSource ?? '',
           externalReference: savedGroup.externalReference ?? '',
@@ -349,11 +348,11 @@ export function CampaignPeopleGroupDrawer({
           <div className="campaign-team-drawer__section-header">
             <div>
               <h4 className="h6 mb-1">
-                {isAdultProgramGroup ? 'Program Details' : 'Family Details'}
+                {isOrganizationGroup ? 'Organization Details' : 'Family Details'}
               </h4>
               <p className="text-muted mb-0">
-                {isAdultProgramGroup
-                  ? 'Capture the adult-program information first, then add coordinator contacts and the adults submitted through that program.'
+                {isOrganizationGroup
+                  ? 'Capture the organization first, then add contacts and the children or adults submitted through that organization.'
                   : 'Capture the family information first, then add contacts and children from the same intake record.'}
               </p>
             </div>
@@ -364,7 +363,7 @@ export function CampaignPeopleGroupDrawer({
             <div className="alert alert-warning py-2" role="alert">
               <div className="fw-semibold mb-2">Possible existing records</div>
               <div className="small text-muted mb-2">
-                Review these before creating a new {isAdultProgramGroup ? 'adult program' : 'family'}.
+                Review these before creating a new {isOrganizationGroup ? 'organization' : 'family'}.
               </div>
               <div className="d-flex flex-column gap-2">
                 {possibleDuplicateGroups.map((candidate) => (
@@ -407,12 +406,20 @@ export function CampaignPeopleGroupDrawer({
                   setGroupDraft((currentValue) => ({
                     ...currentValue,
                     groupType: event.target.value as RecipientGroupType,
+                    organizationType:
+                      event.target.value === 'ORGANIZATION'
+                        ? currentValue.organizationType ?? 'OTHER'
+                        : null,
+                    programAbbreviation:
+                      event.target.value === 'ORGANIZATION'
+                        ? currentValue.programAbbreviation
+                        : '',
                   }))
                 }
                 disabled={!canEdit}
               >
                 <option value="HOUSEHOLD">Household</option>
-                <option value="ADULT_PROGRAM">Adult Program</option>
+                <option value="ORGANIZATION">Organization</option>
               </select>
             </label>
 
@@ -450,7 +457,31 @@ export function CampaignPeopleGroupDrawer({
               />
             </label>
 
-            {isAdultProgramGroup ? (
+            {isOrganizationGroup ? (
+              <label className="form-label">
+                Organization Type
+                <select
+                  className="form-select mt-2"
+                  value={groupDraft.organizationType ?? 'OTHER'}
+                  onChange={(event) =>
+                    setGroupDraft((currentValue) => ({
+                      ...currentValue,
+                      organizationType: event.target.value as NonNullable<RecipientGroupUpsertInput['organizationType']>,
+                    }))
+                  }
+                  disabled={!canEdit}
+                >
+                  <option value="NURSING_HOME">Nursing Home</option>
+                  <option value="ORPHANAGE">Orphanage</option>
+                  <option value="SENIOR_PROGRAM">Senior Program</option>
+                  <option value="CHILDRENS_HOME">Children&apos;s Home</option>
+                  <option value="PARTNER_ORG">Partner Organization</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </label>
+            ) : null}
+
+            {isOrganizationGroup ? (
               <label className="form-label">
                 {programAbbreviationLabel}
                 <input
@@ -524,7 +555,7 @@ export function CampaignPeopleGroupDrawer({
                 }
                 disabled={!canEdit}
                 placeholder={
-                  isAdultProgramGroup ? 'Start typing the program address' : 'Start typing the family address'
+                  isOrganizationGroup ? 'Start typing the organization address' : 'Start typing the family address'
                 }
               />
               {isSearchingAddresses ? (

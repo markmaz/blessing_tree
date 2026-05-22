@@ -10,9 +10,9 @@ const fallbackAudienceCatalog: CommunicationAudienceOption[] = [
     description: 'Parents and guardians connected to household recipient groups.',
   },
   {
-    key: 'ADULT_PROGRAM_CONTACT',
-    label: 'Adult Program Contacts',
-    description: 'Coordinator, staff, and social-worker contacts connected to adult-program groups.',
+    key: 'ORGANIZATION_CONTACT',
+    label: 'Organization Contacts',
+    description: 'Coordinator, staff, and case-worker contacts connected to organization groups.',
   },
   {
     key: 'GROUP_PRIMARY_CONTACT',

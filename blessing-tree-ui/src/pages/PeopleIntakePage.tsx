@@ -102,7 +102,7 @@ export function PeopleIntakePage() {
                 {workspace.counts.householdCount} households
               </span>
               <span className="campaign-chip campaign-chip-muted">
-                {workspace.counts.adultProgramCount} adult programs
+                {workspace.counts.organizationCount} organizations
               </span>
             </div>
             <h2 className="h4 mb-1">Start New Intake</h2>
@@ -136,7 +136,7 @@ export function PeopleIntakePage() {
           type="button"
           className="campaign-people-intake-card"
           onClick={() => {
-            setCreateGroupType('ADULT_PROGRAM');
+            setCreateGroupType('ORGANIZATION');
             setSelectedGroupId(null);
           }}
           disabled={!canEditPeople}
@@ -144,9 +144,9 @@ export function PeopleIntakePage() {
           <span className="campaign-people-intake-card__icon">
             <i className="bi bi-diagram-3-fill" aria-hidden="true" />
           </span>
-          <span className="campaign-people-intake-card__title">Add Adult Program</span>
+          <span className="campaign-people-intake-card__title">Add Organization</span>
           <span className="campaign-people-intake-card__body">
-            Create the adult program, add coordinator or staff contacts, then enter the adults in that program with optional direct contact information and wishlists.
+            Create the organization, add coordinator or staff contacts, then enter the children or adults in that organization with wishlists and any needed direct contact information.
           </span>
         </button>
       </div>
@@ -156,7 +156,7 @@ export function PeopleIntakePage() {
           <div>
             <h2 className="h5 mb-1">Continue Recent Intake</h2>
             <p className="text-muted mb-0">
-              Re-open a recently updated family or adult program to keep adding people, contacts, or wishlists.
+              Re-open a recently updated family or organization to keep adding people, contacts, or wishlists.
             </p>
           </div>
         </div>
@@ -164,7 +164,7 @@ export function PeopleIntakePage() {
         <div className="campaign-team-inline-list">
           {recentGroups.length === 0 ? (
             <div className="campaign-studio__empty-note">
-              No intake records yet. Start with Add Family or Add Adult Program.
+              No intake records yet. Start with Add Family or Add Organization.
             </div>
           ) : (
             recentGroups.map((group) => (
@@ -183,7 +183,7 @@ export function PeopleIntakePage() {
                       />
                       {group.groupType === 'HOUSEHOLD'
                         ? 'Family'
-                        : 'Adult Program'}
+                        : 'Organization'}
                     </span>
                     <span className="campaign-chip campaign-chip-muted">
                       <i className="bi bi-people me-1" aria-hidden="true" />

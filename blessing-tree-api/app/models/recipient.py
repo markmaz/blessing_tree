@@ -9,13 +9,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 from .recipient_constants import (
-    RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
     RECIPIENT_KIND_ADULT,
     RECIPIENT_KIND_CHILD,
     RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
     RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
     RECIPIENT_PRIVACY_LEVEL_INITIALS,
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+    RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
+    RECIPIENT_PROGRAM_TYPE_ORGANIZATION_CHILD,
     RECIPIENT_STATUS_ACTIVE,
     RECIPIENT_STATUS_INACTIVE,
 )
@@ -50,7 +51,8 @@ class Recipient(Base):
     program_type: Mapped[str] = mapped_column(
         Enum(
             RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
-            RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
+            RECIPIENT_PROGRAM_TYPE_ORGANIZATION_CHILD,
+            RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
             name="recipient_program_type",
         ),
         nullable=False,

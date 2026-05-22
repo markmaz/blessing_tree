@@ -72,14 +72,14 @@ export function PeoplePage() {
                   {workspace.counts.householdCount} households
                 </span>
                 <span className="campaign-chip campaign-chip-muted">
-                  {workspace.counts.adultProgramCount} adult programs
+                  {workspace.counts.organizationCount} organizations
                 </span>
               </>
             ) : null}
           </div>
           <h1 className="h3 mb-1">People</h1>
           <p className="text-muted mb-0">
-            Use Intake for new family or adult-program entry, and Directory to search and maintain existing households, adult programs, people, and wishlists.
+            Use Intake for new family or organization entry, and Directory to search and maintain existing households, organizations, people, and wishlists.
           </p>
         </div>
       </div>

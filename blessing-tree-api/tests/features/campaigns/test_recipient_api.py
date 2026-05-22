@@ -161,7 +161,7 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     payload = response.get_json()
     assert payload["counts"]["group_count"] == 2
     assert payload["counts"]["household_count"] == 1
-    assert payload["counts"]["adult_program_count"] == 1
+    assert payload["counts"]["organization_count"] == 1
     assert payload["counts"]["recipient_count"] == 2
     assert payload["counts"]["wishlist_count"] == 1
     assert payload["counts"]["open_item_count"] == 1
@@ -181,8 +181,8 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     assert payload["recipients"][0]["wishlist"]["items"][0]["gift_workflow"]["sponsorship_status"] == "UNSPONSORED"
     assert payload["recipients"][0]["workflow_summary"]["open_item_count"] == 1
     assert sorted(payload["filters"]["program_types"]) == [
-        "ADULT_PROGRAM",
         RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+        "ORGANIZATION_ADULT",
     ]
 
 
@@ -404,7 +404,7 @@ def test_adult_program_recipient_accepts_direct_contact_fields(app, monkeypatch:
     assert payload["direct_phone"] == "555-4444"
 
 
-def test_adult_program_group_requires_program_abbreviation(app, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_organization_group_requires_organization_type(app, monkeypatch: pytest.MonkeyPatch) -> None:
     install_auth(monkeypatch)
     session = campaign_api_module.SessionLocal()
     manager = seed_user(session, name="Manager User")
@@ -419,7 +419,7 @@ def test_adult_program_group_requires_program_abbreviation(app, monkeypatch: pyt
     response = client.post(
         f"/api/v1/campaigns/{campaign_id}/recipient-groups",
         json={
-            "group_type": "ADULT_PROGRAM",
+            "group_type": "ORGANIZATION",
             "group_name": "Senior At Home",
             "status": "ACTIVE",
         },
@@ -427,7 +427,7 @@ def test_adult_program_group_requires_program_abbreviation(app, monkeypatch: pyt
     )
 
     assert response.status_code == 400
-    assert response.get_json()["error"] == "program_abbreviation is required"
+    assert response.get_json()["error"] == "organization_type is required"
 
 
 def test_household_child_rejects_direct_contact_fields(app, monkeypatch: pytest.MonkeyPatch) -> None:

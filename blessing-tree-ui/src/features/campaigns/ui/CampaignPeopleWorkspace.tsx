@@ -170,12 +170,12 @@ export function CampaignPeopleWorkspace({
                   {workspace.counts.householdCount} households
                 </span>
                 <span className="campaign-chip campaign-chip-muted">
-                  {workspace.counts.adultProgramCount} adult programs
+                  {workspace.counts.organizationCount} organizations
                 </span>
               </div>
               <h1 className="h3 mb-1">People</h1>
               <p className="text-muted mb-0">
-                Manage households, adult programs, contacts, people, and wishlists for this campaign.
+                Manage households, organizations, contacts, people, and wishlists for this campaign.
               </p>
             </div>
           </div>
@@ -216,7 +216,7 @@ export function CampaignPeopleWorkspace({
         <section className="campaign-team-workspace__section">
           <div className="campaign-team-workspace__section-header">
             <div>
-              <h2 className="h5 mb-1">Households &amp; Adult Programs</h2>
+              <h2 className="h5 mb-1">Households &amp; Organizations</h2>
               <p className="text-muted mb-0">
                 Shared intake containers for parents, guardians, coordinators, staff contacts, and the people they represent.
               </p>
@@ -239,11 +239,11 @@ export function CampaignPeopleWorkspace({
                   className="btn btn-secondary btn-sm campaign-team-workspace__section-action"
                   onClick={() => {
                     setSelectedGroupId(null);
-                    setCreateGroupType('ADULT_PROGRAM');
+                    setCreateGroupType('ORGANIZATION');
                   }}
                 >
                   <i className="bi bi-diagram-3-fill" aria-hidden="true" />
-                  <span>Add Adult Program</span>
+                  <span>Add Organization</span>
                 </button>
               </div>
             ) : null}

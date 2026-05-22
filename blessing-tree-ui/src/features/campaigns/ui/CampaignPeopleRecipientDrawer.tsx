@@ -187,33 +187,51 @@ export function CampaignPeopleRecipientDrawer({
     return deriveBirthYear(recipientDraft.age) ?? recipientDraft.birthYear ?? null;
   }, [recipientDraft.age, recipientDraft.birthYear]);
 
-  const recipientProgram = selectedGroup?.groupType === 'ADULT_PROGRAM'
-    ? { recipientKind: 'ADULT' as const, programType: 'ADULT_PROGRAM' as const }
-    : selectedGroup
-      ? { recipientKind: 'CHILD' as const, programType: 'CHILD_FAMILY' as const }
-      : null;
+  const isOrganizationChildGroup = selectedGroup?.groupType === 'ORGANIZATION'
+    && ['ORPHANAGE', 'CHILDRENS_HOME'].includes(selectedGroup.organizationType ?? '');
+
+  const recipientProgram =
+    recipient?.programType === 'ORGANIZATION_CHILD'
+      ? { recipientKind: 'CHILD' as const, programType: 'ORGANIZATION_CHILD' as const }
+      : recipient?.programType === 'ORGANIZATION_ADULT'
+        ? { recipientKind: 'ADULT' as const, programType: 'ORGANIZATION_ADULT' as const }
+        : selectedGroup?.groupType === 'ORGANIZATION'
+          ? isOrganizationChildGroup
+            ? { recipientKind: 'CHILD' as const, programType: 'ORGANIZATION_CHILD' as const }
+            : { recipientKind: 'ADULT' as const, programType: 'ORGANIZATION_ADULT' as const }
+          : selectedGroup
+            ? { recipientKind: 'CHILD' as const, programType: 'CHILD_FAMILY' as const }
+            : null;
 
   const visibleContacts = selectedGroup?.contacts ?? [];
   const pickupContacts = visibleContacts.filter((contact) => contact.canPickUp);
   const isContextualIntake = lockedGroup !== null;
   const isHouseholdIntake = selectedGroup?.groupType === 'HOUSEHOLD';
-  const isAdultProgramIntake = selectedGroup?.groupType === 'ADULT_PROGRAM';
-  const showAdultDirectContact = selectedGroup?.groupType === 'ADULT_PROGRAM';
+  const isOrganizationIntake = selectedGroup?.groupType === 'ORGANIZATION';
+  const isOrganizationChildIntake = recipientProgram?.programType === 'ORGANIZATION_CHILD';
+  const isOrganizationAdultIntake = recipientProgram?.programType === 'ORGANIZATION_ADULT';
+  const showAdultDirectContact = isOrganizationAdultIntake;
   const drawerTitle = recipient?.displayLabel
     ? isHouseholdIntake
       ? 'Child Intake'
-      : isAdultProgramIntake
+      : isOrganizationAdultIntake
         ? 'Adult Intake'
+        : isOrganizationChildIntake
+          ? 'Child Intake'
         : recipient.displayLabel
     : isHouseholdIntake
       ? 'Add Child'
-      : isAdultProgramIntake
+      : isOrganizationAdultIntake
         ? 'Add Adult'
+        : isOrganizationChildIntake
+          ? 'Add Child'
         : 'Add Person';
   const drawerDescription = isHouseholdIntake
     ? 'Capture child details and wishlist items for this family intake.'
-    : isAdultProgramIntake
-      ? 'Capture adult details, optional direct contact information, and wishlist items for this adult program intake.'
+    : isOrganizationAdultIntake
+      ? 'Capture adult details, optional direct contact information, and wishlist items for this organization intake.'
+      : isOrganizationChildIntake
+        ? 'Capture child details and wishlist items for this organization intake.'
       : 'Manage the recipient profile and their campaign wishlist from one drawer.';
   const possibleDuplicateRecipients = useMemo(() => {
     const normalizedDisplayName = computedDisplayLabel.trim().toLowerCase();
@@ -271,7 +289,7 @@ export function CampaignPeopleRecipientDrawer({
 
   const handleSaveRecipient = async () => {
     if (!recipientDraft.recipientGroupId) {
-      setRecipientError('Choose a household or adult program first.');
+      setRecipientError('Choose a household or organization first.');
       return;
     }
     if (!computedDisplayLabel.trim()) {
@@ -419,15 +437,19 @@ export function CampaignPeopleRecipientDrawer({
               <h4 className="h6 mb-1">
                 {isHouseholdIntake
                   ? 'Child Details'
-                  : isAdultProgramIntake
+                  : isOrganizationAdultIntake
                     ? 'Adult Details'
+                    : isOrganizationChildIntake
+                      ? 'Child Details'
                     : 'Person Details'}
               </h4>
               <p className="text-muted mb-0">
                 {isHouseholdIntake
                   ? 'Children belong to a family intake, so contact information stays on the household record.'
-                  : isAdultProgramIntake
-                    ? 'Adults in an adult program can keep their own address and direct contact details here, while coordinators stay on the group record.'
+                  : isOrganizationAdultIntake
+                    ? 'Adults in an organization can keep their own address and direct contact details here, while coordinators stay on the group record.'
+                    : isOrganizationChildIntake
+                      ? 'Children in an organization stay linked to the organization, while coordinator contact information stays on the group record.'
                     : 'Each person is the actual gift recipient. The selected group determines the intake program.'}
               </p>
             </div>
@@ -475,7 +497,7 @@ export function CampaignPeopleRecipientDrawer({
               <label className="form-label campaign-team-form-grid__span-2">
                 {lockedGroup?.groupType === 'HOUSEHOLD'
                   ? 'Family'
-                  : 'Program'}
+                  : 'Organization'}
                 <input
                   className="form-control mt-2"
                   value={lockedGroup?.groupName ?? ''}
@@ -484,7 +506,7 @@ export function CampaignPeopleRecipientDrawer({
               </label>
             ) : (
               <label className="form-label campaign-team-form-grid__span-2">
-                Household or Adult Program
+                Household or Organization
                 <select
                   className="form-select mt-2"
                   value={recipientDraft.recipientGroupId}
@@ -537,8 +559,10 @@ export function CampaignPeopleRecipientDrawer({
             <label className="form-label campaign-team-form-grid__span-2">
               {isHouseholdIntake
                 ? 'Child Display Name'
-                : isAdultProgramIntake
+                : isOrganizationAdultIntake
                   ? 'Adult Display Name'
+                  : isOrganizationChildIntake
+                    ? 'Child Display Name'
                   : 'Display Name'}
               <input
                 className="form-control mt-2"
@@ -647,10 +671,10 @@ export function CampaignPeopleRecipientDrawer({
               </select>
             </label>
 
-            {selectedGroup?.groupType === 'ADULT_PROGRAM' ? (
+            {isOrganizationIntake ? (
               <>
                 <label className="form-label">
-                  Adult ID
+                  Person ID
                   <input
                     className="form-control mt-2"
                     value={recipient?.programRecipientId ?? 'Generated after save'}
@@ -800,7 +824,7 @@ export function CampaignPeopleRecipientDrawer({
               </>
             ) : null}
 
-            {selectedGroup?.groupType === 'ADULT_PROGRAM' ? (
+            {isOrganizationAdultIntake ? (
               <label className="form-label campaign-team-form-grid__span-2">
                 Mobility Notes
                 <textarea
@@ -821,8 +845,10 @@ export function CampaignPeopleRecipientDrawer({
             <label className="form-label campaign-team-form-grid__span-2">
               {isHouseholdIntake
                 ? 'Child Notes'
-                : isAdultProgramIntake
+                : isOrganizationAdultIntake
                   ? 'Adult Notes'
+                  : isOrganizationChildIntake
+                    ? 'Child Notes'
                   : 'Notes'}
               <textarea
                 className="form-control mt-2"
@@ -999,7 +1025,7 @@ export function CampaignPeopleRecipientDrawer({
                     <span className="text-muted small">
                       {pickupContacts.length
                         ? `Authorized pickup contacts: ${pickupContacts.map((contact) => formatContactDisplayName(contact)).join(', ')}`
-                        : 'No pickup contacts are marked yet on this household or adult program.'}
+                        : 'No pickup contacts are marked yet on this household or organization.'}
                     </span>
                   </div>
                 </div>
