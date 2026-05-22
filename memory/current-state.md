@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 ## Project Snapshot
 
@@ -22,7 +22,7 @@ Last updated: 2026-05-21
   - Campaign Studio backend support now exists for assignments, campaign-scoped communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, aggregate studio payloads, and create-from-previous-campaign cloning support
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
   - local outbound email is now operational in development through a repo-owned SMTP sink plus configurable TLS/SSL flags, so invite delivery and scheduled communication dispatch can be exercised end to end without external SMTP credentials
-  - recipient phases 1 through 3 backend work now exist: the schema/model is refined and there is now a recipient feature package plus campaign-scoped APIs for groups, contacts, recipients, wishlists, wishlist items, and the aggregate `people-workspace` payload
+  - recipient phases 1 through 5 now exist: the schema/model is refined, there is now a recipient feature package plus campaign-scoped APIs for groups, contacts, recipients, wishlists, wishlist items, and the aggregate `people-workspace` payload, and the frontend now includes campaign-scoped `People > Intake` and `People > Directory` flows with wishlist/fulfillment alignment
   - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
   - admin LLM test/health now probes the real generation path against the configured model instead of treating `/models` reachability as sufficient
   - invitation-centric onboarding now supports Google, Yahoo, and local password from the invite funnel; generic Google/Yahoo OAuth remains limited to already-linked returning users, and invite validation now exposes accepted-vs-pending onboarding state for cleaner frontend handling
@@ -75,6 +75,11 @@ Last updated: 2026-05-21
   - the placeholder Families surface is now replaced by a campaign-aware People section with child `Intake` and `Directory` views so new entry work is separated from searchable maintenance
   - the People workspace now also surfaces gift-workflow readiness directly in wishlist items, including sponsorship status, fulfillment progress, label state, pickup state, and authorized pickup contacts from the group record
   - the People intake UX is now more group-first: family/facility drawers now frame intake as `Children` or `Residents`, the contextual child/resident drawer hides irrelevant direct-contact fields, and data entry can move from group to child/resident wishlist flow with less context switching
+  - the current recipient design direction now explicitly supports three intake contexts:
+    - `HOUSEHOLD` for family/child flows
+    - `CARE_FACILITY` for facility adult flows
+    - `PARTNER_PROGRAM` for adult recipients submitted through partner organizations
+  - the recipient design direction now also treats adult recipient direct address/phone/email fields as part of the domain, with child direct-contact fields hidden in household flows, facility adult fields optional, and partner-program adult fields supported prominently
   - page shells still exist for donations, reports, and admin
   - shared authenticated client exists for protected data APIs
 
@@ -172,6 +177,7 @@ Last updated: 2026-05-21
   - `GET|PUT /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist`
   - `POST /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist/items`
   - `PATCH|DELETE /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist/items/<item_id>`
+  - the current recipient docs now target `HOUSEHOLD | CARE_FACILITY | PARTNER_PROGRAM` group types and `CHILD_FAMILY | SENIOR_FACILITY | SENIOR_PARTNER_PROGRAM` program types as the long-term model
 - Team design direction now explicitly distinguishes:
   - fixed app access roles for RBAC
   - team-scoped team roles for operational responsibility

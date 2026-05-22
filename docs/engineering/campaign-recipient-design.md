@@ -16,12 +16,13 @@ Related design:
 
 ## Purpose
 
-Blessing Tree currently serves two distinct recipient programs:
+Blessing Tree currently serves three distinct recipient programs:
 
 - children in household/family intake flows
-- adults in nursing-home intake flows
+- adults in nursing-home or care-facility intake flows
+- adults submitted through partner organizations or home-based senior programs
 
-Both programs share one important operational truth:
+All three programs share one important operational truth:
 
 - the gift receiver is always an individual person
 - each individual person can have one wishlist
@@ -33,7 +34,7 @@ The current schema is close, but the meaning is split awkwardly across:
 - `recipient_type`
 - `group_contact`
 
-This design refines the existing model so it supports both programs cleanly
+This design refines the existing model so it supports all three programs cleanly
 without splitting the downstream fulfillment pipeline into separate tables.
 
 ## Summary
@@ -79,7 +80,7 @@ This keeps one unified operational pipeline for:
 
 Use one `recipient` table for all gift receivers.
 
-Do not split children and nursing-home adults into separate entity tables.
+Do not split children and adult-program recipients into separate entity tables.
 
 Rationale:
 
@@ -108,7 +109,7 @@ Rationale:
 
 - this already matches the current model
 - it keeps sponsorship and fulfillment simple
-- it supports both children and nursing-home adults cleanly
+- it supports all recipient programs cleanly
 
 ### Group Is The Intake Container
 
@@ -119,6 +120,7 @@ Examples:
 
 - one household with multiple children
 - one nursing-home unit/facility batch with multiple adult recipients
+- one partner organization with multiple adult recipients in its submitted program
 
 ### Program Type Must Be Explicit
 
@@ -132,7 +134,8 @@ Rationale:
 - `SENIOR` is not really a person type for this app
 - the real workflow distinction is:
   - family child intake
-  - nursing-home adult intake
+  - facility adult intake
+  - partner-program adult intake
 
 ## Domain Model
 
@@ -149,6 +152,7 @@ Recommended `group_type` values:
 
 - `HOUSEHOLD`
 - `CARE_FACILITY`
+- `PARTNER_PROGRAM`
 
 Recommended fields:
 
@@ -177,6 +181,7 @@ Examples:
 
 - `Johnson Household`
 - `Maple Grove - West Wing`
+- `Senior At Home`
 
 ### 2. Group Contact
 
@@ -189,6 +194,7 @@ Use it for:
 - social workers
 - facility staff
 - intake coordinators
+- partner-program coordinators
 
 Recommended fields:
 
@@ -241,6 +247,11 @@ Recommended fields:
 - `birth_year` nullable
 - `age` nullable
 - `gender` nullable
+- `address_line1` nullable
+- `address_line2` nullable
+- `city` nullable
+- `state` nullable
+- `postal_code` nullable
 - `direct_email` nullable
 - `direct_phone` nullable
 - `facility_room` nullable
@@ -258,7 +269,8 @@ Recommended `recipient_kind` values:
 Recommended `program_type` values:
 
 - `CHILD_FAMILY`
-- `NURSING_HOME`
+- `SENIOR_FACILITY`
+- `SENIOR_PARTNER_PROGRAM`
 
 Recommended `privacy_level` values:
 
@@ -274,8 +286,10 @@ Recommended `status` values:
 Important rules:
 
 - children typically use parent/guardian contacts through `group_contact`
-- nursing-home adults may still have direct recipient-level information
-- a nursing-home adult still belongs to a facility group for operational context
+- facility adults may optionally have direct recipient-level contact or address information
+- partner-program adults should support recipient-level address, phone, and email information
+- a facility adult still belongs to a facility group for operational context
+- a partner-program adult still belongs to a partner-program group for coordination, reporting, and communication
 
 ### 4. Wishlist
 
@@ -369,14 +383,38 @@ Recommended `item_type` values:
 
 - Mary Smith
   - `recipient_kind = ADULT`
-  - `program_type = NURSING_HOME`
+  - `program_type = SENIOR_FACILITY`
   - `age = 84`
   - `facility_room = 214B`
 - James Carter
   - `recipient_kind = ADULT`
-  - `program_type = NURSING_HOME`
+  - `program_type = SENIOR_FACILITY`
   - `age = 79`
   - `facility_room = 216A`
+
+### Partner Program / Adult Program
+
+`recipient_group`
+
+- `group_type = PARTNER_PROGRAM`
+- `group_name = Senior At Home`
+
+`group_contact`
+
+- `COORDINATOR`
+- `SOCIAL_WORKER`
+
+`recipient`
+
+- Mary Smith
+  - `recipient_kind = ADULT`
+  - `program_type = SENIOR_PARTNER_PROGRAM`
+  - recipient home address stored on the recipient record
+  - recipient phone/email stored on the recipient record when available
+- James Carter
+  - `recipient_kind = ADULT`
+  - `program_type = SENIOR_PARTNER_PROGRAM`
+  - recipient home address stored on the recipient record
 
 ## What Should Change From The Current Model
 
@@ -392,14 +430,14 @@ Recommended `item_type` values:
 
 - `recipient_group.group_type`
   - from `HOUSEHOLD | INSTITUTION`
-  - to `HOUSEHOLD | CARE_FACILITY`
+  - to `HOUSEHOLD | CARE_FACILITY | PARTNER_PROGRAM`
 
 - `recipient.recipient_type`
   - from `CHILD | ADULT | SENIOR`
   - to `recipient_kind = CHILD | ADULT`
 
 - add `recipient.program_type`
-  - `CHILD_FAMILY | NURSING_HOME`
+  - `CHILD_FAMILY | SENIOR_FACILITY | SENIOR_PARTNER_PROGRAM`
 
 ### Add
 
@@ -418,6 +456,11 @@ On `recipient`:
 
 - `program_type`
 - `birth_year` or future `date_of_birth`
+- `address_line1`
+- `address_line2`
+- `city`
+- `state`
+- `postal_code`
 - `direct_email`
 - `direct_phone`
 - `facility_room`
@@ -455,9 +498,10 @@ Parents and guardians are contacts, not gift recipients.
 
 They are still contacts, even when they are the primary intake and pickup point.
 
-### Do Not Make Nursing-Home Adults Their Own Top-Level Program Table
+### Do Not Make Adult Programs Their Own Top-Level Recipient Tables
 
-They should remain normal recipients inside a facility-scoped intake container.
+They should remain normal recipients inside a campaign-scoped intake container,
+whether that container is a facility or a partner program.
 
 ## API Direction
 
@@ -512,7 +556,7 @@ Do not use `Families` as the main navigation label because the domain now
 includes both:
 
 - household children
-- nursing-home adults
+- adults in nursing-home/facility flows
 
 Do not use `Recipients` as the primary UI label unless there is a strong need
 for exact domain terminology in a specific view.
@@ -574,6 +618,7 @@ Recommended first screen:
 
 - `Add Family`
 - `Add Facility`
+- `Add Partner Program`
 
 The page should feel like a workflow launcher, not a directory.
 
@@ -581,8 +626,9 @@ Recommended behavior:
 
 - `Add Family` opens the household intake flow
 - `Add Facility` opens the care-facility intake flow
+- `Add Partner Program` opens the partner-program intake flow
 - after a group is created, the same intake surface should keep users in context
-  to add children or residents and then add wishlists
+  to add children or adults and then add wishlists
 
 This is important because intake workers think in connected tasks:
 
@@ -596,6 +642,12 @@ or:
 - add the residents
 - add their wishlists
 
+or:
+
+- open a partner-program intake
+- add the adult recipients
+- add their wishlists
+
 They are not thinking in abstract record types.
 
 ### Directory View
@@ -605,7 +657,7 @@ The `Directory` child page should be the searchable maintenance surface.
 Recommended structure:
 
 1. top summary cards
-2. `Households & Facilities` section
+2. `Households, Facilities & Programs` section
 3. `People` section
 
 Recommended summary cards:
@@ -618,7 +670,7 @@ Recommended summary cards:
 These should remain compact and consistent with the Team and Readiness
 workspace patterns already in the app.
 
-#### Directory Section 1: Households & Facilities
+#### Directory Section 1: Households, Facilities & Programs
 
 This replaces the colder backend phrase `recipient groups` in the UI.
 
@@ -663,10 +715,10 @@ Recommended sections:
 Recommended behaviors:
 
 - allow add/edit/remove contacts
-- allow add child/resident from inside the group drawer
-- show linked children/residents directly in the drawer so intake stays
+- allow add child/resident/adult recipient from inside the group drawer
+- show linked children/residents/adults directly in the drawer so intake stays
   connected to the group context
-- support both household and facility entry through the same drawer shell
+- support household, facility, and partner-program entry through the same drawer shell
 
 ### Person Drawer
 
@@ -681,10 +733,35 @@ Recommended sections:
 Recommended behaviors:
 
 - open full wishlist editing from the person drawer
-- show family-child vs nursing-home-adult fields conditionally based on
+- show family-child vs facility-adult vs partner-program-adult fields conditionally based on
   `program_type`
 - hide non-applicable direct-contact fields during contextual household-child
   intake so family contacts stay on the household record
+- show optional recipient-level address/phone/email fields for facility adults
+- show recipient-level address/phone/email fields prominently for partner-program adults
+
+### Address Semantics
+
+Both `recipient_group` and `recipient` may have address data, but they mean
+different things:
+
+- `recipient_group.address_*`
+  - the shared coordination address for the family, facility, or partner program
+- `recipient.address_*`
+  - the actual recipient home/living address when the program requires it
+
+UI rules:
+
+- `HOUSEHOLD`
+  - use the group/household address
+  - hide recipient direct address, phone, and email
+- `CARE_FACILITY`
+  - use the facility/group address by default
+  - allow optional recipient address, phone, and email fields
+  - keep facility-specific fields such as `facility_room`
+- `PARTNER_PROGRAM`
+  - allow and emphasize recipient address, phone, and email fields
+  - keep group/program contact info available for coordination and reporting
 
 ### Wishlist Editing
 
@@ -705,7 +782,7 @@ This keeps the operational truth clear:
 Recommended friendly labels:
 
 - `People`
-- `Households & Facilities`
+- `Households, Facilities & Programs`
 - `Contacts`
 - `Wishlists`
 
@@ -732,7 +809,15 @@ unless a lower-level admin/reporting screen needs exact domain naming.
 - add one or more adult recipients
 - add wishlist per adult
 
-This should be one domain workspace with workflow-aware forms, not two separate
+### Partner Program Intake
+
+- create partner program group
+- add program coordinator contacts
+- add one or more adult recipients
+- collect recipient home/contact information where available
+- add wishlist per adult
+
+This should be one domain workspace with workflow-aware forms, not three separate
 products.
 
 ### Relationship To Existing Navigation
@@ -766,6 +851,7 @@ That means communication resolution should eventually understand:
 - group contacts by role
 - recipient direct contact fields
 - recipient `program_type`
+- partner-program coordination contacts vs recipient home contacts
 
 ## Migration Strategy
 
@@ -783,9 +869,9 @@ Recommended sequencing:
 - update ORM models and serializers
 - backfill:
   - `INSTITUTION -> CARE_FACILITY`
-  - `SENIOR -> recipient_kind=ADULT, program_type=NURSING_HOME`
+  - `SENIOR -> recipient_kind=ADULT, program_type=SENIOR_FACILITY`
   - `CHILD -> program_type=CHILD_FAMILY`
-  - `ADULT -> program_type=NURSING_HOME` where current data is in institution groups
+  - `ADULT -> program_type=SENIOR_FACILITY` where current data is in institution groups
 
 ### Phase 3
 
@@ -820,9 +906,10 @@ The right long-term model is:
 - `wishlist` and `wishlist_item` for requested gifts
 - explicit `program_type` for workflow behavior
 
-That will support both:
+That will support:
 
 - children in family intake flows
-- adults in nursing-home flows
+- adults in nursing-home/facility flows
+- adults in partner-program flows
 
 without breaking the downstream gift pipeline into multiple incompatible models.

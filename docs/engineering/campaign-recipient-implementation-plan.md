@@ -1,11 +1,13 @@
 # Campaign Recipient Implementation Plan
 
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 ## Status
 
-- Planned
-- Implementation has not started yet
+- In progress
+- Phases 1 through 5 are implemented
+- The next planned phase is communications audience integration on top of the
+  refined People workspace
 
 This plan follows:
 
@@ -15,12 +17,16 @@ This plan follows:
 
 Implement the campaign recipient domain in a way that supports:
 
-- one unified recipient model for both children and nursing-home adults
-- campaign-scoped intake containers for households and care facilities
+- one unified recipient model for children, facility-based adults, and
+  partner-program adults
+- campaign-scoped intake containers for households, care facilities, and
+  partner programs
 - contacts that are operational but not gift recipients
 - one wishlist per recipient
 - a campaign-aware `People` workspace in the frontend
 - a safe transition from the older family-oriented placeholder surface
+- recipient-level address, phone, and email data for adult contexts where it
+  is appropriate
 
 ## Delivery Strategy
 
@@ -31,9 +37,9 @@ The project already has:
 - initial recipient schema in `V001__Initial_DB.sql`
 - ORM models for `recipient_group`, `group_contact`, `recipient`, `wishlist`, and `wishlist_item`
 - campaign summary counts that already depend on those tables
-- a placeholder frontend `Families` area
+- a campaign-aware `People` section with `Intake` and `Directory` child views
 
-The right path is:
+The delivery path has been:
 
 1. refine the schema and model semantics first
 2. add recipient-specific APIs
@@ -41,6 +47,8 @@ The right path is:
 4. then connect communications, reporting, and fulfillment to the refined model
 
 ## Phase 1: Schema Refinement Foundation
+
+Status: implemented
 
 ### Goal
 
@@ -51,7 +59,7 @@ Refine the current schema without breaking the downstream gift pipeline.
 1. Update `recipient_group` semantics
    - evolve `group_type`
    - move from `HOUSEHOLD | INSTITUTION`
-   - toward `HOUSEHOLD | CARE_FACILITY`
+   - toward `HOUSEHOLD | CARE_FACILITY | PARTNER_PROGRAM`
    - add `status`
    - add `external_reference`
 
@@ -63,7 +71,12 @@ Refine the current schema without breaking the downstream gift pipeline.
 3. Update `recipient`
    - add `recipient_kind`
    - add `program_type`
-   - add recipient-level fields needed for nursing-home adults:
+   - add recipient-level fields needed for adult programs:
+     - `address_line1`
+     - `address_line2`
+     - `city`
+     - `state`
+     - `postal_code`
      - `direct_email`
      - `direct_phone`
      - `facility_room`
@@ -83,7 +96,7 @@ Refine the current schema without breaking the downstream gift pipeline.
 
 6. Create migration plan for current enums/data
    - map `INSTITUTION -> CARE_FACILITY`
-   - map `SENIOR -> recipient_kind=ADULT, program_type=NURSING_HOME`
+   - map `SENIOR -> recipient_kind=ADULT, program_type=SENIOR_FACILITY`
    - map child family rows to `program_type=CHILD_FAMILY`
 
 ### Deliverables
@@ -93,6 +106,8 @@ Refine the current schema without breaking the downstream gift pipeline.
 - compatibility/backfill rules for existing data
 
 ## Phase 2: Domain Model And Validation Cutover
+
+Status: implemented
 
 ### Goal
 
@@ -118,6 +133,9 @@ Make the refined schema the authoritative backend model.
    - enforce legal program/group combinations
    - enforce legal recipient-kind/program combinations
    - enforce program-specific required fields where needed
+   - keep child direct-contact fields hidden/not required for household flows
+   - allow optional direct-contact/address fields for facility adults
+   - support direct-contact/address fields for partner-program adults
 
 4. Update campaign summary/count logic only if needed
    - summary counts should remain stable through the refactor
@@ -129,6 +147,8 @@ Make the refined schema the authoritative backend model.
 - stable summary compatibility
 
 ## Phase 3: Recipient Feature Package And APIs
+
+Status: implemented
 
 ### Goal
 
@@ -177,6 +197,8 @@ Expose a real campaign-scoped recipient domain API.
 
 ## Phase 4: Campaign-Aware People Workspace
 
+Status: implemented
+
 ### Goal
 
 Replace the old family-only placeholder with the new campaign-scoped `People`
@@ -194,6 +216,7 @@ workspace.
    - primary actions:
      - `Add Family`
      - `Add Facility`
+     - `Add Partner Program`
    - keep users in context to add children/residents and their wishlists
 
 3. Build `Directory` child page
@@ -202,7 +225,7 @@ workspace.
      - `People`
      - `Wishlists`
      - `Open Items`
-   - searchable/sortable `Households & Facilities` table
+   - searchable/sortable `Households, Facilities & Programs` table
    - searchable/sortable `People` table
 
 4. Build drawers
@@ -213,7 +236,10 @@ workspace.
 
 5. Build workflow-aware conditional forms
    - child intake hides non-applicable direct-contact fields
-   - facility-resident intake shows resident-specific fields
+   - facility-resident intake shows resident-specific fields and allows optional
+     direct recipient address/phone/email
+   - partner-program adult intake shows recipient address/phone/email fields
+     prominently
    - group drawer keeps linked children/residents visible during intake
 
 ### Deliverables
@@ -223,6 +249,8 @@ workspace.
 - automated frontend coverage for the new workspace
 
 ## Phase 5: Wishlist Workflow And Sponsorship Alignment
+
+Status: implemented
 
 ### Goal
 
@@ -254,6 +282,8 @@ Connect the refined recipient model cleanly to gift workflows.
 
 ## Phase 6: Communications Audience Integration
 
+Status: next
+
 ### Goal
 
 Make the recipient domain usable as a communications audience source.
@@ -263,6 +293,7 @@ Make the recipient domain usable as a communications audience source.
 1. Extend audience resolution
    - household parent/guardian contacts
    - facility staff/social-worker contacts
+   - partner-program coordinator contacts
    - direct recipient contact where appropriate
 
 2. Add audience filters by:
@@ -273,6 +304,8 @@ Make the recipient domain usable as a communications audience source.
 
 3. Update communications builder metadata and scheduling flows
    - audience labels should use People-friendly language
+   - partner-program contacts and direct recipient channels should remain
+     distinct address books
 
 ### Deliverables
 
@@ -280,6 +313,8 @@ Make the recipient domain usable as a communications audience source.
 - communications integration with the refined recipient model
 
 ## Phase 7: Reporting And Cleanup
+
+Status: pending
 
 ### Goal
 
@@ -345,12 +380,13 @@ Add at least:
 
 1. create household with parent and child
 2. create facility with staff contact and adult recipient
-3. add/edit wishlist items
-4. verify People workspace row/drawer behavior
+3. create partner program with coordinator contact and adult recipients
+4. add/edit wishlist items
+5. verify People workspace row/drawer behavior
 
 ## Recommended Build Order
 
-The safest build order is:
+The original safest build order was:
 
 1. Phase 1: schema refinement
 2. Phase 2: model/validation cutover
@@ -362,16 +398,13 @@ The safest build order is:
 
 ## Recommendation
 
-Start with backend refinement first.
+Backend refinement was the right first move, and that is now done through the
+People workspace and wishlist/fulfillment alignment phases.
 
-Do not begin with the frontend rename from `Families` to `People` until the
-recipient APIs and refined schema are in place.
+The current next slice should be communications audience integration on top of
+the implemented recipient foundation, with special attention to:
 
-The first implementation slice should be:
-
-- migration
-- updated models
-- backend recipient feature package
-
-Then the `People` workspace can land on a stable backend contract instead of
-another placeholder surface.
+- household parent/guardian contacts
+- facility coordination contacts
+- partner-program coordination contacts
+- direct adult recipient channels where appropriate

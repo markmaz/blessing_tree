@@ -1,11 +1,11 @@
 # Active Workstreams
 
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Recipient phase 5 is now implemented with wishlist/fulfillment alignment in the `People` workspace, and the next step is phase 6 communications audience integration
+- Current step: Recipient phases 1 through 5 are implemented, the recipient docs are now refined for partner-program adult flows and adult direct-contact rules, and the next step is phase 6 communications audience integration
 
 ## Recently Completed
 
@@ -97,14 +97,15 @@ Last updated: 2026-05-21
 - Added configurable SMTP TLS/SSL flags plus a local SMTP sink so invitation emails and scheduled communications can be exercised end to end in development without external SMTP credentials
 - Added Playwright browser E2E coverage for invite onboarding, create-from-previous-campaign, and the communications template builder
 - Tightened campaign visibility and campaign-creator setup so member/access-role visibility is the preferred path and newly created campaigns always seed the creator as a campaign member with `CAMPAIGN_MANAGER`
-- Documented the concrete recipient-domain direction: keep a unified campaign-scoped recipient model, treat parents/guardians/facility staff as contacts rather than recipients, and evolve the schema toward explicit `program_type` support for `CHILD_FAMILY` and `NURSING_HOME`
+- Documented the concrete recipient-domain direction: keep a unified campaign-scoped recipient model, treat parents/guardians/facility staff/partner-program coordinators as contacts rather than recipients, and evolve the schema toward explicit `program_type` support for `CHILD_FAMILY`, `SENIOR_FACILITY`, and `SENIOR_PARTNER_PROGRAM`
 - Documented the concrete recipient implementation sequence, from schema refinement through APIs, the campaign-aware `People` workspace, wishlist/fulfillment alignment, and communications audience integration
 - Implemented recipient phase 1 backend refinement with `V014__Recipient_Refinement.sql`, refined ORM models, recipient-domain constants, and backend model tests
 - Implemented recipient backend phases 2 and 3 with a new recipient feature package, aggregate `people-workspace` payload, and campaign-scoped group/contact/recipient/wishlist CRUD APIs
-- Implemented recipient phase 4 with a campaign-aware `People` workspace, selected-campaign `People` navigation, sortable `Households & Facilities` and `People` tables, right-side group/recipient drawers, contact management, and recipient-centered wishlist editing
+- Implemented recipient phase 4 with a campaign-aware `People` workspace, selected-campaign `People` navigation, sortable `Households, Facilities & Programs` and `People` tables, right-side group/recipient drawers, contact management, and recipient-centered wishlist editing
 - Implemented recipient phase 5 with gift-workflow visibility in the People workflow, including sponsorship, fulfillment, label, pickup, and authorized-pickup-contact readiness surfaced directly in wishlist items and group/recipient drawers
 - Refined the People intake UX so family/facility entry now feels more like connected intake work: group drawers expose `Children`/`Residents` directly, and contextual recipient drawers hide non-applicable fields such as child direct-contact details
 - Split the People section into child `Intake` and `Directory` views so new family/facility entry starts from a simple workflow launcher while search and maintenance stay in a separate directory surface
+- Updated the recipient design and implementation docs again so the long-term model now explicitly includes `PARTNER_PROGRAM` groups plus adult recipient direct-contact/address rules for facility and partner-program flows
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Replaced the old placeholder automation warning with a real execution layer:
@@ -146,12 +147,11 @@ Last updated: 2026-05-21
 
 ## Immediate Next Steps
 
-1. Replace the placeholder family UI with the campaign-aware `People` workspace
-2. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
-3. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
-4. Retire the remaining legacy `campaign_user_role` compatibility paths after the Team/member model is fully authoritative everywhere
-5. Add recipient-aware communications audience resolution for household contacts, facility contacts, and direct recipient channels where appropriate
-6. Validate sponsorship/fulfillment/pickup UI flows against the refined recipient model
+1. Add recipient-aware communications audience resolution for household contacts, facility contacts, partner-program contacts, and direct recipient channels where appropriate
+2. Validate sponsorship/fulfillment/pickup UI flows against the refined recipient model, especially for adult direct-contact and address scenarios
+3. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
+4. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
+5. Retire the remaining legacy `campaign_user_role` compatibility paths after the Team/member model is fully authoritative everywhere
 
 ## Blockers Or Ambiguities
 
