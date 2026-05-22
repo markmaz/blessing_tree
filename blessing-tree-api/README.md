@@ -18,6 +18,7 @@ The backend is a Flask application built around:
 - The initial RBAC foundation now exists as a feature package with campaign role persistence, a capability matrix, an authorization service, and reusable enforcement decorators.
 - The first campaign business routes now exist as a feature package with protected list, detail, access, summary, create, and update endpoints.
 - Campaign Studio backend support now exists for team assignments, campaign-scoped communication templates/schedules, milestone dates, readiness evaluation, aggregate studio payloads, manual campaign events, unified schedule reads, and clone-from-previous campaign creation support.
+- Recipient phase 1 backend refinement now exists, including refined recipient-group, contact, recipient, wishlist, and wishlist-item schema/model support for both household children and nursing-home adults.
 - Campaign automation runtime now exists for scheduled communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness health checks.
 - Local development mail delivery can now run through a checked-in SMTP sink script so invite emails and scheduled communications can be exercised end to end without external SMTP credentials.
 - Admin runtime support now exists for Query Forge-style user invitations, global LLM configuration, runtime health probes, and app feature flags.
@@ -149,6 +150,7 @@ Core DDL lives in:
 - `db/migration/V011__Campaign_Automation_Runtime.sql`
 - `db/migration/V012__Admin_Runtime.sql`
 - `db/migration/V013__Campaign_Scoped_Communication_Templates.sql`
+- `db/migration/V014__Recipient_Refinement.sql`
 
 ## Campaign Routes
 

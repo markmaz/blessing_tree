@@ -22,7 +22,7 @@ Last updated: 2026-05-21
   - Campaign Studio backend support now exists for assignments, campaign-scoped communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, aggregate studio payloads, and create-from-previous-campaign cloning support
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
   - local outbound email is now operational in development through a repo-owned SMTP sink plus configurable TLS/SSL flags, so invite delivery and scheduled communication dispatch can be exercised end to end without external SMTP credentials
-  - the existing recipient domain model is now explicitly slated for refinement rather than replacement: keep `recipient_group`, `group_contact`, `recipient`, `wishlist`, and `wishlist_item`, but evolve it toward explicit container/contact/recipient separation plus `program_type` for `CHILD_FAMILY` and `NURSING_HOME`
+  - recipient phase 1 backend refinement now exists: `recipient_group`, `group_contact`, `recipient`, `wishlist`, and `wishlist_item` now support the refined container/contact/recipient split plus `program_type` for `CHILD_FAMILY` and `NURSING_HOME`
   - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
   - admin LLM test/health now probes the real generation path against the configured model instead of treating `/models` reachability as sufficient
   - invitation-centric onboarding now supports Google, Yahoo, and local password from the invite funnel; generic Google/Yahoo OAuth remains limited to already-linked returning users, and invite validation now exposes accepted-vs-pending onboarding state for cleaner frontend handling
@@ -213,6 +213,10 @@ Last updated: 2026-05-21
   - verified `communication_template.campaign_id`
   - verified `uq_communication_template_campaign_key`
   - verified campaign-scoped audience/active indexes and campaign foreign key
+  - `V014__Recipient_Refinement.sql` has been applied to the local `blessing_tree` database
+  - verified refined recipient domain columns on `recipient_group`, `group_contact`, `recipient`, `wishlist`, and `wishlist_item`
+  - verified recipient indexes for `recipient_kind`, `program_type`, and recipient-group status
+  - verified wishlist status index and `fk_wishlist_intake_completed_by_contact`
 - Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
 - Readiness direction is now explicitly lifecycle-aware and backend-driven:
   - grouped categories instead of one flat finding list

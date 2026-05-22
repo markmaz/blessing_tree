@@ -8,6 +8,13 @@ from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+from .recipient_constants import (
+    RECIPIENT_GROUP_STATUS_ACTIVE,
+    RECIPIENT_GROUP_STATUS_ARCHIVED,
+    RECIPIENT_GROUP_STATUS_INACTIVE,
+    RECIPIENT_GROUP_TYPE_CARE_FACILITY,
+    RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+)
 from .uuid_bin import UUIDBin
 
 if TYPE_CHECKING:
@@ -29,12 +36,23 @@ class RecipientGroup(Base):
     )
 
     group_type: Mapped[str] = mapped_column(
-        Enum("HOUSEHOLD", "INSTITUTION", name="recipient_group_type"),
+        Enum(RECIPIENT_GROUP_TYPE_HOUSEHOLD, RECIPIENT_GROUP_TYPE_CARE_FACILITY, name="recipient_group_type"),
         nullable=False,
     )
     group_name: Mapped[str] = mapped_column(String(255), nullable=False)
     intake_source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    external_reference: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        Enum(
+            RECIPIENT_GROUP_STATUS_ACTIVE,
+            RECIPIENT_GROUP_STATUS_INACTIVE,
+            RECIPIENT_GROUP_STATUS_ARCHIVED,
+            name="recipient_group_status",
+        ),
+        nullable=False,
+        default=RECIPIENT_GROUP_STATUS_ACTIVE,
+    )
 
     address_line1: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     address_line2: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -69,4 +87,5 @@ class RecipientGroup(Base):
         Index("idx_recipient_group_campaign", "campaign_id"),
         Index("idx_recipient_group_type", "campaign_id", "group_type"),
         Index("idx_recipient_group_name", "campaign_id", "group_name"),
+        Index("idx_recipient_group_status", "campaign_id", "status"),
     )

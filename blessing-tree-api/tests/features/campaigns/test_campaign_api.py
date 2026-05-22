@@ -33,6 +33,13 @@ from app.models.donation import Donation
 from app.models.donation_line import DonationLine
 from app.models.fulfillment import Fulfillment
 from app.models.recipient import Recipient
+from app.models.recipient_constants import (
+    RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+    RECIPIENT_KIND_CHILD,
+    RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+    RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+    RECIPIENT_STATUS_ACTIVE,
+)
 from app.models.recipient_group import RecipientGroup
 from app.models.sponsor import Sponsor
 from app.models.sponsorship import Sponsorship
@@ -187,15 +194,22 @@ def test_get_campaign_summary_returns_all_v1_counts(
     session = campaign_api_module.SessionLocal()
     user = _seed_user(session)
     campaign = _seed_campaign(session, year=2026, name="Summary Campaign")
-    group = RecipientGroup(id=uuid.uuid4(), campaign_id=campaign.id, group_type="HOUSEHOLD", group_name="Family One")
+    group = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        group_type=RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+        group_name="Family One",
+        status="ACTIVE",
+    )
     recipient = Recipient(
         id=uuid.uuid4(),
         campaign_id=campaign.id,
         recipient_group_id=group.id,
-        recipient_type="CHILD",
-        privacy_level="FULL_NAME",
+        recipient_kind=RECIPIENT_KIND_CHILD,
+        program_type=RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+        privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
         display_label="Kid One",
-        status="ACTIVE",
+        status=RECIPIENT_STATUS_ACTIVE,
     )
     wishlist = Wishlist(id=uuid.uuid4(), campaign_id=campaign.id, recipient_id=recipient.id)
     wishlist_item = WishlistItem(
