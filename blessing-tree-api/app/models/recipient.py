@@ -67,6 +67,8 @@ class Recipient(Base):
     )
 
     display_label: Mapped[str] = mapped_column(String(255), nullable=False)
+    program_recipient_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    program_recipient_id: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
 
     first_name: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     last_name: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
@@ -105,8 +107,10 @@ class Recipient(Base):
 
     __table_args__ = (
         UniqueConstraint("campaign_id", "recipient_group_id", "display_label", name="uq_recipient_label"),
+        UniqueConstraint("campaign_id", "program_recipient_id", name="uq_recipient_program_id"),
         Index("idx_recipient_group", "recipient_group_id"),
         Index("idx_recipient_campaign", "campaign_id"),
+        Index("idx_recipient_program_id", "campaign_id", "program_recipient_id"),
         Index("idx_recipient_kind", "campaign_id", "recipient_kind"),
         Index("idx_recipient_program_type", "campaign_id", "program_type"),
         Index("idx_recipient_status", "campaign_id", "status"),

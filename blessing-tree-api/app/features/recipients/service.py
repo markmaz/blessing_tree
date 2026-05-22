@@ -24,6 +24,7 @@ from app.features.recipients.validation import (
     validate_optional_text,
     validate_preferred_contact,
     validate_privacy_level,
+    validate_program_abbreviation,
     validate_recipient_contact_context,
     validate_program_alignment,
     validate_program_type,
@@ -113,6 +114,10 @@ class CampaignRecipientService:
             campaign_id=uuid.UUID(campaign_id),
             group_type=validate_group_type(payload.get("group_type")),
             group_name=require_short_text(payload.get("group_name"), "group_name"),
+            program_abbreviation=validate_program_abbreviation(
+                payload.get("program_abbreviation"),
+                required=validate_group_type(payload.get("group_type")) == "ADULT_PROGRAM",
+            ),
             intake_source=validate_optional_text(payload.get("intake_source"), "intake_source"),
             external_reference=validate_optional_text(payload.get("external_reference"), "external_reference"),
             notes=validate_optional_long_text(payload.get("notes"), "notes"),
@@ -123,6 +128,7 @@ class CampaignRecipientService:
             state=validate_optional_text(payload.get("state"), "state", max_length=64),
             postal_code=validate_optional_text(payload.get("postal_code"), "postal_code", max_length=32),
         )
+        self._validate_program_abbreviation_uniqueness(db, group)
         db.add(group)
         db.commit()
         return self.get_group(db, campaign_id, str(group.id))
@@ -138,8 +144,17 @@ class CampaignRecipientService:
                     program_type=recipient.program_type,
                 )
             group.group_type = next_group_type
+            if next_group_type == "HOUSEHOLD":
+                group.program_abbreviation = None
+            elif group.program_abbreviation is None:
+                group.program_abbreviation = self._derive_group_abbreviation(group.group_name)
         if "group_name" in payload:
             group.group_name = require_short_text(payload.get("group_name"), "group_name")
+        if "program_abbreviation" in payload or ("group_type" in payload and group.group_type == "ADULT_PROGRAM"):
+            group.program_abbreviation = validate_program_abbreviation(
+                payload.get("program_abbreviation", group.program_abbreviation),
+                required=group.group_type == "ADULT_PROGRAM",
+            )
         if "intake_source" in payload:
             group.intake_source = validate_optional_text(payload.get("intake_source"), "intake_source")
         if "external_reference" in payload:
@@ -157,6 +172,11 @@ class CampaignRecipientService:
         }.items():
             if field_name in payload:
                 setattr(group, field_name, validate_optional_text(payload.get(field_name), field_name, max_length=max_length))
+        self._validate_program_abbreviation_uniqueness(db, group)
+        if group.group_type == "ADULT_PROGRAM":
+            self._sync_group_program_recipient_ids(db, group)
+        else:
+            self._clear_group_program_recipient_ids(group)
         db.commit()
         return self.get_group(db, campaign_id, group_id)
 
@@ -322,6 +342,7 @@ class CampaignRecipientService:
             direct_email=recipient.direct_email,
             direct_phone=recipient.direct_phone,
         )
+        self._assign_program_recipient_identity(db, group, recipient)
         db.add(recipient)
         db.commit()
         return self.get_recipient(db, campaign_id, str(recipient.id))
@@ -329,8 +350,10 @@ class CampaignRecipientService:
     def update_recipient(self, db: Session, campaign_id: str, recipient_id: str, payload: dict[str, object]) -> Recipient:
         recipient = self.get_recipient(db, campaign_id, recipient_id)
         group = recipient.recipient_group
+        group_changed = False
         if "recipient_group_id" in payload:
             group = self.get_group(db, campaign_id, str(payload.get("recipient_group_id")))
+            group_changed = group.id != recipient.recipient_group_id
             recipient.recipient_group_id = group.id
         recipient_kind = recipient.recipient_kind
         if "recipient_kind" in payload:
@@ -389,6 +412,10 @@ class CampaignRecipientService:
             direct_email=recipient.direct_email,
             direct_phone=recipient.direct_phone,
         )
+        if group_changed:
+            recipient.program_recipient_number = None
+            recipient.program_recipient_id = None
+        self._assign_program_recipient_identity(db, group, recipient)
         db.commit()
         return self.get_recipient(db, campaign_id, recipient_id)
 
@@ -569,6 +596,82 @@ class CampaignRecipientService:
                     existing.is_primary = False
         elif not any(contact.is_primary for contact in list(group.contacts or []) if contact.id != active_contact.id):
             active_contact.is_primary = True
+
+    @staticmethod
+    def _derive_group_abbreviation(group_name: str) -> str:
+        cleaned = "".join(character for character in group_name.upper() if character.isalnum())
+        return (cleaned[:12] or "ADULT")
+
+    def _validate_program_abbreviation_uniqueness(self, db: Session, group: RecipientGroup) -> None:
+        if group.group_type != "ADULT_PROGRAM" or not group.program_abbreviation:
+            return
+        existing = (
+            db.query(RecipientGroup.id)
+            .filter(
+                RecipientGroup.campaign_id == group.campaign_id,
+                RecipientGroup.program_abbreviation == group.program_abbreviation,
+                RecipientGroup.id != group.id,
+            )
+            .first()
+        )
+        if existing is not None:
+            raise ServiceError(
+                "program_abbreviation must be unique within the campaign",
+                status_code=400,
+                details={"field": "program_abbreviation"},
+            )
+
+    def _assign_program_recipient_identity(
+        self,
+        db: Session,
+        group: RecipientGroup,
+        recipient: Recipient,
+    ) -> None:
+        if group.group_type != "ADULT_PROGRAM" or recipient.recipient_kind != RECIPIENT_KIND_ADULT:
+            recipient.program_recipient_number = None
+            recipient.program_recipient_id = None
+            return
+
+        abbreviation = group.program_abbreviation or self._derive_group_abbreviation(group.group_name)
+        group.program_abbreviation = abbreviation
+
+        if recipient.program_recipient_number is None:
+            max_number = (
+                db.query(func.max(Recipient.program_recipient_number))
+                .filter(
+                    Recipient.recipient_group_id == group.id,
+                    Recipient.id != recipient.id,
+                )
+                .scalar()
+            )
+            recipient.program_recipient_number = (max_number or 0) + 1
+
+        recipient.program_recipient_id = f"{abbreviation}-{recipient.program_recipient_number:03d}"
+
+    def _sync_group_program_recipient_ids(self, db: Session, group: RecipientGroup) -> None:
+        recipients = db.query(Recipient).filter(Recipient.recipient_group_id == group.id).all()
+        recipients.sort(
+            key=lambda recipient: (
+                recipient.program_recipient_number is None,
+                recipient.program_recipient_number or 0,
+                recipient.created_at,
+                recipient.display_label,
+            )
+        )
+        for index, recipient in enumerate(recipients, start=1):
+            if recipient.recipient_kind != RECIPIENT_KIND_ADULT:
+                recipient.program_recipient_number = None
+                recipient.program_recipient_id = None
+                continue
+            if recipient.program_recipient_number is None:
+                recipient.program_recipient_number = index
+            recipient.program_recipient_id = f"{group.program_abbreviation}-{recipient.program_recipient_number:03d}"
+
+    @staticmethod
+    def _clear_group_program_recipient_ids(group: RecipientGroup) -> None:
+        for recipient in list(group.recipients or []):
+            recipient.program_recipient_number = None
+            recipient.program_recipient_id = None
 
     @staticmethod
     def _build_counts(groups: list[RecipientGroup], recipients: list[Recipient]) -> dict[str, int]:

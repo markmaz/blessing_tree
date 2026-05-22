@@ -57,6 +57,7 @@ describe('CampaignPeopleGroupDrawer', () => {
 
     expect(screen.getByRole('heading', { name: 'Add Adult Program' })).toBeInTheDocument();
     expect(screen.getByLabelText('Program Name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Program Abbreviation')).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Address Line 1'), '123 Main');
 
@@ -107,6 +108,7 @@ describe('CampaignPeopleGroupDrawer', () => {
           campaignId: 'campaign-1',
           groupType: 'ADULT_PROGRAM',
           groupName: 'Maple Grove',
+          programAbbreviation: 'MG',
           intakeSource: null,
           externalReference: null,
           notes: null,

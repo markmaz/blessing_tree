@@ -77,6 +77,7 @@ Last updated: 2026-05-22
   - the placeholder Families surface is now replaced by a campaign-aware People section with child `Intake` and `Directory` views so new entry work is separated from searchable maintenance
   - the People workspace now also surfaces gift-workflow readiness directly in wishlist items, including sponsorship status, fulfillment progress, label state, pickup state, and authorized pickup contacts from the group record
   - the People workspace and People Reports now also include backend-authored workflow rollups for sponsored, fulfilled, ready-for-pickup, picked-up, adult-direct-contact, and pickup-contact coverage counts, aligned to the simplified `ADULT_PROGRAM` model
+  - adult-program intake now captures a required program abbreviation, and adult recipients now receive generated IDs such as `SAH-001` derived from that abbreviation plus a group-local sequence number
   - the People intake UX is now more group-first: family/facility drawers now frame intake as `Children` or `Residents`, the contextual child/resident drawer hides irrelevant direct-contact fields, and data entry can move from group to child/resident wishlist flow with less context switching
   - the current recipient design direction now explicitly supports two intake contexts:
     - `HOUSEHOLD` for family/child flows

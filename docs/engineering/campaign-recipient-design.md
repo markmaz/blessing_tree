@@ -163,6 +163,7 @@ Recommended fields:
 - `campaign_id`
 - `group_type`
 - `group_name`
+- `program_abbreviation` nullable, used for adult-program recipient IDs
 - `intake_source`
 - `external_reference` nullable
 - `address_line1`
@@ -245,6 +246,8 @@ Recommended fields:
 - `program_type`
 - `privacy_level`
 - `display_label`
+- `program_recipient_number` nullable
+- `program_recipient_id` nullable
 - `first_name`
 - `last_name`
 - `birth_year` nullable
@@ -735,13 +738,12 @@ UI rules:
 - `HOUSEHOLD`
   - use the group/household address
   - hide recipient direct address, phone, and email
-- `CARE_FACILITY`
-  - use the facility/group address by default
+- `ADULT_PROGRAM`
+  - use the program/group address by default when that is the only coordination address
   - allow optional recipient address, phone, and email fields
-  - keep facility-specific fields such as `facility_room`
-- `PARTNER_PROGRAM`
-  - allow and emphasize recipient address, phone, and email fields
-  - keep group/program contact info available for coordination and reporting
+  - require a group-level `program_abbreviation` during intake
+  - generate `program_recipient_id` as `<program_abbreviation>-<number>`
+  - keep facility-style fields such as `facility_room` available when relevant
 
 ### Wishlist Editing
 

@@ -91,6 +91,8 @@ interface RecipientResponse {
   program_type: CampaignRecipient['programType'];
   privacy_level: CampaignRecipient['privacyLevel'];
   display_label: string;
+  program_recipient_number: number | null;
+  program_recipient_id: string | null;
   first_name: string | null;
   last_name: string | null;
   birth_year: number | null;
@@ -125,6 +127,7 @@ interface GroupResponse {
   campaign_id: string;
   group_type: CampaignPeopleGroup['groupType'];
   group_name: string;
+  program_abbreviation: string | null;
   intake_source: string | null;
   external_reference: string | null;
   notes: string | null;
@@ -217,6 +220,7 @@ export async function createRecipientGroup(
     withJson('POST', {
       group_type: input.groupType,
       group_name: input.groupName,
+      program_abbreviation: input.programAbbreviation ?? null,
       intake_source: input.intakeSource ?? null,
       external_reference: input.externalReference ?? null,
       notes: input.notes ?? null,
@@ -240,6 +244,7 @@ export async function updateRecipientGroup(
   const payload: Record<string, unknown> = {};
   if ('groupType' in input) payload.group_type = input.groupType;
   if ('groupName' in input) payload.group_name = input.groupName;
+  if ('programAbbreviation' in input) payload.program_abbreviation = input.programAbbreviation ?? null;
   if ('intakeSource' in input) payload.intake_source = input.intakeSource ?? null;
   if ('externalReference' in input) payload.external_reference = input.externalReference ?? null;
   if ('notes' in input) payload.notes = input.notes ?? null;
@@ -384,6 +389,7 @@ function mapGroup(response: GroupResponse): CampaignPeopleGroup {
     campaignId: response.campaign_id,
     groupType: response.group_type,
     groupName: response.group_name,
+    programAbbreviation: response.program_abbreviation,
     intakeSource: response.intake_source,
     externalReference: response.external_reference,
     notes: response.notes,
@@ -413,6 +419,8 @@ function mapRecipient(response: RecipientResponse): CampaignRecipient {
     programType: response.program_type,
     privacyLevel: response.privacy_level,
     displayLabel: response.display_label,
+    programRecipientNumber: response.program_recipient_number,
+    programRecipientId: response.program_recipient_id,
     firstName: response.first_name,
     lastName: response.last_name,
     birthYear: response.birth_year,

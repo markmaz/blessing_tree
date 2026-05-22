@@ -120,8 +120,12 @@ export function CampaignPeopleRecipientTable({
                 <div className="campaign-team-table__person">
                   <strong>{recipient.displayLabel}</strong>
                   <span>
-                    {recipient.group?.groupType === 'ADULT_PROGRAM' && recipient.facilityRoom
-                      ? `Room ${recipient.facilityRoom}`
+                    {recipient.group?.groupType === 'ADULT_PROGRAM' && recipient.programRecipientId
+                      ? [recipient.programRecipientId, recipient.facilityRoom ? `Room ${recipient.facilityRoom}` : null]
+                          .filter(Boolean)
+                          .join(' · ')
+                      : recipient.group?.groupType === 'ADULT_PROGRAM' && recipient.facilityRoom
+                        ? `Room ${recipient.facilityRoom}`
                       : recipient.gender
                         ? `Gender ${recipient.gender}`
                         : 'No profile details yet'}

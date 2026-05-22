@@ -9,15 +9,15 @@ vi.mock('@/shared/api/metaApi', () => ({
 describe('AppFooter', () => {
   it('renders the copyright line and version numbers', async () => {
     const { getBackendVersion } = await import('@/shared/api/metaApi');
-    vi.mocked(getBackendVersion).mockResolvedValue('0.1.46');
+    vi.mocked(getBackendVersion).mockResolvedValue('0.1.47');
 
     render(<AppFooter />);
 
     expect(screen.getByText(/queryforge, llc/i)).toBeInTheDocument();
-    expect(screen.getByText(/frontend v0\.0\.88/i)).toBeInTheDocument();
+    expect(screen.getByText(/frontend v0\.0\.89/i)).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText(/backend v0\.1\.46/i)).toBeInTheDocument();
+      expect(screen.getByText(/backend v0\.1\.47/i)).toBeInTheDocument();
     });
   });
 

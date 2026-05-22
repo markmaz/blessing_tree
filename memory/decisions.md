@@ -84,6 +84,13 @@
 - Rationale: the simplified `ADULT_PROGRAM` model is most useful when downstream operators can see workflow readiness directly instead of inferring it repeatedly in frontend code.
 - Consequence: recipient rows, group rows, and workspace-level counts should carry workflow rollups, People Reports should use those rollups directly, and future sponsorship/fulfillment/pickup surfaces should build on the same contract instead of recalculating their own summaries.
 
+## Adult Program Recipient ID Direction
+
+- Status: active
+- Decision: require a program abbreviation on `ADULT_PROGRAM` groups and generate adult recipient IDs from that abbreviation plus a group-local sequence number.
+- Rationale: intake operators want stable, printable identifiers for adult recipients, and the program abbreviation plus number matches how coordinators already think about these lists.
+- Consequence: `recipient_group` now carries `program_abbreviation`, adult recipients now carry generated `program_recipient_number` and `program_recipient_id`, the People intake UI must collect the abbreviation for adult-program groups, and recipient tables/drawers should surface the generated ID read-only instead of asking users to type it manually.
+
 ## Campaign Schedule Direction
 
 - Status: active

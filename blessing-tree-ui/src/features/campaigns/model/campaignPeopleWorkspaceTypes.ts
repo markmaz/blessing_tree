@@ -121,6 +121,8 @@ export interface CampaignRecipient {
   programType: RecipientProgramType;
   privacyLevel: RecipientPrivacyLevel;
   displayLabel: string;
+  programRecipientNumber: number | null;
+  programRecipientId: string | null;
   firstName: string | null;
   lastName: string | null;
   birthYear: number | null;
@@ -150,6 +152,7 @@ export interface CampaignPeopleGroup {
   campaignId: string;
   groupType: RecipientGroupType;
   groupName: string;
+  programAbbreviation: string | null;
   intakeSource: string | null;
   externalReference: string | null;
   notes: string | null;
@@ -215,6 +218,7 @@ export interface CampaignAddressSuggestion {
 export interface RecipientGroupUpsertInput {
   groupType: RecipientGroupType;
   groupName: string;
+  programAbbreviation?: string | null;
   intakeSource?: string | null;
   externalReference?: string | null;
   notes?: string | null;

@@ -80,8 +80,8 @@ const genderOptions = [
   { value: '', label: 'Not set' },
   { value: 'F', label: 'Female' },
   { value: 'M', label: 'Male' },
-  { value: 'PNTS', label: 'Prefer not to say' },
-  { value: 'OTHER', label: 'Other' },
+  { value: 'U', label: 'Prefer not to say' },
+  { value: 'X', label: 'Other' },
 ] as const;
 
 function buildDisplayLabel(firstName: string | null | undefined, lastName: string | null | undefined): string {
@@ -545,6 +545,15 @@ export function CampaignPeopleRecipientDrawer({
 
             {selectedGroup?.groupType === 'ADULT_PROGRAM' ? (
               <>
+                <label className="form-label">
+                  Adult ID
+                  <input
+                    className="form-control mt-2"
+                    value={recipient?.programRecipientId ?? 'Generated after save'}
+                    disabled
+                  />
+                </label>
+
                 <label className="form-label">
                   Room / Unit
                   <input

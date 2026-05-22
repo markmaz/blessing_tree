@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import uuid
 from datetime import datetime
 
@@ -224,6 +225,26 @@ def validate_group_status(value: object, *, default: str = RECIPIENT_GROUP_STATU
     normalized = str(value or default).strip().upper()
     if normalized not in GROUP_STATUSES:
         raise ServiceError("Invalid status", status_code=400, details={"field": "status"})
+    return normalized
+
+
+def validate_program_abbreviation(value: object, *, required: bool = False) -> str | None:
+    if value in (None, ""):
+        if required:
+            raise ServiceError(
+                "program_abbreviation is required",
+                status_code=400,
+                details={"field": "program_abbreviation"},
+            )
+        return None
+
+    normalized = re.sub(r"[^A-Za-z0-9]", "", str(value).strip().upper())
+    if len(normalized) < 2 or len(normalized) > 12:
+        raise ServiceError(
+            "program_abbreviation must be 2-12 letters or numbers",
+            status_code=400,
+            details={"field": "program_abbreviation"},
+        )
     return normalized
 
 

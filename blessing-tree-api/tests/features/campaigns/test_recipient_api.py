@@ -56,6 +56,7 @@ def _seed_adult_program_group(session, campaign_id):
         campaign_id=campaign_id,
         group_type=RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
         group_name="Senior At Home",
+        program_abbreviation="SAH",
         status=RECIPIENT_GROUP_STATUS_ACTIVE,
     )
     session.add(group)
@@ -82,6 +83,7 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
         campaign_id=campaign.id,
         group_type=RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
         group_name="Maple Grove",
+        program_abbreviation="MG",
         status=RECIPIENT_GROUP_STATUS_ACTIVE,
     )
     session.add_all([household, facility])
@@ -114,6 +116,8 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
         program_type=RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
         privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
         display_label="Mary Smith",
+        program_recipient_number=1,
+        program_recipient_id="MG-001",
         direct_email="mary@example.com",
         status=RECIPIENT_STATUS_ACTIVE,
     )
@@ -168,6 +172,8 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     assert payload["counts"]["groups_with_pickup_contacts_count"] == 1
     assert payload["counts"]["groups_missing_primary_contact_count"] == 1
     assert payload["counts"]["adults_with_direct_contact_count"] == 1
+    assert payload["groups"][1]["program_abbreviation"] == "MG"
+    assert payload["recipients"][1]["program_recipient_id"] == "MG-001"
     assert payload["groups"][0]["contacts"][0]["email"] == "sarah@example.com"
     assert payload["groups"][0]["authorized_pickup_contacts"][0]["email"] == "sarah@example.com"
     assert payload["groups"][0]["workflow_summary"]["open_item_count"] == 1
@@ -388,12 +394,40 @@ def test_adult_program_recipient_accepts_direct_contact_fields(app, monkeypatch:
     assert response.status_code == 201
     payload = response.get_json()
     assert payload["program_type"] == RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM
+    assert payload["program_recipient_number"] == 1
+    assert payload["program_recipient_id"] == "SAH-001"
     assert payload["address_line1"] == "12 River Road"
     assert payload["city"] == "Austin"
     assert payload["state"] == "TX"
     assert payload["postal_code"] == "78702"
     assert payload["direct_email"] == "mary.carter@example.com"
     assert payload["direct_phone"] == "555-4444"
+
+
+def test_adult_program_group_requires_program_abbreviation(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/recipient-groups",
+        json={
+            "group_type": "ADULT_PROGRAM",
+            "group_name": "Senior At Home",
+            "status": "ACTIVE",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "program_abbreviation is required"
 
 
 def test_household_child_rejects_direct_contact_fields(app, monkeypatch: pytest.MonkeyPatch) -> None:

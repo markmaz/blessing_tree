@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import List, Optional, TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -44,6 +44,7 @@ class RecipientGroup(Base):
         nullable=False,
     )
     group_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    program_abbreviation: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
     intake_source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     external_reference: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -91,5 +92,7 @@ class RecipientGroup(Base):
         Index("idx_recipient_group_campaign", "campaign_id"),
         Index("idx_recipient_group_type", "campaign_id", "group_type"),
         Index("idx_recipient_group_name", "campaign_id", "group_name"),
+        Index("idx_recipient_group_program_abbreviation", "campaign_id", "program_abbreviation"),
         Index("idx_recipient_group_status", "campaign_id", "status"),
+        UniqueConstraint("campaign_id", "program_abbreviation", name="uq_recipient_group_program_abbreviation"),
     )

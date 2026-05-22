@@ -40,6 +40,7 @@ interface CampaignPeopleGroupDrawerProps {
 const emptyGroupDraft = (groupType: RecipientGroupType = 'HOUSEHOLD'): RecipientGroupUpsertInput => ({
   groupType,
   groupName: '',
+  programAbbreviation: '',
   intakeSource: '',
   externalReference: '',
   notes: '',
@@ -84,6 +85,7 @@ export function CampaignPeopleGroupDrawer({
       ? {
           groupType: group.groupType,
           groupName: group.groupName,
+          programAbbreviation: group.programAbbreviation ?? '',
           intakeSource: group.intakeSource ?? '',
           externalReference: group.externalReference ?? '',
           notes: group.notes ?? '',
@@ -113,6 +115,7 @@ export function CampaignPeopleGroupDrawer({
   const currentGroupType = groupDraft.groupType;
   const isAdultProgramGroup = currentGroupType === 'ADULT_PROGRAM';
   const groupNameLabel = isAdultProgramGroup ? 'Program Name' : 'Family Name';
+  const programAbbreviationLabel = 'Program Abbreviation';
   const drawerTitle = group
     ? group.groupName
     : isAdultProgramGroup
@@ -168,12 +171,17 @@ export function CampaignPeopleGroupDrawer({
       setGroupError(`${groupNameLabel} is required.`);
       return;
     }
+    if (isAdultProgramGroup && !groupDraft.programAbbreviation?.trim()) {
+      setGroupError(`${programAbbreviationLabel} is required.`);
+      return;
+    }
 
     setGroupError(null);
     const savedGroup = await onSaveGroup(
       {
         ...groupDraft,
         groupName: groupDraft.groupName.trim(),
+        programAbbreviation: isAdultProgramGroup ? (groupDraft.programAbbreviation?.trim() || null) : null,
       },
       group?.id
     );
@@ -182,6 +190,7 @@ export function CampaignPeopleGroupDrawer({
       setGroupDraft({
         groupType: savedGroup.groupType,
         groupName: savedGroup.groupName,
+        programAbbreviation: savedGroup.programAbbreviation ?? '',
         intakeSource: savedGroup.intakeSource ?? '',
         externalReference: savedGroup.externalReference ?? '',
         notes: savedGroup.notes ?? '',
@@ -346,6 +355,24 @@ export function CampaignPeopleGroupDrawer({
                 disabled={!canEdit}
               />
             </label>
+
+            {isAdultProgramGroup ? (
+              <label className="form-label">
+                {programAbbreviationLabel}
+                <input
+                  className="form-control mt-2 text-uppercase"
+                  value={groupDraft.programAbbreviation ?? ''}
+                  onChange={(event) =>
+                    setGroupDraft((currentValue) => ({
+                      ...currentValue,
+                      programAbbreviation: event.target.value.toUpperCase(),
+                    }))
+                  }
+                  disabled={!canEdit}
+                  maxLength={12}
+                />
+              </label>
+            ) : null}
 
             <label className="form-label">
               Intake Source

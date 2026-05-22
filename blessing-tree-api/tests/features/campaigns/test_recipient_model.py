@@ -170,6 +170,7 @@ def test_adult_program_recipient_flow_supports_direct_contact_fields() -> None:
         campaign_id=campaign.id,
         group_type=RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
         group_name="Maple Grove - West Wing",
+        program_abbreviation="MGWW",
         status=RECIPIENT_GROUP_STATUS_ACTIVE,
     )
     contact = GroupContact(
@@ -190,6 +191,8 @@ def test_adult_program_recipient_flow_supports_direct_contact_fields() -> None:
         program_type=RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
         privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
         display_label="Mary Smith",
+        program_recipient_number=1,
+        program_recipient_id="MGWW-001",
         first_name="Mary",
         last_name="Smith",
         age=84,
@@ -210,8 +213,11 @@ def test_adult_program_recipient_flow_supports_direct_contact_fields() -> None:
     db.refresh(group)
 
     assert group.group_type == RECIPIENT_GROUP_TYPE_ADULT_PROGRAM
+    assert group.program_abbreviation == "MGWW"
     assert recipient.recipient_kind == RECIPIENT_KIND_ADULT
     assert recipient.program_type == RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM
+    assert recipient.program_recipient_number == 1
+    assert recipient.program_recipient_id == "MGWW-001"
     assert recipient.address_line1 == "400 Elm St"
     assert recipient.city == "Dallas"
     assert recipient.state == "TX"
@@ -234,6 +240,7 @@ def test_second_adult_program_context_can_store_group_and_direct_contact_details
         campaign_id=campaign.id,
         group_type=RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
         group_name="Senior At Home",
+        program_abbreviation="SAH",
         status=RECIPIENT_GROUP_STATUS_ACTIVE,
         address_line1="100 Program Way",
         city="Austin",
@@ -258,6 +265,8 @@ def test_second_adult_program_context_can_store_group_and_direct_contact_details
         program_type=RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
         privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
         display_label="James Carter",
+        program_recipient_number=1,
+        program_recipient_id="SAH-001",
         first_name="James",
         last_name="Carter",
         age=79,
@@ -276,8 +285,11 @@ def test_second_adult_program_context_can_store_group_and_direct_contact_details
     db.refresh(recipient)
 
     assert group.group_type == RECIPIENT_GROUP_TYPE_ADULT_PROGRAM
+    assert group.program_abbreviation == "SAH"
     assert group.address_line1 == "100 Program Way"
     assert recipient.program_type == RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM
+    assert recipient.program_recipient_number == 1
+    assert recipient.program_recipient_id == "SAH-001"
     assert recipient.address_line1 == "42 Oak Drive"
     assert recipient.city == "Round Rock"
     assert recipient.state == "TX"
