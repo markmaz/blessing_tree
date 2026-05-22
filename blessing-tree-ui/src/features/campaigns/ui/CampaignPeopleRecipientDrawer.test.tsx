@@ -87,6 +87,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
     expect(screen.getByText('Child Details')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Johnson Household')).toBeInTheDocument();
     expect(screen.getByLabelText('Child Display Name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Gender')).toHaveDisplayValue('Not set');
     expect(screen.queryByLabelText('Direct Email')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Direct Phone')).not.toBeInTheDocument();
   });
@@ -112,6 +113,8 @@ describe('CampaignPeopleRecipientDrawer', () => {
     expect(screen.getByRole('heading', { name: 'Add Adult' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('Senior At Home')).toBeInTheDocument();
     expect(screen.getByLabelText('Adult Display Name')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Female' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Male' })).toBeInTheDocument();
     expect(screen.getByLabelText('Home Address Line 1')).toBeInTheDocument();
     expect(screen.getByLabelText('City')).toBeInTheDocument();
     expect(screen.getByLabelText('Direct Email')).toBeInTheDocument();

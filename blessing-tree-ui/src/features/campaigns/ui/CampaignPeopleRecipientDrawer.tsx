@@ -76,6 +76,15 @@ const emptyWishlistItemDraft: WishlistItemFormState = {
   notes: '',
 };
 
+const genderOptions = [
+  { value: '', label: 'Not set' },
+  { value: 'F', label: 'Female' },
+  { value: 'M', label: 'Male' },
+  { value: 'NB', label: 'Non-binary' },
+  { value: 'PNTS', label: 'Prefer not to say' },
+  { value: 'OTHER', label: 'Other' },
+] as const;
+
 function buildRecipientDraft(
   recipient: CampaignRecipient | null,
   initialGroupId: string | null
@@ -146,6 +155,16 @@ export function CampaignPeopleRecipientDrawer({
     () => (lockedGroupId ? groups.find((group) => group.id === lockedGroupId) ?? null : null),
     [groups, lockedGroupId]
   );
+  const genderOptionList = useMemo(() => {
+    const currentGender = recipientDraft.gender?.trim() ?? '';
+    if (!currentGender || genderOptions.some((option) => option.value === currentGender)) {
+      return genderOptions;
+    }
+    return [
+      ...genderOptions,
+      { value: currentGender, label: `Current value: ${currentGender}` },
+    ];
+  }, [recipientDraft.gender]);
 
   const recipientProgram = selectedGroup?.groupType === 'ADULT_PROGRAM'
     ? { recipientKind: 'ADULT' as const, programType: 'ADULT_PROGRAM' as const }
@@ -479,8 +498,8 @@ export function CampaignPeopleRecipientDrawer({
 
             <label className="form-label">
               Gender
-              <input
-                className="form-control mt-2"
+              <select
+                className="form-select mt-2"
                 value={recipientDraft.gender ?? ''}
                 onChange={(event) =>
                   setRecipientDraft((currentValue) => ({
@@ -489,7 +508,13 @@ export function CampaignPeopleRecipientDrawer({
                   }))
                 }
                 disabled={!canEdit}
-              />
+              >
+                {genderOptionList.map((option) => (
+                  <option key={option.value || 'unset'} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="form-label">
