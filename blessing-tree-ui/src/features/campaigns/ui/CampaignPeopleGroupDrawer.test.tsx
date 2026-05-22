@@ -2,6 +2,39 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CampaignPeopleGroupDrawer } from '@/features/campaigns/ui/CampaignPeopleGroupDrawer';
+import type { CampaignPeopleGroup } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
+
+const adultProgramGroup: CampaignPeopleGroup = {
+  id: 'group-1',
+  campaignId: 'campaign-1',
+  groupType: 'ADULT_PROGRAM',
+  groupName: 'Maple Grove',
+  programAbbreviation: 'MG',
+  intakeSource: null,
+  externalReference: null,
+  notes: null,
+  status: 'ACTIVE',
+  addressLine1: '123 Main St',
+  addressLine2: null,
+  city: 'Austin',
+  state: 'TX',
+  postalCode: '78701',
+  primaryContact: null,
+  contacts: [],
+  authorizedPickupContacts: [],
+  recipientCount: 0,
+  workflowSummary: {
+    itemCount: 0,
+    sponsoredItemCount: 0,
+    fulfilledItemCount: 0,
+    readyForPickupItemCount: 0,
+    pickedUpItemCount: 0,
+    openItemCount: 0,
+  },
+  recipients: [],
+  createdAt: null,
+  updatedAt: null,
+};
 
 describe('CampaignPeopleGroupDrawer', () => {
   it('uses family-specific labels for household intake', () => {
@@ -11,6 +44,7 @@ describe('CampaignPeopleGroupDrawer', () => {
         isSaving={false}
         canEdit
         group={null}
+        groups={[]}
         initialGroupType="HOUSEHOLD"
         onClose={vi.fn()}
         onSaveGroup={vi.fn()}
@@ -18,6 +52,7 @@ describe('CampaignPeopleGroupDrawer', () => {
         onDeleteContact={vi.fn()}
         onSearchAddresses={vi.fn().mockResolvedValue([])}
         onAddRecipientToGroup={vi.fn()}
+        onSelectGroup={vi.fn()}
         onSelectRecipient={vi.fn()}
       />
     );
@@ -44,6 +79,7 @@ describe('CampaignPeopleGroupDrawer', () => {
         isSaving={false}
         canEdit
         group={null}
+        groups={[]}
         initialGroupType="ADULT_PROGRAM"
         onClose={vi.fn()}
         onSaveGroup={vi.fn()}
@@ -51,6 +87,7 @@ describe('CampaignPeopleGroupDrawer', () => {
         onDeleteContact={vi.fn()}
         onSearchAddresses={onSearchAddresses}
         onAddRecipientToGroup={vi.fn()}
+        onSelectGroup={vi.fn()}
         onSelectRecipient={vi.fn()}
       />
     );
@@ -80,6 +117,7 @@ describe('CampaignPeopleGroupDrawer', () => {
         isSaving={false}
         canEdit
         group={null}
+        groups={[]}
         initialGroupType="ADULT_PROGRAM"
         onClose={vi.fn()}
         onSaveGroup={vi.fn()}
@@ -87,6 +125,7 @@ describe('CampaignPeopleGroupDrawer', () => {
         onDeleteContact={vi.fn()}
         onSearchAddresses={vi.fn().mockResolvedValue([])}
         onAddRecipientToGroup={vi.fn()}
+        onSelectGroup={vi.fn()}
         onSelectRecipient={vi.fn()}
       />
     );
@@ -103,43 +142,15 @@ describe('CampaignPeopleGroupDrawer', () => {
         isOpen
         isSaving={false}
         canEdit
-        group={{
-          id: 'group-1',
-          campaignId: 'campaign-1',
-          groupType: 'ADULT_PROGRAM',
-          groupName: 'Maple Grove',
-          programAbbreviation: 'MG',
-          intakeSource: null,
-          externalReference: null,
-          notes: null,
-          status: 'ACTIVE',
-          addressLine1: '123 Main St',
-          addressLine2: null,
-          city: 'Austin',
-          state: 'TX',
-          postalCode: '78701',
-          primaryContact: null,
-          contacts: [],
-          authorizedPickupContacts: [],
-          recipientCount: 0,
-          workflowSummary: {
-            itemCount: 0,
-            sponsoredItemCount: 0,
-            fulfilledItemCount: 0,
-            readyForPickupItemCount: 0,
-            pickedUpItemCount: 0,
-            openItemCount: 0,
-          },
-          recipients: [],
-          createdAt: null,
-          updatedAt: null,
-        }}
+        group={adultProgramGroup}
+        groups={[adultProgramGroup]}
         onClose={vi.fn()}
         onSaveGroup={vi.fn()}
         onSaveContact={vi.fn()}
         onDeleteContact={vi.fn()}
         onSearchAddresses={onSearchAddresses}
         onAddRecipientToGroup={vi.fn()}
+        onSelectGroup={vi.fn()}
         onSelectRecipient={vi.fn()}
       />
     );
@@ -149,5 +160,35 @@ describe('CampaignPeopleGroupDrawer', () => {
     });
 
     expect(onSearchAddresses).not.toHaveBeenCalled();
+  });
+
+  it('shows possible duplicate groups while creating a new adult program', async () => {
+    const user = userEvent.setup();
+    const onSelectGroup = vi.fn();
+
+    render(
+      <CampaignPeopleGroupDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        group={null}
+        groups={[adultProgramGroup]}
+        initialGroupType="ADULT_PROGRAM"
+        onClose={vi.fn()}
+        onSaveGroup={vi.fn()}
+        onSaveContact={vi.fn()}
+        onDeleteContact={vi.fn()}
+        onSearchAddresses={vi.fn().mockResolvedValue([])}
+        onAddRecipientToGroup={vi.fn()}
+        onSelectGroup={onSelectGroup}
+        onSelectRecipient={vi.fn()}
+      />
+    );
+
+    await user.type(screen.getByLabelText('Program Name'), 'Maple Grove');
+
+    expect(screen.getByText('Possible existing records')).toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: /maple grove/i })[0]);
+    expect(onSelectGroup).toHaveBeenCalledWith('group-1');
   });
 });

@@ -23,6 +23,7 @@ interface CampaignPeopleGroupDrawerProps {
   isSaving: boolean;
   canEdit: boolean;
   group: CampaignPeopleGroup | null;
+  groups: CampaignPeopleGroup[];
   initialGroupType?: RecipientGroupType;
   onClose: () => void;
   onSaveGroup: (input: RecipientGroupUpsertInput, groupId?: string) => Promise<CampaignPeopleGroup | null>;
@@ -34,6 +35,7 @@ interface CampaignPeopleGroupDrawerProps {
   onDeleteContact: (groupId: string, contactId: string) => Promise<boolean>;
   onSearchAddresses: (query: string) => Promise<CampaignAddressSuggestion[]>;
   onAddRecipientToGroup: (groupId: string) => void;
+  onSelectGroup: (groupId: string) => void;
   onSelectRecipient: (recipientId: string) => void;
 }
 
@@ -71,6 +73,7 @@ export function CampaignPeopleGroupDrawer({
   isSaving,
   canEdit,
   group,
+  groups,
   initialGroupType = 'HOUSEHOLD',
   onClose,
   onSaveGroup,
@@ -78,6 +81,7 @@ export function CampaignPeopleGroupDrawer({
   onDeleteContact,
   onSearchAddresses,
   onAddRecipientToGroup,
+  onSelectGroup,
   onSelectRecipient,
 }: CampaignPeopleGroupDrawerProps) {
   const [groupDraft, setGroupDraft] = useState<RecipientGroupUpsertInput>(() =>
@@ -126,6 +130,52 @@ export function CampaignPeopleGroupDrawer({
     : isAdultProgramGroup
       ? 'Create the adult program first, then add coordinator contacts and participating adults.'
       : 'Create the family first, then add parent or guardian contacts and children.';
+  const possibleDuplicateGroups = useMemo(() => {
+    const normalizedName = groupDraft.groupName.trim().toLowerCase();
+    const normalizedAddress = groupDraft.addressLine1?.trim().toLowerCase() ?? '';
+    const normalizedPostal = groupDraft.postalCode?.trim().toLowerCase() ?? '';
+    const normalizedAbbreviation = groupDraft.programAbbreviation?.trim().toLowerCase() ?? '';
+
+    if (normalizedName.length < 3 && normalizedAddress.length < 5 && normalizedAbbreviation.length < 2) {
+      return [];
+    }
+
+    return groups
+      .filter((candidate) => candidate.id !== group?.id && candidate.groupType === currentGroupType)
+      .filter((candidate) => {
+        const candidateName = candidate.groupName.trim().toLowerCase();
+        const candidateAddress = candidate.addressLine1?.trim().toLowerCase() ?? '';
+        const candidatePostal = candidate.postalCode?.trim().toLowerCase() ?? '';
+        const candidateAbbreviation = candidate.programAbbreviation?.trim().toLowerCase() ?? '';
+
+        const matchingName =
+          normalizedName.length >= 3 &&
+          (candidateName === normalizedName ||
+            candidateName.includes(normalizedName) ||
+            normalizedName.includes(candidateName));
+        const matchingAddress =
+          normalizedAddress.length >= 5 &&
+          candidateAddress.length >= 5 &&
+          candidateAddress === normalizedAddress &&
+          (!normalizedPostal || candidatePostal === normalizedPostal);
+        const matchingAbbreviation =
+          isAdultProgramGroup &&
+          normalizedAbbreviation.length >= 2 &&
+          candidateAbbreviation === normalizedAbbreviation;
+
+        return matchingName || matchingAddress || matchingAbbreviation;
+      })
+      .slice(0, 4);
+  }, [
+    currentGroupType,
+    group?.id,
+    groupDraft.addressLine1,
+    groupDraft.groupName,
+    groupDraft.postalCode,
+    groupDraft.programAbbreviation,
+    groups,
+    isAdultProgramGroup,
+  ]);
 
   useEffect(() => {
     const query = addressLookupQuery.trim();
@@ -302,6 +352,42 @@ export function CampaignPeopleGroupDrawer({
           </div>
 
           {groupError ? <div className="alert alert-danger py-2" role="alert">{groupError}</div> : null}
+          {!group && possibleDuplicateGroups.length > 0 ? (
+            <div className="alert alert-warning py-2" role="alert">
+              <div className="fw-semibold mb-2">Possible existing records</div>
+              <div className="small text-muted mb-2">
+                Review these before creating a new {isAdultProgramGroup ? 'adult program' : 'family'}.
+              </div>
+              <div className="d-flex flex-column gap-2">
+                {possibleDuplicateGroups.map((candidate) => (
+                  <button
+                    key={candidate.id}
+                    type="button"
+                    className="btn btn-outline-warning btn-sm text-start"
+                    onClick={() => onSelectGroup(candidate.id)}
+                  >
+                    <span className="d-flex align-items-start gap-2">
+                      <i className="bi bi-copy" aria-hidden="true" />
+                      <span className="d-flex flex-column">
+                      <span className="fw-semibold">{candidate.groupName}</span>
+                      <span className="small text-muted">
+                        {[
+                          candidate.programAbbreviation,
+                          candidate.addressLine1,
+                          candidate.city,
+                          candidate.state,
+                          candidate.postalCode,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="campaign-team-form-grid">
             <label className="form-label">

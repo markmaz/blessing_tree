@@ -5,7 +5,7 @@ Last updated: 2026-05-22
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Recipient workflow rollups and adult-program recipient IDs are now in place; the next step is adding action-oriented sponsorship/fulfillment/pickup surfaces on top of that data
+- Current step: Recipient workflow rollups, adult-program recipient IDs, and duplicate-intake guardrails are now in place; the next step is adding action-oriented sponsorship/fulfillment/pickup surfaces on top of that data
 
 ## Recently Completed
 

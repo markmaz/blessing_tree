@@ -4,6 +4,7 @@ import uuid
 from collections import Counter
 
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.exceptions.service_error import ServiceError
@@ -130,7 +131,7 @@ class CampaignRecipientService:
         )
         self._validate_program_abbreviation_uniqueness(db, group)
         db.add(group)
-        db.commit()
+        self._commit_with_duplicate_handling(db)
         return self.get_group(db, campaign_id, str(group.id))
 
     def update_group(self, db: Session, campaign_id: str, group_id: str, payload: dict[str, object]) -> RecipientGroup:
@@ -177,7 +178,7 @@ class CampaignRecipientService:
             self._sync_group_program_recipient_ids(db, group)
         else:
             self._clear_group_program_recipient_ids(group)
-        db.commit()
+        self._commit_with_duplicate_handling(db)
         return self.get_group(db, campaign_id, group_id)
 
     def create_contact(self, db: Session, campaign_id: str, group_id: str, payload: dict[str, object]) -> GroupContact:
@@ -342,9 +343,10 @@ class CampaignRecipientService:
             direct_email=recipient.direct_email,
             direct_phone=recipient.direct_phone,
         )
+        self._validate_duplicate_recipient(db, group.id, recipient.display_label)
         self._assign_program_recipient_identity(db, group, recipient)
         db.add(recipient)
-        db.commit()
+        self._commit_with_duplicate_handling(db)
         return self.get_recipient(db, campaign_id, str(recipient.id))
 
     def update_recipient(self, db: Session, campaign_id: str, recipient_id: str, payload: dict[str, object]) -> Recipient:
@@ -412,11 +414,12 @@ class CampaignRecipientService:
             direct_email=recipient.direct_email,
             direct_phone=recipient.direct_phone,
         )
+        self._validate_duplicate_recipient(db, group.id, recipient.display_label, exclude_recipient_id=recipient.id)
         if group_changed:
             recipient.program_recipient_number = None
             recipient.program_recipient_id = None
         self._assign_program_recipient_identity(db, group, recipient)
-        db.commit()
+        self._commit_with_duplicate_handling(db)
         return self.get_recipient(db, campaign_id, recipient_id)
 
     def get_wishlist(self, db: Session, campaign_id: str, recipient_id: str) -> Wishlist:
@@ -620,6 +623,59 @@ class CampaignRecipientService:
                 status_code=400,
                 details={"field": "program_abbreviation"},
             )
+
+    def _validate_duplicate_recipient(
+        self,
+        db: Session,
+        recipient_group_id: uuid.UUID,
+        display_label: str,
+        *,
+        exclude_recipient_id: uuid.UUID | None = None,
+    ) -> None:
+        normalized_label = display_label.strip().lower()
+        if not normalized_label:
+            return
+
+        query = db.query(Recipient.id).filter(
+            Recipient.recipient_group_id == recipient_group_id,
+            func.lower(Recipient.display_label) == normalized_label,
+        )
+        if exclude_recipient_id is not None:
+            query = query.filter(Recipient.id != exclude_recipient_id)
+
+        if query.first() is not None:
+            raise ServiceError(
+                "A person with this display name already exists in the selected group",
+                status_code=409,
+                details={"field": "display_label"},
+            )
+
+    @staticmethod
+    def _commit_with_duplicate_handling(db: Session) -> None:
+        try:
+            db.commit()
+        except IntegrityError as error:
+            db.rollback()
+            message = str(error.orig).lower()
+            if "uq_recipient_label" in message or "recipient.campaign_id, recipient.recipient_group_id, recipient.display_label" in message:
+                raise ServiceError(
+                    "A person with this display name already exists in the selected group",
+                    status_code=409,
+                    details={"field": "display_label"},
+                ) from error
+            if "uq_recipient_group_program_abbreviation" in message:
+                raise ServiceError(
+                    "program_abbreviation must be unique within the campaign",
+                    status_code=409,
+                    details={"field": "program_abbreviation"},
+                ) from error
+            if "uq_recipient_program_id" in message:
+                raise ServiceError(
+                    "An adult recipient ID collision was detected. Please retry the save.",
+                    status_code=409,
+                    details={"field": "program_recipient_id"},
+                ) from error
+            raise
 
     def _assign_program_recipient_identity(
         self,

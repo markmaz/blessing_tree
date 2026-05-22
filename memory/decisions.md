@@ -91,6 +91,13 @@
 - Rationale: intake operators want stable, printable identifiers for adult recipients, and the program abbreviation plus number matches how coordinators already think about these lists.
 - Consequence: `recipient_group` now carries `program_abbreviation`, adult recipients now carry generated `program_recipient_number` and `program_recipient_id`, the People intake UI must collect the abbreviation for adult-program groups, and recipient tables/drawers should surface the generated ID read-only instead of asking users to type it manually.
 
+## Recipient Duplicate Protection Direction
+
+- Status: active
+- Decision: protect the People intake flow with two layers: hard backend conflict protection for exact duplicate recipients within the same group, and frontend duplicate hints that surface possible existing groups or people before a new intake record is created.
+- Rationale: seasonal data-entry operators are likely to create duplicate records when working from overlapping paper lists or parallel intake sessions, and the system needs to prevent silent collisions without over-modeling a full master-data matching engine yet.
+- Consequence: exact duplicate person saves within the same group now return a `409` instead of relying on raw database failures, and the Family/Adult Program plus person drawers now show candidate existing matches based on entered name/address/abbreviation details so users can reopen an existing record instead of creating a new one.
+
 ## Campaign Schedule Direction
 
 - Status: active

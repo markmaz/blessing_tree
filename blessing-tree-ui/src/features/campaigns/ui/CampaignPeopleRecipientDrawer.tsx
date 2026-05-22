@@ -31,6 +31,7 @@ interface CampaignPeopleRecipientDrawerProps {
   initialGroupId?: string | null;
   lockedGroupId?: string | null;
   groups: CampaignPeopleGroup[];
+  recipients: CampaignRecipient[];
   onClose: () => void;
   onSaveRecipient: (
     input: RecipientUpsertInput,
@@ -46,6 +47,7 @@ interface CampaignPeopleRecipientDrawerProps {
     itemId?: string
   ) => Promise<CampaignWishlistItem | null>;
   onDeleteWishlistItem: (recipientId: string, itemId: string) => Promise<boolean>;
+  onSelectExistingRecipient: (recipientId: string) => void;
 }
 
 interface WishlistItemFormState {
@@ -141,11 +143,13 @@ export function CampaignPeopleRecipientDrawer({
   initialGroupId = null,
   lockedGroupId = null,
   groups,
+  recipients,
   onClose,
   onSaveRecipient,
   onSaveWishlist,
   onSaveWishlistItem,
   onDeleteWishlistItem,
+  onSelectExistingRecipient,
 }: CampaignPeopleRecipientDrawerProps) {
   const [recipientDraft, setRecipientDraft] = useState<RecipientUpsertInput>(
     buildRecipientDraft(recipient, initialGroupId)
@@ -211,6 +215,59 @@ export function CampaignPeopleRecipientDrawer({
     : isAdultProgramIntake
       ? 'Capture adult details, optional direct contact information, and wishlist items for this adult program intake.'
       : 'Manage the recipient profile and their campaign wishlist from one drawer.';
+  const possibleDuplicateRecipients = useMemo(() => {
+    const normalizedDisplayName = computedDisplayLabel.trim().toLowerCase();
+    const normalizedFirstName = recipientDraft.firstName?.trim().toLowerCase() ?? '';
+    const normalizedLastName = recipientDraft.lastName?.trim().toLowerCase() ?? '';
+    const age = recipientDraft.age;
+    const birthYear = computedBirthYear;
+
+    if (
+      normalizedDisplayName.length < 3 &&
+      (normalizedFirstName.length < 2 || normalizedLastName.length < 2)
+    ) {
+      return [];
+    }
+
+    return recipients
+      .filter((candidate) => candidate.id !== recipient?.id)
+      .filter((candidate) => {
+        const candidateDisplayName = candidate.displayLabel.trim().toLowerCase();
+        const candidateFirstName = candidate.firstName?.trim().toLowerCase() ?? '';
+        const candidateLastName = candidate.lastName?.trim().toLowerCase() ?? '';
+        const sameGroup = candidate.recipientGroupId === recipientDraft.recipientGroupId;
+        const exactDisplayName = normalizedDisplayName.length >= 3 && candidateDisplayName === normalizedDisplayName;
+        const matchingName =
+          normalizedFirstName.length >= 2 &&
+          normalizedLastName.length >= 2 &&
+          candidateFirstName === normalizedFirstName &&
+          candidateLastName === normalizedLastName;
+        const matchingAge = age !== null && age !== undefined && candidate.age === age;
+        const matchingBirthYear =
+          birthYear !== null && birthYear !== undefined && candidate.birthYear === birthYear;
+
+        if (sameGroup && (exactDisplayName || matchingName)) {
+          return true;
+        }
+
+        return matchingName && (matchingAge || matchingBirthYear);
+      })
+      .sort((left, right) => {
+        const leftSameGroup = left.recipientGroupId === recipientDraft.recipientGroupId ? 0 : 1;
+        const rightSameGroup = right.recipientGroupId === recipientDraft.recipientGroupId ? 0 : 1;
+        return leftSameGroup - rightSameGroup || left.displayLabel.localeCompare(right.displayLabel);
+      })
+      .slice(0, 4);
+  }, [
+    computedBirthYear,
+    computedDisplayLabel,
+    recipient?.id,
+    recipientDraft.age,
+    recipientDraft.firstName,
+    recipientDraft.lastName,
+    recipientDraft.recipientGroupId,
+    recipients,
+  ]);
 
   const handleSaveRecipient = async () => {
     if (!recipientDraft.recipientGroupId) {
@@ -365,6 +422,41 @@ export function CampaignPeopleRecipientDrawer({
           </div>
 
           {recipientError ? <div className="alert alert-danger py-2" role="alert">{recipientError}</div> : null}
+          {!recipient && possibleDuplicateRecipients.length > 0 ? (
+            <div className="alert alert-warning py-2" role="alert">
+              <div className="fw-semibold mb-2">Possible existing people</div>
+              <div className="small text-muted mb-2">
+                Review these before creating a new person record.
+              </div>
+              <div className="d-flex flex-column gap-2">
+                {possibleDuplicateRecipients.map((candidate) => (
+                  <button
+                    key={candidate.id}
+                    type="button"
+                    className="btn btn-outline-warning btn-sm text-start"
+                    onClick={() => onSelectExistingRecipient(candidate.id)}
+                  >
+                    <span className="d-flex align-items-start gap-2">
+                      <i className="bi bi-person-bounding-box" aria-hidden="true" />
+                      <span className="d-flex flex-column">
+                      <span className="fw-semibold">{candidate.displayLabel}</span>
+                      <span className="small text-muted">
+                        {[
+                          candidate.programRecipientId,
+                          candidate.group?.groupName,
+                          candidate.age !== null ? `Age ${candidate.age}` : null,
+                          candidate.birthYear !== null ? `Born ${candidate.birthYear}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="campaign-team-form-grid">
             {isContextualIntake ? (

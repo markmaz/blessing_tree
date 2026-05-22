@@ -323,6 +323,7 @@ export function CampaignPeopleWorkspace({
         isSaving={isSaving}
         canEdit={canEditPeople}
         group={selectedGroup}
+        groups={workspace.groups}
         initialGroupType={createGroupType ?? 'HOUSEHOLD'}
         onClose={() => {
           setCreateGroupType(null);
@@ -346,6 +347,10 @@ export function CampaignPeopleWorkspace({
           setSelectedRecipientId(null);
           setCreateRecipientGroupId(groupId);
         }}
+        onSelectGroup={(groupId) => {
+          setCreateGroupType(null);
+          setSelectedGroupId(groupId);
+        }}
         onSelectRecipient={(recipientId) => {
           setCreateGroupType(null);
           setSelectedGroupId(null);
@@ -364,6 +369,7 @@ export function CampaignPeopleWorkspace({
         initialGroupId={createRecipientGroupId}
         lockedGroupId={createRecipientGroupId}
         groups={workspace.groups}
+        recipients={workspace.recipients}
         onClose={() => {
           setIsCreateRecipientOpen(false);
           setSelectedRecipientId(null);
@@ -381,6 +387,11 @@ export function CampaignPeopleWorkspace({
         onSaveWishlist={onSaveWishlist}
         onSaveWishlistItem={onSaveWishlistItem}
         onDeleteWishlistItem={onDeleteWishlistItem}
+        onSelectExistingRecipient={(recipientId) => {
+          setIsCreateRecipientOpen(false);
+          setCreateRecipientGroupId(null);
+          setSelectedRecipientId(recipientId);
+        }}
       />
     </section>
   );

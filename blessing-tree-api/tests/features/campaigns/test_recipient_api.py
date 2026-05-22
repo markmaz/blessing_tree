@@ -460,3 +460,47 @@ def test_household_child_rejects_direct_contact_fields(app, monkeypatch: pytest.
 
     assert response.status_code == 400
     assert "direct contact" in response.get_json()["error"].lower()
+
+
+def test_duplicate_recipient_in_same_group_returns_conflict(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    household = _seed_household_group(session, campaign.id)
+    session.add(
+        Recipient(
+            id=uuid.uuid4(),
+            campaign_id=campaign.id,
+            recipient_group_id=household.id,
+            recipient_kind=RECIPIENT_KIND_CHILD,
+            program_type=RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+            privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+            display_label="Ava Jones",
+            first_name="Ava",
+            last_name="Jones",
+            status=RECIPIENT_STATUS_ACTIVE,
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    group_id = str(household.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/recipients",
+        json={
+            "recipient_group_id": group_id,
+            "recipient_kind": "CHILD",
+            "program_type": "CHILD_FAMILY",
+            "privacy_level": "FULL_NAME",
+            "display_label": "Ava Jones",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 409
+    assert "already exists in the selected group" in response.get_json()["error"]

@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CampaignPeopleRecipientDrawer } from '@/features/campaigns/ui/CampaignPeopleRecipientDrawer';
-import type { CampaignPeopleGroup } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
+import type { CampaignPeopleGroup, CampaignRecipient } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 
 const householdGroup: CampaignPeopleGroup = {
   id: 'group-household',
@@ -68,6 +68,52 @@ const partnerProgramGroup: CampaignPeopleGroup = {
   updatedAt: null,
 };
 
+const existingAdultRecipient: CampaignRecipient = {
+  id: 'recipient-1',
+  campaignId: 'campaign-1',
+  recipientGroupId: 'group-program',
+  recipientKind: 'ADULT',
+  programType: 'ADULT_PROGRAM',
+  privacyLevel: 'FULL_NAME',
+  displayLabel: 'Mary Smith',
+  programRecipientNumber: 1,
+  programRecipientId: 'SAH-001',
+  firstName: 'Mary',
+  lastName: 'Smith',
+  birthYear: 1942,
+  age: 84,
+  gender: 'F',
+  addressLine1: null,
+  addressLine2: null,
+  city: null,
+  state: null,
+  postalCode: null,
+  directEmail: null,
+  directPhone: null,
+  facilityRoom: null,
+  subgroupLabel: null,
+  mobilityNotes: null,
+  notes: null,
+  status: 'ACTIVE',
+  group: {
+    id: 'group-program',
+    groupName: 'Senior At Home',
+    groupType: 'ADULT_PROGRAM',
+    status: 'ACTIVE',
+  },
+  wishlist: null,
+  workflowSummary: {
+    itemCount: 0,
+    sponsoredItemCount: 0,
+    fulfilledItemCount: 0,
+    readyForPickupItemCount: 0,
+    pickedUpItemCount: 0,
+    openItemCount: 0,
+  },
+  createdAt: null,
+  updatedAt: null,
+};
+
 describe('CampaignPeopleRecipientDrawer', () => {
   it('uses child-intake framing and hides direct contact fields for a household intake', () => {
     render(
@@ -79,11 +125,13 @@ describe('CampaignPeopleRecipientDrawer', () => {
         initialGroupId="group-household"
         lockedGroupId="group-household"
         groups={[householdGroup]}
+        recipients={[]}
         onClose={vi.fn()}
         onSaveRecipient={vi.fn()}
         onSaveWishlist={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
+        onSelectExistingRecipient={vi.fn()}
       />
     );
 
@@ -105,11 +153,13 @@ describe('CampaignPeopleRecipientDrawer', () => {
         initialGroupId="group-program"
         lockedGroupId="group-program"
         groups={[partnerProgramGroup]}
+        recipients={[]}
         onClose={vi.fn()}
         onSaveRecipient={vi.fn()}
         onSaveWishlist={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
+        onSelectExistingRecipient={vi.fn()}
       />
     );
 
@@ -136,11 +186,13 @@ describe('CampaignPeopleRecipientDrawer', () => {
         initialGroupId="group-household"
         lockedGroupId="group-household"
         groups={[householdGroup]}
+        recipients={[]}
         onClose={vi.fn()}
         onSaveRecipient={vi.fn()}
         onSaveWishlist={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
+        onSelectExistingRecipient={vi.fn()}
       />
     );
 
@@ -150,5 +202,37 @@ describe('CampaignPeopleRecipientDrawer', () => {
 
     expect(screen.getByLabelText('Child Display Name')).toHaveValue('Ava Johnson');
     expect(screen.getByLabelText('Birth Year')).toHaveValue(new Date().getFullYear() - 8);
+  });
+
+  it('shows possible duplicate recipients during adult intake', async () => {
+    const user = userEvent.setup();
+    const onSelectExistingRecipient = vi.fn();
+
+    render(
+      <CampaignPeopleRecipientDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        recipient={null}
+        initialGroupId="group-program"
+        lockedGroupId="group-program"
+        groups={[partnerProgramGroup]}
+        recipients={[existingAdultRecipient]}
+        onClose={vi.fn()}
+        onSaveRecipient={vi.fn()}
+        onSaveWishlist={vi.fn()}
+        onSaveWishlistItem={vi.fn()}
+        onDeleteWishlistItem={vi.fn()}
+        onSelectExistingRecipient={onSelectExistingRecipient}
+      />
+    );
+
+    await user.type(screen.getByLabelText('First Name'), 'Mary');
+    await user.type(screen.getByLabelText('Last Name'), 'Smith');
+    await user.type(screen.getByLabelText('Age'), '84');
+
+    expect(screen.getByText('Possible existing people')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /mary smith/i }));
+    expect(onSelectExistingRecipient).toHaveBeenCalledWith('recipient-1');
   });
 });
