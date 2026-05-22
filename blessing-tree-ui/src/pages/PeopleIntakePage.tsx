@@ -7,6 +7,7 @@ import { usePeopleWorkspaceContext } from '@/features/campaigns/model/peopleWork
 import { CampaignPeopleGroupDrawer } from '@/features/campaigns/ui/CampaignPeopleGroupDrawer';
 import { CampaignPeopleRecipientDrawer } from '@/features/campaigns/ui/CampaignPeopleRecipientDrawer';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
+import '@/features/campaigns/ui/campaignPeople.css';
 
 export function PeopleIntakePage() {
   const {

@@ -87,17 +87,22 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
   const { role } = useAuth();
   const { isFeatureEnabled } = useAppFeatures();
   const { selectedCampaignId } = useCampaigns();
+  const locationCampaignId = (() => {
+    const match = location.pathname.match(/^\/campaigns\/([^/]+)/);
+    return match?.[1] ?? null;
+  })();
+  const resolvedCampaignId = selectedCampaignId ?? locationCampaignId;
   const resolvedNavItems = navItems.map((item) =>
     item.label === 'People'
       ? {
           ...item,
-          to: selectedCampaignId ? buildCampaignPeopleIntakePath(selectedCampaignId) : routes.CAMPAIGNS,
+          to: resolvedCampaignId ? buildCampaignPeopleIntakePath(resolvedCampaignId) : routes.CAMPAIGNS,
           children: item.children?.map((child) => ({
             ...child,
-            to: selectedCampaignId
+            to: resolvedCampaignId
               ? child.label === 'Directory'
-                ? buildCampaignPeopleDirectoryPath(selectedCampaignId)
-                : buildCampaignPeopleIntakePath(selectedCampaignId)
+                ? buildCampaignPeopleDirectoryPath(resolvedCampaignId)
+                : buildCampaignPeopleIntakePath(resolvedCampaignId)
               : routes.CAMPAIGNS,
           })),
         }

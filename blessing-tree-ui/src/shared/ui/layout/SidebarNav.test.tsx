@@ -58,4 +58,25 @@ describe('SidebarNav', () => {
     expect(screen.getByRole('link', { name: /intake/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /directory/i })).toBeInTheDocument();
   });
+
+  it('uses the campaign id from the current route when selectedCampaignId is not loaded yet', () => {
+    mockUseCampaigns.mockReturnValue({
+      selectedCampaignId: null,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/campaigns/campaign-xyz/people/intake']}>
+        <SidebarNav isOpen onNavigate={() => {}} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: /intake/i })).toHaveAttribute(
+      'href',
+      '/campaigns/campaign-xyz/people/intake'
+    );
+    expect(screen.getByRole('link', { name: /directory/i })).toHaveAttribute(
+      'href',
+      '/campaigns/campaign-xyz/people/directory'
+    );
+  });
 });

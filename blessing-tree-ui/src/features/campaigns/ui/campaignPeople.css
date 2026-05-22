@@ -27,9 +27,76 @@
   color: var(--blessing-text-light);
 }
 
+.campaign-people-intake-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.campaign-people-intake-card {
+  appearance: none;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 1.1rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 247, 250, 0.96));
+  color: var(--blessing-text);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 1.35rem 1.4rem;
+  text-align: left;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.07);
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    border-color 140ms ease;
+}
+
+.campaign-people-intake-card:hover:not(:disabled),
+.campaign-people-intake-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(24, 87, 58, 0.3);
+  box-shadow: 0 24px 52px rgba(15, 23, 42, 0.1);
+  outline: none;
+}
+
+.campaign-people-intake-card:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.campaign-people-intake-card__icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(24, 87, 58, 0.12), rgba(220, 145, 52, 0.16));
+  color: var(--blessing-text);
+  font-size: 1.3rem;
+}
+
+.campaign-people-intake-card__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.campaign-people-intake-card__body {
+  color: var(--blessing-text-light);
+  line-height: 1.55;
+}
+
 @media (max-width: 991.98px) {
   .campaign-people-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .campaign-people-intake-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
