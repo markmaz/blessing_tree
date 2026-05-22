@@ -502,22 +502,171 @@ Recommended list filters:
 
 ## UI Direction
 
-Recommended campaign child area:
+### Primary User-Facing Label
 
-- `Recipients`
+Use `People` in the product UI.
+
+Do not use `Families` as the main navigation label because the domain now
+includes both:
+
+- household children
+- nursing-home adults
+
+Do not use `Recipients` as the primary UI label unless there is a strong need
+for exact domain terminology in a specific view.
+
+Recommendation:
+
+- UI navigation and page title: `People`
+- backend/domain terminology: `recipient`
+- shared design terminology: `recipient domain`
+
+### Campaign Scope
+
+The People workspace must be campaign-scoped.
+
+Recommended route:
+
+- `/campaigns/:campaignId/people`
+
+Do not make this a global top-level non-campaign route.
+
+Rationale:
+
+- recipients belong to a campaign
+- wishlists belong to a campaign
+- intake varies by campaign year and operating context
+- the same household or facility may appear differently across campaigns
+
+### Workspace Shape
 
 Recommended workspace structure:
 
 1. top summary cards
-2. groups table or rail
-3. recipients table
+2. `Households & Facilities` section
+3. `People` section
 4. drawers for:
    - group
    - contact
    - recipient
    - wishlist
 
-Recommended intake experiences:
+### Summary Cards
+
+Recommended top cards:
+
+- `Groups`
+- `People`
+- `Wishlists`
+- `Open Items`
+
+These should be compact and consistent with the Team and Readiness workspace
+patterns already in the app.
+
+### Section 1: Households & Facilities
+
+This replaces the colder backend phrase `recipient groups` in the UI.
+
+Use one table for intake containers.
+
+Recommended columns:
+
+- `Name`
+- `Type`
+- `Primary Contact`
+- `People`
+- `Status`
+
+Recommended create actions:
+
+- `Add Household`
+- `Add Facility`
+
+Row click should open the group drawer.
+
+### Section 2: People
+
+This is the actual gift-recipient table.
+
+Recommended columns:
+
+- `Name`
+- `Program`
+- `Group`
+- `Age`
+- `Gender`
+- `Wishlist`
+- `Status`
+
+Recommended create action:
+
+- `Add Person`
+
+Row click should open the person drawer.
+
+### Group Drawer
+
+Recommended sections:
+
+- group details
+- address
+- notes
+- contacts
+- linked people
+
+Recommended behaviors:
+
+- allow add/edit/remove contacts
+- allow add person from inside the group drawer
+- support both household and facility entry through the same drawer shell
+
+### Person Drawer
+
+Recommended sections:
+
+- person identity/details
+- program fields
+- group link
+- wishlist summary
+- notes/status
+
+Recommended behaviors:
+
+- open full wishlist editing from the person drawer
+- show family-child vs nursing-home-adult fields conditionally based on
+  `program_type`
+
+### Wishlist Editing
+
+Wishlist editing should be person-centered, not group-centered.
+
+Recommended shape:
+
+- open from the person drawer
+- show a table/list of wishlist items
+- allow add/edit/remove item rows
+
+This keeps the operational truth clear:
+
+- wishlist belongs to the individual recipient
+
+### UI Language
+
+Recommended friendly labels:
+
+- `People`
+- `Households & Facilities`
+- `Contacts`
+- `Wishlists`
+
+Avoid leading with colder internal phrases like:
+
+- `Recipient Groups`
+- `Recipients`
+
+unless a lower-level admin/reporting screen needs exact domain naming.
+
+### Recommended Intake Experiences
 
 ### Child / Household Intake
 
@@ -535,6 +684,17 @@ Recommended intake experiences:
 
 This should be one domain workspace with workflow-aware forms, not two separate
 products.
+
+### Relationship To Existing Navigation
+
+The current placeholder `Families` area should be replaced by this campaign-aware
+`People` workspace.
+
+Recommended direction:
+
+- sidebar/nav label: `People`
+- route target: `/campaigns/:campaignId/people`
+- retire the old family-only framing from the UI
 
 ## Communications / Automation Implications
 
