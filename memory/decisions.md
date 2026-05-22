@@ -75,21 +75,21 @@
 - Status: active
 - Decision: keep one unified recipient domain built around `recipient_group`, `group_contact`, `recipient`, `wishlist`, and `wishlist_item`, but refine the meaning of those records so group/container context, operational contacts, and the actual gift recipient are clearly separated. Use `recipient_kind` plus explicit `program_type` instead of overloading `recipient_type`.
 - Rationale: Blessing Tree serves children in family intake flows and adults in program-based intake flows. Those are different intake programs, but they still share the same downstream sponsorship, fulfillment, pickup, and reporting pipeline.
-- Consequence: parents/guardians, staff, and coordinators remain contacts, not recipients; `recipient_group` remains the intake container; each actual recipient keeps one wishlist; the schema should evolve from `HOUSEHOLD | INSTITUTION` and `CHILD | ADULT | SENIOR` toward `HOUSEHOLD | ADULT_PROGRAM`, `recipient_kind`, and explicit `program_type` values such as `CHILD_FAMILY` and `ADULT_PROGRAM`; adult recipient address/phone/email fields should be supported where appropriate; and future recipient APIs/UI should be built as one campaign-scoped recipient workspace rather than split program-specific products.
+- Consequence: parents/guardians, staff, and coordinators remain contacts, not recipients; `recipient_group` remains the intake container; each actual recipient keeps one wishlist; the schema should evolve from `HOUSEHOLD | INSTITUTION` and `CHILD | ADULT | SENIOR` toward `HOUSEHOLD | ORGANIZATION`, a first-class `organization_type`, `recipient_kind`, and explicit `program_type` values such as `CHILD_FAMILY`, `ORGANIZATION_CHILD`, and `ORGANIZATION_ADULT`; recipient address/phone/email fields should be supported where appropriate for organization-submitted recipients; and future recipient APIs/UI should be built as one campaign-scoped recipient workspace rather than split program-specific products.
 
 ## Recipient Workflow Reporting Direction
 
 - Status: active
 - Decision: expose sponsorship, fulfillment, pickup readiness, picked-up state, pickup-contact coverage, and adult direct-contact coverage as backend-authored workflow rollups on the People workspace contract.
-- Rationale: the simplified `ADULT_PROGRAM` model is most useful when downstream operators can see workflow readiness directly instead of inferring it repeatedly in frontend code.
+- Rationale: the simplified non-household model is most useful when downstream operators can see workflow readiness directly instead of inferring it repeatedly in frontend code.
 - Consequence: recipient rows, group rows, and workspace-level counts should carry workflow rollups, People Reports should use those rollups directly, and future sponsorship/fulfillment/pickup surfaces should build on the same contract instead of recalculating their own summaries.
 
 ## Adult Program Recipient ID Direction
 
 - Status: active
-- Decision: require a program abbreviation on `ADULT_PROGRAM` groups and generate adult recipient IDs from that abbreviation plus a group-local sequence number.
+- Decision: require a program abbreviation on organization groups when printed recipient IDs are needed, and generate recipient IDs from that abbreviation plus a group-local sequence number.
 - Rationale: intake operators want stable, printable identifiers for adult recipients, and the program abbreviation plus number matches how coordinators already think about these lists.
-- Consequence: `recipient_group` now carries `program_abbreviation`, adult recipients now carry generated `program_recipient_number` and `program_recipient_id`, the People intake UI must collect the abbreviation for adult-program groups, and recipient tables/drawers should surface the generated ID read-only instead of asking users to type it manually.
+- Consequence: `recipient_group` now carries `program_abbreviation`, organization-submitted recipients now carry generated `program_recipient_number` and `program_recipient_id`, the People intake UI must collect the abbreviation when an organization uses printed IDs, and recipient tables/drawers should surface the generated ID read-only instead of asking users to type it manually.
 
 ## Recipient Duplicate Protection Direction
 

@@ -5,7 +5,7 @@ Last updated: 2026-05-22
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Recipient workflow rollups, adult-program recipient IDs, and duplicate-intake guardrails are now in place; the next step is adding action-oriented sponsorship/fulfillment/pickup surfaces on top of that data
+- Current step: Recipient workflow rollups, organization-style recipient IDs, and duplicate-intake guardrails are now in place; the next step is replacing the current non-household runtime naming/model from `ADULT_PROGRAM` to `ORGANIZATION` plus `organization_type`, then adding action-oriented sponsorship/fulfillment/pickup surfaces on top of that data
 
 ## Recently Completed
 
@@ -97,17 +97,17 @@ Last updated: 2026-05-22
 - Added configurable SMTP TLS/SSL flags plus a local SMTP sink so invitation emails and scheduled communications can be exercised end to end in development without external SMTP credentials
 - Added Playwright browser E2E coverage for invite onboarding, create-from-previous-campaign, and the communications template builder
 - Tightened campaign visibility and campaign-creator setup so member/access-role visibility is the preferred path and newly created campaigns always seed the creator as a campaign member with `CAMPAIGN_MANAGER`
-- Documented the concrete recipient-domain direction: keep a unified campaign-scoped recipient model, treat parents/guardians/staff/coordinators as contacts rather than recipients, and evolve the schema toward explicit `program_type` support for `CHILD_FAMILY` and `ADULT_PROGRAM`
+- Documented the concrete recipient-domain direction: keep a unified campaign-scoped recipient model, treat parents/guardians/staff/coordinators as contacts rather than recipients, and evolve the schema toward explicit `program_type` support for `CHILD_FAMILY`, `ORGANIZATION_CHILD`, and `ORGANIZATION_ADULT`
 - Documented the concrete recipient implementation sequence, from schema refinement through APIs, the campaign-aware `People` workspace, wishlist/fulfillment alignment, and communications audience integration
 - Implemented recipient phase 1 backend refinement with `V014__Recipient_Refinement.sql`, refined ORM models, recipient-domain constants, and backend model tests
 - Implemented recipient backend phases 2 and 3 with a new recipient feature package, aggregate `people-workspace` payload, and campaign-scoped group/contact/recipient/wishlist CRUD APIs
-- Implemented recipient phase 4 with a campaign-aware `People` workspace, selected-campaign `People` navigation, sortable `Households, Facilities & Programs` and `People` tables, right-side group/recipient drawers, contact management, and recipient-centered wishlist editing
+- Implemented recipient phase 4 with a campaign-aware `People` workspace, selected-campaign `People` navigation, sortable group and People tables, right-side group/recipient drawers, contact management, and recipient-centered wishlist editing
 - Implemented recipient phase 5 with gift-workflow visibility in the People workflow, including sponsorship, fulfillment, label, pickup, and authorized-pickup-contact readiness surfaced directly in wishlist items and group/recipient drawers
 - Refined the People intake UX so family/facility entry now feels more like connected intake work: group drawers expose `Children`/`Residents` directly, and contextual recipient drawers hide non-applicable fields such as child direct-contact details
 - Split the People section into child `Intake` and `Directory` views so new family/facility entry starts from a simple workflow launcher while search and maintenance stay in a separate directory surface
-- Updated the recipient design and implementation docs again so the long-term model now explicitly supports a simplified `ADULT_PROGRAM` path plus adult recipient direct-contact/address rules
+- Updated the recipient design and implementation docs again so the long-term model now explicitly supports a generic `ORGANIZATION` path plus a first-class `organization_type`
 - Implemented recipient phase 6 by expanding the Communications audience model to include household contacts, facility contacts, primary group contacts, and direct adult recipients, wiring those audiences through the backend resolver, automation dispatch path, Studio payload, template builder, and frontend presentation
-- Collapsed the short-lived facility-vs-partner-program split back into one `ADULT_PROGRAM` model, including recipient-level adult address fields, context-aware People intake/directory/reporting copy, validation that blocks household-child direct-contact data while allowing adult direct-contact data, and an `ADULT_PROGRAM_CONTACT` communications audience
+- Collapsed the short-lived facility-vs-partner-program split back into one non-household model, including recipient-level direct-contact/address fields, context-aware People intake/directory/reporting copy, validation that blocks household-child direct-contact data while allowing organization recipient direct-contact data, and an organization-contact communications audience design direction
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Replaced the old placeholder automation warning with a real execution layer:
@@ -149,11 +149,11 @@ Last updated: 2026-05-22
 
 ## Immediate Next Steps
 
-1. Validate sponsorship/fulfillment/pickup UI flows against the refined recipient model, especially for adult-program direct-contact/address scenarios
-2. Add workflow polish for People intake and directory around adult-program coordination, sorting, and search ergonomics
-3. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
-4. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
-5. Retire the remaining legacy `campaign_user_role` compatibility paths after the Team/member model is fully authoritative everywhere
+1. Replace the current non-household recipient runtime naming/model from `ADULT_PROGRAM` to `ORGANIZATION` plus `organization_type`
+2. Validate sponsorship/fulfillment/pickup UI flows against the refined recipient model, especially for organization-submitted direct-contact/address scenarios
+3. Add workflow polish for People intake and directory around organization coordination, sorting, and search ergonomics
+4. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
+5. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
 
 ## Blockers Or Ambiguities
 

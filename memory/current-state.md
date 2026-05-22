@@ -23,7 +23,7 @@ Last updated: 2026-05-22
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
   - local outbound email is now operational in development through a repo-owned SMTP sink plus configurable TLS/SSL flags, so invite delivery and scheduled communication dispatch can be exercised end to end without external SMTP credentials
 - recipient phases 1 through 7 now exist: the schema/model is refined, there is now a recipient feature package plus campaign-scoped APIs for groups, contacts, recipients, wishlists, wishlist items, and the aggregate `people-workspace` payload, the frontend now includes campaign-scoped `People > Intake` and `People > Directory` flows with wishlist/fulfillment alignment, Communications can now target recipient-aware audience types, the `people` feature flag/runtime naming replaces the older `families` key, and Reports now uses live People workspace data instead of placeholder rows
-  - the implemented recipient model now supports a single `ADULT_PROGRAM` group/program shape, recipient-level adult address fields, and context-aware People intake/directory/reporting surfaces for adult-program recipients
+  - the implemented recipient model currently supports a single non-household `ADULT_PROGRAM` code/runtime shape, but the design direction is now to generalize that to `ORGANIZATION` plus `organization_type` so orphanages, nursing homes, ministries, and partner organizations share one structural model
   - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
   - admin LLM test/health now probes the real generation path against the configured model instead of treating `/models` reachability as sufficient
   - invitation-centric onboarding now supports Google, Yahoo, and local password from the invite funnel; generic Google/Yahoo OAuth remains limited to already-linked returning users, and invite validation now exposes accepted-vs-pending onboarding state for cleaner frontend handling
@@ -76,14 +76,14 @@ Last updated: 2026-05-22
   - campaign managers and app admins can now update campaign metadata from the detail page and Studio settings section
   - the placeholder Families surface is now replaced by a campaign-aware People section with child `Intake` and `Directory` views so new entry work is separated from searchable maintenance
   - the People workspace now also surfaces gift-workflow readiness directly in wishlist items, including sponsorship status, fulfillment progress, label state, pickup state, and authorized pickup contacts from the group record
-  - the People workspace and People Reports now also include backend-authored workflow rollups for sponsored, fulfilled, ready-for-pickup, picked-up, adult-direct-contact, and pickup-contact coverage counts, aligned to the simplified `ADULT_PROGRAM` model
-  - adult-program intake now captures a required program abbreviation, and adult recipients now receive generated IDs such as `SAH-001` derived from that abbreviation plus a group-local sequence number
+  - the People workspace and People Reports now also include backend-authored workflow rollups for sponsored, fulfilled, ready-for-pickup, picked-up, adult-direct-contact, and pickup-contact coverage counts, aligned to the simplified non-household recipient model
+  - non-household intake now captures a program abbreviation when printed IDs are needed, and organization-submitted recipients can receive generated IDs such as `SAH-001` derived from that abbreviation plus a group-local sequence number
   - People intake now includes duplicate-protection guardrails: exact duplicate recipient saves in the same group now fail cleanly with a conflict response, and the Family/Adult Program plus person intake drawers now surface possible existing matches before a new record is created
   - the People intake UX is now more group-first: family/facility drawers now frame intake as `Children` or `Residents`, the contextual child/resident drawer hides irrelevant direct-contact fields, and data entry can move from group to child/resident wishlist flow with less context switching
   - the current recipient design direction now explicitly supports two intake contexts:
     - `HOUSEHOLD` for family/child flows
-    - `ADULT_PROGRAM` for adult recipient flows, whether the source is a facility or partner organization
-  - the recipient design direction now also treats adult recipient direct address/phone/email fields as part of the domain, with child direct-contact fields hidden in household flows and adult-program fields available when needed
+    - `ORGANIZATION` for non-household recipient flows, with required `organization_type` to distinguish nursing homes, orphanages, ministries, partner orgs, and similar sources
+  - the recipient design direction now also treats organization-submitted recipient direct address/phone/email fields as part of the domain, with child direct-contact fields hidden in household flows and organization recipient fields available when needed
   - page shells still exist for donations and admin
   - shared authenticated client exists for protected data APIs
 
@@ -181,7 +181,7 @@ Last updated: 2026-05-22
   - `GET|PUT /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist`
   - `POST /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist/items`
   - `PATCH|DELETE /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist/items/<item_id>`
-  - the current recipient code and docs now use `HOUSEHOLD | ADULT_PROGRAM` group types and `CHILD_FAMILY | ADULT_PROGRAM` program types as the active model
+  - the current recipient code still uses `HOUSEHOLD | ADULT_PROGRAM` group types and `CHILD_FAMILY | ADULT_PROGRAM` program types, but the active design direction is to rename the non-household side to `ORGANIZATION` and add `organization_type`
 - Team design direction now explicitly distinguishes:
   - fixed app access roles for RBAC
   - team-scoped team roles for operational responsibility

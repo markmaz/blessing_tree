@@ -6,7 +6,7 @@ Last updated: 2026-05-22
 
 - In progress
 - Phases 1 through 7 are implemented
-- Adult-program workflow rollups are now implemented in the People workspace
+- Organization-based workflow rollups are now implemented in the People workspace
   and reporting layer
 - The current follow-on work is sponsorship, fulfillment, and pickup action
   surfaces on top of those workflow rollups
@@ -19,13 +19,13 @@ This plan follows:
 
 Implement the campaign recipient domain in a way that supports:
 
-- one unified recipient model for children and adult-program recipients
-- campaign-scoped intake containers for households and adult programs
+- one unified recipient model for household and organization recipients
+- campaign-scoped intake containers for households and organizations
 - contacts that are operational but not gift recipients
 - one wishlist per recipient
 - a campaign-aware `People` workspace in the frontend
 - a safe transition from the older family-oriented placeholder surface
-- recipient-level address, phone, and email data for adult contexts where it
+- recipient-level address, phone, and email data for organization contexts where it
   is appropriate
 
 ## Delivery Strategy
@@ -59,7 +59,8 @@ Refine the current schema without breaking the downstream gift pipeline.
 1. Update `recipient_group` semantics
    - evolve `group_type`
    - move from `HOUSEHOLD | INSTITUTION`
-   - toward `HOUSEHOLD | CARE_FACILITY | PARTNER_PROGRAM`
+   - toward `HOUSEHOLD | ORGANIZATION`
+   - add `organization_type`
    - add `status`
    - add `external_reference`
 
@@ -71,7 +72,7 @@ Refine the current schema without breaking the downstream gift pipeline.
 3. Update `recipient`
    - add `recipient_kind`
    - add `program_type`
-   - add recipient-level fields needed for adult programs:
+   - add recipient-level fields needed for organization recipients:
      - `address_line1`
      - `address_line2`
      - `city`
@@ -95,8 +96,8 @@ Refine the current schema without breaking the downstream gift pipeline.
    - add `do_not_substitute_reason`
 
 6. Create migration plan for current enums/data
-   - map `INSTITUTION -> CARE_FACILITY`
-   - map `SENIOR -> recipient_kind=ADULT, program_type=SENIOR_FACILITY`
+   - map `INSTITUTION -> ORGANIZATION`
+   - map `SENIOR -> recipient_kind=ADULT, program_type=ORGANIZATION_ADULT`
    - map child family rows to `program_type=CHILD_FAMILY`
 
 ### Deliverables
@@ -134,8 +135,8 @@ Make the refined schema the authoritative backend model.
    - enforce legal recipient-kind/program combinations
    - enforce program-specific required fields where needed
    - keep child direct-contact fields hidden/not required for household flows
-   - allow optional direct-contact/address fields for facility adults
-   - support direct-contact/address fields for partner-program adults
+   - require `organization_type` for organization groups
+   - allow optional direct-contact/address fields for organization recipients
 
 4. Update campaign summary/count logic only if needed
    - summary counts should remain stable through the refactor
@@ -215,8 +216,7 @@ workspace.
 2. Build `Intake` child page
    - primary actions:
      - `Add Family`
-     - `Add Facility`
-     - `Add Partner Program`
+     - `Add Organization`
    - keep users in context to add children/residents and their wishlists
 
 3. Build `Directory` child page
@@ -225,7 +225,7 @@ workspace.
      - `People`
      - `Wishlists`
      - `Open Items`
-   - searchable/sortable `Households, Facilities & Programs` table
+   - searchable/sortable `Households & Organizations` table
    - searchable/sortable `People` table
 
 4. Build drawers
@@ -236,10 +236,9 @@ workspace.
 
 5. Build workflow-aware conditional forms
    - child intake hides non-applicable direct-contact fields
-   - facility-resident intake shows resident-specific fields and allows optional
-     direct recipient address/phone/email
-   - partner-program adult intake shows recipient address/phone/email fields
-     prominently
+   - organization intake captures `organization_type` from the start
+   - organization recipient intake allows optional direct recipient
+     address/phone/email
    - group drawer keeps linked children/residents visible during intake
 
 ### Deliverables
@@ -292,8 +291,7 @@ Make the recipient domain usable as a communications audience source.
 
 1. Extend audience resolution
    - household parent/guardian contacts
-   - facility staff/social-worker contacts
-   - partner-program coordinator contacts
+   - organization staff/coordinator contacts
    - direct recipient contact where appropriate
 
 2. Add audience filters by:
@@ -304,8 +302,8 @@ Make the recipient domain usable as a communications audience source.
 
 3. Update communications builder metadata and scheduling flows
    - audience labels should use People-friendly language
-   - partner-program contacts and direct recipient channels should remain
-     distinct address books
+   - organization contacts and direct recipient channels should remain distinct
+     address books
 
 ### Deliverables
 
@@ -380,7 +378,7 @@ Add at least:
 
 1. create household with parent and child
 2. create facility with staff contact and adult recipient
-3. create partner program with coordinator contact and adult recipients
+3. create organization with coordinator contact and multiple recipients
 4. add/edit wishlist items
 5. verify People workspace row/drawer behavior
 
@@ -403,7 +401,7 @@ The original recipient implementation plan is now complete through phase 7.
 The next recipient-facing work should build on this foundation rather than
 re-open the old family-oriented cutover. The most likely next slices are:
 
-- add `PARTNER_PROGRAM` group support in code, not just documentation
-- add adult-program validation and recipient-level direct-contact rules by
-  context
+- replace the current `ADULT_PROGRAM` code/runtime naming with
+  `ORGANIZATION` plus `organization_type`
+- tighten organization child/adult validation and conditional intake behavior
 - expand campaign-scoped People reporting, exports, and audience targeting
