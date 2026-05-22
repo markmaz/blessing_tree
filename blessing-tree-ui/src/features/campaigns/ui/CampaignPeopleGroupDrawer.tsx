@@ -102,6 +102,8 @@ export function CampaignPeopleGroupDrawer({
   const [contactError, setContactError] = useState<string | null>(null);
   const [addressSuggestions, setAddressSuggestions] = useState<CampaignAddressSuggestion[]>([]);
   const [isSearchingAddresses, setIsSearchingAddresses] = useState(false);
+  const [addressLookupQuery, setAddressLookupQuery] = useState('');
+  const [isAddressLine1Focused, setIsAddressLine1Focused] = useState(false);
   const [suppressAddressLookupValue, setSuppressAddressLookupValue] = useState<string | null>(null);
 
   const editingContact = useMemo(
@@ -122,8 +124,13 @@ export function CampaignPeopleGroupDrawer({
       : 'Create the family first, then add parent or guardian contacts and children.';
 
   useEffect(() => {
-    const query = groupDraft.addressLine1?.trim() ?? '';
-    if (!isOpen || query.length < 3 || query === suppressAddressLookupValue) {
+    const query = addressLookupQuery.trim();
+    if (
+      !isOpen ||
+      !isAddressLine1Focused ||
+      query.length < 3 ||
+      query === suppressAddressLookupValue
+    ) {
       return;
     }
 
@@ -147,7 +154,13 @@ export function CampaignPeopleGroupDrawer({
       isCancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [groupDraft.addressLine1, isOpen, onSearchAddresses, suppressAddressLookupValue]);
+  }, [
+    addressLookupQuery,
+    isAddressLine1Focused,
+    isOpen,
+    onSearchAddresses,
+    suppressAddressLookupValue,
+  ]);
 
   const handleSaveGroup = async () => {
     if (!groupDraft.groupName.trim()) {
@@ -207,6 +220,8 @@ export function CampaignPeopleGroupDrawer({
 
   const applyAddressSuggestion = (suggestion: CampaignAddressSuggestion) => {
     setSuppressAddressLookupValue(suggestion.addressLine1);
+    setAddressLookupQuery('');
+    setIsAddressLine1Focused(false);
     setAddressSuggestions([]);
     setGroupDraft((currentValue) => ({
       ...currentValue,
@@ -366,9 +381,18 @@ export function CampaignPeopleGroupDrawer({
               <input
                 className="form-control mt-2"
                 value={groupDraft.addressLine1 ?? ''}
+                onFocus={() => {
+                  setIsAddressLine1Focused(true);
+                }}
+                onBlur={() => {
+                  setIsAddressLine1Focused(false);
+                  setIsSearchingAddresses(false);
+                  setAddressSuggestions([]);
+                }}
                 onChange={(event) =>
                   {
                     setSuppressAddressLookupValue(null);
+                    setAddressLookupQuery(event.target.value);
                     setAddressSuggestions([]);
                     setGroupDraft((currentValue) => ({
                       ...currentValue,
@@ -393,6 +417,9 @@ export function CampaignPeopleGroupDrawer({
                       key={suggestion.label}
                       type="button"
                       className="campaign-people-address-suggestion"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                      }}
                       onClick={() => applyAddressSuggestion(suggestion)}
                     >
                       <i className="bi bi-geo-alt" aria-hidden="true" />

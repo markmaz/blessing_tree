@@ -71,4 +71,51 @@ describe('CampaignPeopleGroupDrawer', () => {
     expect(screen.getByDisplayValue('TX')).toBeInTheDocument();
     expect(screen.getByDisplayValue('78701')).toBeInTheDocument();
   });
+
+  it('does not search just by opening an existing facility record with an address', async () => {
+    const onSearchAddresses = vi.fn().mockResolvedValue([]);
+
+    render(
+      <CampaignPeopleGroupDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        group={{
+          id: 'group-1',
+          campaignId: 'campaign-1',
+          groupType: 'CARE_FACILITY',
+          groupName: 'Maple Grove',
+          intakeSource: null,
+          externalReference: null,
+          notes: null,
+          status: 'ACTIVE',
+          addressLine1: '123 Main St',
+          addressLine2: null,
+          city: 'Austin',
+          state: 'TX',
+          postalCode: '78701',
+          primaryContact: null,
+          contacts: [],
+          authorizedPickupContacts: [],
+          recipientCount: 0,
+          recipients: [],
+          createdAt: null,
+          updatedAt: null,
+        }}
+        onClose={vi.fn()}
+        onSaveGroup={vi.fn()}
+        onSaveContact={vi.fn()}
+        onDeleteContact={vi.fn()}
+        onSearchAddresses={onSearchAddresses}
+        onAddRecipientToGroup={vi.fn()}
+        onSelectRecipient={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('123 Main St')).toBeInTheDocument();
+    });
+
+    expect(onSearchAddresses).not.toHaveBeenCalled();
+  });
 });
