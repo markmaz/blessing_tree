@@ -103,6 +103,7 @@ Last updated: 2026-05-21
 - Implemented recipient backend phases 2 and 3 with a new recipient feature package, aggregate `people-workspace` payload, and campaign-scoped group/contact/recipient/wishlist CRUD APIs
 - Implemented recipient phase 4 with a campaign-aware `People` workspace, selected-campaign `People` navigation, sortable `Households & Facilities` and `People` tables, right-side group/recipient drawers, contact management, and recipient-centered wishlist editing
 - Implemented recipient phase 5 with gift-workflow visibility in the People workflow, including sponsorship, fulfillment, label, pickup, and authorized-pickup-contact readiness surfaced directly in wishlist items and group/recipient drawers
+- Refined the People intake UX so family/facility entry now feels more like connected intake work: group drawers expose `Children`/`Residents` directly, and contextual recipient drawers hide non-applicable fields such as child direct-contact details
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Replaced the old placeholder automation warning with a real execution layer:

@@ -344,6 +344,13 @@ export function CampaignPeopleWorkspace({
           setSelectedRecipientId(null);
           setCreateRecipientGroupId(groupId);
         }}
+        onSelectRecipient={(recipientId) => {
+          setCreateGroupType(null);
+          setSelectedGroupId(null);
+          setIsCreateRecipientOpen(false);
+          setCreateRecipientGroupId(null);
+          setSelectedRecipientId(recipientId);
+        }}
       />
 
       <CampaignPeopleRecipientDrawer
@@ -353,6 +360,7 @@ export function CampaignPeopleWorkspace({
         canEdit={canEditPeople}
         recipient={selectedRecipient}
         initialGroupId={createRecipientGroupId}
+        lockedGroupId={createRecipientGroupId}
         groups={workspace.groups}
         onClose={() => {
           setIsCreateRecipientOpen(false);

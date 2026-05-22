@@ -29,6 +29,7 @@ interface CampaignPeopleRecipientDrawerProps {
   canEdit: boolean;
   recipient: CampaignRecipient | null;
   initialGroupId?: string | null;
+  lockedGroupId?: string | null;
   groups: CampaignPeopleGroup[];
   onClose: () => void;
   onSaveRecipient: (
@@ -114,6 +115,7 @@ export function CampaignPeopleRecipientDrawer({
   canEdit,
   recipient,
   initialGroupId = null,
+  lockedGroupId = null,
   groups,
   onClose,
   onSaveRecipient,
@@ -135,6 +137,10 @@ export function CampaignPeopleRecipientDrawer({
     () => groups.find((group) => group.id === recipientDraft.recipientGroupId) ?? null,
     [groups, recipientDraft.recipientGroupId]
   );
+  const lockedGroup = useMemo(
+    () => (lockedGroupId ? groups.find((group) => group.id === lockedGroupId) ?? null : null),
+    [groups, lockedGroupId]
+  );
 
   const recipientProgram = selectedGroup?.groupType === 'CARE_FACILITY'
     ? { recipientKind: 'ADULT' as const, programType: 'NURSING_HOME' as const }
@@ -144,6 +150,25 @@ export function CampaignPeopleRecipientDrawer({
 
   const visibleContacts = selectedGroup?.contacts ?? [];
   const pickupContacts = visibleContacts.filter((contact) => contact.canPickUp);
+  const isContextualIntake = lockedGroup !== null;
+  const isHouseholdIntake = selectedGroup?.groupType === 'HOUSEHOLD';
+  const isFacilityIntake = selectedGroup?.groupType === 'CARE_FACILITY';
+  const drawerTitle = recipient?.displayLabel
+    ? isHouseholdIntake
+      ? 'Child Intake'
+      : isFacilityIntake
+        ? 'Resident Intake'
+        : recipient.displayLabel
+    : isHouseholdIntake
+      ? 'Add Child'
+      : isFacilityIntake
+        ? 'Add Resident'
+        : 'Add Person';
+  const drawerDescription = isHouseholdIntake
+    ? 'Capture child details and wishlist items for this family intake.'
+    : isFacilityIntake
+      ? 'Capture resident details and wishlist items for this facility intake.'
+      : 'Manage the recipient profile and their campaign wishlist from one drawer.';
 
   const handleSaveRecipient = async () => {
     if (!recipientDraft.recipientGroupId) {
@@ -163,6 +188,7 @@ export function CampaignPeopleRecipientDrawer({
     await onSaveRecipient(
       {
         ...recipientDraft,
+        recipientGroupId: lockedGroupId ?? recipientDraft.recipientGroupId,
         displayLabel: recipientDraft.displayLabel.trim(),
         recipientKind: recipientProgram.recipientKind,
         programType: recipientProgram.programType,
@@ -265,43 +291,62 @@ export function CampaignPeopleRecipientDrawer({
     <CampaignStudioDrawer
       isOpen={isOpen}
       width="wide"
-      title={recipient?.displayLabel ?? 'Add Person'}
-      description="Manage the recipient profile and their campaign wishlist from one drawer."
+      title={drawerTitle}
+      description={drawerDescription}
       onClose={onClose}
     >
       <div className="campaign-team-drawer__stack">
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
             <div>
-              <h4 className="h6 mb-1">Person Details</h4>
-              <p className="text-muted mb-0">Each person is the actual gift recipient. The selected group determines the intake program.</p>
+              <h4 className="h6 mb-1">
+                {isHouseholdIntake ? 'Child Details' : isFacilityIntake ? 'Resident Details' : 'Person Details'}
+              </h4>
+              <p className="text-muted mb-0">
+                {isHouseholdIntake
+                  ? 'Children belong to a family intake, so contact information stays on the household record.'
+                  : isFacilityIntake
+                    ? 'Residents belong to a facility intake, so only resident-specific details are shown here.'
+                    : 'Each person is the actual gift recipient. The selected group determines the intake program.'}
+              </p>
             </div>
           </div>
 
           {recipientError ? <div className="alert alert-danger py-2" role="alert">{recipientError}</div> : null}
 
           <div className="campaign-team-form-grid">
-            <label className="form-label campaign-team-form-grid__span-2">
-              Household or Facility
-              <select
-                className="form-select mt-2"
-                value={recipientDraft.recipientGroupId}
-                onChange={(event) =>
-                  setRecipientDraft((currentValue) => ({
-                    ...currentValue,
-                    recipientGroupId: event.target.value,
-                  }))
-                }
-                disabled={!canEdit}
-              >
-                <option value="">Select a group</option>
-                {groups.map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.groupName}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {isContextualIntake ? (
+              <label className="form-label campaign-team-form-grid__span-2">
+                {lockedGroup?.groupType === 'HOUSEHOLD' ? 'Family' : 'Facility'}
+                <input
+                  className="form-control mt-2"
+                  value={lockedGroup?.groupName ?? ''}
+                  disabled
+                />
+              </label>
+            ) : (
+              <label className="form-label campaign-team-form-grid__span-2">
+                Household or Facility
+                <select
+                  className="form-select mt-2"
+                  value={recipientDraft.recipientGroupId}
+                  onChange={(event) =>
+                    setRecipientDraft((currentValue) => ({
+                      ...currentValue,
+                      recipientGroupId: event.target.value,
+                    }))
+                  }
+                  disabled={!canEdit}
+                >
+                  <option value="">Select a group</option>
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.groupName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             <label className="form-label">
               Program
@@ -332,7 +377,7 @@ export function CampaignPeopleRecipientDrawer({
             </label>
 
             <label className="form-label campaign-team-form-grid__span-2">
-              Display Name
+              {isHouseholdIntake ? 'Child Display Name' : isFacilityIntake ? 'Resident Display Name' : 'Display Name'}
               <input
                 className="form-control mt-2"
                 value={recipientDraft.displayLabel}
@@ -479,36 +524,40 @@ export function CampaignPeopleRecipientDrawer({
               </>
             ) : null}
 
-            <label className="form-label">
-              Direct Email
-              <input
-                className="form-control mt-2"
-                type="email"
-                value={recipientDraft.directEmail ?? ''}
-                onChange={(event) =>
-                  setRecipientDraft((currentValue) => ({
-                    ...currentValue,
-                    directEmail: event.target.value,
-                  }))
-                }
-                disabled={!canEdit}
-              />
-            </label>
+            {!isContextualIntake ? (
+              <>
+                <label className="form-label">
+                  Direct Email
+                  <input
+                    className="form-control mt-2"
+                    type="email"
+                    value={recipientDraft.directEmail ?? ''}
+                    onChange={(event) =>
+                      setRecipientDraft((currentValue) => ({
+                        ...currentValue,
+                        directEmail: event.target.value,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                </label>
 
-            <label className="form-label">
-              Direct Phone
-              <input
-                className="form-control mt-2"
-                value={recipientDraft.directPhone ?? ''}
-                onChange={(event) =>
-                  setRecipientDraft((currentValue) => ({
-                    ...currentValue,
-                    directPhone: event.target.value,
-                  }))
-                }
-                disabled={!canEdit}
-              />
-            </label>
+                <label className="form-label">
+                  Direct Phone
+                  <input
+                    className="form-control mt-2"
+                    value={recipientDraft.directPhone ?? ''}
+                    onChange={(event) =>
+                      setRecipientDraft((currentValue) => ({
+                        ...currentValue,
+                        directPhone: event.target.value,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                </label>
+              </>
+            ) : null}
 
             {selectedGroup?.groupType === 'CARE_FACILITY' ? (
               <label className="form-label campaign-team-form-grid__span-2">
@@ -529,7 +578,7 @@ export function CampaignPeopleRecipientDrawer({
             ) : null}
 
             <label className="form-label campaign-team-form-grid__span-2">
-              Notes
+              {isHouseholdIntake ? 'Child Notes' : isFacilityIntake ? 'Resident Notes' : 'Notes'}
               <textarea
                 className="form-control mt-2"
                 rows={4}

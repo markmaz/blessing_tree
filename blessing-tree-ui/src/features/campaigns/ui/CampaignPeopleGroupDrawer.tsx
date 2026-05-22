@@ -32,6 +32,7 @@ interface CampaignPeopleGroupDrawerProps {
   ) => Promise<CampaignPeopleGroupContact | null>;
   onDeleteContact: (groupId: string, contactId: string) => Promise<boolean>;
   onAddRecipientToGroup: (groupId: string) => void;
+  onSelectRecipient: (recipientId: string) => void;
 }
 
 const emptyGroupDraft = (groupType: RecipientGroupType = 'HOUSEHOLD'): RecipientGroupUpsertInput => ({
@@ -73,6 +74,7 @@ export function CampaignPeopleGroupDrawer({
   onSaveContact,
   onDeleteContact,
   onAddRecipientToGroup,
+  onSelectRecipient,
 }: CampaignPeopleGroupDrawerProps) {
   const [groupDraft, setGroupDraft] = useState<RecipientGroupUpsertInput>(() =>
     group
@@ -208,17 +210,6 @@ export function CampaignPeopleGroupDrawer({
               <h4 className="h6 mb-1">Group Details</h4>
               <p className="text-muted mb-0">Households and care facilities are the shared intake containers around one or more people.</p>
             </div>
-            {group ? (
-              <button
-                type="button"
-                className="btn btn-outline-secondary btn-sm"
-                onClick={() => onAddRecipientToGroup(group.id)}
-                disabled={!canEdit}
-              >
-                <i className="bi bi-person-plus" aria-hidden="true" />
-                <span>Add Person</span>
-              </button>
-            ) : null}
           </div>
 
           {groupError ? <div className="alert alert-danger py-2" role="alert">{groupError}</div> : null}
@@ -412,6 +403,85 @@ export function CampaignPeopleGroupDrawer({
             </button>
           </div>
         </section>
+
+        {group ? (
+          <section className="campaign-team-drawer__section">
+            <div className="campaign-team-drawer__section-header">
+              <div>
+                <h4 className="h6 mb-1">
+                  {group.groupType === 'HOUSEHOLD' ? 'Children' : 'Residents'}
+                </h4>
+                <p className="text-muted mb-0">
+                  {group.groupType === 'HOUSEHOLD'
+                    ? 'Capture the children in this family, then open each child to add or refine their wishlist.'
+                    : 'Capture the residents from this facility list, then open each resident to add or refine their wishlist.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => onAddRecipientToGroup(group.id)}
+                disabled={!canEdit}
+              >
+                <i
+                  className={`bi ${group.groupType === 'HOUSEHOLD' ? 'bi-person-plus' : 'bi-person-vcard'} me-2`}
+                  aria-hidden="true"
+                />
+                {group.groupType === 'HOUSEHOLD' ? 'Add Child' : 'Add Resident'}
+              </button>
+            </div>
+
+            <div className="campaign-team-inline-list">
+              {group.recipients.length === 0 ? (
+                <div className="campaign-studio__empty-note">
+                  {group.groupType === 'HOUSEHOLD'
+                    ? 'No children added yet.'
+                    : 'No residents added yet.'}
+                </div>
+              ) : (
+                group.recipients.map((recipient) => (
+                  <div key={recipient.id} className="campaign-team-inline-item campaign-team-inline-item--stacked">
+                    <div className="campaign-team-inline-item__content">
+                      <strong>{recipient.displayLabel}</strong>
+                      <div className="campaign-team-inline-meta">
+                        <span className="campaign-chip campaign-chip-muted">
+                          <i className="bi bi-journal-text me-1" aria-hidden="true" />
+                          {recipient.wishlist?.items.length ?? 0} wishlist items
+                        </span>
+                        <span className="campaign-chip campaign-chip-muted">
+                          <i className="bi bi-tag me-1" aria-hidden="true" />
+                          {recipient.status}
+                        </span>
+                      </div>
+                      <span className="text-muted small">
+                        {[
+                          recipient.firstName && recipient.lastName
+                            ? `${recipient.firstName} ${recipient.lastName}`
+                            : null,
+                          recipient.age !== null ? `Age ${recipient.age}` : null,
+                          recipient.facilityRoom ? `Room ${recipient.facilityRoom}` : null,
+                          recipient.wishlist ? `Wishlist ${recipient.wishlist.wishlistStatus}` : 'No wishlist yet',
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </div>
+                    <div className="campaign-team-inline-item__actions">
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => onSelectRecipient(recipient.id)}
+                      >
+                        <i className="bi bi-pencil-square me-2" aria-hidden="true" />
+                        {group.groupType === 'HOUSEHOLD' ? 'Open Child' : 'Open Resident'}
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        ) : null}
 
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
