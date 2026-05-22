@@ -33,39 +33,85 @@
   gap: 0.65rem;
 }
 
-.campaign-people-group-parent-row td {
-  border-bottom-width: 0;
-  padding-bottom: 0.45rem;
+.campaign-people-group-cell {
+  min-width: 18rem;
 }
 
-.campaign-people-group-member-row {
-  background: rgba(248, 245, 239, 0.34);
+.campaign-people-group-row__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 0.55rem;
+  background: rgba(248, 245, 239, 0.9);
+  color: var(--blessing-text);
+  flex-shrink: 0;
 }
 
-.campaign-people-group-member-row td {
-  padding-top: 0.45rem;
-  padding-bottom: 0.45rem;
-  font-size: 0.92rem;
-  border-top: 0;
-}
-
-.campaign-people-group-member-button {
+.campaign-people-group-row__link {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
-  padding-left: 1.6rem;
+  align-items: flex-start;
+  gap: 0.12rem;
+  color: inherit;
+  text-align: left;
 }
 
-.campaign-people-group-member-button__name {
+.campaign-people-group-row__name {
   font-weight: 700;
 }
 
-.campaign-people-group-member-button__meta {
+.campaign-people-group-row__meta {
   color: var(--blessing-text-light);
   font-size: 0.84rem;
 }
 
-.campaign-people-group-member-hint {
+.campaign-people-group-children-row td {
+  padding-top: 0;
+  border-top: 0;
+  background: rgba(248, 245, 239, 0.38);
+}
+
+.campaign-people-group-children-wrap {
+  padding: 0.2rem 0 0.1rem 2.45rem;
+}
+
+.campaign-people-group-children-table {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 0.8rem;
+  overflow: hidden;
+}
+
+.campaign-people-group-children-table thead th {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--blessing-text-light);
+  background: rgba(248, 245, 239, 0.92);
+}
+
+.campaign-people-group-child-row {
+  cursor: pointer;
+}
+
+.campaign-people-group-child-row td {
+  font-size: 0.9rem;
+  vertical-align: top;
+}
+
+.campaign-people-group-child-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.campaign-people-group-child-primary span {
   color: var(--blessing-text-light);
   font-size: 0.84rem;
 }

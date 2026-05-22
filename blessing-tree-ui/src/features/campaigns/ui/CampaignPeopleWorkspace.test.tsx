@@ -432,7 +432,9 @@ describe('CampaignPeopleWorkspace', () => {
     expect(within(groupTable).queryByText('Maple Grove West Wing')).not.toBeInTheDocument();
   });
 
-  it('shows expanded group members and wishlist gift rows in the directory', () => {
+  it('shows compact group member subrows and wishlist gift rows in the directory', async () => {
+    const user = userEvent.setup();
+
     render(
       <MemoryRouter>
         <CampaignPeopleWorkspace
@@ -459,10 +461,15 @@ describe('CampaignPeopleWorkspace', () => {
 
     const [groupTable, peopleTable] = screen.getAllByRole('table');
 
-    expect(within(groupTable).getByRole('button', { name: /Ava Johnson/ })).toBeInTheDocument();
-    expect(within(groupTable).getByRole('button', { name: /Mary Smith/ })).toBeInTheDocument();
-    expect(within(groupTable).getByRole('button', { name: /Ava Johnson.*Age 8/ })).toBeInTheDocument();
-    expect(within(groupTable).getByRole('button', { name: /Mary Smith.*MGWW-001/ })).toBeInTheDocument();
+    expect(within(groupTable).queryByText('Ava Johnson')).not.toBeInTheDocument();
+
+    await user.click(within(groupTable).getByRole('button', { name: 'Expand Johnson Household' }));
+    await user.click(within(groupTable).getByRole('button', { name: 'Expand Maple Grove West Wing' }));
+
+    expect(within(groupTable).getByText('Ava Johnson')).toBeInTheDocument();
+    expect(within(groupTable).getByText('Mary Smith')).toBeInTheDocument();
+    expect(within(groupTable).getByText('Age 8')).toBeInTheDocument();
+    expect(within(groupTable).getByText('MGWW-001')).toBeInTheDocument();
     expect(within(peopleTable).getByText('Art kit')).toBeInTheDocument();
     expect(within(peopleTable).getByText('Open')).toBeInTheDocument();
   });
