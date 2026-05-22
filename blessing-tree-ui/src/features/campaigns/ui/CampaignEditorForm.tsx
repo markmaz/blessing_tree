@@ -109,6 +109,25 @@ export function CampaignEditorForm({
           </select>
         </label>
 
+        <label className="form-label campaign-studio__form-span-2">
+          Season Theme
+          <input
+            className={`form-control ${errors.seasonTheme ? 'is-invalid' : ''}`}
+            placeholder="Grace & Renewal"
+            {...register('seasonTheme', {
+              validate: (value) =>
+                value.trim().length <= 120 || 'Season theme must be 120 characters or fewer',
+            })}
+          />
+          {errors.seasonTheme ? (
+            <div className="invalid-feedback d-block">{errors.seasonTheme.message}</div>
+          ) : (
+            <div className="form-text">
+              Used in the app shell devotional modal and other campaign-specific seasonal touches.
+            </div>
+          )}
+        </label>
+
         <label className="form-label">
           Start Date
           <input type="date" className="form-control" {...register('startDate')} />

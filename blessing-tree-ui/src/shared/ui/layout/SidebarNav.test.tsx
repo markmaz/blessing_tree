@@ -31,6 +31,18 @@ describe('SidebarNav', () => {
     });
     mockUseCampaigns.mockReturnValue({
       selectedCampaignId: 'campaign-123',
+      selectedCampaign: {
+        id: 'campaign-123',
+        name: 'Blessing Tree 2026',
+        year: 2026,
+        description: null,
+        seasonTheme: 'Grace & Renewal',
+        status: 'ACTIVE',
+        startDate: '2026-11-01',
+        endDate: '2026-12-20',
+        createdAt: null,
+        updatedAt: null,
+      },
     });
   });
 
@@ -76,6 +88,7 @@ describe('SidebarNav', () => {
   it('uses the campaign id from the current route when selectedCampaignId is not loaded yet', () => {
     mockUseCampaigns.mockReturnValue({
       selectedCampaignId: null,
+      selectedCampaign: null,
     });
 
     render(
@@ -97,6 +110,7 @@ describe('SidebarNav', () => {
   it('does not render people child links without a campaign context', () => {
     mockUseCampaigns.mockReturnValue({
       selectedCampaignId: null,
+      selectedCampaign: null,
     });
 
     render(
@@ -131,5 +145,20 @@ describe('SidebarNav', () => {
 
     expect(adminToggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('link', { name: /health check/i })).toBeInTheDocument();
+  });
+
+  it('opens the season theme modal and shows the returned verse and prayer', async () => {
+    const user = userEvent.setup();
+    const onOpenSeasonTheme = vi.fn();
+
+    render(
+      <MemoryRouter initialEntries={['/campaigns/campaign-123/people/directory']}>
+        <SidebarNav isOpen onNavigate={() => {}} onOpenSeasonTheme={onOpenSeasonTheme} />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole('button', { name: /season theme/i }));
+
+    expect(onOpenSeasonTheme).toHaveBeenCalledTimes(1);
   });
 });

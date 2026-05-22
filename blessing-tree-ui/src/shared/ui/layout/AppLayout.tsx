@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { getCampaignSeasonReflection } from '@/features/campaigns/api/campaignApi';
+import { useCampaigns } from '@/features/campaigns/model/campaignContext';
+import type { CampaignSeasonReflection } from '@/features/campaigns/model/campaignTypes';
 import { AppFooter } from './AppFooter';
+import { SeasonThemeModal } from './SeasonThemeModal';
 import { SidebarNav } from './SidebarNav';
 import { TopBar } from './TopBar';
 
@@ -23,8 +27,42 @@ const getPageTitle = (pathname: string) => {
   return 'Dashboard';
 };
 
+const MAX_RECENT_THEME_PAIRS = 10;
+
+function seasonThemeStorageKey(campaignId: string) {
+  return `bt-season-theme-recent:${campaignId}`;
+}
+
+function readRecentThemePairs(campaignId: string): string[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+  try {
+    const rawValue = window.localStorage.getItem(seasonThemeStorageKey(campaignId));
+    if (!rawValue) {
+      return [];
+    }
+    const parsed = JSON.parse(rawValue);
+    return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentThemePairs(campaignId: string, pairIds: string[]) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  try {
+    window.localStorage.setItem(seasonThemeStorageKey(campaignId), JSON.stringify(pairIds.slice(0, MAX_RECENT_THEME_PAIRS)));
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
 export function AppLayout() {
   const location = useLocation();
+  const { selectedCampaignId, selectedCampaign } = useCampaigns();
   const pageTitle = useMemo(
     () => getPageTitle(location.pathname),
     [location.pathname]
@@ -34,6 +72,10 @@ export function AppLayout() {
     if (typeof window === 'undefined') return true;
     return getIsDesktop();
   });
+  const [isSeasonThemeModalOpen, setIsSeasonThemeModalOpen] = useState(false);
+  const [isSeasonThemeLoading, setIsSeasonThemeLoading] = useState(false);
+  const [seasonThemeError, setSeasonThemeError] = useState<string | null>(null);
+  const [seasonReflection, setSeasonReflection] = useState<CampaignSeasonReflection | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -70,9 +112,37 @@ export function AppLayout() {
     }
   };
 
+  const handleOpenSeasonTheme = async () => {
+    if (!selectedCampaignId || !selectedCampaign) {
+      return;
+    }
+
+    setIsSeasonThemeModalOpen(true);
+    setIsSeasonThemeLoading(true);
+    setSeasonThemeError(null);
+
+    try {
+      const recentPairIds = readRecentThemePairs(selectedCampaignId);
+      const nextReflection = await getCampaignSeasonReflection(selectedCampaignId, recentPairIds);
+      setSeasonReflection(nextReflection);
+      writeRecentThemePairs(selectedCampaignId, [nextReflection.pairId, ...recentPairIds.filter((pairId) => pairId !== nextReflection.pairId)]);
+    } catch (loadError) {
+      setSeasonReflection(null);
+      setSeasonThemeError(
+        loadError instanceof Error ? loadError.message : 'Unable to load season theme reflection.'
+      );
+    } finally {
+      setIsSeasonThemeLoading(false);
+    }
+  };
+
   return (
     <div className="app-shell">
-      <SidebarNav isOpen={sidebarOpen} onNavigate={handleNavClick} />
+      <SidebarNav
+        isOpen={sidebarOpen}
+        onNavigate={handleNavClick}
+        onOpenSeasonTheme={() => void handleOpenSeasonTheme()}
+      />
 
       <div className="app-main">
         <TopBar pageTitle={pageTitle} onToggleSidebar={handleToggleSidebar} />
@@ -94,6 +164,16 @@ export function AppLayout() {
       >
         <i className="bi bi-x-lg visually-hidden" aria-hidden="true" />
       </button>
+
+      <SeasonThemeModal
+        open={isSeasonThemeModalOpen}
+        campaignName={selectedCampaign?.name || 'Blessing Tree'}
+        seasonTheme={selectedCampaign?.seasonTheme || null}
+        isLoading={isSeasonThemeLoading}
+        error={seasonThemeError}
+        reflection={seasonReflection}
+        onClose={() => setIsSeasonThemeModalOpen(false)}
+      />
     </div>
   );
 }

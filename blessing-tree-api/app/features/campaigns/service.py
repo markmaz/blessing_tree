@@ -11,6 +11,7 @@ from app.exceptions.service_error import ServiceError
 from app.features.campaigns.constants import CAMPAIGN_STATUS_ARCHIVED
 from app.features.campaigns.validation import (
     parse_optional_date,
+    parse_optional_season_theme,
     require_campaign_name,
     require_campaign_year,
     validate_create_status,
@@ -159,6 +160,11 @@ class CampaignService:
             name=require_campaign_name(payload.get("name")),
             year=next_year,
             description=_optional_text(payload.get("description")),
+            season_theme=(
+                parse_optional_season_theme(payload.get("season_theme"))
+                if "season_theme" in payload
+                else parse_optional_season_theme(source_campaign.season_theme) if source_campaign is not None else None
+            ),
             start_date=start_date,
             end_date=end_date,
             status=validate_create_status(payload.get("status")),
@@ -205,6 +211,8 @@ class CampaignService:
             campaign.year = require_campaign_year(payload.get("year"))
         if "description" in payload:
             campaign.description = _optional_text(payload.get("description"))
+        if "season_theme" in payload:
+            campaign.season_theme = parse_optional_season_theme(payload.get("season_theme"))
 
         start_date = parse_optional_date(payload.get("start_date"), "start_date") if "start_date" in payload else campaign.start_date
         end_date = parse_optional_date(payload.get("end_date"), "end_date") if "end_date" in payload else campaign.end_date

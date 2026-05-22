@@ -10,6 +10,7 @@ const studio: CampaignStudioData = {
     id: 'campaign-1',
     name: 'Blessing Tree 2026',
     description: 'Holiday planning campaign',
+    seasonTheme: 'Grace & Renewal',
     year: 2026,
     status: 'ACTIVE',
     startDate: '2026-09-01',

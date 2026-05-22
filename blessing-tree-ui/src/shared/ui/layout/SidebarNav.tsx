@@ -13,6 +13,7 @@ import { isAppAdminRole } from '@/features/campaigns/model/campaignPermissions';
 interface SidebarNavProps {
   isOpen: boolean;
   onNavigate: () => void;
+  onOpenSeasonTheme?: () => void;
 }
 
 interface SidebarChildItem {
@@ -97,11 +98,11 @@ const navItems: SidebarItem[] = [
   },
 ];
 
-export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
+export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNavProps) {
   const location = useLocation();
   const { role } = useAuth();
   const { isFeatureEnabled } = useAppFeatures();
-  const { selectedCampaignId } = useCampaigns();
+  const { selectedCampaignId, selectedCampaign } = useCampaigns();
   const locationCampaignId = (() => {
     const match = location.pathname.match(/^\/campaigns\/([^/]+)/);
     return match?.[1] ?? null;
@@ -230,10 +231,21 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="sidebar-footer-card">
-          <div className="text-uppercase small">Season Theme</div>
-          <div className="fw-semibold">Grace &amp; Renewal</div>
-        </div>
+        <button
+          type="button"
+          className="sidebar-footer-card sidebar-footer-card--button"
+          onClick={() => onOpenSeasonTheme?.()}
+          disabled={!resolvedCampaignId || !selectedCampaign}
+        >
+          <span className="sidebar-footer-card__header">
+            <span className="text-uppercase small">Season Theme</span>
+            <i className="bi bi-chevron-up-right" aria-hidden="true" />
+          </span>
+          <span className="sidebar-footer-card__value">
+            <i className="bi bi-book-half" aria-hidden="true" />
+            <span>{selectedCampaign?.seasonTheme || 'Not set'}</span>
+          </span>
+        </button>
       </div>
     </aside>
   );

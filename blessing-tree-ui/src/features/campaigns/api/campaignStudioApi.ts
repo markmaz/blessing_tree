@@ -34,6 +34,7 @@ interface CampaignResponse {
   name: string;
   year: number;
   description: string | null;
+  season_theme: string | null;
   status: Campaign['status'];
   start_date: string | null;
   end_date: string | null;
@@ -371,6 +372,7 @@ function mapCampaign(campaign: CampaignResponse): Campaign {
     name: campaign.name,
     year: campaign.year,
     description: campaign.description,
+    seasonTheme: campaign.season_theme,
     status: campaign.status,
     startDate: campaign.start_date,
     endDate: campaign.end_date,

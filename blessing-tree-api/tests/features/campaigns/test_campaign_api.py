@@ -116,6 +116,7 @@ def _seed_campaign(db: Session, *, year: int, name: str, status: str = "ACTIVE",
         id=uuid.uuid4(),
         name=name,
         description=description,
+        season_theme="Grace & Renewal",
         year=year,
         start_date=date(year, 11, 1),
         end_date=date(year, 12, 31),
@@ -257,6 +258,62 @@ def test_get_campaign_summary_returns_all_v1_counts(
         "fulfillments": 1,
         "pickups": 0,
     }
+
+
+def test_campaign_detail_serializes_season_theme(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    user = _seed_user(session)
+    campaign = _seed_campaign(session, year=2026, name="Theme Campaign")
+    _assign_role(session, user, campaign, "CAMPAIGN_MANAGER")
+    user_id = str(user.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign_id}",
+        headers=_auth_header(user_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["season_theme"] == "Grace & Renewal"
+
+
+def test_season_reflection_avoids_recent_pair_ids(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    user = _seed_user(session)
+    campaign = _seed_campaign(session, year=2026, name="Reflection Campaign")
+    _assign_role(session, user, campaign, "CAMPAIGN_MANAGER")
+    user_id = str(user.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    first_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/season-reflection",
+        headers=_auth_header(user_id, "VOLUNTEER"),
+    )
+    assert first_response.status_code == 200
+    first_payload = first_response.get_json()
+
+    second_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/season-reflection?exclude_pair_ids={first_payload['pair_id']}",
+        headers=_auth_header(user_id, "VOLUNTEER"),
+    )
+    assert second_response.status_code == 200
+    second_payload = second_response.get_json()
+    assert second_payload["pair_id"] != first_payload["pair_id"]
 
 
 def test_create_campaign_allows_duplicate_year_and_creates_manager_assignment(

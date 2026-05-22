@@ -20,6 +20,7 @@ const campaign: Campaign = {
   name: 'Blessing Tree 2026 Demo',
   year: 2026,
   description: 'Demo campaign',
+  seasonTheme: 'Grace & Renewal',
   status: 'ACTIVE',
   startDate: '2026-11-01',
   endDate: '2026-12-20',

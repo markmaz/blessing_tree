@@ -3,6 +3,7 @@ import type {
   Campaign,
   CampaignAccess,
   CampaignListItem,
+  CampaignSeasonReflection,
   CampaignSummary,
   CampaignSummaryCounts,
   CampaignUpsertInput,
@@ -20,11 +21,34 @@ interface CampaignResponse {
   name: string;
   year: number;
   description: string | null;
+  season_theme: string | null;
   status: Campaign['status'];
   start_date: string | null;
   end_date: string | null;
   created_at: string | null;
   updated_at: string | null;
+}
+
+interface CampaignSeasonReflectionResponse {
+  campaign_id: string;
+  season_theme: string | null;
+  source: 'llm' | 'fallback';
+  fallback_reason: string | null;
+  pair_id: string;
+  verse: {
+    id: string;
+    reference: string;
+    translation: string;
+    text: string;
+    tags: string[];
+  };
+  prayer: {
+    id: string;
+    title: string;
+    citation: string;
+    text: string;
+    tags: string[];
+  };
 }
 
 interface CampaignListItemResponse extends CampaignResponse {
@@ -77,6 +101,29 @@ export async function getCampaignSummary(campaignId: string): Promise<CampaignSu
   };
 }
 
+export async function getCampaignSeasonReflection(
+  campaignId: string,
+  excludePairIds: string[] = []
+): Promise<CampaignSeasonReflection> {
+  const params = new URLSearchParams();
+  if (excludePairIds.length > 0) {
+    params.set('exclude_pair_ids', excludePairIds.join(','));
+  }
+  const response = await apiFetchJson<CampaignSeasonReflectionResponse>(
+    `/api/v1/campaigns/${campaignId}/season-reflection${params.size ? `?${params.toString()}` : ''}`
+  );
+
+  return {
+    campaignId: response.campaign_id,
+    seasonTheme: response.season_theme,
+    source: response.source,
+    fallbackReason: response.fallback_reason,
+    pairId: response.pair_id,
+    verse: response.verse,
+    prayer: response.prayer,
+  };
+}
+
 export async function createCampaign(input: CampaignUpsertInput): Promise<Campaign> {
   const response = await apiFetchJson<CampaignResponse>('/api/v1/campaigns', {
     method: 'POST',
@@ -106,6 +153,7 @@ function mapCampaign(campaign: CampaignResponse): Campaign {
     name: campaign.name,
     year: campaign.year,
     description: campaign.description,
+    seasonTheme: campaign.season_theme,
     status: campaign.status,
     startDate: campaign.start_date,
     endDate: campaign.end_date,
@@ -128,6 +176,7 @@ function serializeCampaignUpsertInput(input: CampaignUpsertInput) {
     name: input.name,
     year: input.year,
     description: input.description,
+    season_theme: input.seasonTheme,
     status: input.status,
     start_date: input.startDate,
     end_date: input.endDate,
