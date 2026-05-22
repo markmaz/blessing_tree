@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SidebarNav } from '@/shared/ui/layout/SidebarNav';
@@ -60,6 +61,18 @@ describe('SidebarNav', () => {
     expect(screen.getByRole('link', { name: /directory/i })).toBeInTheDocument();
   });
 
+  it('highlights only the people directory path instead of also highlighting campaigns', () => {
+    render(
+      <MemoryRouter initialEntries={['/campaigns/campaign-123/people/directory']}>
+        <SidebarNav isOpen onNavigate={() => {}} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: /campaigns/i })).not.toHaveClass('active');
+    expect(screen.getByRole('button', { name: /people/i })).toHaveClass('active');
+    expect(screen.getByRole('link', { name: /directory/i })).toHaveClass('active');
+  });
+
   it('uses the campaign id from the current route when selectedCampaignId is not loaded yet', () => {
     mockUseCampaigns.mockReturnValue({
       selectedCampaignId: null,
@@ -94,5 +107,29 @@ describe('SidebarNav', () => {
 
     expect(screen.queryByRole('link', { name: /intake/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /directory/i })).not.toBeInTheDocument();
+  });
+
+  it('allows grouped navigation sections to collapse and expand', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={['/admin/llm']}>
+        <SidebarNav isOpen onNavigate={() => {}} />
+      </MemoryRouter>,
+    );
+
+    const adminToggle = screen.getByRole('button', { name: /admin/i });
+    expect(adminToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('link', { name: /health check/i })).toBeInTheDocument();
+
+    await user.click(adminToggle);
+
+    expect(adminToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('link', { name: /health check/i })).not.toBeInTheDocument();
+
+    await user.click(adminToggle);
+
+    expect(adminToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('link', { name: /health check/i })).toBeInTheDocument();
   });
 });

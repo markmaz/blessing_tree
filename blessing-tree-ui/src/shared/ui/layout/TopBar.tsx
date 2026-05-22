@@ -45,7 +45,7 @@ export function TopBar({ pageTitle, onToggleSidebar }: TopBarProps) {
           <span className="app-page-title">{pageTitle}</span>
         </div>
 
-        <div className="d-flex flex-column flex-lg-row align-items-lg-center gap-3 ms-xl-auto">
+        <div className="d-flex flex-column flex-lg-row align-items-lg-center gap-2 gap-xl-3 app-topbar__controls">
           <CampaignSwitcher />
 
           <div className="dropdown align-self-start align-self-lg-center">

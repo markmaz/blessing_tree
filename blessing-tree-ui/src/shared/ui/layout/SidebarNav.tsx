@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import {
   buildCampaignPeopleDirectoryPath,
@@ -14,7 +15,21 @@ interface SidebarNavProps {
   onNavigate: () => void;
 }
 
-const navItems = [
+interface SidebarChildItem {
+  label: string;
+  to: string;
+  icon: string;
+}
+
+interface SidebarItem {
+  label: string;
+  to: string;
+  icon: string;
+  end?: boolean;
+  children?: SidebarChildItem[];
+}
+
+const navItems: SidebarItem[] = [
   {
     label: 'Dashboard',
     to: routes.HOME,
@@ -92,21 +107,25 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
     return match?.[1] ?? null;
   })();
   const resolvedCampaignId = selectedCampaignId ?? locationCampaignId;
-  const resolvedNavItems = navItems.map((item) =>
-    item.label === 'People'
-      ? {
-          ...item,
-          to: resolvedCampaignId ? buildCampaignPeopleIntakePath(resolvedCampaignId) : routes.CAMPAIGNS,
-          children: item.children?.map((child) => ({
-            ...child,
-            to: resolvedCampaignId
-              ? child.label === 'Directory'
-                ? buildCampaignPeopleDirectoryPath(resolvedCampaignId)
-                : buildCampaignPeopleIntakePath(resolvedCampaignId)
-              : routes.CAMPAIGNS,
-          })),
-        }
-      : item
+  const resolvedNavItems = useMemo(
+    () =>
+      navItems.map((item) =>
+        item.label === 'People'
+          ? {
+              ...item,
+              to: resolvedCampaignId ? buildCampaignPeopleIntakePath(resolvedCampaignId) : routes.CAMPAIGNS,
+              children: item.children?.map((child) => ({
+                ...child,
+                to: resolvedCampaignId
+                  ? child.label === 'Directory'
+                    ? buildCampaignPeopleDirectoryPath(resolvedCampaignId)
+                    : buildCampaignPeopleIntakePath(resolvedCampaignId)
+                  : routes.CAMPAIGNS,
+              })),
+            }
+          : item
+      ),
+    [resolvedCampaignId]
   );
   const visibleItems = resolvedNavItems.filter((item) => {
     if (item.label === 'People') return isFeatureEnabled('people');
@@ -115,6 +134,18 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
     if (item.to === routes.ADMIN) return isAppAdminRole(role);
     return true;
   });
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const defaultExpandedGroups = useMemo(
+    () => getDefaultExpandedGroups(location.pathname, resolvedNavItems),
+    [location.pathname, resolvedNavItems]
+  );
+
+  const toggleGroup = (label: string) => {
+    setExpandedGroups((currentValue) => ({
+      ...currentValue,
+      [label]: !(currentValue[label] ?? defaultExpandedGroups[label] ?? false),
+    }));
+  };
 
   return (
     <aside className={`app-sidebar ${isOpen ? 'is-open' : ''}`}>
@@ -132,52 +163,68 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
         {visibleItems.map((item) => (
           <div key={item.label} className="sidebar-nav-group">
             {item.label === 'People' && !resolvedCampaignId ? null : item.children?.length ? (
-              <div
-                className={`sidebar-link nav-link ${
-                  (item.label === 'People' &&
-                    location.pathname.includes('/people')) ||
-                  item.children.some((child) => location.pathname.startsWith(child.to))
-                    ? 'active'
-                    : ''
-                }`}
-              >
-                <i className={`bi ${item.icon} me-2`} aria-hidden="true" />
-                <span>{item.label}</span>
-              </div>
+              (() => {
+                const isExpanded = expandedGroups[item.label] ?? defaultExpandedGroups[item.label] ?? false;
+
+                return (
+                  <>
+                <button
+                  type="button"
+                  className={`sidebar-link sidebar-link--toggle nav-link ${
+                    isSidebarItemActive(item, location.pathname) ? 'active' : ''
+                  }`}
+                  onClick={() => toggleGroup(item.label)}
+                  aria-expanded={isExpanded}
+                >
+                  <span className="sidebar-link__content">
+                    <i className={`bi ${item.icon}`} aria-hidden="true" />
+                    <span>{item.label}</span>
+                  </span>
+                  <i
+                    className={`bi ${
+                      isExpanded ? 'bi-chevron-down' : 'bi-chevron-right'
+                    } sidebar-link__chevron`}
+                    aria-hidden="true"
+                  />
+                </button>
+                {isExpanded ? (
+                  <div className="sidebar-subnav">
+                    {item.children.map((child) => (
+                      <NavLink
+                        key={child.to}
+                        to={child.to}
+                        end
+                        className={({ isActive }) =>
+                          `sidebar-sublink nav-link ${isActive ? 'active' : ''}`
+                        }
+                        onClick={onNavigate}
+                      >
+                        <span className="sidebar-link__content">
+                          <i className={`bi ${child.icon}`} aria-hidden="true" />
+                          <span>{child.label}</span>
+                        </span>
+                      </NavLink>
+                    ))}
+                  </div>
+                ) : null}
+                  </>
+                );
+              })()
             ) : (
               <NavLink
                 to={item.to}
                 end={item.end}
                 className={() =>
-                  `sidebar-link nav-link ${
-                    item.end ? location.pathname === item.to : location.pathname.startsWith(item.to)
-                      ? 'active'
-                      : ''
-                  }`
+                  `sidebar-link nav-link ${isSidebarItemActive(item, location.pathname) ? 'active' : ''}`
                 }
                 onClick={onNavigate}
               >
-                <i className={`bi ${item.icon} me-2`} aria-hidden="true" />
-                <span>{item.label}</span>
+                <span className="sidebar-link__content">
+                  <i className={`bi ${item.icon}`} aria-hidden="true" />
+                  <span>{item.label}</span>
+                </span>
               </NavLink>
             )}
-            {item.children?.length && (item.label !== 'People' || resolvedCampaignId) ? (
-              <div className="sidebar-subnav">
-                {item.children.map((child) => (
-                  <NavLink
-                    key={child.to}
-                    to={child.to}
-                    className={({ isActive }) =>
-                      `sidebar-sublink nav-link ${isActive ? 'active' : ''}`
-                    }
-                    onClick={onNavigate}
-                  >
-                    <i className={`bi ${child.icon} me-2`} aria-hidden="true" />
-                    <span>{child.label}</span>
-                  </NavLink>
-                ))}
-              </div>
-            ) : null}
           </div>
         ))}
       </nav>
@@ -190,4 +237,33 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
       </div>
     </aside>
   );
+}
+
+function getDefaultExpandedGroups(pathname: string, items: SidebarItem[]) {
+  return items.reduce<Record<string, boolean>>((accumulator, item) => {
+    if (item.children?.length) {
+      accumulator[item.label] = isSidebarItemActive(item, pathname);
+    }
+    return accumulator;
+  }, {});
+}
+
+function isSidebarItemActive(item: SidebarItem, pathname: string) {
+  if (item.children?.length) {
+    return item.children.some((child) => pathname === child.to);
+  }
+
+  if (item.label === 'Dashboard') {
+    return pathname === routes.HOME;
+  }
+
+  if (item.label === 'Campaigns') {
+    return (
+      pathname === routes.CAMPAIGNS ||
+      (/^\/campaigns\/[^/]+$/.test(pathname) && !pathname.includes('/people')) ||
+      /^\/campaigns\/[^/]+\/studio$/.test(pathname)
+    );
+  }
+
+  return item.end ? pathname === item.to : pathname.startsWith(item.to);
 }

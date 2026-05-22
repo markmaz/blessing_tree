@@ -187,6 +187,11 @@ a:hover {
   box-shadow: 0 18px 32px rgba(21, 15, 10, 0.28);
 }
 
+.app-topbar__controls {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
 .app-page-title {
   font-size: 1.05rem;
   font-weight: 600;
@@ -309,6 +314,28 @@ a:hover {
   border-radius: 0.6rem;
   position: relative;
   transition: var(--blessing-transition);
+}
+
+.sidebar-link--toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.sidebar-link__content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sidebar-link__chevron {
+  margin-left: auto;
+  font-size: 0.82rem;
+  opacity: 0.9;
 }
 
 .sidebar-link:hover {

@@ -15,22 +15,18 @@ export function CampaignSwitcher() {
 
   const handleChange = (campaignId: string) => {
     selectCampaign(campaignId || null);
-  };
-
-  const handleOpen = () => {
-    if (!selectedCampaignId) {
-      navigate(routes.CAMPAIGNS);
-      return;
+    if (campaignId) {
+      navigate(buildCampaignDetailPath(campaignId));
     }
-    navigate(buildCampaignDetailPath(selectedCampaignId));
   };
 
   return (
     <div className="campaign-switcher">
-      <label className="campaign-switcher-label" htmlFor="campaign-switcher">
-        Campaign
-      </label>
       <div className="campaign-switcher-controls">
+        <label className="campaign-switcher-label" htmlFor="campaign-switcher">
+          <i className="bi bi-stars" aria-hidden="true" />
+          <span>Campaign</span>
+        </label>
         <select
           id="campaign-switcher"
           className="form-select form-select-sm campaign-switcher-select"
@@ -47,16 +43,17 @@ export function CampaignSwitcher() {
             </option>
           ))}
         </select>
+      </div>
+      {!selectedCampaignId && !isLoading ? (
         <button
           type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={handleOpen}
-          disabled={!selectedCampaignId}
+          className="btn btn-outline-light btn-sm campaign-switcher-manage"
+          onClick={() => navigate(routes.CAMPAIGNS)}
         >
-          <i className="bi bi-box-arrow-up-right me-2" aria-hidden="true" />
-          Open
+          <i className="bi bi-box-arrow-up-right" aria-hidden="true" />
+          <span>Open Campaigns</span>
         </button>
-      </div>
+      ) : null}
       {error ? <div className="campaign-switcher-error">{error}</div> : null}
     </div>
   );
