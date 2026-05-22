@@ -111,25 +111,18 @@ export function CampaignPeopleGroupDrawer({
     [editingContactId, group]
   );
   const currentGroupType = groupDraft.groupType;
-  const groupNameLabel = currentGroupType === 'CARE_FACILITY'
-    ? 'Facility Name'
-    : currentGroupType === 'PARTNER_PROGRAM'
-      ? 'Program Name'
-      : 'Family Name';
+  const isAdultProgramGroup = currentGroupType === 'ADULT_PROGRAM';
+  const groupNameLabel = isAdultProgramGroup ? 'Program Name' : 'Family Name';
   const drawerTitle = group
     ? group.groupName
-    : currentGroupType === 'CARE_FACILITY'
-      ? 'Add Facility'
-      : currentGroupType === 'PARTNER_PROGRAM'
-        ? 'Add Partner Program'
-        : 'Add Family';
+    : isAdultProgramGroup
+      ? 'Add Adult Program'
+      : 'Add Family';
   const drawerDescription = group
     ? 'Update the intake record, contacts, and linked people for this campaign.'
-    : currentGroupType === 'CARE_FACILITY'
-      ? 'Create the facility first, then add staff contacts and residents.'
-      : currentGroupType === 'PARTNER_PROGRAM'
-        ? 'Create the partner program first, then add coordinator contacts and participating adults.'
-        : 'Create the family first, then add parent or guardian contacts and children.';
+    : isAdultProgramGroup
+      ? 'Create the adult program first, then add coordinator contacts and participating adults.'
+      : 'Create the family first, then add parent or guardian contacts and children.';
 
   useEffect(() => {
     const query = addressLookupQuery.trim();
@@ -289,18 +282,12 @@ export function CampaignPeopleGroupDrawer({
           <div className="campaign-team-drawer__section-header">
             <div>
               <h4 className="h6 mb-1">
-                {currentGroupType === 'CARE_FACILITY'
-                  ? 'Facility Details'
-                  : currentGroupType === 'PARTNER_PROGRAM'
-                    ? 'Program Details'
-                    : 'Family Details'}
+                {isAdultProgramGroup ? 'Program Details' : 'Family Details'}
               </h4>
               <p className="text-muted mb-0">
-                {currentGroupType === 'CARE_FACILITY'
-                  ? 'Capture the facility information first, then add contacts and residents from the same intake record.'
-                  : currentGroupType === 'PARTNER_PROGRAM'
-                    ? 'Capture the program information first, then add coordinator contacts and the adults submitted through that program.'
-                    : 'Capture the family information first, then add contacts and children from the same intake record.'}
+                {isAdultProgramGroup
+                  ? 'Capture the adult-program information first, then add coordinator contacts and the adults submitted through that program.'
+                  : 'Capture the family information first, then add contacts and children from the same intake record.'}
               </p>
             </div>
           </div>
@@ -322,8 +309,7 @@ export function CampaignPeopleGroupDrawer({
                 disabled={!canEdit}
               >
                 <option value="HOUSEHOLD">Household</option>
-                <option value="CARE_FACILITY">Care Facility</option>
-                <option value="PARTNER_PROGRAM">Partner Program</option>
+                <option value="ADULT_PROGRAM">Adult Program</option>
               </select>
             </label>
 
@@ -417,9 +403,7 @@ export function CampaignPeopleGroupDrawer({
                 }
                 disabled={!canEdit}
                 placeholder={
-                  currentGroupType === 'CARE_FACILITY'
-                    ? 'Start typing the facility address'
-                    : 'Start typing the family address'
+                  isAdultProgramGroup ? 'Start typing the program address' : 'Start typing the family address'
                 }
               />
               {isSearchingAddresses ? (
@@ -544,16 +528,12 @@ export function CampaignPeopleGroupDrawer({
                 <h4 className="h6 mb-1">
                   {group.groupType === 'HOUSEHOLD'
                     ? 'Children'
-                    : group.groupType === 'CARE_FACILITY'
-                      ? 'Residents'
-                      : 'Program Members'}
+                    : 'Program Members'}
                 </h4>
                 <p className="text-muted mb-0">
                   {group.groupType === 'HOUSEHOLD'
                     ? 'Capture the children in this family, then open each child to add or refine their wishlist.'
-                    : group.groupType === 'CARE_FACILITY'
-                      ? 'Capture the residents from this facility list, then open each resident to add or refine their wishlist.'
-                      : 'Capture the adults submitted through this partner program, then open each person to add or refine their wishlist and contact details.'}
+                    : 'Capture the adults in this program, then open each person to add or refine their wishlist and optional direct contact details.'}
                 </p>
               </div>
               <button
@@ -566,17 +546,13 @@ export function CampaignPeopleGroupDrawer({
                   className={`bi ${
                     group.groupType === 'HOUSEHOLD'
                       ? 'bi-person-plus'
-                      : group.groupType === 'CARE_FACILITY'
-                        ? 'bi-person-vcard'
-                        : 'bi-people-fill'
+                      : 'bi-people-fill'
                   } me-2`}
                   aria-hidden="true"
                 />
                 {group.groupType === 'HOUSEHOLD'
                   ? 'Add Child'
-                  : group.groupType === 'CARE_FACILITY'
-                    ? 'Add Resident'
-                    : 'Add Adult'}
+                  : 'Add Adult'}
               </button>
             </div>
 
@@ -585,9 +561,7 @@ export function CampaignPeopleGroupDrawer({
                 <div className="campaign-studio__empty-note">
                   {group.groupType === 'HOUSEHOLD'
                     ? 'No children added yet.'
-                    : group.groupType === 'CARE_FACILITY'
-                      ? 'No residents added yet.'
-                      : 'No program members added yet.'}
+                    : 'No program members added yet.'}
                 </div>
               ) : (
                 group.recipients.map((recipient) => (
@@ -626,9 +600,7 @@ export function CampaignPeopleGroupDrawer({
                         <i className="bi bi-pencil-square me-2" aria-hidden="true" />
                         {group.groupType === 'HOUSEHOLD'
                           ? 'Open Child'
-                          : group.groupType === 'CARE_FACILITY'
-                            ? 'Open Resident'
-                            : 'Open Adult'}
+                          : 'Open Adult'}
                       </button>
                     </div>
                   </div>

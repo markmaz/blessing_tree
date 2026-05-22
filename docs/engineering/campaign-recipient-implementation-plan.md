@@ -6,7 +6,7 @@ Last updated: 2026-05-22
 
 - In progress
 - Phases 1 through 7 are implemented
-- The current follow-on work is partner-program delivery polish and downstream
+- The current follow-on work is adult-program workflow polish and downstream
   sponsorship/fulfillment validation on top of the refined People workspace and
   communications audience model
 

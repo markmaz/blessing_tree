@@ -147,47 +147,38 @@ export function CampaignPeopleRecipientDrawer({
     [groups, lockedGroupId]
   );
 
-  const recipientProgram = selectedGroup?.groupType === 'CARE_FACILITY'
-    ? { recipientKind: 'ADULT' as const, programType: 'SENIOR_FACILITY' as const }
-    : selectedGroup?.groupType === 'PARTNER_PROGRAM'
-      ? { recipientKind: 'ADULT' as const, programType: 'SENIOR_PARTNER_PROGRAM' as const }
-      : selectedGroup
-        ? { recipientKind: 'CHILD' as const, programType: 'CHILD_FAMILY' as const }
-        : null;
+  const recipientProgram = selectedGroup?.groupType === 'ADULT_PROGRAM'
+    ? { recipientKind: 'ADULT' as const, programType: 'ADULT_PROGRAM' as const }
+    : selectedGroup
+      ? { recipientKind: 'CHILD' as const, programType: 'CHILD_FAMILY' as const }
+      : null;
 
   const visibleContacts = selectedGroup?.contacts ?? [];
   const pickupContacts = visibleContacts.filter((contact) => contact.canPickUp);
   const isContextualIntake = lockedGroup !== null;
   const isHouseholdIntake = selectedGroup?.groupType === 'HOUSEHOLD';
-  const isFacilityIntake = selectedGroup?.groupType === 'CARE_FACILITY';
-  const isPartnerProgramIntake = selectedGroup?.groupType === 'PARTNER_PROGRAM';
-  const showAdultDirectContact = selectedGroup?.groupType === 'CARE_FACILITY' || selectedGroup?.groupType === 'PARTNER_PROGRAM';
+  const isAdultProgramIntake = selectedGroup?.groupType === 'ADULT_PROGRAM';
+  const showAdultDirectContact = selectedGroup?.groupType === 'ADULT_PROGRAM';
   const drawerTitle = recipient?.displayLabel
     ? isHouseholdIntake
       ? 'Child Intake'
-      : isFacilityIntake
-        ? 'Resident Intake'
-        : isPartnerProgramIntake
-          ? 'Program Member Intake'
+      : isAdultProgramIntake
+        ? 'Adult Intake'
         : recipient.displayLabel
     : isHouseholdIntake
       ? 'Add Child'
-      : isFacilityIntake
-        ? 'Add Resident'
-        : isPartnerProgramIntake
-          ? 'Add Adult'
+      : isAdultProgramIntake
+        ? 'Add Adult'
         : 'Add Person';
   const drawerDescription = isHouseholdIntake
     ? 'Capture child details and wishlist items for this family intake.'
-    : isFacilityIntake
-      ? 'Capture resident details and wishlist items for this facility intake.'
-      : isPartnerProgramIntake
-        ? 'Capture adult details, home contact information, and wishlist items for this partner program intake.'
+    : isAdultProgramIntake
+      ? 'Capture adult details, optional direct contact information, and wishlist items for this adult program intake.'
       : 'Manage the recipient profile and their campaign wishlist from one drawer.';
 
   const handleSaveRecipient = async () => {
     if (!recipientDraft.recipientGroupId) {
-      setRecipientError('Choose a household or facility first.');
+      setRecipientError('Choose a household or adult program first.');
       return;
     }
     if (!recipientDraft.displayLabel.trim()) {
@@ -322,19 +313,15 @@ export function CampaignPeopleRecipientDrawer({
               <h4 className="h6 mb-1">
                 {isHouseholdIntake
                   ? 'Child Details'
-                  : isFacilityIntake
-                    ? 'Resident Details'
-                    : isPartnerProgramIntake
-                      ? 'Adult Details'
-                      : 'Person Details'}
+                  : isAdultProgramIntake
+                    ? 'Adult Details'
+                    : 'Person Details'}
               </h4>
               <p className="text-muted mb-0">
                 {isHouseholdIntake
                   ? 'Children belong to a family intake, so contact information stays on the household record.'
-                  : isFacilityIntake
-                    ? 'Residents belong to a facility intake, so resident-specific details stay here and direct contact information is optional.'
-                    : isPartnerProgramIntake
-                      ? 'Adults in partner programs keep their own address and direct contact details here, while coordinators stay on the program record.'
+                  : isAdultProgramIntake
+                    ? 'Adults in an adult program can keep their own address and direct contact details here, while coordinators stay on the group record.'
                     : 'Each person is the actual gift recipient. The selected group determines the intake program.'}
               </p>
             </div>
@@ -347,9 +334,7 @@ export function CampaignPeopleRecipientDrawer({
               <label className="form-label campaign-team-form-grid__span-2">
                 {lockedGroup?.groupType === 'HOUSEHOLD'
                   ? 'Family'
-                  : lockedGroup?.groupType === 'CARE_FACILITY'
-                    ? 'Facility'
-                    : 'Program'}
+                  : 'Program'}
                 <input
                   className="form-control mt-2"
                   value={lockedGroup?.groupName ?? ''}
@@ -358,7 +343,7 @@ export function CampaignPeopleRecipientDrawer({
               </label>
             ) : (
               <label className="form-label campaign-team-form-grid__span-2">
-                Household, Facility, or Program
+                Household or Adult Program
                 <select
                   className="form-select mt-2"
                   value={recipientDraft.recipientGroupId}
@@ -411,11 +396,9 @@ export function CampaignPeopleRecipientDrawer({
             <label className="form-label campaign-team-form-grid__span-2">
               {isHouseholdIntake
                 ? 'Child Display Name'
-                : isFacilityIntake
-                  ? 'Resident Display Name'
-                  : isPartnerProgramIntake
-                    ? 'Adult Display Name'
-                    : 'Display Name'}
+                : isAdultProgramIntake
+                  ? 'Adult Display Name'
+                  : 'Display Name'}
               <input
                 className="form-control mt-2"
                 value={recipientDraft.displayLabel}
@@ -528,10 +511,10 @@ export function CampaignPeopleRecipientDrawer({
               </select>
             </label>
 
-            {selectedGroup?.groupType === 'CARE_FACILITY' ? (
+            {selectedGroup?.groupType === 'ADULT_PROGRAM' ? (
               <>
                 <label className="form-label">
-                  Facility Room
+                  Room / Unit
                   <input
                     className="form-control mt-2"
                     value={recipientDraft.facilityRoom ?? ''}
@@ -565,7 +548,7 @@ export function CampaignPeopleRecipientDrawer({
             {showAdultDirectContact ? (
               <>
                 <label className="form-label campaign-team-form-grid__span-2">
-                  {isPartnerProgramIntake ? 'Home Address Line 1' : 'Address Line 1'}
+                  Home Address Line 1
                   <input
                     className="form-control mt-2"
                     value={recipientDraft.addressLine1 ?? ''}
@@ -672,7 +655,7 @@ export function CampaignPeopleRecipientDrawer({
               </>
             ) : null}
 
-            {selectedGroup?.groupType === 'CARE_FACILITY' ? (
+            {selectedGroup?.groupType === 'ADULT_PROGRAM' ? (
               <label className="form-label campaign-team-form-grid__span-2">
                 Mobility Notes
                 <textarea
@@ -693,11 +676,9 @@ export function CampaignPeopleRecipientDrawer({
             <label className="form-label campaign-team-form-grid__span-2">
               {isHouseholdIntake
                 ? 'Child Notes'
-                : isFacilityIntake
-                  ? 'Resident Notes'
-                  : isPartnerProgramIntake
-                    ? 'Adult Notes'
-                    : 'Notes'}
+                : isAdultProgramIntake
+                  ? 'Adult Notes'
+                  : 'Notes'}
               <textarea
                 className="form-control mt-2"
                 rows={4}

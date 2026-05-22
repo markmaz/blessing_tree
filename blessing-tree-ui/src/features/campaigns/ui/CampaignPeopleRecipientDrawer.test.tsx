@@ -29,7 +29,7 @@ const householdGroup: CampaignPeopleGroup = {
 const partnerProgramGroup: CampaignPeopleGroup = {
   id: 'group-program',
   campaignId: 'campaign-1',
-  groupType: 'PARTNER_PROGRAM',
+  groupType: 'ADULT_PROGRAM',
   groupName: 'Senior At Home',
   intakeSource: null,
   externalReference: null,
@@ -75,7 +75,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
     expect(screen.queryByLabelText('Direct Phone')).not.toBeInTheDocument();
   });
 
-  it('uses partner-program framing and shows direct contact fields for adult intake', () => {
+  it('uses adult-program framing and shows direct contact fields for adult intake', () => {
     render(
       <CampaignPeopleRecipientDrawer
         isOpen

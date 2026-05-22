@@ -158,8 +158,7 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     payload = response.get_json()
     assert payload["counts"]["group_count"] == 2
     assert payload["counts"]["household_count"] == 1
-    assert payload["counts"]["care_facility_count"] == 1
-    assert payload["counts"]["partner_program_count"] == 0
+    assert payload["counts"]["adult_program_count"] == 1
     assert payload["counts"]["recipient_count"] == 2
     assert payload["counts"]["wishlist_count"] == 1
     assert payload["counts"]["open_item_count"] == 1
@@ -168,8 +167,8 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     assert payload["recipients"][0]["wishlist"]["items"][0]["gift_workflow"]["label_code"] == "people-workspace-item-1"
     assert payload["recipients"][0]["wishlist"]["items"][0]["gift_workflow"]["sponsorship_status"] == "UNSPONSORED"
     assert sorted(payload["filters"]["program_types"]) == [
+        "ADULT_PROGRAM",
         RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
-        RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
     ]
 
 
@@ -333,7 +332,7 @@ def test_recipient_program_alignment_rejects_invalid_group_program_combination(a
         json={
             "recipient_group_id": group_id,
             "recipient_kind": "ADULT",
-            "program_type": "SENIOR_FACILITY",
+            "program_type": "ADULT_PROGRAM",
             "privacy_level": "FULL_NAME",
             "display_label": "Invalid Household Adult",
         },
@@ -363,7 +362,7 @@ def test_partner_program_adult_recipient_accepts_direct_contact_fields(app, monk
         json={
             "recipient_group_id": group_id,
             "recipient_kind": "ADULT",
-            "program_type": "SENIOR_PARTNER_PROGRAM",
+            "program_type": "ADULT_PROGRAM",
             "privacy_level": "FULL_NAME",
             "display_label": "Mary Carter",
             "first_name": "Mary",

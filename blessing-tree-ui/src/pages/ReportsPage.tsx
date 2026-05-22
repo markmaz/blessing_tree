@@ -79,8 +79,7 @@ export function ReportsPage() {
             <div className="campaign-chip-row mb-3">
               <span className="campaign-chip campaign-chip-muted">{selectedCampaign.name}</span>
               <span className="campaign-chip campaign-chip-muted">{workspace.counts.householdCount} households</span>
-              <span className="campaign-chip campaign-chip-muted">{workspace.counts.careFacilityCount} facilities</span>
-              <span className="campaign-chip campaign-chip-muted">{workspace.counts.partnerProgramCount} partner programs</span>
+              <span className="campaign-chip campaign-chip-muted">{workspace.counts.adultProgramCount} adult programs</span>
             </div>
             <h1 className="h3 mb-1">People Reports</h1>
             <p className="text-muted mb-0">
@@ -115,8 +114,7 @@ export function ReportsPage() {
               <h2 className="h5 mb-0">Group Mix</h2>
             </div>
             <ReportMetricRow label="Households" value={workspace.counts.householdCount} />
-            <ReportMetricRow label="Facilities" value={workspace.counts.careFacilityCount} />
-            <ReportMetricRow label="Partner programs" value={workspace.counts.partnerProgramCount} />
+            <ReportMetricRow label="Adult programs" value={workspace.counts.adultProgramCount} />
             <ReportMetricRow label="Active groups" value={workspace.counts.activeGroupCount} />
             <ReportMetricRow label="Missing primary contact" value={groupsWithoutPrimaryContact} tone={groupsWithoutPrimaryContact > 0 ? 'warn' : 'ok'} />
           </div>
@@ -188,8 +186,7 @@ export function ReportsPage() {
             </div>
             <ul className="campaign-report-bullets mb-0">
               <li>Household messages now target parents and guardians through household contacts.</li>
-              <li>Facility messages stay separate from direct adult-recipient outreach.</li>
-              <li>Partner-program messages can route through coordinators or directly to adult recipients when contact information is available.</li>
+              <li>Adult-program messages can route through coordinators or directly to adult recipients when contact information is available.</li>
               <li>Primary contact audiences are now resolved from People groups instead of older family-only assumptions.</li>
               <li>Use Communications in Campaign Studio for recipient-aware templates and schedule placement.</li>
             </ul>

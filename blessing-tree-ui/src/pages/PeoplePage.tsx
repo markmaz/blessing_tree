@@ -72,17 +72,14 @@ export function PeoplePage() {
                   {workspace.counts.householdCount} households
                 </span>
                 <span className="campaign-chip campaign-chip-muted">
-                  {workspace.counts.careFacilityCount} facilities
-                </span>
-                <span className="campaign-chip campaign-chip-muted">
-                  {workspace.counts.partnerProgramCount} partner programs
+                  {workspace.counts.adultProgramCount} adult programs
                 </span>
               </>
             ) : null}
           </div>
           <h1 className="h3 mb-1">People</h1>
           <p className="text-muted mb-0">
-            Use Intake for new family, facility, or partner-program entry, and Directory to search and maintain existing households, facilities, programs, people, and wishlists.
+            Use Intake for new family or adult-program entry, and Directory to search and maintain existing households, adult programs, people, and wishlists.
           </p>
         </div>
       </div>

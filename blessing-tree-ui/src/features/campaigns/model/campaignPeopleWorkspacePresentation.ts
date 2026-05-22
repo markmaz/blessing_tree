@@ -17,10 +17,7 @@ export function toRecipientGroupTypeLabel(value: RecipientGroupType): string {
   if (value === 'HOUSEHOLD') {
     return 'Household';
   }
-  if (value === 'CARE_FACILITY') {
-    return 'Care Facility';
-  }
-  return 'Partner Program';
+  return 'Adult Program';
 }
 
 export function toRecipientGroupStatusLabel(value: RecipientGroupStatus): string {
@@ -31,10 +28,7 @@ export function toRecipientProgramTypeLabel(value: RecipientProgramType): string
   if (value === 'CHILD_FAMILY') {
     return 'Family Child';
   }
-  if (value === 'SENIOR_FACILITY') {
-    return 'Facility Adult';
-  }
-  return 'Partner Program Adult';
+  return 'Adult Program Adult';
 }
 
 export function toRecipientKindLabel(value: RecipientKind): string {

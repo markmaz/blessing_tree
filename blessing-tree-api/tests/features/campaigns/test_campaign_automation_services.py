@@ -247,7 +247,7 @@ def test_dispatch_schedule_resolves_direct_adult_recipients(
     group = RecipientGroup(
         id=uuid.uuid4(),
         campaign_id=campaign.id,
-        group_type="CARE_FACILITY",
+        group_type="ADULT_PROGRAM",
         group_name="Maple Grove",
         status="ACTIVE",
     )
@@ -256,7 +256,7 @@ def test_dispatch_schedule_resolves_direct_adult_recipients(
         campaign_id=campaign.id,
         recipient_group_id=group.id,
         recipient_kind="ADULT",
-        program_type="SENIOR_FACILITY",
+        program_type="ADULT_PROGRAM",
         privacy_level="FULL_NAME",
         display_label="Mary Smith",
         first_name="Mary",

@@ -284,7 +284,7 @@ def test_create_template_accepts_recipient_aware_audience_key(
         json={
             "template_key": "facility_outreach",
             "name": "Facility Outreach",
-            "audience": "CARE_FACILITY_CONTACT",
+            "audience": "ADULT_PROGRAM_CONTACT",
             "channel": "EMAIL",
             "subject_template": "Facility update",
             "body_template": "Hello {{contact.first_name}}.",
@@ -294,7 +294,7 @@ def test_create_template_accepts_recipient_aware_audience_key(
 
     assert response.status_code == 201
     payload = response.get_json()
-    assert payload["audience"] == "CARE_FACILITY_CONTACT"
+    assert payload["audience"] == "ADULT_PROGRAM_CONTACT"
 
 
 def test_delete_template_removes_unscheduled_template(

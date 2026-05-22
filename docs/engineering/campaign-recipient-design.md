@@ -16,11 +16,11 @@ Related design:
 
 ## Purpose
 
-Blessing Tree currently serves three distinct recipient programs:
+Blessing Tree currently serves two distinct recipient contexts:
 
 - children in household/family intake flows
-- adults in nursing-home or care-facility intake flows
-- adults submitted through partner organizations or home-based senior programs
+- adults in adult-program intake flows, whether the submitting group is a
+  facility, ministry, or partner organization
 
 All three programs share one important operational truth:
 
@@ -134,8 +134,7 @@ Rationale:
 - `SENIOR` is not really a person type for this app
 - the real workflow distinction is:
   - family child intake
-  - facility adult intake
-  - partner-program adult intake
+  - adult-program intake
 
 ## Domain Model
 
@@ -151,8 +150,7 @@ Meaning:
 Recommended `group_type` values:
 
 - `HOUSEHOLD`
-- `CARE_FACILITY`
-- `PARTNER_PROGRAM`
+- `ADULT_PROGRAM`
 
 Recommended fields:
 
@@ -269,8 +267,7 @@ Recommended `recipient_kind` values:
 Recommended `program_type` values:
 
 - `CHILD_FAMILY`
-- `SENIOR_FACILITY`
-- `SENIOR_PARTNER_PROGRAM`
+- `ADULT_PROGRAM`
 
 Recommended `privacy_level` values:
 
@@ -286,10 +283,8 @@ Recommended `status` values:
 Important rules:
 
 - children typically use parent/guardian contacts through `group_contact`
-- facility adults may optionally have direct recipient-level contact or address information
-- partner-program adults should support recipient-level address, phone, and email information
-- a facility adult still belongs to a facility group for operational context
-- a partner-program adult still belongs to a partner-program group for coordination, reporting, and communication
+- adult-program recipients may optionally have direct recipient-level contact or address information
+- an adult recipient still belongs to an adult-program group for coordination, reporting, and communication
 
 ### 4. Wishlist
 
@@ -367,11 +362,11 @@ Recommended `item_type` values:
   - `age = 5`
   - `gender = M`
 
-### Nursing Home / Adult Program
+### Adult Program
 
 `recipient_group`
 
-- `group_type = CARE_FACILITY`
+- `group_type = ADULT_PROGRAM`
 - `group_name = Maple Grove - West Wing`
 
 `group_contact`
@@ -383,38 +378,18 @@ Recommended `item_type` values:
 
 - Mary Smith
   - `recipient_kind = ADULT`
-  - `program_type = SENIOR_FACILITY`
+  - `program_type = ADULT_PROGRAM`
   - `age = 84`
   - `facility_room = 214B`
 - James Carter
   - `recipient_kind = ADULT`
-  - `program_type = SENIOR_FACILITY`
+  - `program_type = ADULT_PROGRAM`
   - `age = 79`
   - `facility_room = 216A`
 
-### Partner Program / Adult Program
-
-`recipient_group`
-
-- `group_type = PARTNER_PROGRAM`
-- `group_name = Senior At Home`
-
-`group_contact`
-
-- `COORDINATOR`
-- `SOCIAL_WORKER`
-
-`recipient`
-
-- Mary Smith
-  - `recipient_kind = ADULT`
-  - `program_type = SENIOR_PARTNER_PROGRAM`
-  - recipient home address stored on the recipient record
-  - recipient phone/email stored on the recipient record when available
-- James Carter
-  - `recipient_kind = ADULT`
-  - `program_type = SENIOR_PARTNER_PROGRAM`
-  - recipient home address stored on the recipient record
+This same `ADULT_PROGRAM` shape also supports partner organizations such as
+`Senior At Home`, where the group record holds the shared coordination context
+and adult recipients optionally keep their own address, phone, and email.
 
 ## What Should Change From The Current Model
 
@@ -430,14 +405,14 @@ Recommended `item_type` values:
 
 - `recipient_group.group_type`
   - from `HOUSEHOLD | INSTITUTION`
-  - to `HOUSEHOLD | CARE_FACILITY | PARTNER_PROGRAM`
+  - to `HOUSEHOLD | ADULT_PROGRAM`
 
 - `recipient.recipient_type`
   - from `CHILD | ADULT | SENIOR`
   - to `recipient_kind = CHILD | ADULT`
 
 - add `recipient.program_type`
-  - `CHILD_FAMILY | SENIOR_FACILITY | SENIOR_PARTNER_PROGRAM`
+  - `CHILD_FAMILY | ADULT_PROGRAM`
 
 ### Add
 

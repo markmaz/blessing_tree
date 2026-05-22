@@ -102,15 +102,12 @@ export function PeopleIntakePage() {
                 {workspace.counts.householdCount} households
               </span>
               <span className="campaign-chip campaign-chip-muted">
-                {workspace.counts.careFacilityCount} facilities
-              </span>
-              <span className="campaign-chip campaign-chip-muted">
-                {workspace.counts.partnerProgramCount} partner programs
+                {workspace.counts.adultProgramCount} adult programs
               </span>
             </div>
             <h2 className="h4 mb-1">Start New Intake</h2>
             <p className="text-muted mb-0">
-              Choose the type of intake you are entering, then stay in that flow to add children or adult recipients and their wishlists.
+              Choose the type of intake you are entering, then stay in that flow to add children or adults and their wishlists.
             </p>
           </div>
         </div>
@@ -139,25 +136,7 @@ export function PeopleIntakePage() {
           type="button"
           className="campaign-people-intake-card"
           onClick={() => {
-            setCreateGroupType('CARE_FACILITY');
-            setSelectedGroupId(null);
-          }}
-          disabled={!canEditPeople}
-        >
-          <span className="campaign-people-intake-card__icon">
-            <i className="bi bi-buildings" aria-hidden="true" />
-          </span>
-          <span className="campaign-people-intake-card__title">Add Facility</span>
-          <span className="campaign-people-intake-card__body">
-            Create the facility intake, add staff or social-worker contacts, then enter residents and their wishlists from the same place.
-          </span>
-        </button>
-
-        <button
-          type="button"
-          className="campaign-people-intake-card"
-          onClick={() => {
-            setCreateGroupType('PARTNER_PROGRAM');
+            setCreateGroupType('ADULT_PROGRAM');
             setSelectedGroupId(null);
           }}
           disabled={!canEditPeople}
@@ -165,9 +144,9 @@ export function PeopleIntakePage() {
           <span className="campaign-people-intake-card__icon">
             <i className="bi bi-diagram-3-fill" aria-hidden="true" />
           </span>
-          <span className="campaign-people-intake-card__title">Add Partner Program</span>
+          <span className="campaign-people-intake-card__title">Add Adult Program</span>
           <span className="campaign-people-intake-card__body">
-            Create the partner organization, add coordinator contacts, then enter the adults in that program with their direct contact information and wishlists.
+            Create the adult program, add coordinator or staff contacts, then enter the adults in that program with optional direct contact information and wishlists.
           </span>
         </button>
       </div>
@@ -177,7 +156,7 @@ export function PeopleIntakePage() {
           <div>
             <h2 className="h5 mb-1">Continue Recent Intake</h2>
             <p className="text-muted mb-0">
-              Re-open a recently updated family, facility, or partner program to keep adding people, contacts, or wishlists.
+              Re-open a recently updated family or adult program to keep adding people, contacts, or wishlists.
             </p>
           </div>
         </div>
@@ -185,7 +164,7 @@ export function PeopleIntakePage() {
         <div className="campaign-team-inline-list">
           {recentGroups.length === 0 ? (
             <div className="campaign-studio__empty-note">
-              No intake records yet. Start with Add Family, Add Facility, or Add Partner Program.
+              No intake records yet. Start with Add Family or Add Adult Program.
             </div>
           ) : (
             recentGroups.map((group) => (
@@ -198,17 +177,13 @@ export function PeopleIntakePage() {
                         className={`bi ${
                           group.groupType === 'HOUSEHOLD'
                             ? 'bi-house-door'
-                            : group.groupType === 'CARE_FACILITY'
-                              ? 'bi-building'
-                              : 'bi-diagram-3'
+                            : 'bi-diagram-3'
                         } me-1`}
                         aria-hidden="true"
                       />
                       {group.groupType === 'HOUSEHOLD'
                         ? 'Family'
-                        : group.groupType === 'CARE_FACILITY'
-                          ? 'Facility'
-                          : 'Partner Program'}
+                        : 'Adult Program'}
                     </span>
                     <span className="campaign-chip campaign-chip-muted">
                       <i className="bi bi-people me-1" aria-hidden="true" />

@@ -5,6 +5,7 @@ from datetime import datetime
 
 from app.exceptions.service_error import ServiceError
 from app.models.recipient_constants import (
+    RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
     GROUP_CONTACT_ROLE_COORDINATOR,
     GROUP_CONTACT_ROLE_GUARDIAN,
     GROUP_CONTACT_ROLE_OTHER,
@@ -18,17 +19,14 @@ from app.models.recipient_constants import (
     RECIPIENT_GROUP_STATUS_ACTIVE,
     RECIPIENT_GROUP_STATUS_ARCHIVED,
     RECIPIENT_GROUP_STATUS_INACTIVE,
-    RECIPIENT_GROUP_TYPE_CARE_FACILITY,
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
-    RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM,
     RECIPIENT_KIND_ADULT,
     RECIPIENT_KIND_CHILD,
     RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
     RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
     RECIPIENT_PRIVACY_LEVEL_INITIALS,
+    RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
-    RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
-    RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM,
     RECIPIENT_STATUS_ACTIVE,
     RECIPIENT_STATUS_INACTIVE,
     WISHLIST_INTAKE_METHOD_FORM,
@@ -49,8 +47,11 @@ from app.models.recipient_constants import (
 
 GROUP_TYPES = {
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
-    RECIPIENT_GROUP_TYPE_CARE_FACILITY,
-    RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM,
+    RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
+}
+GROUP_TYPE_ALIASES = {
+    "CARE_FACILITY": RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
+    "PARTNER_PROGRAM": RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
 }
 GROUP_STATUSES = {
     RECIPIENT_GROUP_STATUS_ACTIVE,
@@ -77,11 +78,12 @@ RECIPIENT_KINDS = {
 }
 PROGRAM_TYPES = {
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
-    RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
-    RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM,
+    RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
 }
 PROGRAM_TYPE_ALIASES = {
-    "NURSING_HOME": RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
+    "NURSING_HOME": RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
+    "SENIOR_FACILITY": RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
+    "SENIOR_PARTNER_PROGRAM": RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
 }
 RECIPIENT_PRIVACY_LEVELS = {
     RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
@@ -212,6 +214,7 @@ def parse_bool(value: object, field_name: str, *, default: bool | None = None) -
 
 def validate_group_type(value: object) -> str:
     normalized = str(value or "").strip().upper()
+    normalized = GROUP_TYPE_ALIASES.get(normalized, normalized)
     if normalized not in GROUP_TYPES:
         raise ServiceError("Invalid group_type", status_code=400, details={"field": "group_type"})
     return normalized
@@ -338,12 +341,9 @@ def validate_program_alignment(*, group_type: str, recipient_kind: str, program_
             status_code=400,
             details={"field": "program_type"},
         )
-    if recipient_kind == RECIPIENT_KIND_ADULT and program_type not in {
-        RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
-        RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM,
-    }:
+    if recipient_kind == RECIPIENT_KIND_ADULT and program_type != RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM:
         raise ServiceError(
-            "Adult recipients must use a senior adult program_type",
+            "Adult recipients must use ADULT_PROGRAM program_type",
             status_code=400,
             details={"field": "program_type"},
         )
@@ -353,15 +353,9 @@ def validate_program_alignment(*, group_type: str, recipient_kind: str, program_
             status_code=400,
             details={"field": "program_type"},
         )
-    if group_type == RECIPIENT_GROUP_TYPE_CARE_FACILITY and program_type != RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY:
+    if group_type == RECIPIENT_GROUP_TYPE_ADULT_PROGRAM and program_type != RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM:
         raise ServiceError(
-            "Care facility groups may only contain SENIOR_FACILITY recipients",
-            status_code=400,
-            details={"field": "program_type"},
-        )
-    if group_type == RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM and program_type != RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM:
-        raise ServiceError(
-            "Partner program groups may only contain SENIOR_PARTNER_PROGRAM recipients",
+            "Adult program groups may only contain ADULT_PROGRAM recipients",
             status_code=400,
             details={"field": "program_type"},
         )

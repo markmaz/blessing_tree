@@ -1,4 +1,4 @@
-export type RecipientGroupType = 'HOUSEHOLD' | 'CARE_FACILITY' | 'PARTNER_PROGRAM';
+export type RecipientGroupType = 'HOUSEHOLD' | 'ADULT_PROGRAM';
 
 export type RecipientGroupStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 
@@ -14,7 +14,7 @@ export type PreferredContact = 'EMAIL' | 'PHONE' | 'TEXT' | 'NONE';
 
 export type RecipientKind = 'CHILD' | 'ADULT';
 
-export type RecipientProgramType = 'CHILD_FAMILY' | 'SENIOR_FACILITY' | 'SENIOR_PARTNER_PROGRAM';
+export type RecipientProgramType = 'CHILD_FAMILY' | 'ADULT_PROGRAM';
 
 export type RecipientPrivacyLevel = 'ANONYMOUS' | 'INITIALS' | 'FULL_NAME';
 
@@ -162,8 +162,7 @@ export interface CampaignPeopleWorkspaceCounts {
   groupCount: number;
   activeGroupCount: number;
   householdCount: number;
-  careFacilityCount: number;
-  partnerProgramCount: number;
+  adultProgramCount: number;
   recipientCount: number;
   childCount: number;
   adultCount: number;

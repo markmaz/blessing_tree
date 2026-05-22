@@ -44,7 +44,7 @@ describe('CampaignPeopleGroupDrawer', () => {
         isSaving={false}
         canEdit
         group={null}
-        initialGroupType="CARE_FACILITY"
+        initialGroupType="ADULT_PROGRAM"
         onClose={vi.fn()}
         onSaveGroup={vi.fn()}
         onSaveContact={vi.fn()}
@@ -55,8 +55,8 @@ describe('CampaignPeopleGroupDrawer', () => {
       />
     );
 
-    expect(screen.getByRole('heading', { name: 'Add Facility' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Facility Name')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Add Adult Program' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Program Name')).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Address Line 1'), '123 Main');
 
@@ -72,14 +72,14 @@ describe('CampaignPeopleGroupDrawer', () => {
     expect(screen.getByDisplayValue('78701')).toBeInTheDocument();
   });
 
-  it('uses partner-program-specific labels for program intake', () => {
+  it('uses adult-program-specific labels for program intake', () => {
     render(
       <CampaignPeopleGroupDrawer
         isOpen
         isSaving={false}
         canEdit
         group={null}
-        initialGroupType="PARTNER_PROGRAM"
+        initialGroupType="ADULT_PROGRAM"
         onClose={vi.fn()}
         onSaveGroup={vi.fn()}
         onSaveContact={vi.fn()}
@@ -90,7 +90,7 @@ describe('CampaignPeopleGroupDrawer', () => {
       />
     );
 
-    expect(screen.getByRole('heading', { name: 'Add Partner Program' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Add Adult Program' })).toBeInTheDocument();
     expect(screen.getByLabelText('Program Name')).toBeInTheDocument();
   });
 
@@ -105,7 +105,7 @@ describe('CampaignPeopleGroupDrawer', () => {
         group={{
           id: 'group-1',
           campaignId: 'campaign-1',
-          groupType: 'CARE_FACILITY',
+          groupType: 'ADULT_PROGRAM',
           groupName: 'Maple Grove',
           intakeSource: null,
           externalReference: null,
