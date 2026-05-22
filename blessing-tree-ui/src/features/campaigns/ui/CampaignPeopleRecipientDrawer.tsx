@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useMemo, useState } from 'react';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
 import type {
@@ -19,6 +20,7 @@ import {
   formatShortDate,
   toGiftWorkflowStatusLabel,
   toRecipientProgramTypeLabel,
+  toWishlistIntakeMethodLabel,
   toWishlistItemTypeLabel,
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
 import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
@@ -160,6 +162,10 @@ export function CampaignPeopleRecipientDrawer({
   const [itemDraft, setItemDraft] = useState<WishlistItemFormState>(emptyWishlistItemDraft);
   const [itemError, setItemError] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [isProfileSectionOpen, setIsProfileSectionOpen] = useState(() => recipient === null);
+  const [isWishlistSectionOpen, setIsWishlistSectionOpen] = useState(true);
+  const [isWishlistMetaOpen, setIsWishlistMetaOpen] = useState(false);
+  const [isItemModalOpen, setIsItemModalOpen] = useState(false);
 
   const selectedGroup = useMemo(
     () => groups.find((group) => group.id === recipientDraft.recipientGroupId) ?? null,
@@ -356,6 +362,7 @@ export function CampaignPeopleRecipientDrawer({
   const handleEditItem = (item: CampaignWishlistItem) => {
     setEditingItemId(item.id);
     setItemError(null);
+    setIsItemModalOpen(true);
     setItemDraft({
       category: item.category ?? '',
       itemType: item.itemType,
@@ -376,6 +383,16 @@ export function CampaignPeopleRecipientDrawer({
     setEditingItemId(null);
     setItemDraft(emptyWishlistItemDraft);
     setItemError(null);
+  };
+
+  const handleOpenNewItemModal = () => {
+    resetItemDraft();
+    setIsItemModalOpen(true);
+  };
+
+  const handleCloseItemModal = () => {
+    resetItemDraft();
+    setIsItemModalOpen(false);
   };
 
   const handleSaveItem = async () => {
@@ -415,7 +432,7 @@ export function CampaignPeopleRecipientDrawer({
       );
 
       if (savedItem) {
-        resetItemDraft();
+        handleCloseItemModal();
       }
     } catch (saveError) {
       setItemError(saveError instanceof Error ? saveError.message : 'Unable to save this wishlist item.');
@@ -433,8 +450,21 @@ export function CampaignPeopleRecipientDrawer({
       <div className="campaign-team-drawer__stack">
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
-            <div>
-              <h4 className="h6 mb-1">
+            <div className="campaign-people-section-heading">
+              <button
+                type="button"
+                className="campaign-people-section-heading__toggle"
+                onClick={() => setIsProfileSectionOpen((currentValue) => !currentValue)}
+                aria-expanded={isProfileSectionOpen}
+                aria-label={isProfileSectionOpen ? 'Collapse person details' : 'Expand person details'}
+              >
+                <i
+                  className={`bi ${isProfileSectionOpen ? 'bi-chevron-down' : 'bi-chevron-right'}`}
+                  aria-hidden="true"
+                />
+              </button>
+              <div>
+                <h4 className="h6 mb-1">
                 {isHouseholdIntake
                   ? 'Child Details'
                   : isOrganizationAdultIntake
@@ -442,16 +472,17 @@ export function CampaignPeopleRecipientDrawer({
                     : isOrganizationChildIntake
                       ? 'Child Details'
                     : 'Person Details'}
-              </h4>
-              <p className="text-muted mb-0">
-                {isHouseholdIntake
-                  ? 'Children belong to a family intake, so contact information stays on the household record.'
-                  : isOrganizationAdultIntake
-                    ? 'Adults in an organization can keep their own address and direct contact details here, while coordinators stay on the group record.'
-                    : isOrganizationChildIntake
-                      ? 'Children in an organization stay linked to the organization, while coordinator contact information stays on the group record.'
-                    : 'Each person is the actual gift recipient. The selected group determines the intake program.'}
-              </p>
+                </h4>
+                <p className="text-muted mb-0">
+                  {isHouseholdIntake
+                    ? 'Children belong to a family intake, so contact information stays on the household record.'
+                    : isOrganizationAdultIntake
+                      ? 'Adults in an organization can keep their own address and direct contact details here, while coordinators stay on the group record.'
+                      : isOrganizationChildIntake
+                        ? 'Children in an organization stay linked to the organization, while coordinator contact information stays on the group record.'
+                      : 'Each person is the actual gift recipient. The selected group determines the intake program.'}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -492,6 +523,7 @@ export function CampaignPeopleRecipientDrawer({
             </div>
           ) : null}
 
+          {isProfileSectionOpen ? (
           <div className="campaign-team-form-grid">
             {isContextualIntake ? (
               <label className="form-label campaign-team-form-grid__span-2">
@@ -864,6 +896,30 @@ export function CampaignPeopleRecipientDrawer({
               />
             </label>
           </div>
+          ) : (
+            <div className="campaign-people-section-summary">
+              <div className="campaign-chip-row">
+                <span className="campaign-chip campaign-chip-muted">
+                  <i className="bi bi-person-badge me-1" aria-hidden="true" />
+                  {computedDisplayLabel || 'Unnamed person'}
+                </span>
+                <span className="campaign-chip campaign-chip-muted">
+                  <i className="bi bi-diagram-3 me-1" aria-hidden="true" />
+                  {selectedGroup?.groupName ?? 'No group'}
+                </span>
+                <span className="campaign-chip campaign-chip-muted">
+                  <i className="bi bi-signpost me-1" aria-hidden="true" />
+                  {recipientProgram ? toRecipientProgramTypeLabel(recipientProgram.programType) : 'No program'}
+                </span>
+                {recipient?.programRecipientId ? (
+                  <span className="campaign-chip campaign-chip-muted">
+                    <i className="bi bi-upc-scan me-1" aria-hidden="true" />
+                    {recipient.programRecipientId}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          )}
 
           <div className="campaign-team-drawer__actions mt-3">
             <button
@@ -882,15 +938,29 @@ export function CampaignPeopleRecipientDrawer({
 
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
-            <div>
-              <h4 className="h6 mb-1">Wishlist</h4>
-              <p className="text-muted mb-0">Keep one gift wishlist per person, with structured items ready for sponsorship and fulfillment.</p>
+            <div className="campaign-people-section-heading">
+              <button
+                type="button"
+                className="campaign-people-section-heading__toggle"
+                onClick={() => setIsWishlistSectionOpen((currentValue) => !currentValue)}
+                aria-expanded={isWishlistSectionOpen}
+                aria-label={isWishlistSectionOpen ? 'Collapse wishlist' : 'Expand wishlist'}
+              >
+                <i
+                  className={`bi ${isWishlistSectionOpen ? 'bi-chevron-down' : 'bi-chevron-right'}`}
+                  aria-hidden="true"
+                />
+              </button>
+              <div>
+                <h4 className="h6 mb-1">Wishlist</h4>
+                <p className="text-muted mb-0">Keep one gift wishlist per person, with structured items ready for sponsorship and fulfillment.</p>
+              </div>
             </div>
           </div>
 
           {!recipient ? (
             <div className="campaign-studio__empty-note">Save the person before editing the wishlist.</div>
-          ) : (
+          ) : isWishlistSectionOpen ? (
             <>
               {wishlistError ? <div className="alert alert-danger py-2" role="alert">{wishlistError}</div> : null}
 
@@ -911,65 +981,6 @@ export function CampaignPeopleRecipientDrawer({
                     <option value="DRAFT">Draft</option>
                     <option value="READY">Ready</option>
                     <option value="LOCKED">Locked</option>
-                  </select>
-                </label>
-
-                <label className="form-label">
-                  Intake Method
-                  <select
-                    className="form-select mt-2"
-                    value={wishlistDraft.intakeMethod ?? ''}
-                    onChange={(event) =>
-                      setWishlistDraft((currentValue) => ({
-                        ...currentValue,
-                        intakeMethod: event.target.value ? (event.target.value as WishlistIntakeMethod) : null,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  >
-                    <option value="">Not set</option>
-                    <option value="PHONE">Phone</option>
-                    <option value="FORM">Form</option>
-                    <option value="STAFF_ENTRY">Staff Entry</option>
-                    <option value="IMPORT">Import</option>
-                  </select>
-                </label>
-
-                <label className="form-label">
-                  Submitted At
-                  <input
-                    className="form-control mt-2"
-                    type="datetime-local"
-                    value={wishlistDraft.submittedAt ?? ''}
-                    onChange={(event) =>
-                      setWishlistDraft((currentValue) => ({
-                        ...currentValue,
-                        submittedAt: event.target.value,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  />
-                </label>
-
-                <label className="form-label">
-                  Intake Completed By
-                  <select
-                    className="form-select mt-2"
-                    value={wishlistDraft.intakeCompletedByContactId ?? ''}
-                    onChange={(event) =>
-                      setWishlistDraft((currentValue) => ({
-                        ...currentValue,
-                        intakeCompletedByContactId: event.target.value || null,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  >
-                    <option value="">Not set</option>
-                    {visibleContacts.map((contact) => (
-                      <option key={contact.id} value={contact.id}>
-                        {[contact.firstName, contact.lastName].filter(Boolean).join(' ') || 'Unnamed contact'}
-                      </option>
-                    ))}
                   </select>
                 </label>
 
@@ -1004,6 +1015,45 @@ export function CampaignPeopleRecipientDrawer({
                 </button>
               </div>
 
+              <details
+                className="campaign-people-metadata-details mt-3"
+                open={isWishlistMetaOpen}
+                onToggle={(event) => setIsWishlistMetaOpen((event.currentTarget as HTMLDetailsElement).open)}
+              >
+                <summary className="campaign-people-metadata-details__summary">
+                  <i className="bi bi-info-circle me-2" aria-hidden="true" />
+                  Wishlist Metadata
+                </summary>
+                <div className="campaign-team-form-grid mt-3">
+                  <label className="form-label">
+                    Intake Method
+                    <input
+                      className="form-control mt-2"
+                      value={wishlistDraft.intakeMethod ? toWishlistIntakeMethodLabel(wishlistDraft.intakeMethod as WishlistIntakeMethod) : 'Not set'}
+                      disabled
+                    />
+                  </label>
+
+                  <label className="form-label">
+                    Submitted At
+                    <input
+                      className="form-control mt-2"
+                      value={recipient.wishlist?.submittedAt ? formatShortDate(recipient.wishlist.submittedAt) : 'Not set'}
+                      disabled
+                    />
+                  </label>
+
+                  <label className="form-label campaign-team-form-grid__span-2">
+                    Intake Completed By
+                    <input
+                      className="form-control mt-2"
+                      value={recipient.wishlist?.intakeCompletedByContact ? formatContactDisplayName(recipient.wishlist.intakeCompletedByContact) : 'Not set'}
+                      disabled
+                    />
+                  </label>
+                </div>
+              </details>
+
               <div className="campaign-team-inline-list mt-4">
                 <div className="campaign-team-inline-item campaign-team-inline-item--stacked">
                   <div className="campaign-team-inline-item__content">
@@ -1031,299 +1081,364 @@ export function CampaignPeopleRecipientDrawer({
                 </div>
               </div>
 
-              <div className="campaign-team-inline-list mt-4">
+              <div className="campaign-people-gifts mt-4">
+                <div className="campaign-team-workspace__section-header">
+                  <div>
+                    <h5 className="h6 mb-1">Gift Items</h5>
+                    <p className="text-muted mb-0">Keep wishlist items in a compact table and open a focused editor only when you need to add or change a gift.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm campaign-team-workspace__section-action"
+                    onClick={handleOpenNewItemModal}
+                    disabled={!canEdit}
+                  >
+                    <i className="bi bi-plus-square" aria-hidden="true" />
+                    <span>Add Gift</span>
+                  </button>
+                </div>
+
                 {recipient.wishlist?.items.length ? (
-                  recipient.wishlist.items.map((item) => (
-                    <div key={item.id} className="campaign-team-inline-item campaign-team-inline-item--stacked">
-                      <div className="campaign-team-inline-item__content">
-                        <strong>{item.description}</strong>
-                        <div className="campaign-team-inline-meta">
-                          <span className="campaign-chip">{toWishlistItemTypeLabel(item.itemType)}</span>
-                          <span className="campaign-chip campaign-chip-muted">Qty {item.qtyRequested}</span>
-                          <span className="campaign-chip campaign-chip-muted">{item.priority}</span>
-                          <span className="campaign-chip campaign-chip-muted">
-                            {toGiftWorkflowStatusLabel(
-                              item.giftWorkflow.isPickedUp,
-                              item.giftWorkflow.isFullyFulfilled,
-                              item.giftWorkflow.sponsorshipStatus
-                            )}
-                          </span>
-                        </div>
-                        <span className="text-muted small">
-                          {[item.category, item.size, formatCurrencyFromCents(item.estCostCents), `Updated ${formatShortDate(item.updatedAt)}`]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </span>
-                        <span className="text-muted small">
-                          {[
-                            item.giftWorkflow.sponsorshipStatus === 'SPONSORED'
-                              ? `Committed ${item.giftWorkflow.qtyCommitted}`
-                              : 'Not sponsored yet',
-                            `Fulfilled ${item.giftWorkflow.qtyFulfilled}/${item.qtyRequested}`,
-                            `Label ${item.giftWorkflow.labelCode}`,
-                            item.giftWorkflow.labelPrintCount > 0
-                              ? `Printed ${item.giftWorkflow.labelPrintCount}`
-                              : 'Not printed',
-                            item.giftWorkflow.pickedUpAt
-                              ? `Picked up ${formatShortDate(item.giftWorkflow.pickedUpAt)}`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </span>
-                      </div>
-                      <div className="campaign-team-inline-item__actions">
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary btn-sm"
-                          onClick={() => handleEditItem(item)}
-                          disabled={!canEdit}
-                        >
-                          <i className="bi bi-pencil-square me-2" aria-hidden="true" />
-                          Edit
-                        </button>
-                        <InlineConfirmAction
-                          buttonLabel="Delete"
-                          confirmLabel="Delete Item"
-                          message="Remove this wishlist item?"
-                          disabled={!canEdit}
-                          onConfirm={async () => {
-                            await onDeleteWishlistItem(recipient.id, item.id);
-                            if (editingItemId === item.id) {
-                              resetItemDraft();
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))
+                  <div className="campaign-team-table-wrap mt-3">
+                    <table className="table campaign-team-table mb-0">
+                      <thead>
+                        <tr>
+                          <th>Gift</th>
+                          <th>Type</th>
+                          <th>Qty</th>
+                          <th>Priority</th>
+                          <th>Status</th>
+                          <th>Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {recipient.wishlist.items.map((item) => (
+                          <tr
+                            key={item.id}
+                            className="campaign-team-table__row campaign-people-gift-row"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => handleEditItem(item)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                handleEditItem(item);
+                              }
+                            }}
+                          >
+                            <td>
+                              <div className="campaign-people-group-child-primary">
+                                <strong>{item.description}</strong>
+                                {item.category ? <span>{item.category}</span> : null}
+                              </div>
+                            </td>
+                            <td>{toWishlistItemTypeLabel(item.itemType)}</td>
+                            <td>{item.qtyRequested}</td>
+                            <td>{item.priority}</td>
+                            <td>
+                              {toGiftWorkflowStatusLabel(
+                                item.giftWorkflow.isPickedUp,
+                                item.giftWorkflow.isFullyFulfilled,
+                                item.giftWorkflow.sponsorshipStatus
+                              )}
+                            </td>
+                            <td className="text-muted small">
+                              {[item.size, formatCurrencyFromCents(item.estCostCents), `Updated ${formatShortDate(item.updatedAt)}`]
+                                .filter(Boolean)
+                                .join(' · ') || 'No extra details'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : (
-                  <div className="campaign-studio__empty-note">No wishlist items yet.</div>
+                  <div className="campaign-studio__empty-note mt-3">No wishlist items yet.</div>
                 )}
               </div>
-
-              <div className="campaign-team-form-grid mt-3">
-                {itemError ? (
-                  <div className="campaign-team-form-grid__span-2 alert alert-danger py-2 mb-0" role="alert">
-                    {itemError}
+            </>
+          ) : (
+            <div className="campaign-people-section-summary">
+              <div className="campaign-chip-row">
+                <span className="campaign-chip campaign-chip-muted">
+                  <i className="bi bi-gift me-1" aria-hidden="true" />
+                  {recipient.wishlist?.items.length ?? 0} items
+                </span>
+                <span className="campaign-chip campaign-chip-muted">
+                  <i className="bi bi-person-hearts me-1" aria-hidden="true" />
+                  {recipient.wishlist?.items.filter((item) => item.giftWorkflow.sponsorshipStatus === 'SPONSORED').length ?? 0} sponsored
+                </span>
+                <span className="campaign-chip campaign-chip-muted">
+                  <i className="bi bi-box-seam me-1" aria-hidden="true" />
+                  {recipient.wishlist?.items.filter((item) => item.giftWorkflow.isFullyFulfilled).length ?? 0} fulfilled
+                </span>
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
+      {recipient && isItemModalOpen
+        ? createPortal(
+            <div className="campaign-people-modal__backdrop" role="presentation" onClick={handleCloseItemModal}>
+              <div
+                className="campaign-people-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="campaign-people-gift-modal-title"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="campaign-people-modal__header">
+                  <div>
+                    <div className="campaign-studio__eyebrow">Wishlist Item</div>
+                    <h3 id="campaign-people-gift-modal-title" className="h5 mb-1">
+                      {editingItemId ? 'Edit Gift Item' : 'Add Gift Item'}
+                    </h3>
+                    <p className="small text-muted mb-0">
+                      Keep gift edits focused here so the main person drawer stays easy to scan.
+                    </p>
                   </div>
-                ) : null}
-
-                <label className="form-label campaign-team-form-grid__span-2">
-                  Description
-                  <input
-                    className="form-control mt-2"
-                    value={itemDraft.description}
-                    onChange={(event) =>
-                      setItemDraft((currentValue) => ({
-                        ...currentValue,
-                        description: event.target.value,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  />
-                </label>
-
-                <label className="form-label">
-                  Item Type
-                  <select
-                    className="form-select mt-2"
-                    value={itemDraft.itemType}
-                    onChange={(event) =>
-                      setItemDraft((currentValue) => ({
-                        ...currentValue,
-                        itemType: event.target.value as WishlistItemType,
-                      }))
-                    }
-                    disabled={!canEdit}
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    onClick={handleCloseItemModal}
                   >
-                    <option value="GIFT">Gift</option>
-                    <option value="CLOTHING">Clothing</option>
-                    <option value="ESSENTIAL">Essential</option>
-                    <option value="GIFT_CARD">Gift Card</option>
-                    <option value="EXPERIENCE">Experience</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                </label>
+                    <i className="bi bi-x-lg me-2" aria-hidden="true" />
+                    Close
+                  </button>
+                </div>
 
-                <label className="form-label">
-                  Category
-                  <input
-                    className="form-control mt-2"
-                    value={itemDraft.category}
-                    onChange={(event) =>
-                      setItemDraft((currentValue) => ({
-                        ...currentValue,
-                        category: event.target.value,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  />
-                </label>
+                <div className="campaign-team-form-grid">
+                  {itemError ? (
+                    <div className="campaign-team-form-grid__span-2 alert alert-danger py-2 mb-0" role="alert">
+                      {itemError}
+                    </div>
+                  ) : null}
 
-                <label className="form-label">
-                  Size
-                  <input
-                    className="form-control mt-2"
-                    value={itemDraft.size}
-                    onChange={(event) =>
-                      setItemDraft((currentValue) => ({
-                        ...currentValue,
-                        size: event.target.value,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  />
-                </label>
-
-                <label className="form-label">
-                  Quantity
-                  <input
-                    className="form-control mt-2"
-                    type="number"
-                    min="1"
-                    value={itemDraft.qtyRequested}
-                    onChange={(event) =>
-                      setItemDraft((currentValue) => ({
-                        ...currentValue,
-                        qtyRequested: event.target.value,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  />
-                </label>
-
-                <label className="form-label">
-                  Priority
-                  <select
-                    className="form-select mt-2"
-                    value={itemDraft.priority}
-                    onChange={(event) =>
-                      setItemDraft((currentValue) => ({
-                        ...currentValue,
-                        priority: event.target.value,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  >
-                    <option value="LOW">Low</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="HIGH">High</option>
-                  </select>
-                </label>
-
-                <label className="form-label">
-                  Estimated Cost (USD)
-                  <input
-                    className="form-control mt-2"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={itemDraft.estCostDollars}
-                    onChange={(event) =>
-                      setItemDraft((currentValue) => ({
-                        ...currentValue,
-                        estCostDollars: event.target.value,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  />
-                </label>
-
-                <label className="form-label campaign-team-form-grid__span-2">
-                  Recipient Note
-                  <textarea
-                    className="form-control mt-2"
-                    rows={2}
-                    value={itemDraft.recipientNote}
-                    onChange={(event) =>
-                      setItemDraft((currentValue) => ({
-                        ...currentValue,
-                        recipientNote: event.target.value,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  />
-                </label>
-
-                <label className="form-label campaign-team-form-grid__span-2">
-                  Item Notes
-                  <textarea
-                    className="form-control mt-2"
-                    rows={2}
-                    value={itemDraft.notes}
-                    onChange={(event) =>
-                      setItemDraft((currentValue) => ({
-                        ...currentValue,
-                        notes: event.target.value,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  />
-                </label>
-
-                <label className="campaign-team-checkbox campaign-team-form-grid__span-2">
-                  <input
-                    type="checkbox"
-                    checked={itemDraft.allowSubstitute}
-                    onChange={(event) =>
-                      setItemDraft((currentValue) => ({
-                        ...currentValue,
-                        allowSubstitute: event.target.checked,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  />
-                  <span>Allow substitution</span>
-                </label>
-
-                {!itemDraft.allowSubstitute ? (
                   <label className="form-label campaign-team-form-grid__span-2">
-                    Do Not Substitute Reason
-                    <textarea
+                    Description
+                    <input
                       className="form-control mt-2"
-                      rows={2}
-                      value={itemDraft.doNotSubstituteReason}
+                      value={itemDraft.description}
                       onChange={(event) =>
                         setItemDraft((currentValue) => ({
                           ...currentValue,
-                          doNotSubstituteReason: event.target.value,
+                          description: event.target.value,
                         }))
                       }
                       disabled={!canEdit}
                     />
                   </label>
-                ) : null}
-              </div>
 
-              <div className="campaign-team-drawer__actions mt-3">
-                {editingItemId ? (
+                  <label className="form-label">
+                    Item Type
+                    <select
+                      className="form-select mt-2"
+                      value={itemDraft.itemType}
+                      onChange={(event) =>
+                        setItemDraft((currentValue) => ({
+                          ...currentValue,
+                          itemType: event.target.value as WishlistItemType,
+                        }))
+                      }
+                      disabled={!canEdit}
+                    >
+                      <option value="GIFT">Gift</option>
+                      <option value="CLOTHING">Clothing</option>
+                      <option value="ESSENTIAL">Essential</option>
+                      <option value="GIFT_CARD">Gift Card</option>
+                      <option value="EXPERIENCE">Experience</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </label>
+
+                  <label className="form-label">
+                    Category
+                    <input
+                      className="form-control mt-2"
+                      value={itemDraft.category}
+                      onChange={(event) =>
+                        setItemDraft((currentValue) => ({
+                          ...currentValue,
+                          category: event.target.value,
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </label>
+
+                  <label className="form-label">
+                    Size
+                    <input
+                      className="form-control mt-2"
+                      value={itemDraft.size}
+                      onChange={(event) =>
+                        setItemDraft((currentValue) => ({
+                          ...currentValue,
+                          size: event.target.value,
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </label>
+
+                  <label className="form-label">
+                    Quantity
+                    <input
+                      className="form-control mt-2"
+                      type="number"
+                      min="1"
+                      value={itemDraft.qtyRequested}
+                      onChange={(event) =>
+                        setItemDraft((currentValue) => ({
+                          ...currentValue,
+                          qtyRequested: event.target.value,
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </label>
+
+                  <label className="form-label">
+                    Priority
+                    <select
+                      className="form-select mt-2"
+                      value={itemDraft.priority}
+                      onChange={(event) =>
+                        setItemDraft((currentValue) => ({
+                          ...currentValue,
+                          priority: event.target.value,
+                        }))
+                      }
+                      disabled={!canEdit}
+                    >
+                      <option value="LOW">Low</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="HIGH">High</option>
+                    </select>
+                  </label>
+
+                  <label className="form-label">
+                    Estimated Cost (USD)
+                    <input
+                      className="form-control mt-2"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={itemDraft.estCostDollars}
+                      onChange={(event) =>
+                        setItemDraft((currentValue) => ({
+                          ...currentValue,
+                          estCostDollars: event.target.value,
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </label>
+
+                  <label className="form-label campaign-team-form-grid__span-2">
+                    Recipient Note
+                    <textarea
+                      className="form-control mt-2"
+                      rows={2}
+                      value={itemDraft.recipientNote}
+                      onChange={(event) =>
+                        setItemDraft((currentValue) => ({
+                          ...currentValue,
+                          recipientNote: event.target.value,
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </label>
+
+                  <label className="form-label campaign-team-form-grid__span-2">
+                    Item Notes
+                    <textarea
+                      className="form-control mt-2"
+                      rows={2}
+                      value={itemDraft.notes}
+                      onChange={(event) =>
+                        setItemDraft((currentValue) => ({
+                          ...currentValue,
+                          notes: event.target.value,
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  </label>
+
+                  <label className="campaign-team-checkbox campaign-team-form-grid__span-2">
+                    <input
+                      type="checkbox"
+                      checked={itemDraft.allowSubstitute}
+                      onChange={(event) =>
+                        setItemDraft((currentValue) => ({
+                          ...currentValue,
+                          allowSubstitute: event.target.checked,
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                    <span>Allow substitution</span>
+                  </label>
+
+                  {!itemDraft.allowSubstitute ? (
+                    <label className="form-label campaign-team-form-grid__span-2">
+                      Do Not Substitute Reason
+                      <textarea
+                        className="form-control mt-2"
+                        rows={2}
+                        value={itemDraft.doNotSubstituteReason}
+                        onChange={(event) =>
+                          setItemDraft((currentValue) => ({
+                            ...currentValue,
+                            doNotSubstituteReason: event.target.value,
+                          }))
+                        }
+                        disabled={!canEdit}
+                      />
+                    </label>
+                  ) : null}
+                </div>
+
+                <div className="campaign-team-drawer__actions mt-3">
+                  {editingItemId ? (
+                    <InlineConfirmAction
+                      buttonLabel="Delete"
+                      confirmLabel="Delete Item"
+                      message="Remove this wishlist item?"
+                      disabled={!canEdit}
+                      onConfirm={async () => {
+                        await onDeleteWishlistItem(recipient.id, editingItemId);
+                        handleCloseItemModal();
+                      }}
+                    />
+                  ) : null}
                   <button
                     type="button"
                     className="btn btn-outline-secondary btn-sm"
-                    onClick={resetItemDraft}
-                    disabled={!canEdit}
+                    onClick={handleCloseItemModal}
                   >
-                    <i className="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />
-                    Clear Item Form
+                    <i className="bi bi-x-circle me-2" aria-hidden="true" />
+                    Cancel
                   </button>
-                ) : null}
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => {
-                    void handleSaveItem();
-                  }}
-                  disabled={!canEdit || isSaving}
-                >
-                  <i className={`bi ${editingItemId ? 'bi-floppy' : 'bi-plus-square'} me-2`} aria-hidden="true" />
-                  {editingItemId ? 'Save Item' : 'Add Item'}
-                </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      void handleSaveItem();
+                    }}
+                    disabled={!canEdit || isSaving}
+                  >
+                    <i className={`bi ${editingItemId ? 'bi-floppy' : 'bi-plus-square'} me-2`} aria-hidden="true" />
+                    {editingItemId ? 'Save Item' : 'Add Item'}
+                  </button>
+                </div>
               </div>
-            </>
-          )}
-        </section>
-      </div>
+            </div>,
+            document.body
+          )
+        : null}
     </CampaignStudioDrawer>
   );
 }

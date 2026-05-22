@@ -186,7 +186,7 @@
 }
 
 .campaign-team-drawer--xwide {
-  width: min(60rem, 99vw);
+  width: min(72rem, 100vw);
 }
 
 .campaign-team-drawer__header {

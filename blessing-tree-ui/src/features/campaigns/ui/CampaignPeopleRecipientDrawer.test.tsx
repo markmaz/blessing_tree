@@ -117,6 +117,59 @@ const existingAdultRecipient: CampaignRecipient = {
   updatedAt: null,
 };
 
+const existingAdultRecipientWithWishlist: CampaignRecipient = {
+  ...existingAdultRecipient,
+  wishlist: {
+    id: 'wishlist-1',
+    campaignId: 'campaign-1',
+    recipientId: 'recipient-1',
+    wishlistStatus: 'READY',
+    intakeMethod: 'STAFF_ENTRY',
+    submittedAt: '2026-05-20T10:00:00Z',
+    intakeCompletedByContactId: null,
+    intakeCompletedByContact: null,
+    notes: 'Needs warm blankets.',
+    items: [
+      {
+        id: 'item-1',
+        wishlistId: 'wishlist-1',
+        category: 'Comfort',
+        itemType: 'GIFT',
+        description: 'Warm blanket',
+        size: null,
+        qtyRequested: 1,
+        priority: 'HIGH',
+        estCostCents: 2500,
+        allowSubstitute: true,
+        doNotSubstituteReason: null,
+        recipientNote: null,
+        status: 'OPEN',
+        qtyFulfilled: 0,
+        notes: null,
+        giftWorkflow: {
+          sponsorshipStatus: 'UNSPONSORED',
+          sponsorshipId: null,
+          qtyCommitted: 0,
+          qtyFulfilled: 0,
+          remainingQty: 1,
+          isFullyFulfilled: false,
+          isPickedUp: false,
+          pickedUpAt: null,
+          pickedUpByContactId: null,
+          labelCode: 'LBL-001',
+          labelVersion: 1,
+          labelLastPrintedAt: null,
+          labelPrintCount: 0,
+        },
+        createdAt: '2026-05-20T10:00:00Z',
+        updatedAt: '2026-05-21T11:00:00Z',
+      },
+    ],
+    createdAt: '2026-05-20T10:00:00Z',
+    updatedAt: '2026-05-21T11:00:00Z',
+  },
+};
+
 describe('CampaignPeopleRecipientDrawer', () => {
   it('uses child-intake framing and hides direct contact fields for a household intake', () => {
     render(
@@ -237,5 +290,39 @@ describe('CampaignPeopleRecipientDrawer', () => {
     expect(screen.getByText('Possible existing people')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /mary smith/i }));
     expect(onSelectExistingRecipient).toHaveBeenCalledWith('recipient-1');
+  });
+
+  it('starts profile collapsed on edit, keeps wishlist metadata collapsed, and edits gifts in a modal', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CampaignPeopleRecipientDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        recipient={existingAdultRecipientWithWishlist}
+        groups={[organizationGroup]}
+        recipients={[existingAdultRecipientWithWishlist]}
+        onClose={vi.fn()}
+        onSaveRecipient={vi.fn()}
+        onSaveWishlist={vi.fn()}
+        onSaveWishlistItem={vi.fn()}
+        onDeleteWishlistItem={vi.fn()}
+        onSelectExistingRecipient={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByLabelText('First Name')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Intake Method')).not.toBeVisible();
+
+    await user.click(screen.getByLabelText('Expand person details'));
+    expect(screen.getByLabelText('First Name')).toHaveValue('Mary');
+
+    await user.click(screen.getByText('Wishlist Metadata'));
+    expect(screen.getByLabelText('Intake Method')).toHaveValue('Staff Entry');
+
+    await user.click(screen.getByRole('button', { name: /warm blanket/i }));
+    expect(screen.getByRole('heading', { name: 'Edit Gift Item' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Description')).toHaveValue('Warm blanket');
   });
 });

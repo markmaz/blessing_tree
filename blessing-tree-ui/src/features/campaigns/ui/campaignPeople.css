@@ -23,6 +23,97 @@
   gap: 0.45rem;
 }
 
+.campaign-people-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.campaign-people-section-heading__toggle {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 0.6rem;
+  background: rgba(248, 245, 239, 0.9);
+  color: var(--blessing-text);
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+.campaign-people-section-heading__toggle:hover,
+.campaign-people-section-heading__toggle:focus-visible {
+  border-color: rgba(24, 87, 58, 0.26);
+  background: rgba(244, 239, 230, 0.96);
+  outline: none;
+}
+
+.campaign-people-section-summary {
+  border: 1px dashed rgba(226, 218, 205, 0.96);
+  border-radius: 0.9rem;
+  padding: 0.85rem 0.95rem;
+  background: rgba(248, 245, 239, 0.48);
+}
+
+.campaign-people-metadata-details {
+  border: 1px solid rgba(226, 218, 205, 0.9);
+  border-radius: 0.95rem;
+  padding: 0.85rem 0.95rem;
+  background: rgba(248, 245, 239, 0.38);
+}
+
+.campaign-people-metadata-details__summary {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.campaign-people-metadata-details__summary::-webkit-details-marker {
+  display: none;
+}
+
+.campaign-people-gifts .campaign-team-table th,
+.campaign-people-gifts .campaign-team-table td {
+  vertical-align: top;
+}
+
+.campaign-people-gift-row {
+  cursor: pointer;
+}
+
+.campaign-people-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(31, 22, 16, 0.42);
+}
+
+.campaign-people-modal {
+  width: min(42rem, calc(100vw - 3rem));
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  padding: 1.2rem;
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, rgba(250, 247, 240, 0.98), rgba(255, 255, 255, 0.99));
+  box-shadow: 0 26px 54px rgba(35, 24, 17, 0.22);
+}
+
+.campaign-people-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
 .campaign-people-table__status {
   color: var(--blessing-text-light);
 }
