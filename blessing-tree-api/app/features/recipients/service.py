@@ -42,6 +42,7 @@ from app.models.wishlist_item import WishlistItem
 from app.models.fulfillment import Fulfillment
 from app.models.recipient_constants import (
     RECIPIENT_GROUP_STATUS_ACTIVE,
+    RECIPIENT_KIND_ADULT,
     WISHLIST_ITEM_TYPE_GIFT,
 )
 
@@ -574,11 +575,50 @@ class CampaignRecipientService:
         group_counts = Counter(group.group_type for group in groups)
         recipient_counts = Counter(recipient.recipient_kind for recipient in recipients)
         wishlists = [recipient.wishlist for recipient in recipients if recipient.wishlist is not None]
-        open_items_count = sum(
-            1
+        wishlist_items = [
+            item
             for wishlist in wishlists
             for item in list(wishlist.items or [])
-            if item.status == "OPEN"
+        ]
+        sponsored_item_count = sum(1 for item in wishlist_items if item.sponsorship_item is not None)
+        fulfilled_item_count = 0
+        ready_for_pickup_item_count = 0
+        picked_up_item_count = 0
+        open_items_count = 0
+        for item in wishlist_items:
+            qty_fulfilled = sum(row.quantity_fulfilled for row in list(item.fulfillment_rows or []))
+            is_fully_fulfilled = qty_fulfilled >= item.qty_requested
+            is_picked_up = item.pickup_item is not None or item.picked_up_at is not None
+            if is_fully_fulfilled:
+                fulfilled_item_count += 1
+            if is_fully_fulfilled and not is_picked_up:
+                ready_for_pickup_item_count += 1
+            if is_picked_up:
+                picked_up_item_count += 1
+            if not is_fully_fulfilled and not is_picked_up:
+                open_items_count += 1
+        groups_with_pickup_contacts_count = sum(
+            1 for group in groups if any(contact.can_pick_up for contact in list(group.contacts or []))
+        )
+        groups_missing_primary_contact_count = sum(
+            1 for group in groups if not any(contact.is_primary for contact in list(group.contacts or []))
+        )
+        adults_with_direct_contact_count = sum(
+            1
+            for recipient in recipients
+            if recipient.recipient_kind == RECIPIENT_KIND_ADULT
+            and any(
+                value not in (None, "")
+                for value in [
+                    recipient.address_line1,
+                    recipient.address_line2,
+                    recipient.city,
+                    recipient.state,
+                    recipient.postal_code,
+                    recipient.direct_email,
+                    recipient.direct_phone,
+                ]
+            )
         )
         return {
             "group_count": len(groups),
@@ -590,6 +630,13 @@ class CampaignRecipientService:
             "adult_count": recipient_counts.get("ADULT", 0),
             "wishlist_count": len(wishlists),
             "open_item_count": open_items_count,
+            "sponsored_item_count": sponsored_item_count,
+            "fulfilled_item_count": fulfilled_item_count,
+            "ready_for_pickup_item_count": ready_for_pickup_item_count,
+            "picked_up_item_count": picked_up_item_count,
+            "groups_with_pickup_contacts_count": groups_with_pickup_contacts_count,
+            "groups_missing_primary_contact_count": groups_missing_primary_contact_count,
+            "adults_with_direct_contact_count": adults_with_direct_contact_count,
         }
 
     @staticmethod

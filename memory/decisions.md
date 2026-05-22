@@ -77,6 +77,13 @@
 - Rationale: Blessing Tree serves children in family intake flows and adults in program-based intake flows. Those are different intake programs, but they still share the same downstream sponsorship, fulfillment, pickup, and reporting pipeline.
 - Consequence: parents/guardians, staff, and coordinators remain contacts, not recipients; `recipient_group` remains the intake container; each actual recipient keeps one wishlist; the schema should evolve from `HOUSEHOLD | INSTITUTION` and `CHILD | ADULT | SENIOR` toward `HOUSEHOLD | ADULT_PROGRAM`, `recipient_kind`, and explicit `program_type` values such as `CHILD_FAMILY` and `ADULT_PROGRAM`; adult recipient address/phone/email fields should be supported where appropriate; and future recipient APIs/UI should be built as one campaign-scoped recipient workspace rather than split program-specific products.
 
+## Recipient Workflow Reporting Direction
+
+- Status: active
+- Decision: expose sponsorship, fulfillment, pickup readiness, picked-up state, pickup-contact coverage, and adult direct-contact coverage as backend-authored workflow rollups on the People workspace contract.
+- Rationale: the simplified `ADULT_PROGRAM` model is most useful when downstream operators can see workflow readiness directly instead of inferring it repeatedly in frontend code.
+- Consequence: recipient rows, group rows, and workspace-level counts should carry workflow rollups, People Reports should use those rollups directly, and future sponsorship/fulfillment/pickup surfaces should build on the same contract instead of recalculating their own summaries.
+
 ## Campaign Schedule Direction
 
 - Status: active

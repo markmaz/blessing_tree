@@ -40,6 +40,13 @@ describe('ReportsPage', () => {
           adultCount: 2,
           wishlistCount: 3,
           openItemCount: 5,
+          sponsoredItemCount: 1,
+          fulfilledItemCount: 0,
+          readyForPickupItemCount: 1,
+          pickedUpItemCount: 0,
+          groupsWithPickupContactsCount: 1,
+          groupsMissingPrimaryContactCount: 1,
+          adultsWithDirectContactCount: 1,
         },
         groups: [
           {
@@ -60,6 +67,14 @@ describe('ReportsPage', () => {
             contacts: [],
             authorizedPickupContacts: [],
             recipientCount: 2,
+            workflowSummary: {
+              itemCount: 1,
+              sponsoredItemCount: 0,
+              fulfilledItemCount: 0,
+              readyForPickupItemCount: 0,
+              pickedUpItemCount: 0,
+              openItemCount: 1,
+            },
             recipients: [],
             createdAt: null,
             updatedAt: null,
@@ -118,6 +133,14 @@ describe('ReportsPage', () => {
               },
             ],
             recipientCount: 2,
+            workflowSummary: {
+              itemCount: 1,
+              sponsoredItemCount: 1,
+              fulfilledItemCount: 0,
+              readyForPickupItemCount: 1,
+              pickedUpItemCount: 0,
+              openItemCount: 0,
+            },
             recipients: [],
             createdAt: null,
             updatedAt: null,
@@ -199,6 +222,14 @@ describe('ReportsPage', () => {
               createdAt: null,
               updatedAt: null,
             },
+            workflowSummary: {
+              itemCount: 1,
+              sponsoredItemCount: 0,
+              fulfilledItemCount: 0,
+              readyForPickupItemCount: 0,
+              pickedUpItemCount: 0,
+              openItemCount: 1,
+            },
             createdAt: null,
             updatedAt: null,
           },
@@ -242,6 +273,14 @@ describe('ReportsPage', () => {
               createdAt: null,
               updatedAt: null,
             },
+            workflowSummary: {
+              itemCount: 0,
+              sponsoredItemCount: 0,
+              fulfilledItemCount: 0,
+              readyForPickupItemCount: 0,
+              pickedUpItemCount: 0,
+              openItemCount: 0,
+            },
             createdAt: null,
             updatedAt: null,
           },
@@ -272,6 +311,14 @@ describe('ReportsPage', () => {
             status: 'ACTIVE',
             group: { id: 'group-2', groupName: 'Maple Grove', groupType: 'ADULT_PROGRAM', status: 'ACTIVE' },
             wishlist: null,
+            workflowSummary: {
+              itemCount: 0,
+              sponsoredItemCount: 0,
+              fulfilledItemCount: 0,
+              readyForPickupItemCount: 0,
+              pickedUpItemCount: 0,
+              openItemCount: 0,
+            },
             createdAt: null,
             updatedAt: null,
           },
@@ -298,6 +345,9 @@ describe('ReportsPage', () => {
     expect(screen.getByText(/holiday 2026/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /group mix/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /wishlist readiness/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /gift workflow/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /pickup coordination/i })).toBeInTheDocument();
+    expect(screen.getByText(/ready for pickup/i)).toBeInTheDocument();
     expect(screen.getByText(/missing wishlist/i)).toBeInTheDocument();
     expect(screen.getByText(/sam jones/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /open directory/i })).toHaveAttribute(

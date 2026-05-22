@@ -83,6 +83,44 @@ def serialize_wishlist_item(item: WishlistItem) -> dict[str, Any]:
     }
 
 
+def serialize_workflow_summary(items: list[WishlistItem]) -> dict[str, Any]:
+    sponsored_count = 0
+    fulfilled_count = 0
+    ready_for_pickup_count = 0
+    picked_up_count = 0
+    open_count = 0
+
+    for item in items:
+        sponsorship_item = item.sponsorship_item
+        fulfillment_rows = list(item.fulfillment_rows or [])
+        pickup_item = item.pickup_item
+        qty_fulfilled = sum(row.quantity_fulfilled for row in fulfillment_rows)
+        is_fully_fulfilled = qty_fulfilled >= item.qty_requested
+        is_picked_up = pickup_item is not None or item.picked_up_at is not None
+
+        if sponsorship_item is not None:
+            sponsored_count += 1
+        if is_fully_fulfilled:
+            fulfilled_count += 1
+        if is_fully_fulfilled and not is_picked_up:
+            ready_for_pickup_count += 1
+        if is_picked_up:
+            picked_up_count += 1
+        if not is_fully_fulfilled and not is_picked_up:
+            open_count += 1
+
+    total_count = len(items)
+
+    return {
+        "item_count": total_count,
+        "sponsored_item_count": sponsored_count,
+        "fulfilled_item_count": fulfilled_count,
+        "ready_for_pickup_item_count": ready_for_pickup_count,
+        "picked_up_item_count": picked_up_count,
+        "open_item_count": open_count,
+    }
+
+
 def serialize_wishlist(wishlist: Wishlist) -> dict[str, Any]:
     return {
         "id": str(wishlist.id),
@@ -109,6 +147,7 @@ def serialize_wishlist(wishlist: Wishlist) -> dict[str, Any]:
 
 
 def serialize_recipient(recipient: Recipient) -> dict[str, Any]:
+    wishlist_items = list(recipient.wishlist.items or []) if recipient.wishlist is not None else []
     return {
         "id": str(recipient.id),
         "campaign_id": str(recipient.campaign_id),
@@ -145,6 +184,7 @@ def serialize_recipient(recipient: Recipient) -> dict[str, Any]:
             else None
         ),
         "wishlist": serialize_wishlist(recipient.wishlist) if recipient.wishlist is not None else None,
+        "workflow_summary": serialize_workflow_summary(wishlist_items),
         "created_at": _serialize_datetime(recipient.created_at),
         "updated_at": _serialize_datetime(recipient.updated_at),
     }
@@ -154,6 +194,12 @@ def serialize_recipient_group(group: RecipientGroup) -> dict[str, Any]:
     contacts = list(group.contacts or [])
     recipients = list(group.recipients or [])
     pickup_contacts = [contact for contact in contacts if contact.can_pick_up]
+    workflow_items = [
+        item
+        for recipient in recipients
+        if recipient.wishlist is not None
+        for item in list(recipient.wishlist.items or [])
+    ]
     return {
         "id": str(group.id),
         "campaign_id": str(group.campaign_id),
@@ -176,6 +222,7 @@ def serialize_recipient_group(group: RecipientGroup) -> dict[str, Any]:
         "contacts": [serialize_group_contact(contact) for contact in contacts],
         "authorized_pickup_contacts": [serialize_group_contact(contact) for contact in pickup_contacts],
         "recipient_count": len(recipients),
+        "workflow_summary": serialize_workflow_summary(workflow_items),
         "recipients": [serialize_recipient(recipient) for recipient in recipients],
         "created_at": _serialize_datetime(group.created_at),
         "updated_at": _serialize_datetime(group.updated_at),

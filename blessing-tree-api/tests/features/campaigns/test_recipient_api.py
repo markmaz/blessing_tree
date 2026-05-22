@@ -12,15 +12,13 @@ from app.models.recipient_constants import (
     GROUP_CONTACT_ROLE_PARENT,
     PREFERRED_CONTACT_EMAIL,
     RECIPIENT_GROUP_STATUS_ACTIVE,
-    RECIPIENT_GROUP_TYPE_CARE_FACILITY,
+    RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
-    RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM,
     RECIPIENT_KIND_ADULT,
     RECIPIENT_KIND_CHILD,
     RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+    RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
-    RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
-    RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM,
     RECIPIENT_STATUS_ACTIVE,
     WISHLIST_ITEM_TYPE_GIFT,
     WISHLIST_STATUS_READY,
@@ -52,11 +50,11 @@ def _seed_household_group(session, campaign_id):
     return group
 
 
-def _seed_partner_program_group(session, campaign_id):
+def _seed_adult_program_group(session, campaign_id):
     group = RecipientGroup(
         id=uuid.uuid4(),
         campaign_id=campaign_id,
-        group_type=RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM,
+        group_type=RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
         group_name="Senior At Home",
         status=RECIPIENT_GROUP_STATUS_ACTIVE,
     )
@@ -82,7 +80,7 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     facility = RecipientGroup(
         id=uuid.uuid4(),
         campaign_id=campaign.id,
-        group_type=RECIPIENT_GROUP_TYPE_CARE_FACILITY,
+        group_type=RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
         group_name="Maple Grove",
         status=RECIPIENT_GROUP_STATUS_ACTIVE,
     )
@@ -113,9 +111,10 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
         campaign_id=campaign.id,
         recipient_group_id=facility.id,
         recipient_kind=RECIPIENT_KIND_ADULT,
-        program_type=RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
+        program_type=RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
         privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
         display_label="Mary Smith",
+        direct_email="mary@example.com",
         status=RECIPIENT_STATUS_ACTIVE,
     )
     session.add_all([contact, child, adult])
@@ -162,10 +161,19 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     assert payload["counts"]["recipient_count"] == 2
     assert payload["counts"]["wishlist_count"] == 1
     assert payload["counts"]["open_item_count"] == 1
+    assert payload["counts"]["sponsored_item_count"] == 0
+    assert payload["counts"]["fulfilled_item_count"] == 0
+    assert payload["counts"]["ready_for_pickup_item_count"] == 0
+    assert payload["counts"]["picked_up_item_count"] == 0
+    assert payload["counts"]["groups_with_pickup_contacts_count"] == 1
+    assert payload["counts"]["groups_missing_primary_contact_count"] == 1
+    assert payload["counts"]["adults_with_direct_contact_count"] == 1
     assert payload["groups"][0]["contacts"][0]["email"] == "sarah@example.com"
     assert payload["groups"][0]["authorized_pickup_contacts"][0]["email"] == "sarah@example.com"
+    assert payload["groups"][0]["workflow_summary"]["open_item_count"] == 1
     assert payload["recipients"][0]["wishlist"]["items"][0]["gift_workflow"]["label_code"] == "people-workspace-item-1"
     assert payload["recipients"][0]["wishlist"]["items"][0]["gift_workflow"]["sponsorship_status"] == "UNSPONSORED"
+    assert payload["recipients"][0]["workflow_summary"]["open_item_count"] == 1
     assert sorted(payload["filters"]["program_types"]) == [
         "ADULT_PROGRAM",
         RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
@@ -343,16 +351,16 @@ def test_recipient_program_alignment_rejects_invalid_group_program_combination(a
     assert "Household groups" in response.get_json()["error"]
 
 
-def test_partner_program_adult_recipient_accepts_direct_contact_fields(app, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_adult_program_recipient_accepts_direct_contact_fields(app, monkeypatch: pytest.MonkeyPatch) -> None:
     install_auth(monkeypatch)
     session = campaign_api_module.SessionLocal()
     manager = seed_user(session, name="Manager User")
     campaign = seed_campaign(session)
     assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
-    partner_program = _seed_partner_program_group(session, campaign.id)
+    adult_program = _seed_adult_program_group(session, campaign.id)
     manager_id = str(manager.id)
     campaign_id = str(campaign.id)
-    group_id = str(partner_program.id)
+    group_id = str(adult_program.id)
     session.commit()
     session.close()
 
@@ -379,7 +387,7 @@ def test_partner_program_adult_recipient_accepts_direct_contact_fields(app, monk
 
     assert response.status_code == 201
     payload = response.get_json()
-    assert payload["program_type"] == RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM
+    assert payload["program_type"] == RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM
     assert payload["address_line1"] == "12 River Road"
     assert payload["city"] == "Austin"
     assert payload["state"] == "TX"

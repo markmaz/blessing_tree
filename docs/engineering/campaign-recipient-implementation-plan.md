@@ -6,9 +6,10 @@ Last updated: 2026-05-22
 
 - In progress
 - Phases 1 through 7 are implemented
-- The current follow-on work is adult-program workflow polish and downstream
-  sponsorship/fulfillment validation on top of the refined People workspace and
-  communications audience model
+- Adult-program workflow rollups are now implemented in the People workspace
+  and reporting layer
+- The current follow-on work is sponsorship, fulfillment, and pickup action
+  surfaces on top of those workflow rollups
 
 This plan follows:
 
@@ -18,10 +19,8 @@ This plan follows:
 
 Implement the campaign recipient domain in a way that supports:
 
-- one unified recipient model for children, facility-based adults, and
-  partner-program adults
-- campaign-scoped intake containers for households, care facilities, and
-  partner programs
+- one unified recipient model for children and adult-program recipients
+- campaign-scoped intake containers for households and adult programs
 - contacts that are operational but not gift recipients
 - one wishlist per recipient
 - a campaign-aware `People` workspace in the frontend

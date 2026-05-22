@@ -1,6 +1,6 @@
 # Campaign Recipient Design
 
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 ## Status
 
@@ -36,6 +36,11 @@ The current schema is close, but the meaning is split awkwardly across:
 
 This design refines the existing model so it supports all three programs cleanly
 without splitting the downstream fulfillment pipeline into separate tables.
+
+The current implementation has now simplified the adult side into one
+`ADULT_PROGRAM` group/program shape, and the People workspace/reporting layer
+now carries explicit workflow rollups for sponsorship, fulfillment, ready-for-
+pickup, and picked-up status.
 
 ## Summary
 

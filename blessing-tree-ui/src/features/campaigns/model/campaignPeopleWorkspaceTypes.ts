@@ -82,6 +82,15 @@ export interface CampaignGiftWorkflowSummary {
   labelPrintCount: number;
 }
 
+export interface CampaignWorkflowRollup {
+  itemCount: number;
+  sponsoredItemCount: number;
+  fulfilledItemCount: number;
+  readyForPickupItemCount: number;
+  pickedUpItemCount: number;
+  openItemCount: number;
+}
+
 export interface CampaignWishlist {
   id: string;
   campaignId: string;
@@ -131,6 +140,7 @@ export interface CampaignRecipient {
   status: RecipientStatus;
   group: CampaignPeopleGroupSummary | null;
   wishlist: CampaignWishlist | null;
+  workflowSummary: CampaignWorkflowRollup;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -153,6 +163,7 @@ export interface CampaignPeopleGroup {
   contacts: CampaignPeopleGroupContact[];
   authorizedPickupContacts: CampaignPeopleGroupContact[];
   recipientCount: number;
+  workflowSummary: CampaignWorkflowRollup;
   recipients: CampaignRecipient[];
   createdAt: string | null;
   updatedAt: string | null;
@@ -168,6 +179,13 @@ export interface CampaignPeopleWorkspaceCounts {
   adultCount: number;
   wishlistCount: number;
   openItemCount: number;
+  sponsoredItemCount: number;
+  fulfilledItemCount: number;
+  readyForPickupItemCount: number;
+  pickedUpItemCount: number;
+  groupsWithPickupContactsCount: number;
+  groupsMissingPrimaryContactCount: number;
+  adultsWithDirectContactCount: number;
 }
 
 export interface CampaignPeopleWorkspaceFilters {

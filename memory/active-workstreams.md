@@ -5,7 +5,7 @@ Last updated: 2026-05-22
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Recipient phases 1 through 7 plus the adult-program simplification are in place, and the next step is downstream sponsorship/fulfillment validation plus workflow polish for adult scenarios
+- Current step: Recipient workflow rollups are now in place for sponsorship, fulfillment, pickup readiness, and pickup-contact coverage; the next step is adding action-oriented sponsorship/fulfillment/pickup surfaces on top of that data
 
 ## Recently Completed
 

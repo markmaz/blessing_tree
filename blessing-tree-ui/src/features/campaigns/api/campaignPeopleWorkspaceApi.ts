@@ -115,6 +115,7 @@ interface RecipientResponse {
     status: CampaignPeopleGroup['status'];
   } | null;
   wishlist: WishlistResponse | null;
+  workflow_summary: CampaignRecipient['workflowSummary'];
   created_at: string | null;
   updated_at: string | null;
 }
@@ -137,6 +138,7 @@ interface GroupResponse {
   contacts: GroupContactResponse[];
   authorized_pickup_contacts: GroupContactResponse[];
   recipient_count: number;
+  workflow_summary: CampaignPeopleGroup['workflowSummary'];
   recipients: RecipientResponse[];
   created_at: string | null;
   updated_at: string | null;
@@ -395,6 +397,7 @@ function mapGroup(response: GroupResponse): CampaignPeopleGroup {
     contacts: response.contacts.map(mapGroupContact),
     authorizedPickupContacts: response.authorized_pickup_contacts.map(mapGroupContact),
     recipientCount: response.recipient_count,
+    workflowSummary: response.workflow_summary,
     recipients: response.recipients.map(mapRecipient),
     createdAt: response.created_at,
     updatedAt: response.updated_at,
@@ -436,6 +439,7 @@ function mapRecipient(response: RecipientResponse): CampaignRecipient {
         }
       : null,
     wishlist: response.wishlist ? mapWishlist(response.wishlist) : null,
+    workflowSummary: response.workflow_summary,
     createdAt: response.created_at,
     updatedAt: response.updated_at,
   };

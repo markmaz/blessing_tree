@@ -60,15 +60,16 @@ export function ReportsPage() {
   const draftWishlists = countWishlistsByStatus('DRAFT', workspace);
   const lockedWishlists = countWishlistsByStatus('LOCKED', workspace);
   const missingWishlists = workspace.recipients.filter((recipient) => !recipient.wishlist).length;
-  const groupsWithoutPrimaryContact = workspace.groups.filter((group) => !group.primaryContact).length;
-  const groupsWithPickupContacts = workspace.groups.filter((group) => group.authorizedPickupContacts.length > 0).length;
-  const adultsWithDirectContact = workspace.recipients.filter(
-    (recipient) =>
-      recipient.recipientKind === 'ADULT' &&
-      (Boolean(recipient.directEmail?.trim()) || Boolean(recipient.directPhone?.trim()))
-  ).length;
+  const workflowCounts = workspace.counts;
   const openWishlistRecipients = workspace.recipients
-    .filter((recipient) => recipient.wishlist?.items.some((item) => !item.giftWorkflow.isFullyFulfilled))
+    .filter((recipient) => recipient.workflowSummary.openItemCount > 0)
+    .slice(0, 5);
+  const groupsNeedingPickupSetup = workspace.groups
+    .filter(
+      (group) =>
+        group.workflowSummary.readyForPickupItemCount > 0 &&
+        group.authorizedPickupContacts.length === 0
+    )
     .slice(0, 5);
 
   return (
@@ -116,7 +117,11 @@ export function ReportsPage() {
             <ReportMetricRow label="Households" value={workspace.counts.householdCount} />
             <ReportMetricRow label="Adult programs" value={workspace.counts.adultProgramCount} />
             <ReportMetricRow label="Active groups" value={workspace.counts.activeGroupCount} />
-            <ReportMetricRow label="Missing primary contact" value={groupsWithoutPrimaryContact} tone={groupsWithoutPrimaryContact > 0 ? 'warn' : 'ok'} />
+            <ReportMetricRow
+              label="Missing primary contact"
+              value={workflowCounts.groupsMissingPrimaryContactCount}
+              tone={workflowCounts.groupsMissingPrimaryContactCount > 0 ? 'warn' : 'ok'}
+            />
           </div>
         </div>
 
@@ -128,8 +133,8 @@ export function ReportsPage() {
             </div>
             <ReportMetricRow label="Children" value={workspace.counts.childCount} />
             <ReportMetricRow label="Adults" value={workspace.counts.adultCount} />
-            <ReportMetricRow label="Adults with direct contact" value={adultsWithDirectContact} />
-            <ReportMetricRow label="Groups with pickup contacts" value={groupsWithPickupContacts} />
+            <ReportMetricRow label="Adults with direct contact" value={workflowCounts.adultsWithDirectContactCount} />
+            <ReportMetricRow label="Groups with pickup contacts" value={workflowCounts.groupsWithPickupContactsCount} />
           </div>
         </div>
 
@@ -148,7 +153,69 @@ export function ReportsPage() {
       </div>
 
       <div className="row g-4">
-        <div className="col-12 col-xl-7">
+        <div className="col-12 col-xl-4">
+          <div className="content-card h-100">
+            <div className="d-flex align-items-center gap-2 mb-3">
+              <i className="bi bi-box-seam text-muted" aria-hidden="true" />
+              <h2 className="h5 mb-0">Gift Workflow</h2>
+            </div>
+            <ReportMetricRow label="Sponsored items" value={workflowCounts.sponsoredItemCount} />
+            <ReportMetricRow label="Fulfilled items" value={workflowCounts.fulfilledItemCount} tone="ok" />
+            <ReportMetricRow
+              label="Ready for pickup"
+              value={workflowCounts.readyForPickupItemCount}
+              tone={workflowCounts.readyForPickupItemCount > 0 ? 'warn' : 'ok'}
+            />
+            <ReportMetricRow label="Picked up" value={workflowCounts.pickedUpItemCount} />
+          </div>
+        </div>
+
+        <div className="col-12 col-xl-4">
+          <div className="content-card h-100">
+            <div className="d-flex align-items-center gap-2 mb-3">
+              <i className="bi bi-person-check text-muted" aria-hidden="true" />
+              <h2 className="h5 mb-0">Pickup Coordination</h2>
+            </div>
+            {groupsNeedingPickupSetup.length > 0 ? (
+              <div className="campaign-report-list">
+                {groupsNeedingPickupSetup.map((group) => (
+                  <div key={group.id} className="campaign-report-list__row">
+                    <div>
+                      <div className="campaign-report-list__title">{group.groupName}</div>
+                      <div className="campaign-report-list__meta">
+                        {group.recipientCount} people · no pickup contact set
+                      </div>
+                    </div>
+                    <div className="campaign-report-list__count">
+                      {group.workflowSummary.readyForPickupItemCount} ready
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted mb-0">Every visible group with ready gifts already has a pickup contact on file.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="col-12 col-xl-4">
+          <div className="content-card h-100">
+            <div className="d-flex align-items-center gap-2 mb-3">
+              <i className="bi bi-chat-dots text-muted" aria-hidden="true" />
+              <h2 className="h5 mb-0">Communication Notes</h2>
+            </div>
+            <ul className="campaign-report-bullets mb-0">
+              <li>Household messages now target parents and guardians through household contacts.</li>
+              <li>Adult-program messages can route through coordinators or directly to adult recipients when contact information is available.</li>
+              <li>Primary contact audiences are now resolved from People groups instead of older family-only assumptions.</li>
+              <li>Use Communications in Campaign Studio for recipient-aware templates and schedule placement.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="row g-4">
+        <div className="col-12">
           <div className="content-card h-100">
             <div className="d-flex align-items-center gap-2 mb-3">
               <i className="bi bi-exclamation-diamond text-muted" aria-hidden="true" />
@@ -157,8 +224,7 @@ export function ReportsPage() {
             {openWishlistRecipients.length > 0 ? (
               <div className="campaign-report-list">
                 {openWishlistRecipients.map((recipient) => {
-                  const outstandingCount =
-                    recipient.wishlist?.items.filter((item) => !item.giftWorkflow.isFullyFulfilled).length ?? 0;
+                  const outstandingCount = recipient.workflowSummary.openItemCount;
                   return (
                     <div key={recipient.id} className="campaign-report-list__row">
                       <div>
@@ -175,21 +241,6 @@ export function ReportsPage() {
             ) : (
               <p className="text-muted mb-0">All visible wishlist items are fully fulfilled right now.</p>
             )}
-          </div>
-        </div>
-
-        <div className="col-12 col-xl-5">
-          <div className="content-card h-100">
-            <div className="d-flex align-items-center gap-2 mb-3">
-              <i className="bi bi-chat-dots text-muted" aria-hidden="true" />
-              <h2 className="h5 mb-0">Communication Notes</h2>
-            </div>
-            <ul className="campaign-report-bullets mb-0">
-              <li>Household messages now target parents and guardians through household contacts.</li>
-              <li>Adult-program messages can route through coordinators or directly to adult recipients when contact information is available.</li>
-              <li>Primary contact audiences are now resolved from People groups instead of older family-only assumptions.</li>
-              <li>Use Communications in Campaign Studio for recipient-aware templates and schedule placement.</li>
-            </ul>
           </div>
         </div>
       </div>

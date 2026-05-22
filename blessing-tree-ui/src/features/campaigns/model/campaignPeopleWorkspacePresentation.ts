@@ -28,7 +28,7 @@ export function toRecipientProgramTypeLabel(value: RecipientProgramType): string
   if (value === 'CHILD_FAMILY') {
     return 'Family Child';
   }
-  return 'Adult Program Adult';
+  return 'Adult Program Participant';
 }
 
 export function toRecipientKindLabel(value: RecipientKind): string {

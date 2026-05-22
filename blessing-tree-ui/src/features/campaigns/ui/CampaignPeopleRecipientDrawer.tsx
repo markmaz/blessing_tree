@@ -854,7 +854,7 @@ export function CampaignPeopleRecipientDrawer({
                     <span className="text-muted small">
                       {pickupContacts.length
                         ? `Authorized pickup contacts: ${pickupContacts.map((contact) => formatContactDisplayName(contact)).join(', ')}`
-                        : 'No pickup contacts are marked yet on the household or facility.'}
+                        : 'No pickup contacts are marked yet on this household or adult program.'}
                     </span>
                   </div>
                 </div>

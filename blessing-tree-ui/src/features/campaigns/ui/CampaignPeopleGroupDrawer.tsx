@@ -615,7 +615,7 @@ export function CampaignPeopleGroupDrawer({
             <div>
               <h4 className="h6 mb-1">Contacts</h4>
               <p className="text-muted mb-0">
-                Parents, guardians, coordinators, social workers, and facility staff stay here as operational contacts.
+                Parents, guardians, coordinators, social workers, and program staff stay here as operational contacts.
               </p>
             </div>
           </div>
