@@ -34,7 +34,13 @@ export function toRecipientStatusLabel(value: RecipientStatus): string {
 }
 
 export function toRecipientPrivacyLevelLabel(value: RecipientPrivacyLevel): string {
-  return toTitleCase(value);
+  if (value === 'FULL_NAME') {
+    return 'Full Name';
+  }
+  if (value === 'INITIALS') {
+    return 'Initials';
+  }
+  return 'Anonymous';
 }
 
 export function toPreferredContactLabel(value: PreferredContact): string {

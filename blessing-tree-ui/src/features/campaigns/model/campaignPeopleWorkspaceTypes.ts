@@ -16,7 +16,7 @@ export type RecipientKind = 'CHILD' | 'ADULT';
 
 export type RecipientProgramType = 'CHILD_FAMILY' | 'NURSING_HOME';
 
-export type RecipientPrivacyLevel = 'STANDARD' | 'RESTRICTED' | 'CONFIDENTIAL';
+export type RecipientPrivacyLevel = 'ANONYMOUS' | 'INITIALS' | 'FULL_NAME';
 
 export type RecipientStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 

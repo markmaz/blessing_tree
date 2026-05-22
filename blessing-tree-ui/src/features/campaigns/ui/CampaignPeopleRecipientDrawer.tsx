@@ -83,7 +83,7 @@ function buildRecipientDraft(
   return {
     recipientGroupId: recipient?.recipientGroupId ?? initialGroupId ?? '',
     displayLabel: recipient?.displayLabel ?? '',
-    privacyLevel: recipient?.privacyLevel ?? 'STANDARD',
+    privacyLevel: recipient?.privacyLevel ?? 'FULL_NAME',
     firstName: recipient?.firstName ?? '',
     lastName: recipient?.lastName ?? '',
     birthYear: recipient?.birthYear ?? null,
@@ -475,7 +475,7 @@ export function CampaignPeopleRecipientDrawer({
               Privacy Level
               <select
                 className="form-select mt-2"
-                value={recipientDraft.privacyLevel ?? 'STANDARD'}
+                value={recipientDraft.privacyLevel ?? 'FULL_NAME'}
                 onChange={(event) =>
                   setRecipientDraft((currentValue) => ({
                     ...currentValue,
@@ -484,9 +484,9 @@ export function CampaignPeopleRecipientDrawer({
                 }
                 disabled={!canEdit}
               >
-                <option value="STANDARD">Standard</option>
-                <option value="RESTRICTED">Restricted</option>
-                <option value="CONFIDENTIAL">Confidential</option>
+                <option value="FULL_NAME">Full Name</option>
+                <option value="INITIALS">Initials</option>
+                <option value="ANONYMOUS">Anonymous</option>
               </select>
             </label>
 
