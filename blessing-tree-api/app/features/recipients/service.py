@@ -24,6 +24,7 @@ from app.features.recipients.validation import (
     validate_optional_text,
     validate_preferred_contact,
     validate_privacy_level,
+    validate_recipient_contact_context,
     validate_program_alignment,
     validate_program_type,
     validate_recipient_kind,
@@ -296,6 +297,11 @@ class CampaignRecipientService:
             birth_year=validate_optional_int(payload.get("birth_year"), "birth_year", minimum=1900, maximum=3000),
             age=validate_optional_int(payload.get("age"), "age", minimum=0, maximum=130),
             gender=validate_optional_text(payload.get("gender"), "gender", max_length=1),
+            address_line1=validate_optional_text(payload.get("address_line1"), "address_line1"),
+            address_line2=validate_optional_text(payload.get("address_line2"), "address_line2"),
+            city=validate_optional_text(payload.get("city"), "city", max_length=128),
+            state=validate_optional_text(payload.get("state"), "state", max_length=64),
+            postal_code=validate_optional_text(payload.get("postal_code"), "postal_code", max_length=32),
             direct_email=validate_optional_email(payload.get("direct_email"), "direct_email"),
             direct_phone=validate_optional_phone(payload.get("direct_phone"), "direct_phone"),
             facility_room=validate_optional_text(payload.get("facility_room"), "facility_room", max_length=64),
@@ -303,6 +309,17 @@ class CampaignRecipientService:
             mobility_notes=validate_optional_long_text(payload.get("mobility_notes"), "mobility_notes"),
             notes=validate_optional_long_text(payload.get("notes"), "notes"),
             status=validate_recipient_status(payload.get("status")),
+        )
+        validate_recipient_contact_context(
+            group_type=group.group_type,
+            recipient_kind=recipient.recipient_kind,
+            address_line1=recipient.address_line1,
+            address_line2=recipient.address_line2,
+            city=recipient.city,
+            state=recipient.state,
+            postal_code=recipient.postal_code,
+            direct_email=recipient.direct_email,
+            direct_phone=recipient.direct_phone,
         )
         db.add(recipient)
         db.commit()
@@ -334,6 +351,11 @@ class CampaignRecipientService:
         for field_name, max_length in {
             "first_name": 128,
             "last_name": 128,
+            "address_line1": 255,
+            "address_line2": 255,
+            "city": 128,
+            "state": 64,
+            "postal_code": 32,
             "facility_room": 64,
             "subgroup_label": 255,
         }.items():
@@ -355,6 +377,17 @@ class CampaignRecipientService:
             recipient.notes = validate_optional_long_text(payload.get("notes"), "notes")
         if "status" in payload:
             recipient.status = validate_recipient_status(payload.get("status"))
+        validate_recipient_contact_context(
+            group_type=group.group_type,
+            recipient_kind=recipient_kind,
+            address_line1=recipient.address_line1,
+            address_line2=recipient.address_line2,
+            city=recipient.city,
+            state=recipient.state,
+            postal_code=recipient.postal_code,
+            direct_email=recipient.direct_email,
+            direct_phone=recipient.direct_phone,
+        )
         db.commit()
         return self.get_recipient(db, campaign_id, recipient_id)
 
@@ -552,6 +585,7 @@ class CampaignRecipientService:
             "active_group_count": sum(1 for group in groups if group.status == RECIPIENT_GROUP_STATUS_ACTIVE),
             "household_count": group_counts.get("HOUSEHOLD", 0),
             "care_facility_count": group_counts.get("CARE_FACILITY", 0),
+            "partner_program_count": group_counts.get("PARTNER_PROGRAM", 0),
             "recipient_count": len(recipients),
             "child_count": recipient_counts.get("CHILD", 0),
             "adult_count": recipient_counts.get("ADULT", 0),

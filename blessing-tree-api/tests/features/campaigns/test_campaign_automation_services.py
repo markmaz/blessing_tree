@@ -256,7 +256,7 @@ def test_dispatch_schedule_resolves_direct_adult_recipients(
         campaign_id=campaign.id,
         recipient_group_id=group.id,
         recipient_kind="ADULT",
-        program_type="NURSING_HOME",
+        program_type="SENIOR_FACILITY",
         privacy_level="FULL_NAME",
         display_label="Mary Smith",
         first_name="Mary",

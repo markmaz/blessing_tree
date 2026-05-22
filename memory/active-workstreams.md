@@ -5,7 +5,7 @@ Last updated: 2026-05-22
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Recipient phases 1 through 7 are implemented, the People/runtime naming cutover is complete, and the next step is deeper adult-scenario validation plus partner-program implementation
+- Current step: Recipient phases 1 through 7 plus partner-program implementation are in place, and the next step is downstream sponsorship/fulfillment validation plus workflow polish for the expanded adult scenarios
 
 ## Recently Completed
 
@@ -107,6 +107,7 @@ Last updated: 2026-05-22
 - Split the People section into child `Intake` and `Directory` views so new family/facility entry starts from a simple workflow launcher while search and maintenance stay in a separate directory surface
 - Updated the recipient design and implementation docs again so the long-term model now explicitly includes `PARTNER_PROGRAM` groups plus adult recipient direct-contact/address rules for facility and partner-program flows
 - Implemented recipient phase 6 by expanding the Communications audience model to include household contacts, facility contacts, primary group contacts, and direct adult recipients, wiring those audiences through the backend resolver, automation dispatch path, Studio payload, template builder, and frontend presentation
+- Implemented partner-program recipient support in code by adding `PARTNER_PROGRAM` groups, canonical `SENIOR_FACILITY` / `SENIOR_PARTNER_PROGRAM` program types, recipient-level adult address fields, context-aware People intake/directory/reporting copy, and validation that blocks household-child direct-contact data while allowing adult direct-contact data in facility and partner-program flows
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Replaced the old placeholder automation warning with a real execution layer:
@@ -148,8 +149,8 @@ Last updated: 2026-05-22
 
 ## Immediate Next Steps
 
-1. Validate sponsorship/fulfillment/pickup UI flows against the refined recipient model, especially for adult direct-contact and address scenarios
-2. Implement the documented partner-program recipient path and complete the related group/program enum expansion in code
+1. Validate sponsorship/fulfillment/pickup UI flows against the refined recipient model, especially for facility and partner-program adult direct-contact/address scenarios
+2. Add workflow polish for People intake and directory around partner-program coordination, sorting, and search ergonomics
 3. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
 4. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
 5. Retire the remaining legacy `campaign_user_role` compatibility paths after the Team/member model is fully authoritative everywhere

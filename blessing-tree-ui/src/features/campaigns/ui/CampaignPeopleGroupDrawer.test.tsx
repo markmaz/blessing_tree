@@ -72,6 +72,28 @@ describe('CampaignPeopleGroupDrawer', () => {
     expect(screen.getByDisplayValue('78701')).toBeInTheDocument();
   });
 
+  it('uses partner-program-specific labels for program intake', () => {
+    render(
+      <CampaignPeopleGroupDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        group={null}
+        initialGroupType="PARTNER_PROGRAM"
+        onClose={vi.fn()}
+        onSaveGroup={vi.fn()}
+        onSaveContact={vi.fn()}
+        onDeleteContact={vi.fn()}
+        onSearchAddresses={vi.fn().mockResolvedValue([])}
+        onAddRecipientToGroup={vi.fn()}
+        onSelectRecipient={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: 'Add Partner Program' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Program Name')).toBeInTheDocument();
+  });
+
   it('does not search just by opening an existing facility record with an address', async () => {
     const onSearchAddresses = vi.fn().mockResolvedValue([]);
 

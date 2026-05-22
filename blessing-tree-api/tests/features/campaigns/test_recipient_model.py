@@ -21,11 +21,13 @@ from app.models.recipient_constants import (
     RECIPIENT_GROUP_STATUS_ACTIVE,
     RECIPIENT_GROUP_TYPE_CARE_FACILITY,
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+    RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM,
     RECIPIENT_KIND_ADULT,
     RECIPIENT_KIND_CHILD,
     RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
-    RECIPIENT_PROGRAM_TYPE_NURSING_HOME,
+    RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
+    RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM,
     RECIPIENT_STATUS_ACTIVE,
     WISHLIST_INTAKE_METHOD_PHONE,
     WISHLIST_ITEM_TYPE_CLOTHING,
@@ -187,12 +189,16 @@ def test_care_facility_adult_recipient_flow_supports_direct_contact_fields() -> 
         campaign_id=campaign.id,
         recipient_group_id=group.id,
         recipient_kind=RECIPIENT_KIND_ADULT,
-        program_type=RECIPIENT_PROGRAM_TYPE_NURSING_HOME,
+        program_type=RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
         privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
         display_label="Mary Smith",
         first_name="Mary",
         last_name="Smith",
         age=84,
+        address_line1="400 Elm St",
+        city="Dallas",
+        state="TX",
+        postal_code="75001",
         direct_phone="555-1111",
         direct_email="mary.smith@example.com",
         facility_room="214B",
@@ -207,9 +213,77 @@ def test_care_facility_adult_recipient_flow_supports_direct_contact_fields() -> 
 
     assert group.group_type == RECIPIENT_GROUP_TYPE_CARE_FACILITY
     assert recipient.recipient_kind == RECIPIENT_KIND_ADULT
-    assert recipient.program_type == RECIPIENT_PROGRAM_TYPE_NURSING_HOME
+    assert recipient.program_type == RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY
+    assert recipient.address_line1 == "400 Elm St"
+    assert recipient.city == "Dallas"
+    assert recipient.state == "TX"
+    assert recipient.postal_code == "75001"
     assert recipient.direct_email == "mary.smith@example.com"
     assert recipient.direct_phone == "555-1111"
     assert recipient.facility_room == "214B"
     assert recipient.mobility_notes == "Uses a walker."
+    db.close()
+
+
+def test_partner_program_adult_recipient_flow_supports_group_and_direct_contact_context() -> None:
+    db = _build_session()
+    campaign = _create_campaign()
+    db.add(campaign)
+    db.flush()
+
+    group = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        group_type=RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM,
+        group_name="Senior At Home",
+        status=RECIPIENT_GROUP_STATUS_ACTIVE,
+        address_line1="100 Program Way",
+        city="Austin",
+        state="TX",
+        postal_code="78701",
+    )
+    contact = GroupContact(
+        id=uuid.uuid4(),
+        recipient_group_id=group.id,
+        contact_role=GROUP_CONTACT_ROLE_SOCIAL_WORKER,
+        first_name="Jordan",
+        last_name="Carey",
+        email="jordan@example.com",
+        preferred_contact=PREFERRED_CONTACT_EMAIL,
+        is_primary=True,
+    )
+    recipient = Recipient(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        recipient_group_id=group.id,
+        recipient_kind=RECIPIENT_KIND_ADULT,
+        program_type=RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM,
+        privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+        display_label="James Carter",
+        first_name="James",
+        last_name="Carter",
+        age=79,
+        address_line1="42 Oak Drive",
+        city="Round Rock",
+        state="TX",
+        postal_code="78664",
+        direct_phone="555-2222",
+        direct_email="james.carter@example.com",
+        status=RECIPIENT_STATUS_ACTIVE,
+    )
+
+    db.add_all([group, contact, recipient])
+    db.commit()
+    db.refresh(group)
+    db.refresh(recipient)
+
+    assert group.group_type == RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM
+    assert group.address_line1 == "100 Program Way"
+    assert recipient.program_type == RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM
+    assert recipient.address_line1 == "42 Oak Drive"
+    assert recipient.city == "Round Rock"
+    assert recipient.state == "TX"
+    assert recipient.postal_code == "78664"
+    assert recipient.direct_email == "james.carter@example.com"
+    assert recipient.direct_phone == "555-2222"
     db.close()

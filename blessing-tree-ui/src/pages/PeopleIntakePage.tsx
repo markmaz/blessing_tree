@@ -104,10 +104,13 @@ export function PeopleIntakePage() {
               <span className="campaign-chip campaign-chip-muted">
                 {workspace.counts.careFacilityCount} facilities
               </span>
+              <span className="campaign-chip campaign-chip-muted">
+                {workspace.counts.partnerProgramCount} partner programs
+              </span>
             </div>
             <h2 className="h4 mb-1">Start New Intake</h2>
             <p className="text-muted mb-0">
-              Choose the type of intake you are entering, then stay in that flow to add children or residents and their wishlists.
+              Choose the type of intake you are entering, then stay in that flow to add children or adult recipients and their wishlists.
             </p>
           </div>
         </div>
@@ -149,6 +152,24 @@ export function PeopleIntakePage() {
             Create the facility intake, add staff or social-worker contacts, then enter residents and their wishlists from the same place.
           </span>
         </button>
+
+        <button
+          type="button"
+          className="campaign-people-intake-card"
+          onClick={() => {
+            setCreateGroupType('PARTNER_PROGRAM');
+            setSelectedGroupId(null);
+          }}
+          disabled={!canEditPeople}
+        >
+          <span className="campaign-people-intake-card__icon">
+            <i className="bi bi-diagram-3-fill" aria-hidden="true" />
+          </span>
+          <span className="campaign-people-intake-card__title">Add Partner Program</span>
+          <span className="campaign-people-intake-card__body">
+            Create the partner organization, add coordinator contacts, then enter the adults in that program with their direct contact information and wishlists.
+          </span>
+        </button>
       </div>
 
       <section className="campaign-team-workspace__section">
@@ -156,7 +177,7 @@ export function PeopleIntakePage() {
           <div>
             <h2 className="h5 mb-1">Continue Recent Intake</h2>
             <p className="text-muted mb-0">
-              Re-open a recently updated family or facility to keep adding children, residents, contacts, or wishlists.
+              Re-open a recently updated family, facility, or partner program to keep adding people, contacts, or wishlists.
             </p>
           </div>
         </div>
@@ -164,7 +185,7 @@ export function PeopleIntakePage() {
         <div className="campaign-team-inline-list">
           {recentGroups.length === 0 ? (
             <div className="campaign-studio__empty-note">
-              No intake records yet. Start with Add Family or Add Facility.
+              No intake records yet. Start with Add Family, Add Facility, or Add Partner Program.
             </div>
           ) : (
             recentGroups.map((group) => (
@@ -173,8 +194,21 @@ export function PeopleIntakePage() {
                   <strong>{group.groupName}</strong>
                   <div className="campaign-team-inline-meta">
                     <span className="campaign-chip campaign-chip-muted">
-                      <i className={`bi ${group.groupType === 'HOUSEHOLD' ? 'bi-house-door' : 'bi-building'} me-1`} aria-hidden="true" />
-                      {group.groupType === 'HOUSEHOLD' ? 'Family' : 'Facility'}
+                      <i
+                        className={`bi ${
+                          group.groupType === 'HOUSEHOLD'
+                            ? 'bi-house-door'
+                            : group.groupType === 'CARE_FACILITY'
+                              ? 'bi-building'
+                              : 'bi-diagram-3'
+                        } me-1`}
+                        aria-hidden="true"
+                      />
+                      {group.groupType === 'HOUSEHOLD'
+                        ? 'Family'
+                        : group.groupType === 'CARE_FACILITY'
+                          ? 'Facility'
+                          : 'Partner Program'}
                     </span>
                     <span className="campaign-chip campaign-chip-muted">
                       <i className="bi bi-people me-1" aria-hidden="true" />

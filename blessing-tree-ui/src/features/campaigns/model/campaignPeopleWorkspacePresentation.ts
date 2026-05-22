@@ -14,7 +14,13 @@ import type {
 } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 
 export function toRecipientGroupTypeLabel(value: RecipientGroupType): string {
-  return value === 'HOUSEHOLD' ? 'Household' : 'Care Facility';
+  if (value === 'HOUSEHOLD') {
+    return 'Household';
+  }
+  if (value === 'CARE_FACILITY') {
+    return 'Care Facility';
+  }
+  return 'Partner Program';
 }
 
 export function toRecipientGroupStatusLabel(value: RecipientGroupStatus): string {
@@ -22,7 +28,13 @@ export function toRecipientGroupStatusLabel(value: RecipientGroupStatus): string
 }
 
 export function toRecipientProgramTypeLabel(value: RecipientProgramType): string {
-  return value === 'CHILD_FAMILY' ? 'Family Child' : 'Nursing Home Adult';
+  if (value === 'CHILD_FAMILY') {
+    return 'Family Child';
+  }
+  if (value === 'SENIOR_FACILITY') {
+    return 'Facility Adult';
+  }
+  return 'Partner Program Adult';
 }
 
 export function toRecipientKindLabel(value: RecipientKind): string {

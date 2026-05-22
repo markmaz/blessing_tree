@@ -89,6 +89,11 @@ function buildRecipientDraft(
     birthYear: recipient?.birthYear ?? null,
     age: recipient?.age ?? null,
     gender: recipient?.gender ?? '',
+    addressLine1: recipient?.addressLine1 ?? '',
+    addressLine2: recipient?.addressLine2 ?? '',
+    city: recipient?.city ?? '',
+    state: recipient?.state ?? '',
+    postalCode: recipient?.postalCode ?? '',
     directEmail: recipient?.directEmail ?? '',
     directPhone: recipient?.directPhone ?? '',
     facilityRoom: recipient?.facilityRoom ?? '',
@@ -143,31 +148,41 @@ export function CampaignPeopleRecipientDrawer({
   );
 
   const recipientProgram = selectedGroup?.groupType === 'CARE_FACILITY'
-    ? { recipientKind: 'ADULT' as const, programType: 'NURSING_HOME' as const }
-    : selectedGroup
-      ? { recipientKind: 'CHILD' as const, programType: 'CHILD_FAMILY' as const }
-      : null;
+    ? { recipientKind: 'ADULT' as const, programType: 'SENIOR_FACILITY' as const }
+    : selectedGroup?.groupType === 'PARTNER_PROGRAM'
+      ? { recipientKind: 'ADULT' as const, programType: 'SENIOR_PARTNER_PROGRAM' as const }
+      : selectedGroup
+        ? { recipientKind: 'CHILD' as const, programType: 'CHILD_FAMILY' as const }
+        : null;
 
   const visibleContacts = selectedGroup?.contacts ?? [];
   const pickupContacts = visibleContacts.filter((contact) => contact.canPickUp);
   const isContextualIntake = lockedGroup !== null;
   const isHouseholdIntake = selectedGroup?.groupType === 'HOUSEHOLD';
   const isFacilityIntake = selectedGroup?.groupType === 'CARE_FACILITY';
+  const isPartnerProgramIntake = selectedGroup?.groupType === 'PARTNER_PROGRAM';
+  const showAdultDirectContact = selectedGroup?.groupType === 'CARE_FACILITY' || selectedGroup?.groupType === 'PARTNER_PROGRAM';
   const drawerTitle = recipient?.displayLabel
     ? isHouseholdIntake
       ? 'Child Intake'
       : isFacilityIntake
         ? 'Resident Intake'
+        : isPartnerProgramIntake
+          ? 'Program Member Intake'
         : recipient.displayLabel
     : isHouseholdIntake
       ? 'Add Child'
       : isFacilityIntake
         ? 'Add Resident'
+        : isPartnerProgramIntake
+          ? 'Add Adult'
         : 'Add Person';
   const drawerDescription = isHouseholdIntake
     ? 'Capture child details and wishlist items for this family intake.'
     : isFacilityIntake
       ? 'Capture resident details and wishlist items for this facility intake.'
+      : isPartnerProgramIntake
+        ? 'Capture adult details, home contact information, and wishlist items for this partner program intake.'
       : 'Manage the recipient profile and their campaign wishlist from one drawer.';
 
   const handleSaveRecipient = async () => {
@@ -195,6 +210,11 @@ export function CampaignPeopleRecipientDrawer({
         firstName: recipientDraft.firstName?.trim() || null,
         lastName: recipientDraft.lastName?.trim() || null,
         gender: recipientDraft.gender?.trim() || null,
+        addressLine1: recipientDraft.addressLine1?.trim() || null,
+        addressLine2: recipientDraft.addressLine2?.trim() || null,
+        city: recipientDraft.city?.trim() || null,
+        state: recipientDraft.state?.trim() || null,
+        postalCode: recipientDraft.postalCode?.trim() || null,
         directEmail: recipientDraft.directEmail?.trim() || null,
         directPhone: recipientDraft.directPhone?.trim() || null,
         facilityRoom: recipientDraft.facilityRoom?.trim() || null,
@@ -300,13 +320,21 @@ export function CampaignPeopleRecipientDrawer({
           <div className="campaign-team-drawer__section-header">
             <div>
               <h4 className="h6 mb-1">
-                {isHouseholdIntake ? 'Child Details' : isFacilityIntake ? 'Resident Details' : 'Person Details'}
+                {isHouseholdIntake
+                  ? 'Child Details'
+                  : isFacilityIntake
+                    ? 'Resident Details'
+                    : isPartnerProgramIntake
+                      ? 'Adult Details'
+                      : 'Person Details'}
               </h4>
               <p className="text-muted mb-0">
                 {isHouseholdIntake
                   ? 'Children belong to a family intake, so contact information stays on the household record.'
                   : isFacilityIntake
-                    ? 'Residents belong to a facility intake, so only resident-specific details are shown here.'
+                    ? 'Residents belong to a facility intake, so resident-specific details stay here and direct contact information is optional.'
+                    : isPartnerProgramIntake
+                      ? 'Adults in partner programs keep their own address and direct contact details here, while coordinators stay on the program record.'
                     : 'Each person is the actual gift recipient. The selected group determines the intake program.'}
               </p>
             </div>
@@ -317,7 +345,11 @@ export function CampaignPeopleRecipientDrawer({
           <div className="campaign-team-form-grid">
             {isContextualIntake ? (
               <label className="form-label campaign-team-form-grid__span-2">
-                {lockedGroup?.groupType === 'HOUSEHOLD' ? 'Family' : 'Facility'}
+                {lockedGroup?.groupType === 'HOUSEHOLD'
+                  ? 'Family'
+                  : lockedGroup?.groupType === 'CARE_FACILITY'
+                    ? 'Facility'
+                    : 'Program'}
                 <input
                   className="form-control mt-2"
                   value={lockedGroup?.groupName ?? ''}
@@ -326,7 +358,7 @@ export function CampaignPeopleRecipientDrawer({
               </label>
             ) : (
               <label className="form-label campaign-team-form-grid__span-2">
-                Household or Facility
+                Household, Facility, or Program
                 <select
                   className="form-select mt-2"
                   value={recipientDraft.recipientGroupId}
@@ -377,7 +409,13 @@ export function CampaignPeopleRecipientDrawer({
             </label>
 
             <label className="form-label campaign-team-form-grid__span-2">
-              {isHouseholdIntake ? 'Child Display Name' : isFacilityIntake ? 'Resident Display Name' : 'Display Name'}
+              {isHouseholdIntake
+                ? 'Child Display Name'
+                : isFacilityIntake
+                  ? 'Resident Display Name'
+                  : isPartnerProgramIntake
+                    ? 'Adult Display Name'
+                    : 'Display Name'}
               <input
                 className="form-control mt-2"
                 value={recipientDraft.displayLabel}
@@ -524,8 +562,83 @@ export function CampaignPeopleRecipientDrawer({
               </>
             ) : null}
 
-            {!isContextualIntake ? (
+            {showAdultDirectContact ? (
               <>
+                <label className="form-label campaign-team-form-grid__span-2">
+                  {isPartnerProgramIntake ? 'Home Address Line 1' : 'Address Line 1'}
+                  <input
+                    className="form-control mt-2"
+                    value={recipientDraft.addressLine1 ?? ''}
+                    onChange={(event) =>
+                      setRecipientDraft((currentValue) => ({
+                        ...currentValue,
+                        addressLine1: event.target.value,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                </label>
+
+                <label className="form-label campaign-team-form-grid__span-2">
+                  Address Line 2
+                  <input
+                    className="form-control mt-2"
+                    value={recipientDraft.addressLine2 ?? ''}
+                    onChange={(event) =>
+                      setRecipientDraft((currentValue) => ({
+                        ...currentValue,
+                        addressLine2: event.target.value,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                </label>
+
+                <label className="form-label">
+                  City
+                  <input
+                    className="form-control mt-2"
+                    value={recipientDraft.city ?? ''}
+                    onChange={(event) =>
+                      setRecipientDraft((currentValue) => ({
+                        ...currentValue,
+                        city: event.target.value,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                </label>
+
+                <label className="form-label">
+                  State
+                  <input
+                    className="form-control mt-2"
+                    value={recipientDraft.state ?? ''}
+                    onChange={(event) =>
+                      setRecipientDraft((currentValue) => ({
+                        ...currentValue,
+                        state: event.target.value,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                </label>
+
+                <label className="form-label">
+                  ZIP Code
+                  <input
+                    className="form-control mt-2"
+                    value={recipientDraft.postalCode ?? ''}
+                    onChange={(event) =>
+                      setRecipientDraft((currentValue) => ({
+                        ...currentValue,
+                        postalCode: event.target.value,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                </label>
+
                 <label className="form-label">
                   Direct Email
                   <input
@@ -578,7 +691,13 @@ export function CampaignPeopleRecipientDrawer({
             ) : null}
 
             <label className="form-label campaign-team-form-grid__span-2">
-              {isHouseholdIntake ? 'Child Notes' : isFacilityIntake ? 'Resident Notes' : 'Notes'}
+              {isHouseholdIntake
+                ? 'Child Notes'
+                : isFacilityIntake
+                  ? 'Resident Notes'
+                  : isPartnerProgramIntake
+                    ? 'Adult Notes'
+                    : 'Notes'}
               <textarea
                 className="form-control mt-2"
                 rows={4}

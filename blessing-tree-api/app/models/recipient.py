@@ -15,7 +15,8 @@ from .recipient_constants import (
     RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
     RECIPIENT_PRIVACY_LEVEL_INITIALS,
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
-    RECIPIENT_PROGRAM_TYPE_NURSING_HOME,
+    RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
+    RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM,
     RECIPIENT_STATUS_ACTIVE,
     RECIPIENT_STATUS_INACTIVE,
 )
@@ -48,7 +49,12 @@ class Recipient(Base):
         nullable=False,
     )
     program_type: Mapped[str] = mapped_column(
-        Enum(RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY, RECIPIENT_PROGRAM_TYPE_NURSING_HOME, name="recipient_program_type"),
+        Enum(
+            RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+            RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
+            RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM,
+            name="recipient_program_type",
+        ),
         nullable=False,
     )
     privacy_level: Mapped[str] = mapped_column(
@@ -69,6 +75,11 @@ class Recipient(Base):
     birth_year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     age: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     gender: Mapped[Optional[str]] = mapped_column(Enum("M", "F", "X", "U", name="gender"), nullable=True)
+    address_line1: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    address_line2: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    city: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    state: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    postal_code: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     direct_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     direct_phone: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     facility_room: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)

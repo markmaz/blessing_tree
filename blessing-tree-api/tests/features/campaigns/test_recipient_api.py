@@ -14,11 +14,13 @@ from app.models.recipient_constants import (
     RECIPIENT_GROUP_STATUS_ACTIVE,
     RECIPIENT_GROUP_TYPE_CARE_FACILITY,
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+    RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM,
     RECIPIENT_KIND_ADULT,
     RECIPIENT_KIND_CHILD,
     RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
-    RECIPIENT_PROGRAM_TYPE_NURSING_HOME,
+    RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
+    RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM,
     RECIPIENT_STATUS_ACTIVE,
     WISHLIST_ITEM_TYPE_GIFT,
     WISHLIST_STATUS_READY,
@@ -43,6 +45,19 @@ def _seed_household_group(session, campaign_id):
         campaign_id=campaign_id,
         group_type=RECIPIENT_GROUP_TYPE_HOUSEHOLD,
         group_name="Johnson Household",
+        status=RECIPIENT_GROUP_STATUS_ACTIVE,
+    )
+    session.add(group)
+    session.flush()
+    return group
+
+
+def _seed_partner_program_group(session, campaign_id):
+    group = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign_id,
+        group_type=RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM,
+        group_name="Senior At Home",
         status=RECIPIENT_GROUP_STATUS_ACTIVE,
     )
     session.add(group)
@@ -98,7 +113,7 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
         campaign_id=campaign.id,
         recipient_group_id=facility.id,
         recipient_kind=RECIPIENT_KIND_ADULT,
-        program_type=RECIPIENT_PROGRAM_TYPE_NURSING_HOME,
+        program_type=RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
         privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
         display_label="Mary Smith",
         status=RECIPIENT_STATUS_ACTIVE,
@@ -144,6 +159,7 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     assert payload["counts"]["group_count"] == 2
     assert payload["counts"]["household_count"] == 1
     assert payload["counts"]["care_facility_count"] == 1
+    assert payload["counts"]["partner_program_count"] == 0
     assert payload["counts"]["recipient_count"] == 2
     assert payload["counts"]["wishlist_count"] == 1
     assert payload["counts"]["open_item_count"] == 1
@@ -153,7 +169,7 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     assert payload["recipients"][0]["wishlist"]["items"][0]["gift_workflow"]["sponsorship_status"] == "UNSPONSORED"
     assert sorted(payload["filters"]["program_types"]) == [
         RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
-        RECIPIENT_PROGRAM_TYPE_NURSING_HOME,
+        RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
     ]
 
 
@@ -317,7 +333,7 @@ def test_recipient_program_alignment_rejects_invalid_group_program_combination(a
         json={
             "recipient_group_id": group_id,
             "recipient_kind": "ADULT",
-            "program_type": "NURSING_HOME",
+            "program_type": "SENIOR_FACILITY",
             "privacy_level": "FULL_NAME",
             "display_label": "Invalid Household Adult",
         },
@@ -326,3 +342,80 @@ def test_recipient_program_alignment_rejects_invalid_group_program_combination(a
 
     assert response.status_code == 400
     assert "Household groups" in response.get_json()["error"]
+
+
+def test_partner_program_adult_recipient_accepts_direct_contact_fields(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    partner_program = _seed_partner_program_group(session, campaign.id)
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    group_id = str(partner_program.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/recipients",
+        json={
+            "recipient_group_id": group_id,
+            "recipient_kind": "ADULT",
+            "program_type": "SENIOR_PARTNER_PROGRAM",
+            "privacy_level": "FULL_NAME",
+            "display_label": "Mary Carter",
+            "first_name": "Mary",
+            "last_name": "Carter",
+            "address_line1": "12 River Road",
+            "city": "Austin",
+            "state": "TX",
+            "postal_code": "78702",
+            "direct_email": "mary.carter@example.com",
+            "direct_phone": "555-4444",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 201
+    payload = response.get_json()
+    assert payload["program_type"] == RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM
+    assert payload["address_line1"] == "12 River Road"
+    assert payload["city"] == "Austin"
+    assert payload["state"] == "TX"
+    assert payload["postal_code"] == "78702"
+    assert payload["direct_email"] == "mary.carter@example.com"
+    assert payload["direct_phone"] == "555-4444"
+
+
+def test_household_child_rejects_direct_contact_fields(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    household = _seed_household_group(session, campaign.id)
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    group_id = str(household.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/recipients",
+        json={
+            "recipient_group_id": group_id,
+            "recipient_kind": "CHILD",
+            "program_type": "CHILD_FAMILY",
+            "privacy_level": "FULL_NAME",
+            "display_label": "Ava Jones",
+            "address_line1": "12 River Road",
+            "direct_email": "ava@example.com",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 400
+    assert "direct contact" in response.get_json()["error"].lower()

@@ -172,10 +172,13 @@ export function CampaignPeopleWorkspace({
                 <span className="campaign-chip campaign-chip-muted">
                   {workspace.counts.careFacilityCount} facilities
                 </span>
+                <span className="campaign-chip campaign-chip-muted">
+                  {workspace.counts.partnerProgramCount} partner programs
+                </span>
               </div>
               <h1 className="h3 mb-1">People</h1>
               <p className="text-muted mb-0">
-                Manage households, facilities, contacts, people, and wishlists for this campaign.
+                Manage households, facilities, partner programs, contacts, people, and wishlists for this campaign.
               </p>
             </div>
           </div>
@@ -216,9 +219,9 @@ export function CampaignPeopleWorkspace({
         <section className="campaign-team-workspace__section">
           <div className="campaign-team-workspace__section-header">
             <div>
-              <h2 className="h5 mb-1">Households &amp; Facilities</h2>
+              <h2 className="h5 mb-1">Households, Facilities &amp; Programs</h2>
               <p className="text-muted mb-0">
-                Shared intake containers for parents, guardians, staff contacts, and the people they represent.
+                Shared intake containers for parents, guardians, staff contacts, partner coordinators, and the people they represent.
               </p>
             </div>
             {canEditPeople && showCreateActions ? (
@@ -231,8 +234,8 @@ export function CampaignPeopleWorkspace({
                     setCreateGroupType('HOUSEHOLD');
                   }}
                 >
-                  <i className="bi bi-house-add" aria-hidden="true" />
-                  <span>Add Household</span>
+                  <i className="bi bi-house-heart" aria-hidden="true" />
+                  <span>Add Family</span>
                 </button>
                 <button
                   type="button"
@@ -244,6 +247,17 @@ export function CampaignPeopleWorkspace({
                 >
                   <i className="bi bi-buildings" aria-hidden="true" />
                   <span>Add Facility</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm campaign-team-workspace__section-action"
+                  onClick={() => {
+                    setSelectedGroupId(null);
+                    setCreateGroupType('PARTNER_PROGRAM');
+                  }}
+                >
+                  <i className="bi bi-diagram-3-fill" aria-hidden="true" />
+                  <span>Add Partner Program</span>
                 </button>
               </div>
             ) : null}

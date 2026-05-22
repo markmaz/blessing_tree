@@ -20,13 +20,15 @@ from app.models.recipient_constants import (
     RECIPIENT_GROUP_STATUS_INACTIVE,
     RECIPIENT_GROUP_TYPE_CARE_FACILITY,
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+    RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM,
     RECIPIENT_KIND_ADULT,
     RECIPIENT_KIND_CHILD,
     RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
     RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
     RECIPIENT_PRIVACY_LEVEL_INITIALS,
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
-    RECIPIENT_PROGRAM_TYPE_NURSING_HOME,
+    RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
+    RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM,
     RECIPIENT_STATUS_ACTIVE,
     RECIPIENT_STATUS_INACTIVE,
     WISHLIST_INTAKE_METHOD_FORM,
@@ -48,6 +50,7 @@ from app.models.recipient_constants import (
 GROUP_TYPES = {
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
     RECIPIENT_GROUP_TYPE_CARE_FACILITY,
+    RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM,
 }
 GROUP_STATUSES = {
     RECIPIENT_GROUP_STATUS_ACTIVE,
@@ -74,7 +77,11 @@ RECIPIENT_KINDS = {
 }
 PROGRAM_TYPES = {
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
-    RECIPIENT_PROGRAM_TYPE_NURSING_HOME,
+    RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
+    RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM,
+}
+PROGRAM_TYPE_ALIASES = {
+    "NURSING_HOME": RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
 }
 RECIPIENT_PRIVACY_LEVELS = {
     RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
@@ -240,6 +247,7 @@ def validate_recipient_kind(value: object) -> str:
 
 def validate_program_type(value: object) -> str:
     normalized = str(value or "").strip().upper()
+    normalized = PROGRAM_TYPE_ALIASES.get(normalized, normalized)
     if normalized not in PROGRAM_TYPES:
         raise ServiceError("Invalid program_type", status_code=400, details={"field": "program_type"})
     return normalized
@@ -330,9 +338,12 @@ def validate_program_alignment(*, group_type: str, recipient_kind: str, program_
             status_code=400,
             details={"field": "program_type"},
         )
-    if recipient_kind == RECIPIENT_KIND_ADULT and program_type != RECIPIENT_PROGRAM_TYPE_NURSING_HOME:
+    if recipient_kind == RECIPIENT_KIND_ADULT and program_type not in {
+        RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY,
+        RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM,
+    }:
         raise ServiceError(
-            "Adult recipients must use NURSING_HOME program_type",
+            "Adult recipients must use a senior adult program_type",
             status_code=400,
             details={"field": "program_type"},
         )
@@ -342,9 +353,39 @@ def validate_program_alignment(*, group_type: str, recipient_kind: str, program_
             status_code=400,
             details={"field": "program_type"},
         )
-    if group_type == RECIPIENT_GROUP_TYPE_CARE_FACILITY and program_type != RECIPIENT_PROGRAM_TYPE_NURSING_HOME:
+    if group_type == RECIPIENT_GROUP_TYPE_CARE_FACILITY and program_type != RECIPIENT_PROGRAM_TYPE_SENIOR_FACILITY:
         raise ServiceError(
-            "Care facility groups may only contain NURSING_HOME recipients",
+            "Care facility groups may only contain SENIOR_FACILITY recipients",
             status_code=400,
             details={"field": "program_type"},
+        )
+    if group_type == RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM and program_type != RECIPIENT_PROGRAM_TYPE_SENIOR_PARTNER_PROGRAM:
+        raise ServiceError(
+            "Partner program groups may only contain SENIOR_PARTNER_PROGRAM recipients",
+            status_code=400,
+            details={"field": "program_type"},
+        )
+
+
+def validate_recipient_contact_context(
+    *,
+    group_type: str,
+    recipient_kind: str,
+    address_line1: str | None,
+    address_line2: str | None,
+    city: str | None,
+    state: str | None,
+    postal_code: str | None,
+    direct_email: str | None,
+    direct_phone: str | None,
+) -> None:
+    has_direct_contact = any(
+        value not in (None, "")
+        for value in [address_line1, address_line2, city, state, postal_code, direct_email, direct_phone]
+    )
+    if group_type == RECIPIENT_GROUP_TYPE_HOUSEHOLD and recipient_kind == RECIPIENT_KIND_CHILD and has_direct_contact:
+        raise ServiceError(
+            "Household child recipients should not store direct contact details",
+            status_code=400,
+            details={"field": "direct_contact"},
         )

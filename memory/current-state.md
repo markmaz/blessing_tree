@@ -23,6 +23,7 @@ Last updated: 2026-05-22
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
   - local outbound email is now operational in development through a repo-owned SMTP sink plus configurable TLS/SSL flags, so invite delivery and scheduled communication dispatch can be exercised end to end without external SMTP credentials
 - recipient phases 1 through 7 now exist: the schema/model is refined, there is now a recipient feature package plus campaign-scoped APIs for groups, contacts, recipients, wishlists, wishlist items, and the aggregate `people-workspace` payload, the frontend now includes campaign-scoped `People > Intake` and `People > Directory` flows with wishlist/fulfillment alignment, Communications can now target recipient-aware audience types, the `people` feature flag/runtime naming replaces the older `families` key, and Reports now uses live People workspace data instead of placeholder rows
+  - the implemented recipient model now supports `PARTNER_PROGRAM` groups, canonical adult program types `SENIOR_FACILITY` and `SENIOR_PARTNER_PROGRAM`, recipient-level address fields, and context-aware People intake/directory/reporting surfaces for partner-program adults
   - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
   - admin LLM test/health now probes the real generation path against the configured model instead of treating `/models` reachability as sufficient
   - invitation-centric onboarding now supports Google, Yahoo, and local password from the invite funnel; generic Google/Yahoo OAuth remains limited to already-linked returning users, and invite validation now exposes accepted-vs-pending onboarding state for cleaner frontend handling
@@ -178,7 +179,7 @@ Last updated: 2026-05-22
   - `GET|PUT /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist`
   - `POST /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist/items`
   - `PATCH|DELETE /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist/items/<item_id>`
-  - the current recipient docs now target `HOUSEHOLD | CARE_FACILITY | PARTNER_PROGRAM` group types and `CHILD_FAMILY | SENIOR_FACILITY | SENIOR_PARTNER_PROGRAM` program types as the long-term model
+  - the current recipient code and docs now use `HOUSEHOLD | CARE_FACILITY | PARTNER_PROGRAM` group types and `CHILD_FAMILY | SENIOR_FACILITY | SENIOR_PARTNER_PROGRAM` program types as the active model
 - Team design direction now explicitly distinguishes:
   - fixed app access roles for RBAC
   - team-scoped team roles for operational responsibility

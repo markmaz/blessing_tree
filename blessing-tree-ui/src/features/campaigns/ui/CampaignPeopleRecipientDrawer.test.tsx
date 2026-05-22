@@ -26,6 +26,29 @@ const householdGroup: CampaignPeopleGroup = {
   updatedAt: null,
 };
 
+const partnerProgramGroup: CampaignPeopleGroup = {
+  id: 'group-program',
+  campaignId: 'campaign-1',
+  groupType: 'PARTNER_PROGRAM',
+  groupName: 'Senior At Home',
+  intakeSource: null,
+  externalReference: null,
+  notes: null,
+  status: 'ACTIVE',
+  addressLine1: null,
+  addressLine2: null,
+  city: null,
+  state: null,
+  postalCode: null,
+  primaryContact: null,
+  contacts: [],
+  authorizedPickupContacts: [],
+  recipientCount: 0,
+  recipients: [],
+  createdAt: null,
+  updatedAt: null,
+};
+
 describe('CampaignPeopleRecipientDrawer', () => {
   it('uses child-intake framing and hides direct contact fields for a household intake', () => {
     render(
@@ -50,5 +73,32 @@ describe('CampaignPeopleRecipientDrawer', () => {
     expect(screen.getByLabelText('Child Display Name')).toBeInTheDocument();
     expect(screen.queryByLabelText('Direct Email')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Direct Phone')).not.toBeInTheDocument();
+  });
+
+  it('uses partner-program framing and shows direct contact fields for adult intake', () => {
+    render(
+      <CampaignPeopleRecipientDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        recipient={null}
+        initialGroupId="group-program"
+        lockedGroupId="group-program"
+        groups={[partnerProgramGroup]}
+        onClose={vi.fn()}
+        onSaveRecipient={vi.fn()}
+        onSaveWishlist={vi.fn()}
+        onSaveWishlistItem={vi.fn()}
+        onDeleteWishlistItem={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: 'Add Adult' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Senior At Home')).toBeInTheDocument();
+    expect(screen.getByLabelText('Adult Display Name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Home Address Line 1')).toBeInTheDocument();
+    expect(screen.getByLabelText('City')).toBeInTheDocument();
+    expect(screen.getByLabelText('Direct Email')).toBeInTheDocument();
+    expect(screen.getByLabelText('Direct Phone')).toBeInTheDocument();
   });
 });

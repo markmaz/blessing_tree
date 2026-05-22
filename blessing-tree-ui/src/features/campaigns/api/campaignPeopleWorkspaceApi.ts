@@ -96,6 +96,11 @@ interface RecipientResponse {
   birth_year: number | null;
   age: number | null;
   gender: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
   direct_email: string | null;
   direct_phone: string | null;
   facility_room: string | null;
@@ -410,6 +415,11 @@ function mapRecipient(response: RecipientResponse): CampaignRecipient {
     birthYear: response.birth_year,
     age: response.age,
     gender: response.gender,
+    addressLine1: response.address_line1,
+    addressLine2: response.address_line2,
+    city: response.city,
+    state: response.state,
+    postalCode: response.postal_code,
     directEmail: response.direct_email,
     directPhone: response.direct_phone,
     facilityRoom: response.facility_room,
@@ -536,6 +546,11 @@ function mapRecipientPayload(input: Partial<RecipientUpsertInput>): Record<strin
   if ('birthYear' in input) payload.birth_year = input.birthYear ?? null;
   if ('age' in input) payload.age = input.age ?? null;
   if ('gender' in input) payload.gender = input.gender ?? null;
+  if ('addressLine1' in input) payload.address_line1 = input.addressLine1 ?? null;
+  if ('addressLine2' in input) payload.address_line2 = input.addressLine2 ?? null;
+  if ('city' in input) payload.city = input.city ?? null;
+  if ('state' in input) payload.state = input.state ?? null;
+  if ('postalCode' in input) payload.postal_code = input.postalCode ?? null;
   if ('directEmail' in input) payload.direct_email = input.directEmail ?? null;
   if ('directPhone' in input) payload.direct_phone = input.directPhone ?? null;
   if ('facilityRoom' in input) payload.facility_room = input.facilityRoom ?? null;

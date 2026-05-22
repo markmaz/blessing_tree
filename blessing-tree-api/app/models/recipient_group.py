@@ -14,6 +14,7 @@ from .recipient_constants import (
     RECIPIENT_GROUP_STATUS_INACTIVE,
     RECIPIENT_GROUP_TYPE_CARE_FACILITY,
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+    RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM,
 )
 from .uuid_bin import UUIDBin
 
@@ -36,7 +37,12 @@ class RecipientGroup(Base):
     )
 
     group_type: Mapped[str] = mapped_column(
-        Enum(RECIPIENT_GROUP_TYPE_HOUSEHOLD, RECIPIENT_GROUP_TYPE_CARE_FACILITY, name="recipient_group_type"),
+        Enum(
+            RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+            RECIPIENT_GROUP_TYPE_CARE_FACILITY,
+            RECIPIENT_GROUP_TYPE_PARTNER_PROGRAM,
+            name="recipient_group_type",
+        ),
         nullable=False,
     )
     group_name: Mapped[str] = mapped_column(String(255), nullable=False)

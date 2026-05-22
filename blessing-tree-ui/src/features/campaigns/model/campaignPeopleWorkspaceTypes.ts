@@ -1,4 +1,4 @@
-export type RecipientGroupType = 'HOUSEHOLD' | 'CARE_FACILITY';
+export type RecipientGroupType = 'HOUSEHOLD' | 'CARE_FACILITY' | 'PARTNER_PROGRAM';
 
 export type RecipientGroupStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 
@@ -14,7 +14,7 @@ export type PreferredContact = 'EMAIL' | 'PHONE' | 'TEXT' | 'NONE';
 
 export type RecipientKind = 'CHILD' | 'ADULT';
 
-export type RecipientProgramType = 'CHILD_FAMILY' | 'NURSING_HOME';
+export type RecipientProgramType = 'CHILD_FAMILY' | 'SENIOR_FACILITY' | 'SENIOR_PARTNER_PROGRAM';
 
 export type RecipientPrivacyLevel = 'ANONYMOUS' | 'INITIALS' | 'FULL_NAME';
 
@@ -117,6 +117,11 @@ export interface CampaignRecipient {
   birthYear: number | null;
   age: number | null;
   gender: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
   directEmail: string | null;
   directPhone: string | null;
   facilityRoom: string | null;
@@ -158,6 +163,7 @@ export interface CampaignPeopleWorkspaceCounts {
   activeGroupCount: number;
   householdCount: number;
   careFacilityCount: number;
+  partnerProgramCount: number;
   recipientCount: number;
   childCount: number;
   adultCount: number;
@@ -228,6 +234,11 @@ export interface RecipientUpsertInput {
   birthYear?: number | null;
   age?: number | null;
   gender?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postalCode?: string | null;
   directEmail?: string | null;
   directPhone?: string | null;
   facilityRoom?: string | null;
