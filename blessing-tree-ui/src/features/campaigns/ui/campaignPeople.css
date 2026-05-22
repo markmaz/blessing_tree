@@ -90,6 +90,42 @@
   line-height: 1.55;
 }
 
+.campaign-people-address-suggestions {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.campaign-people-address-suggestion {
+  appearance: none;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 0.9rem;
+  background: #fff;
+  color: var(--blessing-text);
+  padding: 0.7rem 0.85rem;
+  text-align: left;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.campaign-people-address-suggestion:hover,
+.campaign-people-address-suggestion:focus-visible {
+  border-color: rgba(24, 87, 58, 0.25);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.campaign-people-address-suggestion i {
+  color: var(--blessing-accent);
+  margin-top: 0.15rem;
+}
+
 @media (max-width: 991.98px) {
   .campaign-people-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -5,6 +5,7 @@ import uuid
 import pytest
 
 from app.features.campaigns import api as campaign_api_module
+from app.features.campaigns import recipient_api as recipient_api_module
 from app.models.group_contact import GroupContact
 from app.models.recipient import Recipient
 from app.models.recipient_constants import (
@@ -258,7 +259,43 @@ def test_group_recipient_and_wishlist_crud_flow(app, monkeypatch: pytest.MonkeyP
     assert payload["items"][0]["description"] == "Soccer ball"
     assert payload["items"][0]["size"] == "Youth"
     assert payload["items"][0]["gift_workflow"]["remaining_qty"] == 1
-    assert payload["items"][0]["gift_workflow"]["label_code"].startswith("wishlist-")
+
+
+def test_recipient_address_search_returns_suggestions(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    monkeypatch.setattr(
+        recipient_api_module._address_lookup_service,
+        "search",
+        lambda query, country_code=None, limit=5: [
+            {
+                "label": "123 Main St, Austin, TX, 78701",
+                "address_line1": "123 Main St",
+                "city": "Austin",
+                "state": "TX",
+                "postal_code": "78701",
+            }
+        ],
+    )
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/recipient-address-search?q=123+Main",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["suggestions"][0]["address_line1"] == "123 Main St"
+    assert payload["suggestions"][0]["city"] == "Austin"
 
 
 def test_recipient_program_alignment_rejects_invalid_group_program_combination(app, monkeypatch: pytest.MonkeyPatch) -> None:

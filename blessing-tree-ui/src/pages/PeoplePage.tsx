@@ -33,6 +33,7 @@ export function PeoplePage() {
     saveWishlist,
     saveWishlistItem,
     removeWishlistItem,
+    searchAddresses,
     clearSaveMessage,
     clearError,
   } = useCampaignPeopleWorkspace(campaignId);
@@ -108,6 +109,7 @@ export function PeoplePage() {
           onSaveWishlist: saveWishlist,
           onSaveWishlistItem: saveWishlistItem,
           onDeleteWishlistItem: removeWishlistItem,
+          onSearchAddresses: searchAddresses,
           onClearSaveMessage: clearSaveMessage,
           onClearError: clearError,
         } satisfies PeopleWorkspaceOutletContext}

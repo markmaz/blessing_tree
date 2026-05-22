@@ -1,6 +1,7 @@
 import { useOutletContext } from 'react-router-dom';
 import type { CampaignAccess } from '@/features/campaigns/model/campaignTypes';
 import type {
+  CampaignAddressSuggestion,
   CampaignPeopleGroup,
   CampaignPeopleGroupContact,
   CampaignPeopleWorkspaceData,
@@ -47,6 +48,7 @@ export interface PeopleWorkspaceOutletContext {
     itemId?: string
   ) => Promise<CampaignWishlistItem | null>;
   onDeleteWishlistItem: (recipientId: string, itemId: string) => Promise<boolean>;
+  onSearchAddresses: (query: string) => Promise<CampaignAddressSuggestion[]>;
   onClearSaveMessage: () => void;
   onClearError: () => void;
 }

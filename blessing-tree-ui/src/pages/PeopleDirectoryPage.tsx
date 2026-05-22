@@ -17,6 +17,7 @@ export function PeopleDirectoryPage() {
     onSaveWishlist,
     onSaveWishlistItem,
     onDeleteWishlistItem,
+    onSearchAddresses,
     onClearSaveMessage,
     onClearError,
   } = usePeopleWorkspaceContext();
@@ -37,6 +38,7 @@ export function PeopleDirectoryPage() {
       onSaveWishlist={onSaveWishlist}
       onSaveWishlistItem={onSaveWishlistItem}
       onDeleteWishlistItem={onDeleteWishlistItem}
+      onSearchAddresses={onSearchAddresses}
       onClearSaveMessage={onClearSaveMessage}
       onClearError={onClearError}
       showHero={false}

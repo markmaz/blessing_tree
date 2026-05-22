@@ -7,6 +7,7 @@ import {
   deleteCampaignWishlistItem,
   deleteRecipientGroupContact,
   getCampaignPeopleWorkspace,
+  searchRecipientAddresses,
   updateCampaignRecipient,
   updateCampaignWishlistItem,
   updateRecipientGroup,
@@ -252,6 +253,21 @@ export function useCampaignPeopleWorkspace(campaignId: string | null) {
     }));
   }, []);
 
+  const searchAddresses = useCallback(
+    async (query: string) => {
+      if (!campaignId || query.trim().length < 3) {
+        return [];
+      }
+
+      try {
+        return await searchRecipientAddresses(campaignId, query.trim());
+      } catch {
+        return [];
+      }
+    },
+    [campaignId]
+  );
+
   return {
     workspace: state.workspace,
     isLoading: state.isLoading,
@@ -266,6 +282,7 @@ export function useCampaignPeopleWorkspace(campaignId: string | null) {
     saveWishlist,
     saveWishlistItem,
     removeWishlistItem,
+    searchAddresses,
     clearSaveMessage,
     clearError,
   };

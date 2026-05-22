@@ -24,6 +24,7 @@ export function PeopleIntakePage() {
     onSaveWishlist,
     onSaveWishlistItem,
     onDeleteWishlistItem,
+    onSearchAddresses,
     onClearSaveMessage,
     onClearError,
   } = usePeopleWorkspaceContext();
@@ -147,7 +148,7 @@ export function PeopleIntakePage() {
           disabled={!canEditPeople}
         >
           <span className="campaign-people-intake-card__icon">
-            <i className="bi bi-building-heart" aria-hidden="true" />
+            <i className="bi bi-buildings" aria-hidden="true" />
           </span>
           <span className="campaign-people-intake-card__title">Add Facility</span>
           <span className="campaign-people-intake-card__body">
@@ -227,6 +228,7 @@ export function PeopleIntakePage() {
         }}
         onSaveContact={onSaveContact}
         onDeleteContact={onDeleteContact}
+        onSearchAddresses={onSearchAddresses}
         onAddRecipientToGroup={(groupId) => {
           setCreateGroupType(null);
           setSelectedGroupId(null);

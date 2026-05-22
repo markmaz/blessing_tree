@@ -14,9 +14,11 @@ from app.features.recipients import (
     serialize_wishlist,
     serialize_wishlist_item,
 )
+from app.features.recipients.address_lookup_service import CampaignRecipientAddressLookupService
 from app.features.rbac.decorators import require_campaign_capability
 
 _recipient_service = CampaignRecipientService()
+_address_lookup_service = CampaignRecipientAddressLookupService()
 
 
 @campaign_ns.route("/<string:campaign_id>/people-workspace")
@@ -26,6 +28,17 @@ class CampaignPeopleWorkspaceResource(Resource):
         with SessionLocal() as db:
             payload = _recipient_service.get_workspace_payload(db, campaign_id)
         return serialize_people_workspace(**payload)
+
+
+@campaign_ns.route("/<string:campaign_id>/recipient-address-search")
+class RecipientAddressSearchResource(Resource):
+    @require_campaign_capability("campaign.recipients.view")
+    def get(self, campaign_id: str):
+        suggestions = _address_lookup_service.search(
+            request.args.get("q", ""),
+            country_code=request.args.get("country_code"),
+        )
+        return {"suggestions": suggestions}
 
 
 @campaign_ns.route("/<string:campaign_id>/recipient-groups")

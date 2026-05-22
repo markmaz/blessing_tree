@@ -181,6 +181,14 @@ export interface CampaignPeopleWorkspaceData {
   filters: CampaignPeopleWorkspaceFilters;
 }
 
+export interface CampaignAddressSuggestion {
+  label: string;
+  addressLine1: string;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+}
+
 export interface RecipientGroupUpsertInput {
   groupType: RecipientGroupType;
   groupName: string;

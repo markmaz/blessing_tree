@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
 import type {
+  CampaignAddressSuggestion,
   CampaignPeopleGroup,
   CampaignPeopleGroupContact,
   GroupContactRole,
@@ -31,6 +32,7 @@ interface CampaignPeopleGroupDrawerProps {
     contactId?: string
   ) => Promise<CampaignPeopleGroupContact | null>;
   onDeleteContact: (groupId: string, contactId: string) => Promise<boolean>;
+  onSearchAddresses: (query: string) => Promise<CampaignAddressSuggestion[]>;
   onAddRecipientToGroup: (groupId: string) => void;
   onSelectRecipient: (recipientId: string) => void;
 }
@@ -73,6 +75,7 @@ export function CampaignPeopleGroupDrawer({
   onSaveGroup,
   onSaveContact,
   onDeleteContact,
+  onSearchAddresses,
   onAddRecipientToGroup,
   onSelectRecipient,
 }: CampaignPeopleGroupDrawerProps) {
@@ -97,15 +100,58 @@ export function CampaignPeopleGroupDrawer({
   const [contactDraft, setContactDraft] = useState<GroupContactUpsertInput>(emptyContactDraft);
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
+  const [addressSuggestions, setAddressSuggestions] = useState<CampaignAddressSuggestion[]>([]);
+  const [isSearchingAddresses, setIsSearchingAddresses] = useState(false);
+  const [suppressAddressLookupValue, setSuppressAddressLookupValue] = useState<string | null>(null);
 
   const editingContact = useMemo(
     () => group?.contacts.find((contact) => contact.id === editingContactId) ?? null,
     [editingContactId, group]
   );
+  const currentGroupType = groupDraft.groupType;
+  const groupNameLabel = currentGroupType === 'CARE_FACILITY' ? 'Facility Name' : 'Family Name';
+  const drawerTitle = group
+    ? group.groupName
+    : currentGroupType === 'CARE_FACILITY'
+      ? 'Add Facility'
+      : 'Add Family';
+  const drawerDescription = group
+    ? 'Update the intake record, contacts, and linked people for this campaign.'
+    : currentGroupType === 'CARE_FACILITY'
+      ? 'Create the facility first, then add staff contacts and residents.'
+      : 'Create the family first, then add parent or guardian contacts and children.';
+
+  useEffect(() => {
+    const query = groupDraft.addressLine1?.trim() ?? '';
+    if (!isOpen || query.length < 3 || query === suppressAddressLookupValue) {
+      return;
+    }
+
+    let isCancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      setIsSearchingAddresses(true);
+      void onSearchAddresses(query)
+        .then((results) => {
+          if (!isCancelled) {
+            setAddressSuggestions(results);
+          }
+        })
+        .finally(() => {
+          if (!isCancelled) {
+            setIsSearchingAddresses(false);
+          }
+        });
+    }, 220);
+
+    return () => {
+      isCancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [groupDraft.addressLine1, isOpen, onSearchAddresses, suppressAddressLookupValue]);
 
   const handleSaveGroup = async () => {
     if (!groupDraft.groupName.trim()) {
-      setGroupError('Group name is required.');
+      setGroupError(`${groupNameLabel} is required.`);
       return;
     }
 
@@ -159,6 +205,18 @@ export function CampaignPeopleGroupDrawer({
     setContactError(null);
   };
 
+  const applyAddressSuggestion = (suggestion: CampaignAddressSuggestion) => {
+    setSuppressAddressLookupValue(suggestion.addressLine1);
+    setAddressSuggestions([]);
+    setGroupDraft((currentValue) => ({
+      ...currentValue,
+      addressLine1: suggestion.addressLine1,
+      city: suggestion.city ?? currentValue.city ?? '',
+      state: suggestion.state ?? currentValue.state ?? '',
+      postalCode: suggestion.postalCode ?? currentValue.postalCode ?? '',
+    }));
+  };
+
   const handleSaveContact = async () => {
     if (!group?.id) {
       setContactError('Save the group before adding contacts.');
@@ -199,16 +257,22 @@ export function CampaignPeopleGroupDrawer({
     <CampaignStudioDrawer
       isOpen={isOpen}
       width="wide"
-      title={group ? group.groupName : initialGroupType === 'CARE_FACILITY' ? 'Add Facility' : 'Add Household'}
-      description={group ? 'Update the intake container, contacts, and linked people for this campaign record.' : 'Create the intake container first, then add contacts and people.'}
+      title={drawerTitle}
+      description={drawerDescription}
       onClose={onClose}
     >
       <div className="campaign-team-drawer__stack">
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
             <div>
-              <h4 className="h6 mb-1">Group Details</h4>
-              <p className="text-muted mb-0">Households and care facilities are the shared intake containers around one or more people.</p>
+              <h4 className="h6 mb-1">
+                {currentGroupType === 'CARE_FACILITY' ? 'Facility Details' : 'Family Details'}
+              </h4>
+              <p className="text-muted mb-0">
+                {currentGroupType === 'CARE_FACILITY'
+                  ? 'Capture the facility information first, then add contacts and residents from the same intake record.'
+                  : 'Capture the family information first, then add contacts and children from the same intake record.'}
+              </p>
             </div>
           </div>
 
@@ -253,7 +317,7 @@ export function CampaignPeopleGroupDrawer({
             </label>
 
             <label className="form-label campaign-team-form-grid__span-2">
-              Group Name
+              {groupNameLabel}
               <input
                 className="form-control mt-2"
                 value={groupDraft.groupName}
@@ -303,13 +367,40 @@ export function CampaignPeopleGroupDrawer({
                 className="form-control mt-2"
                 value={groupDraft.addressLine1 ?? ''}
                 onChange={(event) =>
-                  setGroupDraft((currentValue) => ({
-                    ...currentValue,
-                    addressLine1: event.target.value,
-                  }))
+                  {
+                    setSuppressAddressLookupValue(null);
+                    setAddressSuggestions([]);
+                    setGroupDraft((currentValue) => ({
+                      ...currentValue,
+                      addressLine1: event.target.value,
+                    }));
+                  }
                 }
                 disabled={!canEdit}
+                placeholder={
+                  currentGroupType === 'CARE_FACILITY'
+                    ? 'Start typing the facility address'
+                    : 'Start typing the family address'
+                }
               />
+              {isSearchingAddresses ? (
+                <div className="form-text">Looking up address suggestions...</div>
+              ) : null}
+              {addressSuggestions.length > 0 ? (
+                <div className="campaign-people-address-suggestions mt-2" role="listbox" aria-label="Address suggestions">
+                  {addressSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.label}
+                      type="button"
+                      className="campaign-people-address-suggestion"
+                      onClick={() => applyAddressSuggestion(suggestion)}
+                    >
+                      <i className="bi bi-geo-alt" aria-hidden="true" />
+                      <span>{suggestion.label}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </label>
 
             <label className="form-label campaign-team-form-grid__span-2">

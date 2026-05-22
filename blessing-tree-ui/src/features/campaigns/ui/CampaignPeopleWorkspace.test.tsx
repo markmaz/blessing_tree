@@ -266,6 +266,7 @@ describe('CampaignPeopleWorkspace', () => {
           onSaveWishlist={vi.fn()}
           onSaveWishlistItem={vi.fn()}
           onDeleteWishlistItem={vi.fn()}
+          onSearchAddresses={vi.fn().mockResolvedValue([])}
           onClearSaveMessage={vi.fn()}
           onClearError={vi.fn()}
         />
@@ -304,6 +305,7 @@ describe('CampaignPeopleWorkspace', () => {
           onSaveWishlist={vi.fn()}
           onSaveWishlistItem={vi.fn()}
           onDeleteWishlistItem={vi.fn()}
+          onSearchAddresses={vi.fn().mockResolvedValue([])}
           onClearSaveMessage={vi.fn()}
           onClearError={vi.fn()}
         />

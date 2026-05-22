@@ -1,5 +1,6 @@
 import { apiFetchJson } from '@/shared/api/client';
 import type {
+  CampaignAddressSuggestion,
   CampaignPeopleGroup,
   CampaignPeopleGroupContact,
   CampaignPeopleWorkspaceData,
@@ -150,6 +151,16 @@ interface PeopleWorkspaceResponse {
   };
 }
 
+interface AddressSearchResponse {
+  suggestions: Array<{
+    label: string;
+    address_line1: string;
+    city: string | null;
+    state: string | null;
+    postal_code: string | null;
+  }>;
+}
+
 export async function getCampaignPeopleWorkspace(
   campaignId: string
 ): Promise<CampaignPeopleWorkspaceData> {
@@ -170,6 +181,24 @@ export async function getCampaignPeopleWorkspace(
       recipientStatuses: response.filters.recipient_statuses,
     },
   };
+}
+
+export async function searchRecipientAddresses(
+  campaignId: string,
+  query: string
+): Promise<CampaignAddressSuggestion[]> {
+  const params = new URLSearchParams({ q: query });
+  const response = await apiFetchJson<AddressSearchResponse>(
+    `/api/v1/campaigns/${campaignId}/recipient-address-search?${params.toString()}`
+  );
+
+  return response.suggestions.map((suggestion) => ({
+    label: suggestion.label,
+    addressLine1: suggestion.address_line1,
+    city: suggestion.city,
+    state: suggestion.state,
+    postalCode: suggestion.postal_code,
+  }));
 }
 
 export async function createRecipientGroup(

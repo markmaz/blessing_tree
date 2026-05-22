@@ -5,6 +5,7 @@ import '@/features/campaigns/ui/campaignStudioTeam.css';
 import '@/features/campaigns/ui/campaignPeople.css';
 import type { CampaignAccess } from '@/features/campaigns/model/campaignTypes';
 import type {
+  CampaignAddressSuggestion,
   CampaignPeopleGroup,
   CampaignPeopleGroupContact,
   CampaignPeopleWorkspaceData,
@@ -57,6 +58,7 @@ interface CampaignPeopleWorkspaceProps {
     itemId?: string
   ) => Promise<CampaignWishlistItem | null>;
   onDeleteWishlistItem: (recipientId: string, itemId: string) => Promise<boolean>;
+  onSearchAddresses: (query: string) => Promise<CampaignAddressSuggestion[]>;
   onClearSaveMessage: () => void;
   onClearError: () => void;
   showHero?: boolean;
@@ -78,6 +80,7 @@ export function CampaignPeopleWorkspace({
   onSaveWishlist,
   onSaveWishlistItem,
   onDeleteWishlistItem,
+  onSearchAddresses,
   onClearSaveMessage,
   onClearError,
   showHero = true,
@@ -247,7 +250,7 @@ export function CampaignPeopleWorkspace({
                     setCreateGroupType('CARE_FACILITY');
                   }}
                 >
-                  <i className="bi bi-building-add" aria-hidden="true" />
+                  <i className="bi bi-buildings" aria-hidden="true" />
                   <span>Add Facility</span>
                 </button>
               </div>
@@ -343,6 +346,7 @@ export function CampaignPeopleWorkspace({
         }}
         onSaveContact={onSaveContact}
         onDeleteContact={onDeleteContact}
+        onSearchAddresses={onSearchAddresses}
         onAddRecipientToGroup={(groupId) => {
           setCreateGroupType(null);
           setSelectedGroupId(null);
