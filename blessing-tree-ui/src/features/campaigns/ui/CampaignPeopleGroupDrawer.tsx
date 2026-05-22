@@ -17,6 +17,7 @@ import {
   toPreferredContactLabel,
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
 import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
+import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 
 interface CampaignPeopleGroupDrawerProps {
   isOpen: boolean;
@@ -105,6 +106,7 @@ export function CampaignPeopleGroupDrawer({
       : emptyGroupDraft(initialGroupType)
   );
   const [groupError, setGroupError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [contactDraft, setContactDraft] = useState<GroupContactUpsertInput>(emptyContactDraft);
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
@@ -236,6 +238,7 @@ export function CampaignPeopleGroupDrawer({
       );
 
       if (savedGroup) {
+        setSuccessMessage(group ? 'Group updated.' : 'Group added.');
         setGroupDraft({
           groupType: savedGroup.groupType,
           groupName: savedGroup.groupName,
@@ -328,6 +331,7 @@ export function CampaignPeopleGroupDrawer({
       );
 
       if (savedContact) {
+        setSuccessMessage(editingContactId ? 'Contact updated.' : 'Contact added.');
         resetContactDraft();
       }
     } catch (saveError) {
@@ -343,6 +347,14 @@ export function CampaignPeopleGroupDrawer({
       description={drawerDescription}
       onClose={onClose}
     >
+      {successMessage ? (
+        <AutoDismissAlert
+          key={successMessage}
+          message={successMessage}
+          onDismiss={() => setSuccessMessage(null)}
+          className="mb-3"
+        />
+      ) : null}
       <div className="campaign-team-drawer__stack">
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
@@ -833,6 +845,7 @@ export function CampaignPeopleGroupDrawer({
                           disabled={!canEdit}
                           onConfirm={async () => {
                             await onDeleteContact(group.id, contact.id);
+                            setSuccessMessage('Contact removed.');
                             if (editingContactId === contact.id) {
                               resetContactDraft();
                             }

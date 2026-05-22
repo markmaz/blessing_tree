@@ -411,16 +411,13 @@ describe('CampaignPeopleWorkspace', () => {
           isLoading={false}
           isSaving={false}
           error={null}
-          saveMessage={null}
           onSaveGroup={vi.fn()}
           onSaveContact={vi.fn()}
           onDeleteContact={vi.fn()}
           onSaveRecipient={vi.fn()}
-          onSaveWishlist={vi.fn()}
           onSaveWishlistItem={vi.fn()}
           onDeleteWishlistItem={vi.fn()}
           onSearchAddresses={vi.fn().mockResolvedValue([])}
-          onClearSaveMessage={vi.fn()}
           onClearError={vi.fn()}
         />
       </MemoryRouter>
@@ -450,16 +447,13 @@ describe('CampaignPeopleWorkspace', () => {
           isLoading={false}
           isSaving={false}
           error={null}
-          saveMessage={null}
           onSaveGroup={vi.fn()}
           onSaveContact={vi.fn()}
           onDeleteContact={vi.fn()}
           onSaveRecipient={vi.fn()}
-          onSaveWishlist={vi.fn()}
           onSaveWishlistItem={vi.fn()}
           onDeleteWishlistItem={vi.fn()}
           onSearchAddresses={vi.fn().mockResolvedValue([])}
-          onClearSaveMessage={vi.fn()}
           onClearError={vi.fn()}
         />
       </MemoryRouter>
@@ -495,16 +489,13 @@ describe('CampaignPeopleWorkspace', () => {
           isLoading={false}
           isSaving={false}
           error={null}
-          saveMessage={null}
           onSaveGroup={vi.fn()}
           onSaveContact={vi.fn()}
           onDeleteContact={vi.fn()}
           onSaveRecipient={vi.fn()}
-          onSaveWishlist={vi.fn()}
           onSaveWishlistItem={vi.fn()}
           onDeleteWishlistItem={vi.fn()}
           onSearchAddresses={vi.fn().mockResolvedValue([])}
-          onClearSaveMessage={vi.fn()}
           onClearError={vi.fn()}
         />
       </MemoryRouter>
@@ -514,10 +505,12 @@ describe('CampaignPeopleWorkspace', () => {
 
     await user.click(within(peopleTable).getByRole('button', { name: /Ava Johnson.*Gender F/ }));
 
-    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    const drawer = await screen.findByRole('dialog');
+    expect(drawer).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Wishlist' })).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Expand person details'));
     expect(screen.getByDisplayValue('Ava Johnson')).toBeInTheDocument();
     expect(screen.getByText(/Authorized pickup contacts:/)).toBeInTheDocument();
-    expect(screen.getByText(/Label wishlist-1-item-1/)).toBeInTheDocument();
+    expect(within(drawer).getByRole('button', { name: /art kit/i })).toBeInTheDocument();
   });
 });

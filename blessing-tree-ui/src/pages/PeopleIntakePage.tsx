@@ -4,7 +4,6 @@ import type { RecipientGroupType } from '@/features/campaigns/model/campaignPeop
 import { usePeopleWorkspaceContext } from '@/features/campaigns/model/peopleWorkspaceContext';
 import { CampaignPeopleGroupDrawer } from '@/features/campaigns/ui/CampaignPeopleGroupDrawer';
 import { CampaignPeopleRecipientDrawer } from '@/features/campaigns/ui/CampaignPeopleRecipientDrawer';
-import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 import '@/features/campaigns/ui/campaignPeople.css';
 
 export function PeopleIntakePage() {
@@ -14,16 +13,13 @@ export function PeopleIntakePage() {
     isLoading,
     isSaving,
     error,
-    saveMessage,
     onSaveGroup,
     onSaveContact,
     onDeleteContact,
     onSaveRecipient,
-    onSaveWishlist,
     onSaveWishlistItem,
     onDeleteWishlistItem,
     onSearchAddresses,
-    onClearSaveMessage,
     onClearError,
   } = usePeopleWorkspaceContext();
 
@@ -68,13 +64,6 @@ export function PeopleIntakePage() {
 
   return (
     <section className="campaign-page-stack">
-      {saveMessage ? (
-        <AutoDismissAlert
-          key={saveMessage}
-          message={saveMessage}
-          onDismiss={onClearSaveMessage}
-        />
-      ) : null}
       {error ? (
         <div className="alert alert-danger" role="alert">
           <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
@@ -277,7 +266,6 @@ export function PeopleIntakePage() {
           }
           return savedRecipient;
         }}
-        onSaveWishlist={onSaveWishlist}
         onSaveWishlistItem={onSaveWishlistItem}
         onDeleteWishlistItem={onDeleteWishlistItem}
         onSelectExistingRecipient={(recipientId) => {

@@ -324,7 +324,7 @@ def validate_recipient_status(value: object, *, default: str = RECIPIENT_STATUS_
     return normalized
 
 
-def validate_wishlist_status(value: object, *, default: str = WISHLIST_STATUS_DRAFT) -> str:
+def validate_wishlist_status(value: object, *, default: str = WISHLIST_STATUS_READY) -> str:
     normalized = str(value or default).strip().upper()
     if normalized not in WISHLIST_STATUSES:
         raise ServiceError("Invalid wishlist_status", status_code=400, details={"field": "wishlist_status"})

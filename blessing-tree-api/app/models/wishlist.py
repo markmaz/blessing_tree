@@ -45,7 +45,7 @@ class Wishlist(Base):
     wishlist_status: Mapped[str] = mapped_column(
         Enum(WISHLIST_STATUS_DRAFT, WISHLIST_STATUS_READY, WISHLIST_STATUS_LOCKED, name="wishlist_status"),
         nullable=False,
-        default=WISHLIST_STATUS_DRAFT,
+        default=WISHLIST_STATUS_READY,
     )
     intake_method: Mapped[Optional[str]] = mapped_column(
         Enum(

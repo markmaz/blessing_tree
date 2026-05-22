@@ -184,7 +184,6 @@ describe('CampaignPeopleRecipientDrawer', () => {
         recipients={[]}
         onClose={vi.fn()}
         onSaveRecipient={vi.fn()}
-        onSaveWishlist={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
         onSelectExistingRecipient={vi.fn()}
@@ -212,7 +211,6 @@ describe('CampaignPeopleRecipientDrawer', () => {
         recipients={[]}
         onClose={vi.fn()}
         onSaveRecipient={vi.fn()}
-        onSaveWishlist={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
         onSelectExistingRecipient={vi.fn()}
@@ -245,7 +243,6 @@ describe('CampaignPeopleRecipientDrawer', () => {
         recipients={[]}
         onClose={vi.fn()}
         onSaveRecipient={vi.fn()}
-        onSaveWishlist={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
         onSelectExistingRecipient={vi.fn()}
@@ -276,7 +273,6 @@ describe('CampaignPeopleRecipientDrawer', () => {
         recipients={[existingAdultRecipient]}
         onClose={vi.fn()}
         onSaveRecipient={vi.fn()}
-        onSaveWishlist={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
         onSelectExistingRecipient={onSelectExistingRecipient}
@@ -305,7 +301,6 @@ describe('CampaignPeopleRecipientDrawer', () => {
         recipients={[existingAdultRecipientWithWishlist]}
         onClose={vi.fn()}
         onSaveRecipient={vi.fn()}
-        onSaveWishlist={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
         onSelectExistingRecipient={vi.fn()}
@@ -314,6 +309,8 @@ describe('CampaignPeopleRecipientDrawer', () => {
 
     expect(screen.queryByLabelText('First Name')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Intake Method')).not.toBeVisible();
+    expect(screen.queryByLabelText('Wishlist Notes')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Wishlist Status')).not.toBeVisible();
 
     await user.click(screen.getByLabelText('Expand person details'));
     expect(screen.getByLabelText('First Name')).toHaveValue('Mary');

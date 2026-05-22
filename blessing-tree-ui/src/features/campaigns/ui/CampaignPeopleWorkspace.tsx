@@ -8,17 +8,14 @@ import type {
   CampaignPeopleGroupContact,
   CampaignPeopleWorkspaceData,
   CampaignRecipient,
-  CampaignWishlist,
   CampaignWishlistItem,
   GroupContactUpsertInput,
   RecipientGroupType,
   RecipientGroupUpsertInput,
   RecipientUpsertInput,
   WishlistItemUpsertInput,
-  WishlistUpsertInput,
 } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 import { canManageCampaign } from '@/features/campaigns/model/campaignPermissions';
-import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 import { CampaignPeopleGroupTable } from '@/features/campaigns/ui/CampaignPeopleGroupTable';
 import { CampaignPeopleRecipientTable } from '@/features/campaigns/ui/CampaignPeopleRecipientTable';
 import { CampaignPeopleGroupDrawer } from '@/features/campaigns/ui/CampaignPeopleGroupDrawer';
@@ -31,7 +28,6 @@ interface CampaignPeopleWorkspaceProps {
   isLoading: boolean;
   isSaving: boolean;
   error: string | null;
-  saveMessage: string | null;
   onSaveGroup: (
     input: RecipientGroupUpsertInput,
     groupId?: string
@@ -46,10 +42,6 @@ interface CampaignPeopleWorkspaceProps {
     input: RecipientUpsertInput,
     recipientId?: string
   ) => Promise<CampaignRecipient | null>;
-  onSaveWishlist: (
-    recipientId: string,
-    input: WishlistUpsertInput
-  ) => Promise<CampaignWishlist | null | unknown>;
   onSaveWishlistItem: (
     recipientId: string,
     input: WishlistItemUpsertInput,
@@ -57,7 +49,6 @@ interface CampaignPeopleWorkspaceProps {
   ) => Promise<CampaignWishlistItem | null>;
   onDeleteWishlistItem: (recipientId: string, itemId: string) => Promise<boolean>;
   onSearchAddresses: (query: string) => Promise<CampaignAddressSuggestion[]>;
-  onClearSaveMessage: () => void;
   onClearError: () => void;
   showHero?: boolean;
   showCreateActions?: boolean;
@@ -70,16 +61,13 @@ export function CampaignPeopleWorkspace({
   isLoading,
   isSaving,
   error,
-  saveMessage,
   onSaveGroup,
   onSaveContact,
   onDeleteContact,
   onSaveRecipient,
-  onSaveWishlist,
   onSaveWishlistItem,
   onDeleteWishlistItem,
   onSearchAddresses,
-  onClearSaveMessage,
   onClearError,
   showHero = true,
   showCreateActions = true,
@@ -182,13 +170,6 @@ export function CampaignPeopleWorkspace({
         </div>
       ) : null}
 
-      {saveMessage ? (
-        <AutoDismissAlert
-          key={saveMessage}
-          message={saveMessage}
-          onDismiss={onClearSaveMessage}
-        />
-      ) : null}
       {error ? (
         <div className="alert alert-danger" role="alert">
           <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
@@ -391,7 +372,6 @@ export function CampaignPeopleWorkspace({
           }
           return savedRecipient;
         }}
-        onSaveWishlist={onSaveWishlist}
         onSaveWishlistItem={onSaveWishlistItem}
         onDeleteWishlistItem={onDeleteWishlistItem}
         onSelectExistingRecipient={(recipientId) => {

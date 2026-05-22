@@ -9,16 +9,13 @@ export function PeopleDirectoryPage() {
     isLoading,
     isSaving,
     error,
-    saveMessage,
     onSaveGroup,
     onSaveContact,
     onDeleteContact,
     onSaveRecipient,
-    onSaveWishlist,
     onSaveWishlistItem,
     onDeleteWishlistItem,
     onSearchAddresses,
-    onClearSaveMessage,
     onClearError,
   } = usePeopleWorkspaceContext();
 
@@ -30,16 +27,13 @@ export function PeopleDirectoryPage() {
       isLoading={isLoading}
       isSaving={isSaving}
       error={error}
-      saveMessage={saveMessage}
       onSaveGroup={onSaveGroup}
       onSaveContact={onSaveContact}
       onDeleteContact={onDeleteContact}
       onSaveRecipient={onSaveRecipient}
-      onSaveWishlist={onSaveWishlist}
       onSaveWishlistItem={onSaveWishlistItem}
       onDeleteWishlistItem={onDeleteWishlistItem}
       onSearchAddresses={onSearchAddresses}
-      onClearSaveMessage={onClearSaveMessage}
       onClearError={onClearError}
       showHero={false}
       showCreateActions={false}

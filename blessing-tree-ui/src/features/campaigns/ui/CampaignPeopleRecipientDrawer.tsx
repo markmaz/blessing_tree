@@ -11,8 +11,6 @@ import type {
   WishlistIntakeMethod,
   WishlistItemType,
   WishlistItemUpsertInput,
-  WishlistStatus,
-  WishlistUpsertInput,
 } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 import {
   formatContactDisplayName,
@@ -24,6 +22,7 @@ import {
   toWishlistItemTypeLabel,
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
 import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
+import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 
 interface CampaignPeopleRecipientDrawerProps {
   isOpen: boolean;
@@ -39,10 +38,6 @@ interface CampaignPeopleRecipientDrawerProps {
     input: RecipientUpsertInput,
     recipientId?: string
   ) => Promise<CampaignRecipient | null>;
-  onSaveWishlist: (
-    recipientId: string,
-    input: WishlistUpsertInput
-  ) => Promise<unknown>;
   onSaveWishlistItem: (
     recipientId: string,
     input: WishlistItemUpsertInput,
@@ -127,16 +122,6 @@ function buildRecipientDraft(
   };
 }
 
-function buildWishlistDraft(recipient: CampaignRecipient | null): WishlistUpsertInput {
-  return {
-    wishlistStatus: recipient?.wishlist?.wishlistStatus ?? 'DRAFT',
-    intakeMethod: recipient?.wishlist?.intakeMethod ?? null,
-    submittedAt: toDateTimeLocalValue(recipient?.wishlist?.submittedAt ?? null),
-    intakeCompletedByContactId: recipient?.wishlist?.intakeCompletedByContactId ?? null,
-    notes: recipient?.wishlist?.notes ?? '',
-  };
-}
-
 export function CampaignPeopleRecipientDrawer({
   isOpen,
   isSaving,
@@ -148,7 +133,6 @@ export function CampaignPeopleRecipientDrawer({
   recipients,
   onClose,
   onSaveRecipient,
-  onSaveWishlist,
   onSaveWishlistItem,
   onDeleteWishlistItem,
   onSelectExistingRecipient,
@@ -157,11 +141,10 @@ export function CampaignPeopleRecipientDrawer({
     buildRecipientDraft(recipient, initialGroupId)
   );
   const [recipientError, setRecipientError] = useState<string | null>(null);
-  const [wishlistDraft, setWishlistDraft] = useState<WishlistUpsertInput>(buildWishlistDraft(recipient));
-  const [wishlistError, setWishlistError] = useState<string | null>(null);
   const [itemDraft, setItemDraft] = useState<WishlistItemFormState>(emptyWishlistItemDraft);
   const [itemError, setItemError] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isProfileSectionOpen, setIsProfileSectionOpen] = useState(() => recipient === null);
   const [isWishlistSectionOpen, setIsWishlistSectionOpen] = useState(true);
   const [isWishlistMetaOpen, setIsWishlistMetaOpen] = useState(false);
@@ -309,7 +292,7 @@ export function CampaignPeopleRecipientDrawer({
 
     setRecipientError(null);
     try {
-      await onSaveRecipient(
+      const savedRecipient = await onSaveRecipient(
         {
           ...recipientDraft,
           recipientGroupId: lockedGroupId ?? recipientDraft.recipientGroupId,
@@ -334,28 +317,11 @@ export function CampaignPeopleRecipientDrawer({
         },
         recipient?.id
       );
+      if (savedRecipient) {
+        setSuccessMessage(recipient ? 'Person updated.' : 'Person added.');
+      }
     } catch (saveError) {
       setRecipientError(saveError instanceof Error ? saveError.message : 'Unable to save this person.');
-    }
-  };
-
-  const handleSaveWishlist = async () => {
-    if (!recipient?.id) {
-      setWishlistError('Save the person before editing the wishlist.');
-      return;
-    }
-
-    setWishlistError(null);
-    try {
-      await onSaveWishlist(recipient.id, {
-        wishlistStatus: wishlistDraft.wishlistStatus ?? 'DRAFT',
-        intakeMethod: wishlistDraft.intakeMethod ?? null,
-        submittedAt: wishlistDraft.submittedAt ? toIsoFromDateTimeLocal(wishlistDraft.submittedAt) : null,
-        intakeCompletedByContactId: wishlistDraft.intakeCompletedByContactId ?? null,
-        notes: wishlistDraft.notes?.trim() || null,
-      });
-    } catch (saveError) {
-      setWishlistError(saveError instanceof Error ? saveError.message : 'Unable to save this wishlist.');
     }
   };
 
@@ -432,6 +398,7 @@ export function CampaignPeopleRecipientDrawer({
       );
 
       if (savedItem) {
+        setSuccessMessage(editingItemId ? 'Wishlist item updated.' : 'Wishlist item added.');
         handleCloseItemModal();
       }
     } catch (saveError) {
@@ -447,6 +414,14 @@ export function CampaignPeopleRecipientDrawer({
       description={drawerDescription}
       onClose={onClose}
     >
+      {successMessage ? (
+        <AutoDismissAlert
+          key={successMessage}
+          message={successMessage}
+          onDismiss={() => setSuccessMessage(null)}
+          className="mb-3"
+        />
+      ) : null}
       <div className="campaign-team-drawer__stack">
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
@@ -962,98 +937,6 @@ export function CampaignPeopleRecipientDrawer({
             <div className="campaign-studio__empty-note">Save the person before editing the wishlist.</div>
           ) : isWishlistSectionOpen ? (
             <>
-              {wishlistError ? <div className="alert alert-danger py-2" role="alert">{wishlistError}</div> : null}
-
-              <div className="campaign-team-form-grid">
-                <label className="form-label">
-                  Wishlist Status
-                  <select
-                    className="form-select mt-2"
-                    value={wishlistDraft.wishlistStatus ?? 'DRAFT'}
-                    onChange={(event) =>
-                      setWishlistDraft((currentValue) => ({
-                        ...currentValue,
-                        wishlistStatus: event.target.value as WishlistStatus,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  >
-                    <option value="DRAFT">Draft</option>
-                    <option value="READY">Ready</option>
-                    <option value="LOCKED">Locked</option>
-                  </select>
-                </label>
-
-                <label className="form-label campaign-team-form-grid__span-2">
-                  Wishlist Notes
-                  <textarea
-                    className="form-control mt-2"
-                    rows={3}
-                    value={wishlistDraft.notes ?? ''}
-                    onChange={(event) =>
-                      setWishlistDraft((currentValue) => ({
-                        ...currentValue,
-                        notes: event.target.value,
-                      }))
-                    }
-                    disabled={!canEdit}
-                  />
-                </label>
-              </div>
-
-              <div className="campaign-team-drawer__actions mt-3">
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => {
-                    void handleSaveWishlist();
-                  }}
-                  disabled={!canEdit || isSaving}
-                >
-                  <i className="bi bi-journal-check me-2" aria-hidden="true" />
-                  Save Wishlist
-                </button>
-              </div>
-
-              <details
-                className="campaign-people-metadata-details mt-3"
-                open={isWishlistMetaOpen}
-                onToggle={(event) => setIsWishlistMetaOpen((event.currentTarget as HTMLDetailsElement).open)}
-              >
-                <summary className="campaign-people-metadata-details__summary">
-                  <i className="bi bi-info-circle me-2" aria-hidden="true" />
-                  Wishlist Metadata
-                </summary>
-                <div className="campaign-team-form-grid mt-3">
-                  <label className="form-label">
-                    Intake Method
-                    <input
-                      className="form-control mt-2"
-                      value={wishlistDraft.intakeMethod ? toWishlistIntakeMethodLabel(wishlistDraft.intakeMethod as WishlistIntakeMethod) : 'Not set'}
-                      disabled
-                    />
-                  </label>
-
-                  <label className="form-label">
-                    Submitted At
-                    <input
-                      className="form-control mt-2"
-                      value={recipient.wishlist?.submittedAt ? formatShortDate(recipient.wishlist.submittedAt) : 'Not set'}
-                      disabled
-                    />
-                  </label>
-
-                  <label className="form-label campaign-team-form-grid__span-2">
-                    Intake Completed By
-                    <input
-                      className="form-control mt-2"
-                      value={recipient.wishlist?.intakeCompletedByContact ? formatContactDisplayName(recipient.wishlist.intakeCompletedByContact) : 'Not set'}
-                      disabled
-                    />
-                  </label>
-                </div>
-              </details>
-
               <div className="campaign-team-inline-list mt-4">
                 <div className="campaign-team-inline-item campaign-team-inline-item--stacked">
                   <div className="campaign-team-inline-item__content">
@@ -1177,6 +1060,55 @@ export function CampaignPeopleRecipientDrawer({
           )}
         </section>
       </div>
+      {recipient ? (
+        <details
+          className="campaign-people-metadata-details mt-3"
+          open={isWishlistMetaOpen}
+          onToggle={(event) => setIsWishlistMetaOpen((event.currentTarget as HTMLDetailsElement).open)}
+        >
+          <summary className="campaign-people-metadata-details__summary">
+            <i className="bi bi-info-circle me-2" aria-hidden="true" />
+            Wishlist Metadata
+          </summary>
+          <div className="campaign-team-form-grid mt-3">
+            <label className="form-label">
+              Wishlist Status
+              <input
+                className="form-control mt-2"
+                value={recipient.wishlist?.wishlistStatus ?? 'READY'}
+                disabled
+              />
+            </label>
+
+            <label className="form-label">
+              Intake Method
+              <input
+                className="form-control mt-2"
+                value={recipient.wishlist?.intakeMethod ? toWishlistIntakeMethodLabel(recipient.wishlist.intakeMethod as WishlistIntakeMethod) : 'Not set'}
+                disabled
+              />
+            </label>
+
+            <label className="form-label">
+              Submitted At
+              <input
+                className="form-control mt-2"
+                value={recipient.wishlist?.submittedAt ? formatShortDate(recipient.wishlist.submittedAt) : 'Not set'}
+                disabled
+              />
+            </label>
+
+            <label className="form-label campaign-team-form-grid__span-2">
+              Intake Completed By
+              <input
+                className="form-control mt-2"
+                value={recipient.wishlist?.intakeCompletedByContact ? formatContactDisplayName(recipient.wishlist.intakeCompletedByContact) : 'Not set'}
+                disabled
+              />
+            </label>
+          </div>
+        </details>
+      ) : null}
       {recipient && isItemModalOpen
         ? createPortal(
             <div className="campaign-people-modal__backdrop" role="presentation" onClick={handleCloseItemModal}>
@@ -1410,6 +1342,7 @@ export function CampaignPeopleRecipientDrawer({
                       disabled={!canEdit}
                       onConfirm={async () => {
                         await onDeleteWishlistItem(recipient.id, editingItemId);
+                        setSuccessMessage('Wishlist item removed.');
                         handleCloseItemModal();
                       }}
                     />
@@ -1441,28 +1374,6 @@ export function CampaignPeopleRecipientDrawer({
         : null}
     </CampaignStudioDrawer>
   );
-}
-
-function toDateTimeLocalValue(value: string | null): string {
-  if (!value) {
-    return '';
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return '';
-  }
-
-  const year = parsed.getFullYear();
-  const month = `${parsed.getMonth() + 1}`.padStart(2, '0');
-  const day = `${parsed.getDate()}`.padStart(2, '0');
-  const hour = `${parsed.getHours()}`.padStart(2, '0');
-  const minute = `${parsed.getMinutes()}`.padStart(2, '0');
-  return `${year}-${month}-${day}T${hour}:${minute}`;
-}
-
-function toIsoFromDateTimeLocal(value: string): string {
-  return new Date(value).toISOString();
 }
 
 function parseCostDollars(value: string): number | null {
