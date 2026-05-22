@@ -126,6 +126,13 @@
 - Rationale: the project is still early enough to avoid structural drift, and these rules reduce the chance of god files, mixed concerns, silent contract breakage, untested migrations, weak auth enforcement, invisible regressions, inconsistent low-quality browser-native dialog UX, soft default “pill UI” aesthetics becoming normal, and text-only button treatments drifting into the interface.
 - Consequence: future implementation should split oversized files proactively, organize backend work by feature, ship migrations with schema changes, apply and verify them against local MySQL when available, treat frontend access control as advisory only, avoid casual API breakage, keep shared modules intentionally small, bump version files for real code changes, treat review, tests, docs, and commit as part of task completion, never use `window.confirm`, `window.alert`, or `window.prompt` in the product UI, avoid `border-radius: 999px` style treatment for badges and similar controls, and ensure every product UI button includes an icon.
 
+## Branch Discipline Policy
+
+- Status: active
+- Decision: never commit implementation work directly to `main`; all feature work must happen on a feature branch first.
+- Rationale: direct commits to `main` make it too easy to bypass isolation, review, rollback boundaries, and feature-level verification.
+- Consequence: new work should start from a named feature branch, and `main` should only move through the normal integration flow after the feature branch work is complete.
+
 ## Automation Runtime Direction
 
 - Status: active

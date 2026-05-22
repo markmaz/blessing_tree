@@ -131,6 +131,7 @@ Last updated: 2026-05-21
 - Refined the Studio Communications template rail into a compact file-style panel with a Query Forge-like icon rail, template rehydration on file select, and backend-backed template delete with schedule-use protection
 - Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
 - Promoted another product UI rule: all buttons should include icons rather than shipping text-only button treatments
+- Promoted another engineering workflow rule: never commit feature work directly to `main`; always use a feature branch first
 - Fixed backend runtime gaps discovered during live stack verification:
   - removed the RBAC package import cycle at app startup
   - loaded the full SQLAlchemy model registry during app creation

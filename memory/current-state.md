@@ -123,6 +123,7 @@ Last updated: 2026-05-21
   - local login, refresh, logout, and protected campaign API routes were smoke-tested successfully against the running stack on 2026-05-20
 - backend CORS now accepts both `localhost` and `127.0.0.1` loopback frontend origins for local Studio work
 - local invitation onboarding has now been browser-smoke-tested end to end through the invite funnel using the local-password path; live Google/Yahoo provider smoke still depends on local provider credentials being configured
+- branch discipline is now explicit project policy: never commit feature work directly to `main`; use a feature branch first
 - Active-session automatic token refresh on 401 is now available through the shared frontend API client.
 - RBAC foundation now exists:
   - `db/migration/V003__Campaign_User_Roles.sql`
