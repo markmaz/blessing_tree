@@ -1,6 +1,4 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { routes } from '@/app/routes';
 import { canManageCampaign } from '@/features/campaigns/model/campaignPermissions';
 import type { RecipientGroupType } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 import { usePeopleWorkspaceContext } from '@/features/campaigns/model/peopleWorkspaceContext';
@@ -112,10 +110,6 @@ export function PeopleIntakePage() {
               Choose the type of intake you are entering, then stay in that flow to add children or residents and their wishlists.
             </p>
           </div>
-          <Link to={routes.CAMPAIGNS} className="btn btn-outline-secondary btn-sm">
-            <i className="bi bi-arrow-left me-2" aria-hidden="true" />
-            Back to Campaigns
-          </Link>
         </div>
       </div>
 

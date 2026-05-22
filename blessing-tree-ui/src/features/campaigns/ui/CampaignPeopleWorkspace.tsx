@@ -1,6 +1,4 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { routes } from '@/app/routes';
 import '@/features/campaigns/ui/campaignStudioTeam.css';
 import '@/features/campaigns/ui/campaignPeople.css';
 import type { CampaignAccess } from '@/features/campaigns/model/campaignTypes';
@@ -179,12 +177,6 @@ export function CampaignPeopleWorkspace({
               <p className="text-muted mb-0">
                 Manage households, facilities, contacts, people, and wishlists for this campaign.
               </p>
-            </div>
-            <div className="d-flex flex-wrap gap-2">
-              <Link to={routes.CAMPAIGNS} className="btn btn-outline-secondary btn-sm">
-                <i className="bi bi-arrow-left me-2" aria-hidden="true" />
-                Back to Campaigns
-              </Link>
             </div>
           </div>
         </div>
