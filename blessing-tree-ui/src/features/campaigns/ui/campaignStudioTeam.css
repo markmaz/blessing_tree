@@ -185,6 +185,10 @@
   width: min(50rem, 98vw);
 }
 
+.campaign-team-drawer--xwide {
+  width: min(60rem, 99vw);
+}
+
 .campaign-team-drawer__header {
   display: flex;
   align-items: flex-start;
@@ -373,7 +377,8 @@
   }
 
   .campaign-team-drawer,
-  .campaign-team-drawer--wide {
+  .campaign-team-drawer--wide,
+  .campaign-team-drawer--xwide {
     width: 100%;
   }
 

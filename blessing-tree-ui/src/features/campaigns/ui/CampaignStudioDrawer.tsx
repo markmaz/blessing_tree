@@ -7,7 +7,7 @@ interface CampaignStudioDrawerProps {
   description?: string;
   onClose: () => void;
   children: ReactNode;
-  width?: 'regular' | 'wide';
+  width?: 'regular' | 'wide' | 'xwide';
 }
 
 export function CampaignStudioDrawer({

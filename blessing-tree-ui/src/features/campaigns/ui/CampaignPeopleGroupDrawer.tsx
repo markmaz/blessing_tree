@@ -227,30 +227,34 @@ export function CampaignPeopleGroupDrawer({
     }
 
     setGroupError(null);
-    const savedGroup = await onSaveGroup(
-      {
-        ...groupDraft,
-        groupName: groupDraft.groupName.trim(),
-        programAbbreviation: isAdultProgramGroup ? (groupDraft.programAbbreviation?.trim() || null) : null,
-      },
-      group?.id
-    );
+    try {
+      const savedGroup = await onSaveGroup(
+        {
+          ...groupDraft,
+          groupName: groupDraft.groupName.trim(),
+          programAbbreviation: isAdultProgramGroup ? (groupDraft.programAbbreviation?.trim() || null) : null,
+        },
+        group?.id
+      );
 
-    if (savedGroup) {
-      setGroupDraft({
-        groupType: savedGroup.groupType,
-        groupName: savedGroup.groupName,
-        programAbbreviation: savedGroup.programAbbreviation ?? '',
-        intakeSource: savedGroup.intakeSource ?? '',
-        externalReference: savedGroup.externalReference ?? '',
-        notes: savedGroup.notes ?? '',
-        status: savedGroup.status,
-        addressLine1: savedGroup.addressLine1 ?? '',
-        addressLine2: savedGroup.addressLine2 ?? '',
-        city: savedGroup.city ?? '',
-        state: savedGroup.state ?? '',
-        postalCode: savedGroup.postalCode ?? '',
-      });
+      if (savedGroup) {
+        setGroupDraft({
+          groupType: savedGroup.groupType,
+          groupName: savedGroup.groupName,
+          programAbbreviation: savedGroup.programAbbreviation ?? '',
+          intakeSource: savedGroup.intakeSource ?? '',
+          externalReference: savedGroup.externalReference ?? '',
+          notes: savedGroup.notes ?? '',
+          status: savedGroup.status,
+          addressLine1: savedGroup.addressLine1 ?? '',
+          addressLine2: savedGroup.addressLine2 ?? '',
+          city: savedGroup.city ?? '',
+          state: savedGroup.state ?? '',
+          postalCode: savedGroup.postalCode ?? '',
+        });
+      }
+    } catch (saveError) {
+      setGroupError(saveError instanceof Error ? saveError.message : 'Unable to save this intake record.');
     }
   };
 
@@ -309,29 +313,33 @@ export function CampaignPeopleGroupDrawer({
     }
 
     setContactError(null);
-    const savedContact = await onSaveContact(
-      group.id,
-      {
-        ...contactDraft,
-        relationshipLabel: contactDraft.relationshipLabel?.trim() || null,
-        firstName: contactDraft.firstName?.trim() || null,
-        lastName: contactDraft.lastName?.trim() || null,
-        email: contactDraft.email?.trim() || null,
-        phone: contactDraft.phone?.trim() || null,
-        notes: contactDraft.notes?.trim() || null,
-      },
-      editingContactId ?? undefined
-    );
+    try {
+      const savedContact = await onSaveContact(
+        group.id,
+        {
+          ...contactDraft,
+          relationshipLabel: contactDraft.relationshipLabel?.trim() || null,
+          firstName: contactDraft.firstName?.trim() || null,
+          lastName: contactDraft.lastName?.trim() || null,
+          email: contactDraft.email?.trim() || null,
+          phone: contactDraft.phone?.trim() || null,
+          notes: contactDraft.notes?.trim() || null,
+        },
+        editingContactId ?? undefined
+      );
 
-    if (savedContact) {
-      resetContactDraft();
+      if (savedContact) {
+        resetContactDraft();
+      }
+    } catch (saveError) {
+      setContactError(saveError instanceof Error ? saveError.message : 'Unable to save this contact.');
     }
   };
 
   return (
     <CampaignStudioDrawer
       isOpen={isOpen}
-      width="wide"
+      width="xwide"
       title={drawerTitle}
       description={drawerDescription}
       onClose={onClose}

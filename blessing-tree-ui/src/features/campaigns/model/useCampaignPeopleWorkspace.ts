@@ -110,10 +110,12 @@ export function useCampaignPeopleWorkspace(campaignId: string | null) {
         setState((currentState) => ({
           ...currentState,
           isSaving: false,
-          error: toErrorMessage(mutationError, 'Unable to save People changes'),
+          error: null,
           saveMessage: null,
         }));
-        return null;
+        throw mutationError instanceof Error
+          ? mutationError
+          : new Error('Unable to save People changes');
       }
     },
     [campaignId]

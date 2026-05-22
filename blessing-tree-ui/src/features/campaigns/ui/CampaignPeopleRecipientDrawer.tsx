@@ -284,31 +284,35 @@ export function CampaignPeopleRecipientDrawer({
     }
 
     setRecipientError(null);
-    await onSaveRecipient(
-      {
-        ...recipientDraft,
-        recipientGroupId: lockedGroupId ?? recipientDraft.recipientGroupId,
-        displayLabel: computedDisplayLabel.trim(),
-        recipientKind: recipientProgram.recipientKind,
-        programType: recipientProgram.programType,
-        firstName: recipientDraft.firstName?.trim() || null,
-        lastName: recipientDraft.lastName?.trim() || null,
-        birthYear: computedBirthYear,
-        gender: recipientDraft.gender?.trim() || null,
-        addressLine1: recipientDraft.addressLine1?.trim() || null,
-        addressLine2: recipientDraft.addressLine2?.trim() || null,
-        city: recipientDraft.city?.trim() || null,
-        state: recipientDraft.state?.trim() || null,
-        postalCode: recipientDraft.postalCode?.trim() || null,
-        directEmail: recipientDraft.directEmail?.trim() || null,
-        directPhone: recipientDraft.directPhone?.trim() || null,
-        facilityRoom: recipientDraft.facilityRoom?.trim() || null,
-        subgroupLabel: recipientDraft.subgroupLabel?.trim() || null,
-        mobilityNotes: recipientDraft.mobilityNotes?.trim() || null,
-        notes: recipientDraft.notes?.trim() || null,
-      },
-      recipient?.id
-    );
+    try {
+      await onSaveRecipient(
+        {
+          ...recipientDraft,
+          recipientGroupId: lockedGroupId ?? recipientDraft.recipientGroupId,
+          displayLabel: computedDisplayLabel.trim(),
+          recipientKind: recipientProgram.recipientKind,
+          programType: recipientProgram.programType,
+          firstName: recipientDraft.firstName?.trim() || null,
+          lastName: recipientDraft.lastName?.trim() || null,
+          birthYear: computedBirthYear,
+          gender: recipientDraft.gender?.trim() || null,
+          addressLine1: recipientDraft.addressLine1?.trim() || null,
+          addressLine2: recipientDraft.addressLine2?.trim() || null,
+          city: recipientDraft.city?.trim() || null,
+          state: recipientDraft.state?.trim() || null,
+          postalCode: recipientDraft.postalCode?.trim() || null,
+          directEmail: recipientDraft.directEmail?.trim() || null,
+          directPhone: recipientDraft.directPhone?.trim() || null,
+          facilityRoom: recipientDraft.facilityRoom?.trim() || null,
+          subgroupLabel: recipientDraft.subgroupLabel?.trim() || null,
+          mobilityNotes: recipientDraft.mobilityNotes?.trim() || null,
+          notes: recipientDraft.notes?.trim() || null,
+        },
+        recipient?.id
+      );
+    } catch (saveError) {
+      setRecipientError(saveError instanceof Error ? saveError.message : 'Unable to save this person.');
+    }
   };
 
   const handleSaveWishlist = async () => {
@@ -318,13 +322,17 @@ export function CampaignPeopleRecipientDrawer({
     }
 
     setWishlistError(null);
-    await onSaveWishlist(recipient.id, {
-      wishlistStatus: wishlistDraft.wishlistStatus ?? 'DRAFT',
-      intakeMethod: wishlistDraft.intakeMethod ?? null,
-      submittedAt: wishlistDraft.submittedAt ? toIsoFromDateTimeLocal(wishlistDraft.submittedAt) : null,
-      intakeCompletedByContactId: wishlistDraft.intakeCompletedByContactId ?? null,
-      notes: wishlistDraft.notes?.trim() || null,
-    });
+    try {
+      await onSaveWishlist(recipient.id, {
+        wishlistStatus: wishlistDraft.wishlistStatus ?? 'DRAFT',
+        intakeMethod: wishlistDraft.intakeMethod ?? null,
+        submittedAt: wishlistDraft.submittedAt ? toIsoFromDateTimeLocal(wishlistDraft.submittedAt) : null,
+        intakeCompletedByContactId: wishlistDraft.intakeCompletedByContactId ?? null,
+        notes: wishlistDraft.notes?.trim() || null,
+      });
+    } catch (saveError) {
+      setWishlistError(saveError instanceof Error ? saveError.message : 'Unable to save this wishlist.');
+    }
   };
 
   const handleEditItem = (item: CampaignWishlistItem) => {
@@ -369,33 +377,37 @@ export function CampaignPeopleRecipientDrawer({
     }
 
     setItemError(null);
-    const savedItem = await onSaveWishlistItem(
-      recipient.id,
-      {
-        category: itemDraft.category.trim() || null,
-        itemType: itemDraft.itemType,
-        description: itemDraft.description.trim(),
-        size: itemDraft.size.trim() || null,
-        qtyRequested: Number(itemDraft.qtyRequested || '1'),
-        priority: itemDraft.priority.trim().toUpperCase(),
-        estCostCents,
-        allowSubstitute: itemDraft.allowSubstitute,
-        doNotSubstituteReason: itemDraft.doNotSubstituteReason.trim() || null,
-        recipientNote: itemDraft.recipientNote.trim() || null,
-        notes: itemDraft.notes.trim() || null,
-      },
-      editingItemId ?? undefined
-    );
+    try {
+      const savedItem = await onSaveWishlistItem(
+        recipient.id,
+        {
+          category: itemDraft.category.trim() || null,
+          itemType: itemDraft.itemType,
+          description: itemDraft.description.trim(),
+          size: itemDraft.size.trim() || null,
+          qtyRequested: Number(itemDraft.qtyRequested || '1'),
+          priority: itemDraft.priority.trim().toUpperCase(),
+          estCostCents,
+          allowSubstitute: itemDraft.allowSubstitute,
+          doNotSubstituteReason: itemDraft.doNotSubstituteReason.trim() || null,
+          recipientNote: itemDraft.recipientNote.trim() || null,
+          notes: itemDraft.notes.trim() || null,
+        },
+        editingItemId ?? undefined
+      );
 
-    if (savedItem) {
-      resetItemDraft();
+      if (savedItem) {
+        resetItemDraft();
+      }
+    } catch (saveError) {
+      setItemError(saveError instanceof Error ? saveError.message : 'Unable to save this wishlist item.');
     }
   };
 
   return (
     <CampaignStudioDrawer
       isOpen={isOpen}
-      width="wide"
+      width="xwide"
       title={drawerTitle}
       description={drawerDescription}
       onClose={onClose}
