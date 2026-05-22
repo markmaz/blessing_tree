@@ -29,6 +29,7 @@ export type WishlistItemType = 'GIFT' | 'CLOTHING' | 'ESSENTIAL' | 'GIFT_CARD' |
 export interface CampaignPeopleGroupContact {
   id: string;
   recipientGroupId: string;
+  displayName: string;
   contactRole: GroupContactRole;
   relationshipLabel: string | null;
   firstName: string | null;
@@ -60,8 +61,25 @@ export interface CampaignWishlistItem {
   status: string;
   qtyFulfilled: number;
   notes: string | null;
+  giftWorkflow: CampaignGiftWorkflowSummary;
   createdAt: string | null;
   updatedAt: string | null;
+}
+
+export interface CampaignGiftWorkflowSummary {
+  sponsorshipStatus: 'SPONSORED' | 'UNSPONSORED';
+  sponsorshipId: string | null;
+  qtyCommitted: number;
+  qtyFulfilled: number;
+  remainingQty: number;
+  isFullyFulfilled: boolean;
+  isPickedUp: boolean;
+  pickedUpAt: string | null;
+  pickedUpByContactId: string | null;
+  labelCode: string;
+  labelVersion: number;
+  labelLastPrintedAt: string | null;
+  labelPrintCount: number;
 }
 
 export interface CampaignWishlist {
@@ -128,6 +146,7 @@ export interface CampaignPeopleGroup {
   postalCode: string | null;
   primaryContact: CampaignPeopleGroupContact | null;
   contacts: CampaignPeopleGroupContact[];
+  authorizedPickupContacts: CampaignPeopleGroupContact[];
   recipientCount: number;
   recipients: CampaignRecipient[];
   createdAt: string | null;

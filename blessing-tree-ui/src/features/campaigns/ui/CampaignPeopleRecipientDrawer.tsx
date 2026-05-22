@@ -14,8 +14,10 @@ import type {
   WishlistUpsertInput,
 } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 import {
+  formatContactDisplayName,
   formatCurrencyFromCents,
   formatShortDate,
+  toGiftWorkflowStatusLabel,
   toRecipientProgramTypeLabel,
   toWishlistItemTypeLabel,
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
@@ -141,6 +143,7 @@ export function CampaignPeopleRecipientDrawer({
       : null;
 
   const visibleContacts = selectedGroup?.contacts ?? [];
+  const pickupContacts = visibleContacts.filter((contact) => contact.canPickUp);
 
   const handleSaveRecipient = async () => {
     if (!recipientDraft.recipientGroupId) {
@@ -682,6 +685,33 @@ export function CampaignPeopleRecipientDrawer({
               </div>
 
               <div className="campaign-team-inline-list mt-4">
+                <div className="campaign-team-inline-item campaign-team-inline-item--stacked">
+                  <div className="campaign-team-inline-item__content">
+                    <strong>Gift Workflow Readiness</strong>
+                    <div className="campaign-team-inline-meta">
+                      <span className="campaign-chip campaign-chip-muted">
+                        <i className="bi bi-list-check me-1" aria-hidden="true" />
+                        {recipient.wishlist?.items.length ?? 0} items
+                      </span>
+                      <span className="campaign-chip campaign-chip-muted">
+                        <i className="bi bi-person-hearts me-1" aria-hidden="true" />
+                        {recipient.wishlist?.items.filter((item) => item.giftWorkflow.sponsorshipStatus === 'SPONSORED').length ?? 0} sponsored
+                      </span>
+                      <span className="campaign-chip campaign-chip-muted">
+                        <i className="bi bi-box-seam me-1" aria-hidden="true" />
+                        {recipient.wishlist?.items.filter((item) => item.giftWorkflow.isFullyFulfilled).length ?? 0} fulfilled
+                      </span>
+                    </div>
+                    <span className="text-muted small">
+                      {pickupContacts.length
+                        ? `Authorized pickup contacts: ${pickupContacts.map((contact) => formatContactDisplayName(contact)).join(', ')}`
+                        : 'No pickup contacts are marked yet on the household or facility.'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="campaign-team-inline-list mt-4">
                 {recipient.wishlist?.items.length ? (
                   recipient.wishlist.items.map((item) => (
                     <div key={item.id} className="campaign-team-inline-item campaign-team-inline-item--stacked">
@@ -691,9 +721,33 @@ export function CampaignPeopleRecipientDrawer({
                           <span className="campaign-chip">{toWishlistItemTypeLabel(item.itemType)}</span>
                           <span className="campaign-chip campaign-chip-muted">Qty {item.qtyRequested}</span>
                           <span className="campaign-chip campaign-chip-muted">{item.priority}</span>
+                          <span className="campaign-chip campaign-chip-muted">
+                            {toGiftWorkflowStatusLabel(
+                              item.giftWorkflow.isPickedUp,
+                              item.giftWorkflow.isFullyFulfilled,
+                              item.giftWorkflow.sponsorshipStatus
+                            )}
+                          </span>
                         </div>
                         <span className="text-muted small">
                           {[item.category, item.size, formatCurrencyFromCents(item.estCostCents), `Updated ${formatShortDate(item.updatedAt)}`]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </span>
+                        <span className="text-muted small">
+                          {[
+                            item.giftWorkflow.sponsorshipStatus === 'SPONSORED'
+                              ? `Committed ${item.giftWorkflow.qtyCommitted}`
+                              : 'Not sponsored yet',
+                            `Fulfilled ${item.giftWorkflow.qtyFulfilled}/${item.qtyRequested}`,
+                            `Label ${item.giftWorkflow.labelCode}`,
+                            item.giftWorkflow.labelPrintCount > 0
+                              ? `Printed ${item.giftWorkflow.labelPrintCount}`
+                              : 'Not printed',
+                            item.giftWorkflow.pickedUpAt
+                              ? `Picked up ${formatShortDate(item.giftWorkflow.pickedUpAt)}`
+                              : null,
+                          ]
                             .filter(Boolean)
                             .join(' · ')}
                         </span>

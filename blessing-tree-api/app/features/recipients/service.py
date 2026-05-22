@@ -32,10 +32,13 @@ from app.features.recipients.validation import (
     validate_wishlist_status,
 )
 from app.models.group_contact import GroupContact
+from app.models.pickup_item import PickupItem
 from app.models.recipient import Recipient
 from app.models.recipient_group import RecipientGroup
+from app.models.sponsorship_item import SponsorshipItem
 from app.models.wishlist import Wishlist
 from app.models.wishlist_item import WishlistItem
+from app.models.fulfillment import Fulfillment
 from app.models.recipient_constants import (
     RECIPIENT_GROUP_STATUS_ACTIVE,
     WISHLIST_ITEM_TYPE_GIFT,
@@ -70,7 +73,7 @@ class CampaignRecipientService:
             db.query(RecipientGroup)
             .options(
                 joinedload(RecipientGroup.contacts),
-                joinedload(RecipientGroup.recipients).joinedload(Recipient.wishlist).joinedload(Wishlist.items),
+                *self._recipient_group_load_options(),
             )
             .filter(RecipientGroup.campaign_id == campaign_id)
         )
@@ -89,7 +92,7 @@ class CampaignRecipientService:
             db.query(RecipientGroup)
             .options(
                 joinedload(RecipientGroup.contacts),
-                joinedload(RecipientGroup.recipients).joinedload(Recipient.wishlist).joinedload(Wishlist.items),
+                *self._recipient_group_load_options(),
             )
             .filter(
                 RecipientGroup.campaign_id == campaign_id,
@@ -235,11 +238,7 @@ class CampaignRecipientService:
         self.campaigns.get_campaign(db, campaign_id)
         query = (
             db.query(Recipient)
-            .options(
-                joinedload(Recipient.recipient_group),
-                joinedload(Recipient.wishlist).joinedload(Wishlist.items),
-                joinedload(Recipient.wishlist).joinedload(Wishlist.intake_completed_by_contact),
-            )
+            .options(*self._recipient_load_options())
             .filter(Recipient.campaign_id == campaign_id)
         )
         if search:
@@ -263,11 +262,7 @@ class CampaignRecipientService:
         self.campaigns.get_campaign(db, campaign_id)
         recipient = (
             db.query(Recipient)
-            .options(
-                joinedload(Recipient.recipient_group),
-                joinedload(Recipient.wishlist).joinedload(Wishlist.items),
-                joinedload(Recipient.wishlist).joinedload(Wishlist.intake_completed_by_contact),
-            )
+            .options(*self._recipient_load_options())
             .filter(
                 Recipient.campaign_id == campaign_id,
                 Recipient.id == require_uuid(recipient_id, "recipient_id"),
@@ -487,10 +482,7 @@ class CampaignRecipientService:
     def _get_wishlist(self, db: Session, recipient_id: uuid.UUID) -> Wishlist:
         wishlist = (
             db.query(Wishlist)
-            .options(
-                joinedload(Wishlist.items),
-                joinedload(Wishlist.intake_completed_by_contact),
-            )
+            .options(*self._wishlist_load_options())
             .filter(Wishlist.recipient_id == recipient_id)
             .one()
         )
@@ -499,6 +491,7 @@ class CampaignRecipientService:
     def _get_wishlist_item(self, db: Session, wishlist_id: uuid.UUID, item_id: str) -> WishlistItem:
         item = (
             db.query(WishlistItem)
+            .options(*self._wishlist_item_load_options())
             .filter(
                 WishlistItem.wishlist_id == wishlist_id,
                 WishlistItem.id == require_uuid(item_id, "item_id"),
@@ -565,3 +558,41 @@ class CampaignRecipientService:
             "wishlist_count": len(wishlists),
             "open_item_count": open_items_count,
         }
+
+    @staticmethod
+    def _recipient_group_load_options():
+        return (
+            joinedload(RecipientGroup.recipients).options(*CampaignRecipientService._recipient_detail_load_options()),
+        )
+
+    @staticmethod
+    def _recipient_load_options():
+        return (
+            joinedload(Recipient.recipient_group).joinedload(RecipientGroup.contacts),
+            *CampaignRecipientService._recipient_detail_load_options(),
+        )
+
+    @staticmethod
+    def _recipient_detail_load_options():
+        return (
+            joinedload(Recipient.wishlist).options(*CampaignRecipientService._wishlist_load_options()),
+        )
+
+    @staticmethod
+    def _wishlist_load_options():
+        return (
+            joinedload(Wishlist.intake_completed_by_contact),
+            joinedload(Wishlist.items).options(*CampaignRecipientService._wishlist_item_load_options()),
+        )
+
+    @staticmethod
+    def _wishlist_item_load_options():
+        return (
+            joinedload(WishlistItem.sponsorship_item)
+            .joinedload(SponsorshipItem.sponsorship),
+            joinedload(WishlistItem.fulfillment_rows)
+            .joinedload(Fulfillment.donation_line),
+            joinedload(WishlistItem.label_print_items),
+            joinedload(WishlistItem.pickup_item)
+            .joinedload(PickupItem.pickup),
+        )

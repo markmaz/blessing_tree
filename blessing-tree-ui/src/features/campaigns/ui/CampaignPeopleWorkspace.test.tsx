@@ -43,6 +43,7 @@ const workspaceFixture: CampaignPeopleWorkspaceData = {
       primaryContact: {
         id: 'contact-1',
         recipientGroupId: 'group-1',
+        displayName: 'Jamie Johnson',
         contactRole: 'PARENT',
         relationshipLabel: null,
         firstName: 'Jamie',
@@ -57,7 +58,46 @@ const workspaceFixture: CampaignPeopleWorkspaceData = {
         createdAt: null,
         updatedAt: null,
       },
-      contacts: [],
+      contacts: [
+        {
+          id: 'contact-1',
+          recipientGroupId: 'group-1',
+          displayName: 'Jamie Johnson',
+          contactRole: 'PARENT',
+          relationshipLabel: null,
+          firstName: 'Jamie',
+          lastName: 'Johnson',
+          email: 'jamie@example.com',
+          phone: null,
+          preferredContact: 'EMAIL',
+          isPrimary: true,
+          canPickUp: true,
+          isEmergencyContact: false,
+          notes: null,
+          createdAt: null,
+          updatedAt: null,
+        },
+      ],
+      authorizedPickupContacts: [
+        {
+          id: 'contact-1',
+          recipientGroupId: 'group-1',
+          displayName: 'Jamie Johnson',
+          contactRole: 'PARENT',
+          relationshipLabel: null,
+          firstName: 'Jamie',
+          lastName: 'Johnson',
+          email: 'jamie@example.com',
+          phone: null,
+          preferredContact: 'EMAIL',
+          isPrimary: true,
+          canPickUp: true,
+          isEmergencyContact: false,
+          notes: null,
+          createdAt: null,
+          updatedAt: null,
+        },
+      ],
       recipientCount: 1,
       recipients: [],
       createdAt: null,
@@ -79,6 +119,7 @@ const workspaceFixture: CampaignPeopleWorkspaceData = {
       postalCode: '75001',
       primaryContact: null,
       contacts: [],
+      authorizedPickupContacts: [],
       recipientCount: 1,
       recipients: [],
       createdAt: null,
@@ -139,6 +180,21 @@ const workspaceFixture: CampaignPeopleWorkspaceData = {
             status: 'OPEN',
             qtyFulfilled: 0,
             notes: null,
+            giftWorkflow: {
+              sponsorshipStatus: 'UNSPONSORED',
+              sponsorshipId: null,
+              qtyCommitted: 0,
+              qtyFulfilled: 0,
+              remainingQty: 1,
+              isFullyFulfilled: false,
+              isPickedUp: false,
+              pickedUpAt: null,
+              pickedUpByContactId: null,
+              labelCode: 'wishlist-1-item-1',
+              labelVersion: 1,
+              labelLastPrintedAt: null,
+              labelPrintCount: 0,
+            },
             createdAt: null,
             updatedAt: null,
           },
@@ -259,5 +315,7 @@ describe('CampaignPeopleWorkspace', () => {
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Wishlist' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('Ava Johnson')).toBeInTheDocument();
+    expect(screen.getByText(/Authorized pickup contacts:/)).toBeInTheDocument();
+    expect(screen.getByText(/Label wishlist-1-item-1/)).toBeInTheDocument();
   });
 });

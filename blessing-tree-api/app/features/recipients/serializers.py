@@ -14,6 +14,7 @@ def serialize_group_contact(contact: GroupContact) -> dict[str, Any]:
     return {
         "id": str(contact.id),
         "recipient_group_id": str(contact.recipient_group_id),
+        "display_name": _serialize_contact_name(contact),
         "contact_role": contact.contact_role,
         "relationship_label": contact.relationship_label,
         "first_name": contact.first_name,
@@ -31,6 +32,13 @@ def serialize_group_contact(contact: GroupContact) -> dict[str, Any]:
 
 
 def serialize_wishlist_item(item: WishlistItem) -> dict[str, Any]:
+    sponsorship_item = item.sponsorship_item
+    fulfillment_rows = list(item.fulfillment_rows or [])
+    pickup_item = item.pickup_item
+    label_print_items = list(item.label_print_items or [])
+    qty_fulfilled = sum(row.quantity_fulfilled for row in fulfillment_rows)
+    qty_committed = sponsorship_item.qty_committed if sponsorship_item is not None else 0
+
     return {
         "id": str(item.id),
         "wishlist_id": str(item.wishlist_id),
@@ -47,6 +55,29 @@ def serialize_wishlist_item(item: WishlistItem) -> dict[str, Any]:
         "status": item.status,
         "qty_fulfilled": item.qty_fulfilled,
         "notes": item.notes,
+        "gift_workflow": {
+            "sponsorship_status": "SPONSORED" if sponsorship_item is not None else "UNSPONSORED",
+            "sponsorship_id": str(sponsorship_item.sponsorship_id) if sponsorship_item is not None else None,
+            "qty_committed": qty_committed,
+            "qty_fulfilled": qty_fulfilled,
+            "remaining_qty": max(item.qty_requested - qty_fulfilled, 0),
+            "is_fully_fulfilled": qty_fulfilled >= item.qty_requested,
+            "is_picked_up": pickup_item is not None,
+            "picked_up_at": (
+                _serialize_datetime(pickup_item.pickup.picked_up_at)
+                if pickup_item is not None and pickup_item.pickup is not None
+                else _serialize_datetime(item.picked_up_at)
+            ),
+            "picked_up_by_contact_id": (
+                str(pickup_item.pickup.picked_up_by_contact_id)
+                if pickup_item is not None and pickup_item.pickup is not None and pickup_item.pickup.picked_up_by_contact_id
+                else str(item.picked_up_by_contact_id) if item.picked_up_by_contact_id else None
+            ),
+            "label_code": item.label_code,
+            "label_version": item.label_version,
+            "label_last_printed_at": _serialize_datetime(item.label_last_printed_at),
+            "label_print_count": sum(max(print_item.copies, 0) for print_item in label_print_items),
+        },
         "created_at": _serialize_datetime(item.created_at),
         "updated_at": _serialize_datetime(item.updated_at),
     }
@@ -117,6 +148,7 @@ def serialize_recipient(recipient: Recipient) -> dict[str, Any]:
 def serialize_recipient_group(group: RecipientGroup) -> dict[str, Any]:
     contacts = list(group.contacts or [])
     recipients = list(group.recipients or [])
+    pickup_contacts = [contact for contact in contacts if contact.can_pick_up]
     return {
         "id": str(group.id),
         "campaign_id": str(group.campaign_id),
@@ -137,6 +169,7 @@ def serialize_recipient_group(group: RecipientGroup) -> dict[str, Any]:
             else None
         ),
         "contacts": [serialize_group_contact(contact) for contact in contacts],
+        "authorized_pickup_contacts": [serialize_group_contact(contact) for contact in pickup_contacts],
         "recipient_count": len(recipients),
         "recipients": [serialize_recipient(recipient) for recipient in recipients],
         "created_at": _serialize_datetime(group.created_at),
@@ -170,3 +203,8 @@ def serialize_people_workspace(
 
 def _serialize_datetime(value: datetime | None) -> str | None:
     return value.isoformat() if value else None
+
+
+def _serialize_contact_name(contact: GroupContact) -> str:
+    name = " ".join(part for part in [contact.first_name, contact.last_name] if part)
+    return name or contact.relationship_label or contact.email or contact.phone or "Unnamed contact"

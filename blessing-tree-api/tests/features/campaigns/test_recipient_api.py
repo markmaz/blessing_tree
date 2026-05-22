@@ -80,6 +80,7 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
         preferred_contact=PREFERRED_CONTACT_EMAIL,
         email="sarah@example.com",
         is_primary=True,
+        can_pick_up=True,
     )
     child = Recipient(
         id=uuid.uuid4(),
@@ -146,6 +147,9 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     assert payload["counts"]["wishlist_count"] == 1
     assert payload["counts"]["open_item_count"] == 1
     assert payload["groups"][0]["contacts"][0]["email"] == "sarah@example.com"
+    assert payload["groups"][0]["authorized_pickup_contacts"][0]["email"] == "sarah@example.com"
+    assert payload["recipients"][0]["wishlist"]["items"][0]["gift_workflow"]["label_code"] == "people-workspace-item-1"
+    assert payload["recipients"][0]["wishlist"]["items"][0]["gift_workflow"]["sponsorship_status"] == "UNSPONSORED"
     assert sorted(payload["filters"]["program_types"]) == [
         RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
         RECIPIENT_PROGRAM_TYPE_NURSING_HOME,
@@ -253,6 +257,8 @@ def test_group_recipient_and_wishlist_crud_flow(app, monkeypatch: pytest.MonkeyP
     assert payload["intake_completed_by_contact"]["email"] == "taylor@example.com"
     assert payload["items"][0]["description"] == "Soccer ball"
     assert payload["items"][0]["size"] == "Youth"
+    assert payload["items"][0]["gift_workflow"]["remaining_qty"] == 1
+    assert payload["items"][0]["gift_workflow"]["label_code"].startswith("wishlist-")
 
 
 def test_recipient_program_alignment_rejects_invalid_group_program_combination(app, monkeypatch: pytest.MonkeyPatch) -> None:

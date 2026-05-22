@@ -16,6 +16,7 @@ import type {
 interface GroupContactResponse {
   id: string;
   recipient_group_id: string;
+  display_name: string;
   contact_role: CampaignPeopleGroupContact['contactRole'];
   relationship_label: string | null;
   first_name: string | null;
@@ -47,6 +48,21 @@ interface WishlistItemResponse {
   status: string;
   qty_fulfilled: number;
   notes: string | null;
+  gift_workflow: {
+    sponsorship_status: CampaignWishlistItem['giftWorkflow']['sponsorshipStatus'];
+    sponsorship_id: string | null;
+    qty_committed: number;
+    qty_fulfilled: number;
+    remaining_qty: number;
+    is_fully_fulfilled: boolean;
+    is_picked_up: boolean;
+    picked_up_at: string | null;
+    picked_up_by_contact_id: string | null;
+    label_code: string;
+    label_version: number;
+    label_last_printed_at: string | null;
+    label_print_count: number;
+  };
   created_at: string | null;
   updated_at: string | null;
 }
@@ -113,6 +129,7 @@ interface GroupResponse {
   postal_code: string | null;
   primary_contact: GroupContactResponse | null;
   contacts: GroupContactResponse[];
+  authorized_pickup_contacts: GroupContactResponse[];
   recipient_count: number;
   recipients: RecipientResponse[];
   created_at: string | null;
@@ -342,6 +359,7 @@ function mapGroup(response: GroupResponse): CampaignPeopleGroup {
     postalCode: response.postal_code,
     primaryContact: response.primary_contact ? mapGroupContact(response.primary_contact) : null,
     contacts: response.contacts.map(mapGroupContact),
+    authorizedPickupContacts: response.authorized_pickup_contacts.map(mapGroupContact),
     recipientCount: response.recipient_count,
     recipients: response.recipients.map(mapRecipient),
     createdAt: response.created_at,
@@ -420,6 +438,21 @@ function mapWishlistItem(response: WishlistItemResponse): CampaignWishlistItem {
     status: response.status,
     qtyFulfilled: response.qty_fulfilled,
     notes: response.notes,
+    giftWorkflow: {
+      sponsorshipStatus: response.gift_workflow.sponsorship_status,
+      sponsorshipId: response.gift_workflow.sponsorship_id,
+      qtyCommitted: response.gift_workflow.qty_committed,
+      qtyFulfilled: response.gift_workflow.qty_fulfilled,
+      remainingQty: response.gift_workflow.remaining_qty,
+      isFullyFulfilled: response.gift_workflow.is_fully_fulfilled,
+      isPickedUp: response.gift_workflow.is_picked_up,
+      pickedUpAt: response.gift_workflow.picked_up_at,
+      pickedUpByContactId: response.gift_workflow.picked_up_by_contact_id,
+      labelCode: response.gift_workflow.label_code,
+      labelVersion: response.gift_workflow.label_version,
+      labelLastPrintedAt: response.gift_workflow.label_last_printed_at,
+      labelPrintCount: response.gift_workflow.label_print_count,
+    },
     createdAt: response.created_at,
     updatedAt: response.updated_at,
   };
@@ -429,6 +462,7 @@ function mapGroupContact(response: GroupContactResponse): CampaignPeopleGroupCon
   return {
     id: response.id,
     recipientGroupId: response.recipient_group_id,
+    displayName: response.display_name,
     contactRole: response.contact_role,
     relationshipLabel: response.relationship_label,
     firstName: response.first_name,

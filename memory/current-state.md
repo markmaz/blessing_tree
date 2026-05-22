@@ -73,6 +73,7 @@ Last updated: 2026-05-21
   - app admins can now create campaigns from the campaign library UI
   - campaign managers and app admins can now update campaign metadata from the detail page and Studio settings section
   - the placeholder Families surface is now replaced by a campaign-aware People workspace with separate `Households & Facilities` and `People` tables plus drawers for groups, contacts, recipients, and wishlists
+  - the People workspace now also surfaces gift-workflow readiness directly in wishlist items, including sponsorship status, fulfillment progress, label state, pickup state, and authorized pickup contacts from the group record
   - page shells still exist for donations, reports, and admin
   - shared authenticated client exists for protected data APIs
 

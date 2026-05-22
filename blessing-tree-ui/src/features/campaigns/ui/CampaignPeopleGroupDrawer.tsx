@@ -10,6 +10,7 @@ import type {
   RecipientGroupUpsertInput,
 } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 import {
+  formatContactDisplayName,
   formatShortDate,
   toGroupContactRoleLabel,
   toPreferredContactLabel,
@@ -424,6 +425,24 @@ export function CampaignPeopleGroupDrawer({
             <div className="campaign-studio__empty-note">Save the group before adding contacts.</div>
           ) : (
             <>
+              {group.authorizedPickupContacts.length ? (
+                <div className="campaign-team-inline-list mb-3">
+                  <div className="campaign-team-inline-item campaign-team-inline-item--stacked">
+                    <div className="campaign-team-inline-item__content">
+                      <strong>Authorized Pickup Contacts</strong>
+                      <div className="campaign-team-inline-meta">
+                        {group.authorizedPickupContacts.map((contact) => (
+                          <span key={contact.id} className="campaign-chip campaign-chip-muted">
+                            <i className="bi bi-person-check me-1" aria-hidden="true" />
+                            {formatContactDisplayName(contact)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
               <div className="campaign-team-inline-list mb-3">
                 {group.contacts.length === 0 ? (
                   <div className="campaign-studio__empty-note">No contacts yet.</div>

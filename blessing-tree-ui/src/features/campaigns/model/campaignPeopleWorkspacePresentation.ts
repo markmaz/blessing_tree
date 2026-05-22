@@ -1,4 +1,5 @@
 import type {
+  CampaignPeopleGroupContact,
   GroupContactRole,
   PreferredContact,
   RecipientGroupStatus,
@@ -63,6 +64,26 @@ export function toWishlistItemTypeLabel(value: WishlistItemType): string {
     .split('_')
     .map((segment) => `${segment.slice(0, 1)}${segment.slice(1).toLowerCase()}`)
     .join(' ');
+}
+
+export function toGiftWorkflowStatusLabel(isPickedUp: boolean, isFullyFulfilled: boolean, sponsorshipStatus: 'SPONSORED' | 'UNSPONSORED'): string {
+  if (isPickedUp) {
+    return 'Picked Up';
+  }
+  if (isFullyFulfilled) {
+    return 'Ready for Pickup';
+  }
+  if (sponsorshipStatus === 'SPONSORED') {
+    return 'Sponsored';
+  }
+  return 'Open';
+}
+
+export function formatContactDisplayName(contact: CampaignPeopleGroupContact | null): string {
+  if (!contact) {
+    return 'Unassigned';
+  }
+  return contact.displayName;
 }
 
 export function formatShortDate(value: string | null): string {
