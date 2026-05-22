@@ -2,8 +2,10 @@ import { Fragment, useMemo, useState } from 'react';
 import {
   formatShortDate,
   toGroupContactRoleLabel,
+  toRecipientProgramTypeLabel,
   toRecipientGroupStatusLabel,
   toRecipientGroupTypeLabel,
+  toRecipientStatusLabel,
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
 import type { CampaignPeopleGroup } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 
@@ -22,7 +24,6 @@ export function CampaignPeopleGroupTable({
 }: CampaignPeopleGroupTableProps) {
   const [sortKey, setSortKey] = useState<GroupSortKey>('group');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [collapsedGroupIds, setCollapsedGroupIds] = useState<string[]>([]);
 
   const sortedGroups = useMemo(() => {
     const sorted = [...groups];
@@ -53,16 +54,8 @@ export function CampaignPeopleGroupTable({
     setSortDirection('asc');
   };
 
-  const toggleExpanded = (groupId: string) => {
-    setCollapsedGroupIds((currentValue) =>
-      currentValue.includes(groupId)
-        ? currentValue.filter((value) => value !== groupId)
-        : [...currentValue, groupId]
-    );
-  };
-
   if (groups.length === 0) {
-    return <div className="campaign-studio__empty-note">No households or facilities match the current search.</div>;
+    return <div className="campaign-studio__empty-note">No households or adult programs match the current search.</div>;
   }
 
   return (
@@ -108,102 +101,111 @@ export function CampaignPeopleGroupTable({
           </tr>
         </thead>
         <tbody>
-          {sortedGroups.map((group) => {
-            const isCollapsed = collapsedGroupIds.includes(group.id);
-
-            return (
-              <Fragment key={group.id}>
-                <tr
-                  className="campaign-team-table__row"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onSelectGroup(group.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      onSelectGroup(group.id);
-                    }
-                  }}
-                >
-                  <td>
-                    <div className="campaign-team-table__person campaign-people-group-row">
-                      <button
-                        type="button"
-                        className="campaign-people-group-row__toggle"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          toggleExpanded(group.id);
-                        }}
-                        aria-label={isCollapsed ? `Expand ${group.groupName}` : `Collapse ${group.groupName}`}
-                        aria-expanded={!isCollapsed}
-                      >
-                        <i className={`bi ${isCollapsed ? 'bi-chevron-right' : 'bi-chevron-down'}`} aria-hidden="true" />
-                      </button>
-                      <div className="campaign-team-table__detail">
-                        <strong>{group.groupName}</strong>
-                        <span>
-                          {group.city && group.state ? `${group.city}, ${group.state}` : group.intakeSource ?? 'No source yet'}
-                        </span>
-                      </div>
+          {sortedGroups.map((group) => (
+            <Fragment key={group.id}>
+              <tr
+                className="campaign-team-table__row campaign-people-group-parent-row"
+                role="button"
+                tabIndex={0}
+                onClick={() => onSelectGroup(group.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onSelectGroup(group.id);
+                  }
+                }}
+              >
+                <td>
+                  <div className="campaign-team-table__person campaign-people-group-row">
+                    <div className="campaign-team-table__detail">
+                      <strong>{group.groupName}</strong>
+                      <span>
+                        {group.city && group.state ? `${group.city}, ${group.state}` : group.intakeSource ?? 'No source yet'}
+                      </span>
                     </div>
-                  </td>
-                  <td>{toRecipientGroupTypeLabel(group.groupType)}</td>
-                  <td>
-                    {group.primaryContact ? (
-                      <div className="campaign-team-table__person">
-                        <strong>{[group.primaryContact.firstName, group.primaryContact.lastName].filter(Boolean).join(' ') || 'Unnamed contact'}</strong>
-                        <span>
-                          {toGroupContactRoleLabel(group.primaryContact.contactRole)}
-                          {group.primaryContact.email ? ` · ${group.primaryContact.email}` : ''}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-muted">No contact yet</span>
-                    )}
-                  </td>
-                  <td>
+                  </div>
+                </td>
+                <td>{toRecipientGroupTypeLabel(group.groupType)}</td>
+                <td>
+                  {group.primaryContact ? (
                     <div className="campaign-team-table__person">
-                      <strong>{group.recipientCount}</strong>
-                      <span>Updated {formatShortDate(group.updatedAt)}</span>
+                      <strong>{[group.primaryContact.firstName, group.primaryContact.lastName].filter(Boolean).join(' ') || 'Unnamed contact'}</strong>
+                      <span>
+                        {toGroupContactRoleLabel(group.primaryContact.contactRole)}
+                        {group.primaryContact.email ? ` · ${group.primaryContact.email}` : ''}
+                      </span>
                     </div>
-                  </td>
-                  <td>{toRecipientGroupStatusLabel(group.status)}</td>
-                </tr>
-                {!isCollapsed ? (
-                  <tr className="campaign-people-group-members-row">
-                    <td colSpan={5}>
-                      <div className="campaign-people-group-members">
-                        {group.recipients.length > 0 ? (
-                          group.recipients.map((recipient) => (
-                            <button
-                              key={recipient.id}
-                              type="button"
-                              className="campaign-people-group-member"
-                              onClick={() => onSelectRecipient(recipient.id)}
-                            >
-                              <span className="campaign-people-group-member__name">{recipient.displayLabel}</span>
-                              <span className="campaign-people-group-member__meta">
-                                {[
-                                  recipient.programRecipientId,
-                                  recipient.age !== null ? `Age ${recipient.age}` : null,
-                                  recipient.facilityRoom ? `Room ${recipient.facilityRoom}` : null,
-                                  recipient.wishlist ? `${recipient.wishlist.items.length} gift${recipient.wishlist.items.length === 1 ? '' : 's'}` : 'No wishlist',
-                                ]
-                                  .filter(Boolean)
-                                  .join(' · ')}
-                              </span>
-                            </button>
-                          ))
-                        ) : (
-                          <div className="campaign-studio__empty-note">No people have been added to this group yet.</div>
-                        )}
+                  ) : (
+                    <span className="text-muted">No contact yet</span>
+                  )}
+                </td>
+                <td>
+                  <div className="campaign-team-table__person">
+                    <strong>{group.recipientCount}</strong>
+                    <span>Updated {formatShortDate(group.updatedAt)}</span>
+                  </div>
+                </td>
+                <td>{toRecipientGroupStatusLabel(group.status)}</td>
+              </tr>
+              {group.recipients.length > 0 ? (
+                group.recipients.map((recipient) => (
+                  <tr
+                    key={recipient.id}
+                    className="campaign-people-group-member-row"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onSelectRecipient(recipient.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onSelectRecipient(recipient.id);
+                      }
+                    }}
+                  >
+                    <td>
+                      <div className="campaign-people-group-member-button">
+                        <span className="campaign-people-group-member-button__name">{recipient.displayLabel}</span>
+                        <span className="campaign-people-group-member-button__meta">
+                          {[
+                            recipient.programRecipientId,
+                            recipient.age !== null ? `Age ${recipient.age}` : null,
+                            recipient.facilityRoom ? `Room ${recipient.facilityRoom}` : null,
+                            recipient.wishlist
+                              ? `${recipient.wishlist.items.length} gift${recipient.wishlist.items.length === 1 ? '' : 's'}`
+                              : 'No wishlist',
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </span>
                       </div>
                     </td>
+                    <td>{toRecipientProgramTypeLabel(recipient.programType)}</td>
+                    <td>
+                      <span className="campaign-people-group-member-hint">Member of {group.groupName}</span>
+                    </td>
+                    <td>
+                      {[
+                        recipient.programRecipientId,
+                        recipient.facilityRoom ? `Room ${recipient.facilityRoom}` : null,
+                        recipient.wishlist
+                          ? `${recipient.wishlist.items.length} gift${recipient.wishlist.items.length === 1 ? '' : 's'}`
+                          : 'No wishlist',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </td>
+                    <td>{toRecipientStatusLabel(recipient.status)}</td>
                   </tr>
-                ) : null}
-              </Fragment>
-            );
-          })}
+                ))
+              ) : (
+                <tr className="campaign-people-group-member-row">
+                  <td colSpan={5}>
+                    <div className="campaign-studio__empty-note">No people have been added to this group yet.</div>
+                  </td>
+                </tr>
+              )}
+            </Fragment>
+          ))}
         </tbody>
       </table>
     </div>
