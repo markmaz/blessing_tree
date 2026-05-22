@@ -80,7 +80,6 @@ const genderOptions = [
   { value: '', label: 'Not set' },
   { value: 'F', label: 'Female' },
   { value: 'M', label: 'Male' },
-  { value: 'NB', label: 'Non-binary' },
   { value: 'PNTS', label: 'Prefer not to say' },
   { value: 'OTHER', label: 'Other' },
 ] as const;
