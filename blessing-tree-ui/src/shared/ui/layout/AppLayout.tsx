@@ -13,7 +13,7 @@ const getPageTitle = (pathname: string) => {
   if (pathname.startsWith('/campaigns/') && pathname.endsWith('/studio')) {
     return 'Campaign Studio';
   }
-  if (pathname.startsWith('/campaigns/') && pathname.endsWith('/people')) {
+  if (pathname.startsWith('/campaigns/') && pathname.includes('/people')) {
     return 'People';
   }
   if (pathname.startsWith('/campaigns')) return 'Campaigns';

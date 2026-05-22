@@ -59,6 +59,8 @@ interface CampaignPeopleWorkspaceProps {
   onDeleteWishlistItem: (recipientId: string, itemId: string) => Promise<boolean>;
   onClearSaveMessage: () => void;
   onClearError: () => void;
+  showHero?: boolean;
+  showCreateActions?: boolean;
 }
 
 export function CampaignPeopleWorkspace({
@@ -78,6 +80,8 @@ export function CampaignPeopleWorkspace({
   onDeleteWishlistItem,
   onClearSaveMessage,
   onClearError,
+  showHero = true,
+  showCreateActions = true,
 }: CampaignPeopleWorkspaceProps) {
   const canEditPeople = canManageCampaign(access) || access?.capabilities.includes('campaign.recipients.edit') === true;
   const [groupSearch, setGroupSearch] = useState('');
@@ -153,33 +157,35 @@ export function CampaignPeopleWorkspace({
 
   return (
     <section className="campaign-page-stack">
-      <div className="campaign-hero-card mb-4">
-        <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
-          <div>
-            <div className="campaign-chip-row mb-3">
-              <span className="campaign-chip campaign-chip-muted">
-                {campaignName}
-              </span>
-              <span className="campaign-chip campaign-chip-muted">
-                {workspace.counts.householdCount} households
-              </span>
-              <span className="campaign-chip campaign-chip-muted">
-                {workspace.counts.careFacilityCount} facilities
-              </span>
+      {showHero ? (
+        <div className="campaign-hero-card mb-4">
+          <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div>
+              <div className="campaign-chip-row mb-3">
+                <span className="campaign-chip campaign-chip-muted">
+                  {campaignName}
+                </span>
+                <span className="campaign-chip campaign-chip-muted">
+                  {workspace.counts.householdCount} households
+                </span>
+                <span className="campaign-chip campaign-chip-muted">
+                  {workspace.counts.careFacilityCount} facilities
+                </span>
+              </div>
+              <h1 className="h3 mb-1">People</h1>
+              <p className="text-muted mb-0">
+                Manage households, facilities, contacts, people, and wishlists for this campaign.
+              </p>
             </div>
-            <h1 className="h3 mb-1">People</h1>
-            <p className="text-muted mb-0">
-              Manage households, facilities, contacts, people, and wishlists for this campaign.
-            </p>
-          </div>
-          <div className="d-flex flex-wrap gap-2">
-            <Link to={routes.CAMPAIGNS} className="btn btn-outline-secondary btn-sm">
-              <i className="bi bi-arrow-left me-2" aria-hidden="true" />
-              Back to Campaigns
-            </Link>
+            <div className="d-flex flex-wrap gap-2">
+              <Link to={routes.CAMPAIGNS} className="btn btn-outline-secondary btn-sm">
+                <i className="bi bi-arrow-left me-2" aria-hidden="true" />
+                Back to Campaigns
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
       {saveMessage ? (
         <AutoDismissAlert
@@ -220,7 +226,7 @@ export function CampaignPeopleWorkspace({
                 Shared intake containers for parents, guardians, staff contacts, and the people they represent.
               </p>
             </div>
-            {canEditPeople ? (
+            {canEditPeople && showCreateActions ? (
               <div className="d-flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -277,7 +283,7 @@ export function CampaignPeopleWorkspace({
                 Each row is an actual gift recipient, with a campaign-specific wishlist and program context.
               </p>
             </div>
-            {canEditPeople ? (
+            {canEditPeople && showCreateActions ? (
               <button
                 type="button"
                 className="btn btn-secondary btn-sm campaign-team-workspace__section-action"

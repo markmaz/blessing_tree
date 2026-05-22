@@ -1,9 +1,16 @@
 import { useEffect } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
-import { buildCampaignPeoplePath, routes } from '@/app/routes';
+import {
+  Navigate,
+  Outlet,
+  useParams,
+} from 'react-router-dom';
+import {
+  buildCampaignPeopleIntakePath,
+  routes,
+} from '@/app/routes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
-import { CampaignPeopleWorkspace } from '@/features/campaigns/ui/CampaignPeopleWorkspace';
 import { useCampaignPeopleWorkspace } from '@/features/campaigns/model/useCampaignPeopleWorkspace';
+import type { PeopleWorkspaceOutletContext } from '@/features/campaigns/model/peopleWorkspaceContext';
 
 export function PeoplePage() {
   const { campaignId = null } = useParams();
@@ -59,24 +66,53 @@ export function PeoplePage() {
   }
 
   return (
-    <CampaignPeopleWorkspace
-      campaignName={campaign?.name ?? 'Campaign'}
-      access={campaign?.userAccess ?? null}
-      workspace={workspace}
-      isLoading={isLoading}
-      isSaving={isSaving}
-      error={error}
-      saveMessage={saveMessage}
-      onSaveGroup={saveGroup}
-      onSaveContact={saveContact}
-      onDeleteContact={removeContact}
-      onSaveRecipient={saveRecipient}
-      onSaveWishlist={saveWishlist}
-      onSaveWishlistItem={saveWishlistItem}
-      onDeleteWishlistItem={removeWishlistItem}
-      onClearSaveMessage={clearSaveMessage}
-      onClearError={clearError}
-    />
+    <div className="vstack gap-4">
+      <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div>
+          <div className="campaign-chip-row mb-3">
+            <span className="campaign-chip campaign-chip-muted">
+              {campaign?.name ?? 'Campaign'}
+            </span>
+            {workspace ? (
+              <>
+                <span className="campaign-chip campaign-chip-muted">
+                  {workspace.counts.householdCount} families
+                </span>
+                <span className="campaign-chip campaign-chip-muted">
+                  {workspace.counts.careFacilityCount} facilities
+                </span>
+              </>
+            ) : null}
+          </div>
+          <h1 className="h3 mb-1">People</h1>
+          <p className="text-muted mb-0">
+            Use Intake for new family or facility entry, and Directory to search and maintain existing households, facilities, people, and wishlists.
+          </p>
+        </div>
+      </div>
+
+      <Outlet
+        context={{
+          campaignId,
+          campaignName: campaign?.name ?? 'Campaign',
+          access: campaign?.userAccess ?? null,
+          workspace,
+          isLoading,
+          isSaving,
+          error,
+          saveMessage,
+          onSaveGroup: saveGroup,
+          onSaveContact: saveContact,
+          onDeleteContact: removeContact,
+          onSaveRecipient: saveRecipient,
+          onSaveWishlist: saveWishlist,
+          onSaveWishlistItem: saveWishlistItem,
+          onDeleteWishlistItem: removeWishlistItem,
+          onClearSaveMessage: clearSaveMessage,
+          onClearError: clearError,
+        } satisfies PeopleWorkspaceOutletContext}
+      />
+    </div>
   );
 }
 
@@ -84,7 +120,7 @@ export function LegacyFamiliesRedirectPage() {
   const { selectedCampaignId } = useCampaigns();
 
   if (selectedCampaignId) {
-    return <Navigate to={buildCampaignPeoplePath(selectedCampaignId)} replace />;
+    return <Navigate to={buildCampaignPeopleIntakePath(selectedCampaignId)} replace />;
   }
 
   return <Navigate to={routes.CAMPAIGNS} replace />;

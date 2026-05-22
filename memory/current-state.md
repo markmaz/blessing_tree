@@ -72,7 +72,7 @@ Last updated: 2026-05-21
   - a Vitest + Testing Library harness now exists for automated frontend tests
   - app admins can now create campaigns from the campaign library UI
   - campaign managers and app admins can now update campaign metadata from the detail page and Studio settings section
-  - the placeholder Families surface is now replaced by a campaign-aware People workspace with separate `Households & Facilities` and `People` tables plus drawers for groups, contacts, recipients, and wishlists
+  - the placeholder Families surface is now replaced by a campaign-aware People section with child `Intake` and `Directory` views so new entry work is separated from searchable maintenance
   - the People workspace now also surfaces gift-workflow readiness directly in wishlist items, including sponsorship status, fulfillment progress, label state, pickup state, and authorized pickup contacts from the group record
   - the People intake UX is now more group-first: family/facility drawers now frame intake as `Children` or `Residents`, the contextual child/resident drawer hides irrelevant direct-contact fields, and data entry can move from group to child/resident wishlist flow with less context switching
   - page shells still exist for donations, reports, and admin

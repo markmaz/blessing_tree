@@ -186,37 +186,35 @@ workspace.
 
 1. Replace UI framing
    - change nav label from `Families` to `People`
-   - make route campaign-aware:
-     - `/campaigns/:campaignId/people`
+   - make routes campaign-aware:
+     - `/campaigns/:campaignId/people/intake`
+     - `/campaigns/:campaignId/people/directory`
 
-2. Build summary cards
-   - `Groups`
-   - `People`
-   - `Wishlists`
-   - `Open Items`
-
-3. Build `Households & Facilities` section
-   - searchable/sortable table
-   - create actions:
-     - `Add Household`
+2. Build `Intake` child page
+   - primary actions:
+     - `Add Family`
      - `Add Facility`
-   - row click opens group drawer
+   - keep users in context to add children/residents and their wishlists
 
-4. Build `People` section
-   - searchable/sortable table
-   - create action:
-     - `Add Person`
-   - row click opens person drawer
+3. Build `Directory` child page
+   - summary cards:
+     - `Groups`
+     - `People`
+     - `Wishlists`
+     - `Open Items`
+   - searchable/sortable `Households & Facilities` table
+   - searchable/sortable `People` table
 
-5. Build drawers
+4. Build drawers
    - group drawer
    - contact editing inside group drawer
    - person drawer
    - wishlist editor launched from person drawer
 
-6. Build workflow-aware create flows
-   - family/household intake path
-   - facility/nursing-home intake path
+5. Build workflow-aware conditional forms
+   - child intake hides non-applicable direct-contact fields
+   - facility-resident intake shows resident-specific fields
+   - group drawer keeps linked children/residents visible during intake
 
 ### Deliverables
 

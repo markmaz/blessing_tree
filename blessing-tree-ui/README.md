@@ -29,7 +29,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - The Team workspace is now intentionally reduced to search-plus-sort controls: compact top stats, a People card with search and sortable columns, and a Teams card with the same simpler interaction model.
 - The Team section now also includes inline concept help for roster terms such as `Member Type`, `App Access`, `App Access Roles`, and `Teams`, and the Studio AI drawer now exposes the same Team glossary when the Team section is active.
 - The Team workspace now consumes the backend-provided app access role catalog, so role labels and descriptions are no longer duplicated in the frontend.
-- The old placeholder `Families` page is now replaced by a campaign-aware `People` workspace at `/campaigns/:campaignId/people`, with separate `Households & Facilities` and `People` tables plus right-side drawers for groups, contacts, recipients, and wishlists.
+- The old placeholder `Families` page is now replaced by a campaign-aware `People` section with child routes at `/campaigns/:campaignId/people/intake` and `/campaigns/:campaignId/people/directory`, splitting new intake work from searchable directory maintenance.
 - The Admin area now uses left-sidebar child navigation under `Admin` for user management, LLM configuration, health checks, and app capabilities.
 - The User Management child page now uses a Query Forge-style workspace with a searchable/sortable table, row action menu, invite drawer, and user detail drawer.
 - User Management now also includes Query Forge-style status filter cards for `All`, `Active`, and `Invited` above the table.
@@ -56,7 +56,8 @@ Protected routes:
 - `/campaigns`
 - `/campaigns/:campaignId`
 - `/campaigns/:campaignId/studio`
-- `/campaigns/:campaignId/people`
+- `/campaigns/:campaignId/people/intake`
+- `/campaigns/:campaignId/people/directory`
 - `/donations`
 - `/reports`
 - `/admin`

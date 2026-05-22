@@ -18,6 +18,8 @@ import { CampaignsPage } from '@/pages/CampaignsPage';
 import { CampaignDetailPage } from '@/pages/CampaignDetailPage';
 import { CampaignStudioPage } from '@/pages/CampaignStudioPage';
 import { LegacyFamiliesRedirectPage, PeoplePage } from '@/pages/PeoplePage';
+import { PeopleIntakePage } from '@/pages/PeopleIntakePage';
+import { PeopleDirectoryPage } from '@/pages/PeopleDirectoryPage';
 import { DonationsPage } from '@/pages/DonationsPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { AdminPage } from '@/pages/AdminPage';
@@ -65,7 +67,11 @@ export function App() {
                       <PeoplePage />
                     </FeatureGate>
                   }
-                />
+                >
+                  <Route index element={<Navigate to="intake" replace />} />
+                  <Route path="intake" element={<PeopleIntakePage />} />
+                  <Route path="directory" element={<PeopleDirectoryPage />} />
+                </Route>
                 <Route
                   path={routes.FAMILIES.slice(1)}
                   element={

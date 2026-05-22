@@ -13,6 +13,8 @@ export const routes = {
   CAMPAIGN_DETAIL: '/campaigns/:campaignId',
   CAMPAIGN_STUDIO: '/campaigns/:campaignId/studio',
   CAMPAIGN_PEOPLE: '/campaigns/:campaignId/people',
+  CAMPAIGN_PEOPLE_INTAKE: '/campaigns/:campaignId/people/intake',
+  CAMPAIGN_PEOPLE_DIRECTORY: '/campaigns/:campaignId/people/directory',
   FAMILIES: '/families',
   DONATIONS: '/donations',
   REPORTS: '/reports',
@@ -33,4 +35,12 @@ export function buildCampaignStudioPath(campaignId: string): string {
 
 export function buildCampaignPeoplePath(campaignId: string): string {
   return `/campaigns/${campaignId}/people`;
+}
+
+export function buildCampaignPeopleIntakePath(campaignId: string): string {
+  return `/campaigns/${campaignId}/people/intake`;
+}
+
+export function buildCampaignPeopleDirectoryPath(campaignId: string): string {
+  return `/campaigns/${campaignId}/people/directory`;
 }

@@ -46,4 +46,16 @@ describe('SidebarNav', () => {
     expect(screen.getByRole('link', { name: /health check/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /app capabilities/i })).toBeInTheDocument();
   });
+
+  it('renders people child menu items for the selected campaign', () => {
+    render(
+      <MemoryRouter initialEntries={['/campaigns/campaign-123/people/intake']}>
+        <SidebarNav isOpen onNavigate={() => {}} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: /^people$/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /intake/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /directory/i })).toBeInTheDocument();
+  });
 });

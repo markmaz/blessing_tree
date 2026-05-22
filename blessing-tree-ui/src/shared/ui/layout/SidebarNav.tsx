@@ -1,5 +1,9 @@
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { buildCampaignPeoplePath, routes } from '@/app/routes';
+import {
+  buildCampaignPeopleDirectoryPath,
+  buildCampaignPeopleIntakePath,
+  routes,
+} from '@/app/routes';
 import { useAppFeatures } from '@/features/admin/model/appFeaturesContext';
 import { useAuth } from '@/features/auth/model/authContext';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
@@ -26,6 +30,18 @@ const navItems = [
     label: 'People',
     to: routes.CAMPAIGNS,
     icon: 'bi-people',
+    children: [
+      {
+        label: 'Intake',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-clipboard-plus',
+      },
+      {
+        label: 'Directory',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-search',
+      },
+    ],
   },
   {
     label: 'Donations',
@@ -75,7 +91,15 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
     item.label === 'People'
       ? {
           ...item,
-          to: selectedCampaignId ? buildCampaignPeoplePath(selectedCampaignId) : routes.CAMPAIGNS,
+          to: selectedCampaignId ? buildCampaignPeopleIntakePath(selectedCampaignId) : routes.CAMPAIGNS,
+          children: item.children?.map((child) => ({
+            ...child,
+            to: selectedCampaignId
+              ? child.label === 'Directory'
+                ? buildCampaignPeopleDirectoryPath(selectedCampaignId)
+                : buildCampaignPeopleIntakePath(selectedCampaignId)
+              : routes.CAMPAIGNS,
+          })),
         }
       : item
   );
@@ -108,7 +132,7 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
               className={() =>
                 `sidebar-link nav-link ${
                   (item.label === 'People' &&
-                    (location.pathname.startsWith('/campaigns/') && location.pathname.endsWith('/people'))) ||
+                    location.pathname.includes('/people')) ||
                   item.children?.some((child) => location.pathname.startsWith(child.to)) ||
                   (item.label !== 'People' &&
                     !item.children?.length &&

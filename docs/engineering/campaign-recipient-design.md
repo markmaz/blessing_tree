@@ -527,9 +527,14 @@ Recommendation:
 
 The People workspace must be campaign-scoped.
 
-Recommended route:
+Recommended parent route:
 
 - `/campaigns/:campaignId/people`
+
+Recommended child routes:
+
+- `/campaigns/:campaignId/people/intake`
+- `/campaigns/:campaignId/people/directory`
 
 Do not make this a global top-level non-campaign route.
 
@@ -544,28 +549,76 @@ Rationale:
 
 Recommended workspace structure:
 
-1. top summary cards
-2. `Households & Facilities` section
-3. `People` section
-4. drawers for:
+1. `People` as the parent campaign section
+2. child navigation:
+   - `Intake`
+   - `Directory`
+3. workflow-aware drawers for:
    - group
    - contact
    - recipient
    - wishlist
 
-### Summary Cards
+This separates:
 
-Recommended top cards:
+- new intake entry
+- search and maintenance
+
+That is closer to how intake workers actually think.
+
+### Intake View
+
+The `Intake` child page should be the primary entry point for new data entry.
+
+Recommended first screen:
+
+- `Add Family`
+- `Add Facility`
+
+The page should feel like a workflow launcher, not a directory.
+
+Recommended behavior:
+
+- `Add Family` opens the household intake flow
+- `Add Facility` opens the care-facility intake flow
+- after a group is created, the same intake surface should keep users in context
+  to add children or residents and then add wishlists
+
+This is important because intake workers think in connected tasks:
+
+- add a family
+- add the children
+- add their wishlists
+
+or:
+
+- open a facility intake
+- add the residents
+- add their wishlists
+
+They are not thinking in abstract record types.
+
+### Directory View
+
+The `Directory` child page should be the searchable maintenance surface.
+
+Recommended structure:
+
+1. top summary cards
+2. `Households & Facilities` section
+3. `People` section
+
+Recommended summary cards:
 
 - `Groups`
 - `People`
 - `Wishlists`
 - `Open Items`
 
-These should be compact and consistent with the Team and Readiness workspace
-patterns already in the app.
+These should remain compact and consistent with the Team and Readiness
+workspace patterns already in the app.
 
-### Section 1: Households & Facilities
+#### Directory Section 1: Households & Facilities
 
 This replaces the colder backend phrase `recipient groups` in the UI.
 
@@ -579,14 +632,9 @@ Recommended columns:
 - `People`
 - `Status`
 
-Recommended create actions:
-
-- `Add Household`
-- `Add Facility`
-
 Row click should open the group drawer.
 
-### Section 2: People
+#### Directory Section 2: People
 
 This is the actual gift-recipient table.
 
@@ -600,10 +648,6 @@ Recommended columns:
 - `Wishlist`
 - `Status`
 
-Recommended create action:
-
-- `Add Person`
-
 Row click should open the person drawer.
 
 ### Group Drawer
@@ -614,12 +658,14 @@ Recommended sections:
 - address
 - notes
 - contacts
-- linked people
+- linked children or residents
 
 Recommended behaviors:
 
 - allow add/edit/remove contacts
-- allow add person from inside the group drawer
+- allow add child/resident from inside the group drawer
+- show linked children/residents directly in the drawer so intake stays
+  connected to the group context
 - support both household and facility entry through the same drawer shell
 
 ### Person Drawer
@@ -637,6 +683,8 @@ Recommended behaviors:
 - open full wishlist editing from the person drawer
 - show family-child vs nursing-home-adult fields conditionally based on
   `program_type`
+- hide non-applicable direct-contact fields during contextual household-child
+  intake so family contacts stay on the household record
 
 ### Wishlist Editing
 
@@ -690,12 +738,17 @@ products.
 ### Relationship To Existing Navigation
 
 The current placeholder `Families` area should be replaced by this campaign-aware
-`People` workspace.
+`People` section.
 
 Recommended direction:
 
-- sidebar/nav label: `People`
-- route target: `/campaigns/:campaignId/people`
+- sidebar/nav parent label: `People`
+- child items:
+  - `Intake`
+  - `Directory`
+- route targets:
+  - `/campaigns/:campaignId/people/intake`
+  - `/campaigns/:campaignId/people/directory`
 - retire the old family-only framing from the UI
 
 ## Communications / Automation Implications
