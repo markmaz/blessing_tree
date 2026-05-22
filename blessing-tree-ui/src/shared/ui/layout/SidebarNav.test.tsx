@@ -80,4 +80,19 @@ describe('SidebarNav', () => {
       '/campaigns/campaign-xyz/people/directory'
     );
   });
+
+  it('does not render people child links without a campaign context', () => {
+    mockUseCampaigns.mockReturnValue({
+      selectedCampaignId: null,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/campaigns']}>
+        <SidebarNav isOpen onNavigate={() => {}} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole('link', { name: /intake/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /directory/i })).not.toBeInTheDocument();
+  });
 });

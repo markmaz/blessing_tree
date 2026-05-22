@@ -131,7 +131,7 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
       <nav className="sidebar-nav">
         {visibleItems.map((item) => (
           <div key={item.label} className="sidebar-nav-group">
-            {item.children?.length ? (
+            {item.label === 'People' && !resolvedCampaignId ? null : item.children?.length ? (
               <div
                 className={`sidebar-link nav-link ${
                   (item.label === 'People' &&
@@ -161,7 +161,7 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
                 <span>{item.label}</span>
               </NavLink>
             )}
-            {item.children?.length ? (
+            {item.children?.length && (item.label !== 'People' || resolvedCampaignId) ? (
               <div className="sidebar-subnav">
                 {item.children.map((child) => (
                   <NavLink
