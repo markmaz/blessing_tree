@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import {
+  formatShortDate,
   toGiftWorkflowStatusLabel,
   toRecipientProgramTypeLabel,
   toRecipientStatusLabel,
@@ -19,6 +20,7 @@ export function CampaignPeopleRecipientTable({
 }: CampaignPeopleRecipientTableProps) {
   const [sortKey, setSortKey] = useState<RecipientSortKey>('person');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [openRecipientIds, setOpenRecipientIds] = useState<Record<string, boolean>>({});
 
   const sortedRecipients = useMemo(() => {
     const sorted = [...recipients];
@@ -49,6 +51,10 @@ export function CampaignPeopleRecipientTable({
     setSortDirection('asc');
   };
 
+  const toggleOpen = (recipientId: string) => {
+    setOpenRecipientIds((currentValue) => ({ ...currentValue, [recipientId]: !currentValue[recipientId] }));
+  };
+
   if (recipients.length === 0) {
     return <div className="campaign-studio__empty-note">No people match the current search.</div>;
   }
@@ -58,6 +64,7 @@ export function CampaignPeopleRecipientTable({
       <table className="table campaign-team-table mb-0">
         <thead>
           <tr>
+            <th style={{ width: 40 }} />
             <SortableHeader
               label="Person"
               sortKey="person"
@@ -65,6 +72,7 @@ export function CampaignPeopleRecipientTable({
               direction={sortDirection}
               onSort={handleSort}
             />
+            <th>Person ID</th>
             <SortableHeader
               label="Program"
               sortKey="program"
@@ -103,65 +111,103 @@ export function CampaignPeopleRecipientTable({
           </tr>
         </thead>
         <tbody>
-          {sortedRecipients.map((recipient) => (
-            <tr
-              key={recipient.id}
-              className="campaign-team-table__row"
-              role="button"
-              tabIndex={0}
-              onClick={() => onSelectRecipient(recipient.id)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  onSelectRecipient(recipient.id);
-                }
-              }}
-            >
-              <td>
-                <div className="campaign-team-table__person">
-                  <strong>{recipient.displayLabel}</strong>
-                  <span>
-                    {recipient.group?.groupType === 'ADULT_PROGRAM' && recipient.programRecipientId
-                      ? [recipient.programRecipientId, recipient.facilityRoom ? `Room ${recipient.facilityRoom}` : null]
-                          .filter(Boolean)
-                          .join(' · ')
-                      : recipient.group?.groupType === 'ADULT_PROGRAM' && recipient.facilityRoom
-                        ? `Room ${recipient.facilityRoom}`
-                      : recipient.gender
-                        ? `Gender ${recipient.gender}`
-                        : 'No profile details yet'}
-                  </span>
-                </div>
-              </td>
-              <td>{toRecipientProgramTypeLabel(recipient.programType)}</td>
-              <td>{recipient.group?.groupName ?? 'No group'}</td>
-              <td>{recipient.age ?? recipient.birthYear ?? 'Not set'}</td>
-              <td>
-                {recipient.wishlist ? (
-                  <div className="campaign-team-table__person">
-                    <strong>{recipient.wishlist.items.length} item{recipient.wishlist.items.length === 1 ? '' : 's'}</strong>
-                    <div className="campaign-people-wishlist-list">
-                      {recipient.wishlist.items.map((item) => (
-                        <div key={item.id} className="campaign-people-wishlist-list__item">
-                          <span className="campaign-people-wishlist-list__name">{item.description}</span>
-                          <span className="campaign-people-wishlist-list__meta">
-                            {toGiftWorkflowStatusLabel(
-                              item.giftWorkflow.isPickedUp,
-                              item.giftWorkflow.isFullyFulfilled,
-                              item.giftWorkflow.sponsorshipStatus
-                            )}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-muted">No wishlist yet</span>
-                )}
-              </td>
-              <td>{toRecipientStatusLabel(recipient.status)}</td>
-            </tr>
-          ))}
+          {sortedRecipients.map((recipient) => {
+            const hasWishlistItems = (recipient.wishlist?.items.length ?? 0) > 0;
+            const isOpen = !!openRecipientIds[recipient.id];
+
+            return (
+              <Fragment key={recipient.id}>
+                <tr className="campaign-team-table__row campaign-people-recipient-parent-row">
+                  <td>
+                    {hasWishlistItems ? (
+                      <button
+                        type="button"
+                        className="campaign-people-group-row__toggle"
+                        aria-expanded={isOpen}
+                        aria-label={isOpen ? `Collapse ${recipient.displayLabel}` : `Expand ${recipient.displayLabel}`}
+                        onClick={() => toggleOpen(recipient.id)}
+                      >
+                        <i className={`bi ${isOpen ? 'bi-chevron-down' : 'bi-chevron-right'}`} aria-hidden="true" />
+                      </button>
+                    ) : (
+                      <span className="campaign-people-row__toggle-placeholder" aria-hidden="true" />
+                    )}
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="campaign-people-row__link"
+                      onClick={() => onSelectRecipient(recipient.id)}
+                    >
+                      <span className="campaign-people-row__name">{recipient.displayLabel}</span>
+                      <span className="campaign-people-row__meta">
+                        {recipient.group?.groupType === 'ADULT_PROGRAM' && recipient.facilityRoom
+                          ? `Room ${recipient.facilityRoom}`
+                          : recipient.gender
+                            ? `Gender ${recipient.gender}`
+                            : 'No profile details yet'}
+                      </span>
+                    </button>
+                  </td>
+                  <td>{recipient.programRecipientId ?? '—'}</td>
+                  <td>{toRecipientProgramTypeLabel(recipient.programType)}</td>
+                  <td>{recipient.group?.groupName ?? 'No group'}</td>
+                  <td>{recipient.age ?? recipient.birthYear ?? 'Not set'}</td>
+                  <td>
+                    {recipient.wishlist ? (
+                      <strong>{recipient.wishlist.items.length} item{recipient.wishlist.items.length === 1 ? '' : 's'}</strong>
+                    ) : (
+                      <span className="text-muted">No wishlist yet</span>
+                    )}
+                  </td>
+                  <td>{toRecipientStatusLabel(recipient.status)}</td>
+                </tr>
+                {isOpen && recipient.wishlist ? (
+                  <tr className="campaign-people-recipient-children-row">
+                    <td colSpan={8}>
+                      <div className="campaign-people-group-children-wrap">
+                        <table className="table table-sm mb-0 campaign-people-group-children-table">
+                          <thead>
+                            <tr>
+                              <th>Gift</th>
+                              <th>Type</th>
+                              <th>Requested</th>
+                              <th>Status</th>
+                              <th>Label</th>
+                              <th>Last Updated</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {recipient.wishlist.items.map((item) => (
+                              <tr key={item.id} className="campaign-people-recipient-child-row">
+                                <td>
+                                  <div className="campaign-people-group-child-primary">
+                                    <strong>{item.description}</strong>
+                                    {item.category ? <span>{item.category}</span> : null}
+                                  </div>
+                                </td>
+                                <td>{item.itemType.replaceAll('_', ' ')}</td>
+                                <td>{item.qtyRequested}</td>
+                                <td>
+                                  {toGiftWorkflowStatusLabel(
+                                    item.giftWorkflow.isPickedUp,
+                                    item.giftWorkflow.isFullyFulfilled,
+                                    item.giftWorkflow.sponsorshipStatus
+                                  )}
+                                </td>
+                                <td>{item.giftWorkflow.labelCode}</td>
+                                <td>{formatShortDate(item.updatedAt)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                ) : null}
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>

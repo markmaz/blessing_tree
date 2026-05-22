@@ -462,14 +462,17 @@ describe('CampaignPeopleWorkspace', () => {
     const [groupTable, peopleTable] = screen.getAllByRole('table');
 
     expect(within(groupTable).queryByText('Ava Johnson')).not.toBeInTheDocument();
+    expect(within(peopleTable).queryByText('Art kit')).not.toBeInTheDocument();
 
     await user.click(within(groupTable).getByRole('button', { name: 'Expand Johnson Household' }));
     await user.click(within(groupTable).getByRole('button', { name: 'Expand Maple Grove West Wing' }));
+    await user.click(within(peopleTable).getByRole('button', { name: 'Expand Ava Johnson' }));
 
     expect(within(groupTable).getByText('Ava Johnson')).toBeInTheDocument();
     expect(within(groupTable).getByText('Mary Smith')).toBeInTheDocument();
     expect(within(groupTable).getByText('Age 8')).toBeInTheDocument();
     expect(within(groupTable).getByText('MGWW-001')).toBeInTheDocument();
+    expect(within(peopleTable).getByText('MGWW-001')).toBeInTheDocument();
     expect(within(peopleTable).getByText('Art kit')).toBeInTheDocument();
     expect(within(peopleTable).getByText('Open')).toBeInTheDocument();
   });
@@ -503,7 +506,7 @@ describe('CampaignPeopleWorkspace', () => {
 
     const peopleTable = screen.getAllByRole('table')[1];
 
-    await user.click(within(peopleTable).getByRole('button', { name: /Ava Johnson/ }));
+    await user.click(within(peopleTable).getByRole('button', { name: /Ava Johnson.*Gender F/ }));
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Wishlist' })).toBeInTheDocument();

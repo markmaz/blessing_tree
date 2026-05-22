@@ -116,6 +116,49 @@
   font-size: 0.84rem;
 }
 
+.campaign-people-recipient-parent-row td {
+  vertical-align: top;
+}
+
+.campaign-people-row__toggle-placeholder {
+  display: inline-block;
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
+.campaign-people-row__link {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.12rem;
+  color: inherit;
+  text-align: left;
+}
+
+.campaign-people-row__name {
+  font-weight: 700;
+}
+
+.campaign-people-row__meta {
+  color: var(--blessing-text-light);
+  font-size: 0.84rem;
+}
+
+.campaign-people-recipient-children-row td {
+  padding-top: 0;
+  border-top: 0;
+  background: rgba(248, 245, 239, 0.38);
+}
+
+.campaign-people-recipient-child-row td {
+  font-size: 0.9rem;
+  vertical-align: top;
+}
+
 .campaign-people-wishlist-list {
   display: grid;
   gap: 0.2rem;
