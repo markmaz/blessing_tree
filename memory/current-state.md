@@ -22,7 +22,7 @@ Last updated: 2026-05-21
   - Campaign Studio backend support now exists for assignments, campaign-scoped communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, aggregate studio payloads, and create-from-previous-campaign cloning support
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
   - local outbound email is now operational in development through a repo-owned SMTP sink plus configurable TLS/SSL flags, so invite delivery and scheduled communication dispatch can be exercised end to end without external SMTP credentials
-  - recipient phase 1 backend refinement now exists: `recipient_group`, `group_contact`, `recipient`, `wishlist`, and `wishlist_item` now support the refined container/contact/recipient split plus `program_type` for `CHILD_FAMILY` and `NURSING_HOME`
+  - recipient phases 1 through 3 backend work now exist: the schema/model is refined and there is now a recipient feature package plus campaign-scoped APIs for groups, contacts, recipients, wishlists, wishlist items, and the aggregate `people-workspace` payload
   - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
   - admin LLM test/health now probes the real generation path against the configured model instead of treating `/models` reachability as sufficient
   - invitation-centric onboarding now supports Google, Yahoo, and local password from the invite funnel; generic Google/Yahoo OAuth remains limited to already-linked returning users, and invite validation now exposes accepted-vs-pending onboarding state for cleaner frontend handling
@@ -154,6 +154,20 @@ Last updated: 2026-05-21
     - `POST /api/v1/campaigns/<campaign_id>/teams/<team_id>/roles`
     - `PATCH /api/v1/campaigns/<campaign_id>/teams/<team_id>/roles/<role_id>`
     - `PATCH /api/v1/campaigns/<campaign_id>/teams/<team_id>/members/<member_id>` for team-role changes
+- Recipient workspace API now exists:
+  - `app/features/recipients/service.py`
+  - `app/features/recipients/serializers.py`
+  - `app/features/recipients/validation.py`
+  - `GET /api/v1/campaigns/<campaign_id>/people-workspace`
+  - `GET|POST /api/v1/campaigns/<campaign_id>/recipient-groups`
+  - `GET|PATCH /api/v1/campaigns/<campaign_id>/recipient-groups/<group_id>`
+  - `POST /api/v1/campaigns/<campaign_id>/recipient-groups/<group_id>/contacts`
+  - `PATCH|DELETE /api/v1/campaigns/<campaign_id>/recipient-groups/<group_id>/contacts/<contact_id>`
+  - `GET|POST /api/v1/campaigns/<campaign_id>/recipients`
+  - `GET|PATCH /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>`
+  - `GET|PUT /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist`
+  - `POST /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist/items`
+  - `PATCH|DELETE /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist/items/<item_id>`
 - Team design direction now explicitly distinguishes:
   - fixed app access roles for RBAC
   - team-scoped team roles for operational responsibility

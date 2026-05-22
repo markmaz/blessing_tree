@@ -19,6 +19,7 @@ The backend is a Flask application built around:
 - The first campaign business routes now exist as a feature package with protected list, detail, access, summary, create, and update endpoints.
 - Campaign Studio backend support now exists for team assignments, campaign-scoped communication templates/schedules, milestone dates, readiness evaluation, aggregate studio payloads, manual campaign events, unified schedule reads, and clone-from-previous campaign creation support.
 - Recipient phase 1 backend refinement now exists, including refined recipient-group, contact, recipient, wishlist, and wishlist-item schema/model support for both household children and nursing-home adults.
+- Recipient phase 2/3 backend APIs now exist for recipient groups, contacts, recipients, wishlists, wishlist items, and the aggregate campaign-aware `people-workspace` payload that will drive the future frontend `People` workspace.
 - Campaign automation runtime now exists for scheduled communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness health checks.
 - Local development mail delivery can now run through a checked-in SMTP sink script so invite emails and scheduled communications can be exercised end to end without external SMTP credentials.
 - Admin runtime support now exists for Query Forge-style user invitations, global LLM configuration, runtime health probes, and app feature flags.
@@ -199,6 +200,23 @@ Current routes under `/api/v1/campaigns`:
 - `PUT /<campaign_id>/milestones`
 - `GET /<campaign_id>/readiness`
 - `POST /<campaign_id>/ai/draft`
+- `GET /<campaign_id>/people-workspace`
+- `GET /<campaign_id>/recipient-groups`
+- `POST /<campaign_id>/recipient-groups`
+- `GET /<campaign_id>/recipient-groups/<group_id>`
+- `PATCH /<campaign_id>/recipient-groups/<group_id>`
+- `POST /<campaign_id>/recipient-groups/<group_id>/contacts`
+- `PATCH /<campaign_id>/recipient-groups/<group_id>/contacts/<contact_id>`
+- `DELETE /<campaign_id>/recipient-groups/<group_id>/contacts/<contact_id>`
+- `GET /<campaign_id>/recipients`
+- `POST /<campaign_id>/recipients`
+- `GET /<campaign_id>/recipients/<recipient_id>`
+- `PATCH /<campaign_id>/recipients/<recipient_id>`
+- `GET /<campaign_id>/recipients/<recipient_id>/wishlist`
+- `PUT /<campaign_id>/recipients/<recipient_id>/wishlist`
+- `POST /<campaign_id>/recipients/<recipient_id>/wishlist/items`
+- `PATCH /<campaign_id>/recipients/<recipient_id>/wishlist/items/<item_id>`
+- `DELETE /<campaign_id>/recipients/<recipient_id>/wishlist/items/<item_id>`
 
 Current behavior:
 
@@ -217,6 +235,7 @@ Current behavior:
 - schedule APIs now unify manual events with milestone-derived and communication-derived items for the upcoming Studio `Schedule` section
 - AI draft actions now cover schedule, communications, team, readiness, and settings planning flows through a campaign-scoped draft/apply contract
 - Campaign Studio AI now attempts structured drafts through the configured admin LLM first and falls back to the deterministic draft engine when the LLM is missing, disabled, unavailable, or returns an invalid action payload
+- recipient group/contact/recipient/wishlist APIs now provide the backend contract for the future campaign-aware `People` workspace
 
 ## Admin Routes
 

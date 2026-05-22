@@ -5,7 +5,7 @@ Last updated: 2026-05-21
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Recipient phase 1 is implemented on the backend, and the next step is the recipient feature package/API layer that will support the future campaign-aware `People` workspace
+- Current step: Recipient backend phases 1 through 3 are implemented, and the next step is the frontend campaign-aware `People` workspace on top of the new aggregate and CRUD APIs
 
 ## Recently Completed
 
@@ -100,6 +100,7 @@ Last updated: 2026-05-21
 - Documented the concrete recipient-domain direction: keep a unified campaign-scoped recipient model, treat parents/guardians/facility staff as contacts rather than recipients, and evolve the schema toward explicit `program_type` support for `CHILD_FAMILY` and `NURSING_HOME`
 - Documented the concrete recipient implementation sequence, from schema refinement through APIs, the campaign-aware `People` workspace, wishlist/fulfillment alignment, and communications audience integration
 - Implemented recipient phase 1 backend refinement with `V014__Recipient_Refinement.sql`, refined ORM models, recipient-domain constants, and backend model tests
+- Implemented recipient backend phases 2 and 3 with a new recipient feature package, aggregate `people-workspace` payload, and campaign-scoped group/contact/recipient/wishlist CRUD APIs
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Replaced the old placeholder automation warning with a real execution layer:
@@ -140,12 +141,12 @@ Last updated: 2026-05-21
 
 ## Immediate Next Steps
 
-1. Build the backend recipient feature package and aggregate People workspace APIs
-2. Replace the placeholder family UI with the campaign-aware `People` workspace
-3. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
-4. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
-5. Retire the remaining legacy `campaign_user_role` compatibility paths after the Team/member model is fully authoritative everywhere
-6. Add recipient-aware communications audience resolution for household contacts, facility contacts, and direct recipient channels where appropriate
+1. Replace the placeholder family UI with the campaign-aware `People` workspace
+2. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
+3. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
+4. Retire the remaining legacy `campaign_user_role` compatibility paths after the Team/member model is fully authoritative everywhere
+5. Add recipient-aware communications audience resolution for household contacts, facility contacts, and direct recipient channels where appropriate
+6. Validate sponsorship/fulfillment/pickup UI flows against the refined recipient model
 
 ## Blockers Or Ambiguities
 
