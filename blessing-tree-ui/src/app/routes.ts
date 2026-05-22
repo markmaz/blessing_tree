@@ -15,7 +15,6 @@ export const routes = {
   CAMPAIGN_PEOPLE: '/campaigns/:campaignId/people',
   CAMPAIGN_PEOPLE_INTAKE: '/campaigns/:campaignId/people/intake',
   CAMPAIGN_PEOPLE_DIRECTORY: '/campaigns/:campaignId/people/directory',
-  FAMILIES: '/families',
   DONATIONS: '/donations',
   REPORTS: '/reports',
   ADMIN: '/admin',

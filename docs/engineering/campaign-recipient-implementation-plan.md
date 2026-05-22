@@ -5,9 +5,9 @@ Last updated: 2026-05-22
 ## Status
 
 - In progress
-- Phases 1 through 6 are implemented
-- The next planned phase is reporting and cleanup on top of the refined People
-  workspace and communications audience model
+- Phases 1 through 7 are implemented
+- The current follow-on work is adult-program expansion and deeper validation on top
+  of the refined People workspace and communications audience model
 
 This plan follows:
 
@@ -314,7 +314,7 @@ Make the recipient domain usable as a communications audience source.
 
 ## Phase 7: Reporting And Cleanup
 
-Status: next
+Status: implemented
 
 ### Goal
 
@@ -398,13 +398,12 @@ The original safest build order was:
 
 ## Recommendation
 
-Backend refinement was the right first move, and that is now done through the
-People workspace and wishlist/fulfillment alignment phases.
+The original recipient implementation plan is now complete through phase 7.
 
-The current next slice should be communications audience integration on top of
-the implemented recipient foundation, with special attention to:
+The next recipient-facing work should build on this foundation rather than
+re-open the old family-oriented cutover. The most likely next slices are:
 
-- household parent/guardian contacts
-- facility coordination contacts
-- partner-program coordination contacts
-- direct adult recipient channels where appropriate
+- add `PARTNER_PROGRAM` group support in code, not just documentation
+- add adult-program validation and recipient-level direct-contact rules by
+  context
+- expand campaign-scoped People reporting, exports, and audience targeting

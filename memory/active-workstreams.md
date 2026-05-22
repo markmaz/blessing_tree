@@ -5,7 +5,7 @@ Last updated: 2026-05-22
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Recipient phases 1 through 6 are implemented, recipient-aware communications audience integration is now live, and the next step is phase 7 reporting/cleanup plus deeper adult-scenario validation
+- Current step: Recipient phases 1 through 7 are implemented, the People/runtime naming cutover is complete, and the next step is deeper adult-scenario validation plus partner-program implementation
 
 ## Recently Completed
 
@@ -149,7 +149,7 @@ Last updated: 2026-05-22
 ## Immediate Next Steps
 
 1. Validate sponsorship/fulfillment/pickup UI flows against the refined recipient model, especially for adult direct-contact and address scenarios
-2. Finish recipient reporting/cleanup work, including long-term naming and enum cleanup around adult program variants
+2. Implement the documented partner-program recipient path and complete the related group/program enum expansion in code
 3. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
 4. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
 5. Retire the remaining legacy `campaign_user_role` compatibility paths after the Team/member model is fully authoritative everywhere

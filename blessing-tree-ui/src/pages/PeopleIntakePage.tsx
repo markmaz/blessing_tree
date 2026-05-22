@@ -99,7 +99,7 @@ export function PeopleIntakePage() {
                 Intake
               </span>
               <span className="campaign-chip campaign-chip-muted">
-                {workspace.counts.householdCount} families
+                {workspace.counts.householdCount} households
               </span>
               <span className="campaign-chip campaign-chip-muted">
                 {workspace.counts.careFacilityCount} facilities

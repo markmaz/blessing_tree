@@ -1,13 +1,5 @@
 import { useEffect } from 'react';
-import {
-  Navigate,
-  Outlet,
-  useParams,
-} from 'react-router-dom';
-import {
-  buildCampaignPeopleIntakePath,
-  routes,
-} from '@/app/routes';
+import { Outlet, useParams } from 'react-router-dom';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { useCampaignPeopleWorkspace } from '@/features/campaigns/model/useCampaignPeopleWorkspace';
 import type { PeopleWorkspaceOutletContext } from '@/features/campaigns/model/peopleWorkspaceContext';
@@ -77,7 +69,7 @@ export function PeoplePage() {
             {workspace ? (
               <>
                 <span className="campaign-chip campaign-chip-muted">
-                  {workspace.counts.householdCount} families
+                  {workspace.counts.householdCount} households
                 </span>
                 <span className="campaign-chip campaign-chip-muted">
                   {workspace.counts.careFacilityCount} facilities
@@ -116,14 +108,4 @@ export function PeoplePage() {
       />
     </div>
   );
-}
-
-export function LegacyFamiliesRedirectPage() {
-  const { selectedCampaignId } = useCampaigns();
-
-  if (selectedCampaignId) {
-    return <Navigate to={buildCampaignPeopleIntakePath(selectedCampaignId)} replace />;
-  }
-
-  return <Navigate to={routes.CAMPAIGNS} replace />;
 }

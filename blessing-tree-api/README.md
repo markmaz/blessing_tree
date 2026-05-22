@@ -19,7 +19,7 @@ The backend is a Flask application built around:
 - The first campaign business routes now exist as a feature package with protected list, detail, access, summary, create, and update endpoints.
 - Campaign Studio backend support now exists for team assignments, campaign-scoped communication templates/schedules, milestone dates, readiness evaluation, aggregate studio payloads, manual campaign events, unified schedule reads, and clone-from-previous campaign creation support.
 - Recipient phase 1 backend refinement now exists, including refined recipient-group, contact, recipient, wishlist, and wishlist-item schema/model support for both household children and nursing-home adults.
-- Recipient phase 2/3 backend APIs now exist for recipient groups, contacts, recipients, wishlists, wishlist items, and the aggregate campaign-aware `people-workspace` payload that will drive the future frontend `People` workspace.
+- Recipient phases 1 through 7 now exist across the backend and frontend, including refined recipient APIs, the aggregate campaign-aware `people-workspace` payload, recipient-aware communications audiences, and the reporting/cleanup cutover away from older family-oriented assumptions.
 - Campaign automation runtime now exists for scheduled communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness health checks.
 - Local development mail delivery can now run through a checked-in SMTP sink script so invite emails and scheduled communications can be exercised end to end without external SMTP credentials.
 - Admin runtime support now exists for Query Forge-style user invitations, global LLM configuration, runtime health probes, and app feature flags.
@@ -152,6 +152,8 @@ Core DDL lives in:
 - `db/migration/V012__Admin_Runtime.sql`
 - `db/migration/V013__Campaign_Scoped_Communication_Templates.sql`
 - `db/migration/V014__Recipient_Refinement.sql`
+- `db/migration/V015__Communication_Audience_Expansion.sql`
+- `db/migration/V016__Rename_Families_Feature_Flag.sql`
 
 ## Campaign Routes
 

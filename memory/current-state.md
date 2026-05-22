@@ -22,7 +22,7 @@ Last updated: 2026-05-22
   - Campaign Studio backend support now exists for assignments, campaign-scoped communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, aggregate studio payloads, create-from-previous-campaign cloning support, and a backend-driven communication audience catalog
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
   - local outbound email is now operational in development through a repo-owned SMTP sink plus configurable TLS/SSL flags, so invite delivery and scheduled communication dispatch can be exercised end to end without external SMTP credentials
-  - recipient phases 1 through 6 now exist: the schema/model is refined, there is now a recipient feature package plus campaign-scoped APIs for groups, contacts, recipients, wishlists, wishlist items, and the aggregate `people-workspace` payload, the frontend now includes campaign-scoped `People > Intake` and `People > Directory` flows with wishlist/fulfillment alignment, and Communications can now target recipient-aware audience types
+- recipient phases 1 through 7 now exist: the schema/model is refined, there is now a recipient feature package plus campaign-scoped APIs for groups, contacts, recipients, wishlists, wishlist items, and the aggregate `people-workspace` payload, the frontend now includes campaign-scoped `People > Intake` and `People > Directory` flows with wishlist/fulfillment alignment, Communications can now target recipient-aware audience types, the `people` feature flag/runtime naming replaces the older `families` key, and Reports now uses live People workspace data instead of placeholder rows
   - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
   - admin LLM test/health now probes the real generation path against the configured model instead of treating `/models` reachability as sufficient
   - invitation-centric onboarding now supports Google, Yahoo, and local password from the invite funnel; generic Google/Yahoo OAuth remains limited to already-linked returning users, and invite validation now exposes accepted-vs-pending onboarding state for cleaner frontend handling
@@ -81,7 +81,7 @@ Last updated: 2026-05-22
     - `CARE_FACILITY` for facility adult flows
     - `PARTNER_PROGRAM` for adult recipients submitted through partner organizations
   - the recipient design direction now also treats adult recipient direct address/phone/email fields as part of the domain, with child direct-contact fields hidden in household flows, facility adult fields optional, and partner-program adult fields supported prominently
-  - page shells still exist for donations, reports, and admin
+  - page shells still exist for donations and admin
   - shared authenticated client exists for protected data APIs
 
 ## Current Runtime Facts

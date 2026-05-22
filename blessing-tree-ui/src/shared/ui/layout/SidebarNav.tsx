@@ -109,7 +109,7 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
       : item
   );
   const visibleItems = resolvedNavItems.filter((item) => {
-    if (item.label === 'People') return isFeatureEnabled('families');
+    if (item.label === 'People') return isFeatureEnabled('people');
     if (item.to === routes.DONATIONS) return isFeatureEnabled('donations');
     if (item.to === routes.REPORTS) return isFeatureEnabled('reports');
     if (item.to === routes.ADMIN) return isAppAdminRole(role);

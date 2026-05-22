@@ -283,7 +283,7 @@ def test_feature_flags_list_and_update(
     assert len(list_response.get_json()["features"]) >= 4
 
     update_response = client.put(
-        "/api/v1/admin/features/families",
+        "/api/v1/admin/features/people",
         json={"is_enabled": False},
         headers=auth_header(admin_user_id, "ADMIN"),
     )

@@ -126,6 +126,81 @@
   margin-top: 0.15rem;
 }
 
+.campaign-report-metric {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.campaign-report-metric:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.campaign-report-metric__label {
+  color: var(--blessing-text-light);
+  font-weight: 600;
+}
+
+.campaign-report-metric__value {
+  font-family: var(--blessing-font-heading);
+  font-size: 1.2rem;
+  color: var(--blessing-text-dark);
+}
+
+.campaign-report-metric__value.is-ok {
+  color: #1f6a4d;
+}
+
+.campaign-report-metric__value.is-warn {
+  color: #9a5824;
+}
+
+.campaign-report-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.campaign-report-list__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.campaign-report-list__row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.campaign-report-list__title {
+  font-weight: 700;
+  color: var(--blessing-text-dark);
+}
+
+.campaign-report-list__meta {
+  color: var(--blessing-text-light);
+  font-size: 0.92rem;
+}
+
+.campaign-report-list__count {
+  font-weight: 700;
+  color: var(--blessing-accent);
+  white-space: nowrap;
+}
+
+.campaign-report-bullets {
+  display: grid;
+  gap: 0.8rem;
+  padding-left: 1.1rem;
+  color: var(--blessing-text);
+}
+
 @media (max-width: 991.98px) {
   .campaign-people-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));

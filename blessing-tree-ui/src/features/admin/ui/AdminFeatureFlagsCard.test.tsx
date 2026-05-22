@@ -19,7 +19,7 @@ describe('AdminFeatureFlagsCard', () => {
     vi.mocked(useAppFeatures).mockReturnValue({
       features: [
         {
-          featureKey: 'families',
+          featureKey: 'people',
           label: 'People',
           description: 'Show the campaign-aware People workspace in the main application navigation.',
           isEnabled: true,
@@ -33,7 +33,7 @@ describe('AdminFeatureFlagsCard', () => {
       updateFeatureInState: vi.fn(),
     });
     vi.mocked(updateFeatureFlag).mockResolvedValue({
-      featureKey: 'families',
+      featureKey: 'people',
       label: 'People',
       description: 'Show the campaign-aware People workspace in the main application navigation.',
       isEnabled: false,
@@ -48,7 +48,7 @@ describe('AdminFeatureFlagsCard', () => {
     vi.mocked(useAppFeatures).mockReturnValue({
       features: [
         {
-          featureKey: 'families',
+          featureKey: 'people',
           label: 'People',
           description: 'Show the campaign-aware People workspace in the main application navigation.',
           isEnabled: true,
@@ -67,9 +67,9 @@ describe('AdminFeatureFlagsCard', () => {
     await user.click(screen.getByRole('checkbox'));
 
     await waitFor(() => {
-      expect(updateFeatureFlag).toHaveBeenCalledWith('families', false);
+      expect(updateFeatureFlag).toHaveBeenCalledWith('people', false);
       expect(updateFeatureInState).toHaveBeenCalledWith(
-        expect.objectContaining({ featureKey: 'families', isEnabled: false })
+        expect.objectContaining({ featureKey: 'people', isEnabled: false })
       );
     });
   });
