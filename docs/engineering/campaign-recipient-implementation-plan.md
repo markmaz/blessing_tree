@@ -5,9 +5,9 @@ Last updated: 2026-05-22
 ## Status
 
 - In progress
-- Phases 1 through 5 are implemented
-- The next planned phase is communications audience integration on top of the
-  refined People workspace
+- Phases 1 through 6 are implemented
+- The next planned phase is reporting and cleanup on top of the refined People
+  workspace and communications audience model
 
 This plan follows:
 
@@ -282,7 +282,7 @@ Connect the refined recipient model cleanly to gift workflows.
 
 ## Phase 6: Communications Audience Integration
 
-Status: next
+Status: implemented
 
 ### Goal
 
@@ -314,7 +314,7 @@ Make the recipient domain usable as a communications audience source.
 
 ## Phase 7: Reporting And Cleanup
 
-Status: pending
+Status: next
 
 ### Goal
 

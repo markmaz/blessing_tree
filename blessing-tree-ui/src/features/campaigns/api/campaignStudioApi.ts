@@ -7,6 +7,7 @@ import {
   type CampaignScheduleItem,
   type CampaignStudioData,
   type CampaignTeamSnapshot,
+  type CommunicationAudienceOption,
   type CommunicationSchedule,
   type CommunicationTemplate,
   type CreateCommunicationScheduleInput,
@@ -80,7 +81,7 @@ interface CommunicationTemplateResponse {
   campaign_id: string;
   template_key: string;
   name: string;
-  audience: string;
+  audience: CommunicationTemplate['audience'];
   channel: string;
   subject_template: string;
   body_template: string;
@@ -88,6 +89,12 @@ interface CommunicationTemplateResponse {
   created_by_user_id: string | null;
   created_at: string | null;
   updated_at: string | null;
+}
+
+interface CommunicationAudienceOptionResponse {
+  key: CommunicationAudienceOption['key'];
+  label: string;
+  description: string;
 }
 
 interface CommunicationScheduleResponse {
@@ -163,6 +170,7 @@ interface CampaignStudioResponse {
   summary: CampaignSummaryResponse;
   team: CampaignTeamSnapshotResponse;
   communications: {
+    audience_catalog: CommunicationAudienceOptionResponse[];
     templates: CommunicationTemplateResponse[];
     schedules: CommunicationScheduleResponse[];
   };
@@ -184,6 +192,9 @@ export async function getCampaignStudio(campaignId: string): Promise<CampaignStu
     summary: mapCampaignSummary(response.summary),
     team: mapTeamSnapshot(response.team),
     communications: {
+      audienceCatalog: response.communications.audience_catalog.map(
+        mapCommunicationAudienceOption
+      ),
       templates: response.communications.templates.map(mapCommunicationTemplate),
       schedules: response.communications.schedules.map(mapCommunicationSchedule),
     },
@@ -444,6 +455,16 @@ function mapCommunicationTemplate(
     createdByUserId: template.created_by_user_id,
     createdAt: template.created_at,
     updatedAt: template.updated_at,
+  };
+}
+
+function mapCommunicationAudienceOption(
+  option: CommunicationAudienceOptionResponse
+): CommunicationAudienceOption {
+  return {
+    key: option.key,
+    label: option.label,
+    description: option.description,
   };
 }
 

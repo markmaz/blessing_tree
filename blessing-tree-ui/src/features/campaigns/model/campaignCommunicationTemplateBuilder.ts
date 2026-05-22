@@ -1,4 +1,5 @@
 import type {
+  CommunicationAudienceKey,
   CommunicationTemplate,
   CreateCommunicationTemplateInput,
   UpdateCommunicationTemplateInput,
@@ -37,7 +38,7 @@ export type CommunicationTemplateBlock =
 export interface CommunicationTemplateDraft {
   templateKey: string;
   name: string;
-  audience: string;
+  audience: CommunicationAudienceKey;
   subjectTemplate: string;
   bodyBlocks: CommunicationTemplateBlock[];
   isActive: boolean;
@@ -61,6 +62,9 @@ const previewContext: Record<string, string> = {
   'campaign.end_date': 'December 20, 2026',
   'organization.name': 'Blessing Tree',
   'manager.name': 'Jordan Manager',
+  'contact.first_name': 'Pat',
+  'contact.full_name': 'Pat Coordinator',
+  'group.name': 'Johnson Household',
   'recipient.first_name': 'Ava',
   'recipient.full_name': 'Ava Johnson',
   'sponsor.first_name': 'Taylor',
@@ -88,6 +92,8 @@ export const communicationTemplateMergeFieldGroups: TemplateMergeFieldGroup[] = 
   {
     label: 'People',
     fields: [
+      'contact.first_name',
+      'contact.full_name',
       'recipient.first_name',
       'recipient.full_name',
       'sponsor.first_name',

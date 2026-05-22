@@ -49,8 +49,15 @@ const studio: CampaignStudioData = {
       },
     },
   },
-    communications: {
-      templates: [
+  communications: {
+    audienceCatalog: [
+      {
+        key: 'VOLUNTEER',
+        label: 'Volunteers',
+        description: 'Campaign roster members marked as volunteers.',
+      },
+    ],
+    templates: [
       {
         id: 'template-1',
         campaignId: 'campaign-1',
@@ -65,7 +72,7 @@ const studio: CampaignStudioData = {
         createdAt: null,
         updatedAt: null,
       },
-      ],
+    ],
     schedules: [],
   },
   schedule: {

@@ -311,6 +311,7 @@ function renderStudioSection({
   if (selectedSection === 'communications') {
     return (
       <CampaignStudioCommunicationsSection
+        audienceCatalog={studio.communications.audienceCatalog}
         templates={studio.communications.templates}
         isSaving={isSaving}
         requestedTemplateId={communicationTemplateFocusId}

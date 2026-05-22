@@ -8,6 +8,7 @@ from app.exceptions.service_error import ServiceError
 from app.features.campaigns.service import _optional_text
 from app.features.campaigns.studio_constants import (
     CAMPAIGN_EVENT_TYPES,
+    COMMUNICATION_AUDIENCE_ALIASES,
     COMMUNICATION_AUDIENCES,
     COMMUNICATION_CHANNELS,
     COMMUNICATION_SCHEDULE_STATUSES,
@@ -69,6 +70,7 @@ def require_short_text(value: object, field_name: str, *, max_length: int = 255)
 
 def validate_audience(value: object) -> str:
     audience = str(value or "GENERAL").strip().upper()
+    audience = COMMUNICATION_AUDIENCE_ALIASES.get(audience, audience)
     if audience not in COMMUNICATION_AUDIENCES:
         raise ServiceError(
             "Communication audience is invalid",

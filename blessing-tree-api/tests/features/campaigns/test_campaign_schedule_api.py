@@ -113,7 +113,7 @@ def test_get_schedule_returns_unified_manual_milestone_and_communication_items(
         campaign_id=campaign.id,
         template_key="pickup_reminder",
         name="Pickup Reminder",
-        audience="FAMILY",
+        audience="HOUSEHOLD_CONTACT",
         channel="EMAIL",
         subject_template="Pickup Reminder",
         body_template="Remember your pickup window.",

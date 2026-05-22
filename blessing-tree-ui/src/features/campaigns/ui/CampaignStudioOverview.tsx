@@ -6,6 +6,7 @@ import { campaignSummaryLabels } from '@/features/campaigns/api/campaignApi';
 import { formatScheduleDateRange, sourceLabel } from '@/features/campaigns/model/campaignSchedule';
 import { CampaignStatusBadge } from '@/features/campaigns/ui/CampaignStatusBadge';
 import { CampaignSummaryGrid } from '@/features/campaigns/ui/CampaignSummaryGrid';
+import { getCommunicationAudienceLabel } from '@/features/campaigns/model/campaignStudioCommunicationsPresentation';
 import { Link } from 'react-router-dom';
 
 export function CampaignStudioOverview({
@@ -133,7 +134,10 @@ export function CampaignStudioOverview({
                       {template.name}
                     </span>
                     <span className="campaign-studio__overview-link-meta">
-                      {template.audience}
+                      {getCommunicationAudienceLabel(
+                        template.audience,
+                        communications.audienceCatalog
+                      )}
                     </span>
                   </button>
                 ))

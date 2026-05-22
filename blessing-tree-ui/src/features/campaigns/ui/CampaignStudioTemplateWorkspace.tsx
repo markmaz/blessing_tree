@@ -3,13 +3,22 @@ import type {
   CommunicationTemplateDraft,
   CommunicationTemplateFocusTarget,
 } from '@/features/campaigns/model/campaignCommunicationTemplateBuilder';
-import { communicationAudienceOptions } from '@/features/campaigns/model/campaignStudio';
+import {
+  getCommunicationAudienceCatalog,
+  getCommunicationAudienceLabel,
+  getCommunicationAudienceOption,
+} from '@/features/campaigns/model/campaignStudioCommunicationsPresentation';
+import type {
+  CommunicationAudienceKey,
+  CommunicationAudienceOption,
+} from '@/features/campaigns/model/campaignStudioTypes';
 import { CampaignStudioTemplateBlockEditor } from '@/features/campaigns/ui/CampaignStudioTemplateBlockEditor';
 import { CampaignStudioTemplateMergeFieldDrawer } from '@/features/campaigns/ui/CampaignStudioTemplateMergeFieldDrawer';
 import { CampaignStudioTemplatePreviewPanel } from '@/features/campaigns/ui/CampaignStudioTemplatePreviewPanel';
 
 interface CampaignStudioTemplateWorkspaceProps {
   draft: CommunicationTemplateDraft;
+  audienceCatalog: CommunicationAudienceOption[];
   activeTab: 'metadata' | 'content';
   isSaving: boolean;
   isExisting: boolean;
@@ -24,6 +33,7 @@ interface CampaignStudioTemplateWorkspaceProps {
 
 export function CampaignStudioTemplateWorkspace({
   draft,
+  audienceCatalog,
   activeTab,
   isSaving,
   isExisting,
@@ -34,6 +44,8 @@ export function CampaignStudioTemplateWorkspace({
   onFocusTarget,
 }: CampaignStudioTemplateWorkspaceProps) {
   const [isMergeDrawerOpen, setIsMergeDrawerOpen] = useState(false);
+  const resolvedAudienceCatalog = getCommunicationAudienceCatalog(audienceCatalog);
+  const audienceOption = getCommunicationAudienceOption(draft.audience, resolvedAudienceCatalog);
 
   return (
     <section className="campaign-template-workspace" aria-label="Communication template builder">
@@ -44,7 +56,7 @@ export function CampaignStudioTemplateWorkspace({
           </div>
           <h3 className="mb-1">{draft.name.trim() || 'Untitled communication template'}</h3>
           <div className="campaign-template-badge-row">
-            <span className="campaign-template-badge">{draft.audience}</span>
+            <span className="campaign-template-badge">{getCommunicationAudienceLabel(draft.audience, resolvedAudienceCatalog)}</span>
             <span className={`campaign-template-badge ${draft.isActive ? '' : 'is-muted'}`}>
               {draft.isActive ? 'Active' : 'Inactive'}
             </span>
@@ -119,16 +131,19 @@ export function CampaignStudioTemplateWorkspace({
               onChange={(event) =>
                 onChangeDraft((currentDraft) => ({
                   ...currentDraft,
-                  audience: event.target.value,
+                  audience: event.target.value as CommunicationAudienceKey,
                 }))
               }
             >
-              {communicationAudienceOptions.map((audience) => (
-                <option key={audience} value={audience}>
-                  {audience}
+              {resolvedAudienceCatalog.map((audience) => (
+                <option key={audience.key} value={audience.key}>
+                  {audience.label}
                 </option>
               ))}
             </select>
+            <span className="campaign-template-workspace__field-help">
+              {audienceOption.description}
+            </span>
           </label>
           <label className="campaign-template-workspace__toggle">
             <input

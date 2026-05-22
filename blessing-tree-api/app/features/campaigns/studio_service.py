@@ -24,6 +24,7 @@ from app.features.campaigns.studio_validation import (
     validate_schedule_status,
     validate_template_key,
 )
+from app.features.campaigns.studio_constants import get_communication_audience_catalog
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
 from app.models.campaign_milestone import CampaignMilestone
 from app.models.communication_template import CommunicationTemplate
@@ -43,6 +44,7 @@ class CampaignStudioService:
         team = self.team.get_team_snapshot(db, campaign_id)
         templates = self.list_templates(db, campaign_id)
         schedules = self.list_schedules(db, campaign_id)
+        audience_catalog = get_communication_audience_catalog()
         milestones = self.list_milestones(db, campaign_id)
         schedule_items = self.schedule.list_schedule_items(db, campaign_id)
         readiness = self.get_readiness(db, campaign_id)
@@ -53,6 +55,7 @@ class CampaignStudioService:
             "team": team,
             "templates": templates,
             "schedules": schedules,
+            "audience_catalog": audience_catalog,
             "milestones": milestones,
             "schedule_items": schedule_items,
             "readiness": readiness,

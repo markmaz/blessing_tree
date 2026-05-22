@@ -6,6 +6,7 @@ from typing import Any
 
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns.studio_constants import MILESTONE_DEFINITIONS
+from app.features.campaigns.studio_validation import validate_audience
 from app.features.campaigns.validation import validate_status_transition
 from app.models.campaign_member_constants import (
     APP_ACCESS_STATUS_NONE,
@@ -169,7 +170,7 @@ def _milestone_action(payload: Mapping[str, Any]) -> dict[str, Any]:
 
 def _template_action(payload: Mapping[str, Any], state: NormalizationState) -> dict[str, Any]:
     name = _required_text(payload.get("name"), "name")
-    audience = (_optional_text(payload.get("audience")) or "GENERAL").upper()
+    audience = validate_audience(_optional_text(payload.get("audience")) or "GENERAL")
     template_ref = f"draft-template-ref-{uuid.uuid4()}"
     state.template_refs[name.casefold()] = template_ref
     subject_template = _resolve_template_subject(

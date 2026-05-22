@@ -10,6 +10,16 @@ from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+from .communication_audience_constants import (
+    COMMUNICATION_AUDIENCE_ADULT_RECIPIENT_DIRECT,
+    COMMUNICATION_AUDIENCE_CARE_FACILITY_CONTACT,
+    COMMUNICATION_AUDIENCE_GENERAL,
+    COMMUNICATION_AUDIENCE_GROUP_PRIMARY_CONTACT,
+    COMMUNICATION_AUDIENCE_HOUSEHOLD_CONTACT,
+    COMMUNICATION_AUDIENCE_MANAGER,
+    COMMUNICATION_AUDIENCE_SPONSOR,
+    COMMUNICATION_AUDIENCE_VOLUNTEER,
+)
 from .uuid_bin import UUIDBin
 
 if TYPE_CHECKING:
@@ -30,9 +40,19 @@ class CommunicationTemplate(Base):
     template_key: Mapped[str] = mapped_column(String(100), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     audience: Mapped[str] = mapped_column(
-        Enum("SPONSOR", "VOLUNTEER", "MANAGER", "FAMILY", "GENERAL", name="communication_template_audience"),
+        Enum(
+            COMMUNICATION_AUDIENCE_SPONSOR,
+            COMMUNICATION_AUDIENCE_VOLUNTEER,
+            COMMUNICATION_AUDIENCE_MANAGER,
+            COMMUNICATION_AUDIENCE_HOUSEHOLD_CONTACT,
+            COMMUNICATION_AUDIENCE_CARE_FACILITY_CONTACT,
+            COMMUNICATION_AUDIENCE_GROUP_PRIMARY_CONTACT,
+            COMMUNICATION_AUDIENCE_ADULT_RECIPIENT_DIRECT,
+            COMMUNICATION_AUDIENCE_GENERAL,
+            name="communication_template_audience",
+        ),
         nullable=False,
-        default="GENERAL",
+        default=COMMUNICATION_AUDIENCE_GENERAL,
     )
     channel: Mapped[str] = mapped_column(
         Enum("EMAIL", name="communication_template_channel"),

@@ -5,7 +5,7 @@ Last updated: 2026-05-22
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: Recipient phases 1 through 5 are implemented, the recipient docs are now refined for partner-program adult flows and adult direct-contact rules, and the next step is phase 6 communications audience integration
+- Current step: Recipient phases 1 through 6 are implemented, recipient-aware communications audience integration is now live, and the next step is phase 7 reporting/cleanup plus deeper adult-scenario validation
 
 ## Recently Completed
 
@@ -106,6 +106,7 @@ Last updated: 2026-05-22
 - Refined the People intake UX so family/facility entry now feels more like connected intake work: group drawers expose `Children`/`Residents` directly, and contextual recipient drawers hide non-applicable fields such as child direct-contact details
 - Split the People section into child `Intake` and `Directory` views so new family/facility entry starts from a simple workflow launcher while search and maintenance stay in a separate directory surface
 - Updated the recipient design and implementation docs again so the long-term model now explicitly includes `PARTNER_PROGRAM` groups plus adult recipient direct-contact/address rules for facility and partner-program flows
+- Implemented recipient phase 6 by expanding the Communications audience model to include household contacts, facility contacts, primary group contacts, and direct adult recipients, wiring those audiences through the backend resolver, automation dispatch path, Studio payload, template builder, and frontend presentation
 - Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
 - Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
 - Replaced the old placeholder automation warning with a real execution layer:
@@ -147,8 +148,8 @@ Last updated: 2026-05-22
 
 ## Immediate Next Steps
 
-1. Add recipient-aware communications audience resolution for household contacts, facility contacts, partner-program contacts, and direct recipient channels where appropriate
-2. Validate sponsorship/fulfillment/pickup UI flows against the refined recipient model, especially for adult direct-contact and address scenarios
+1. Validate sponsorship/fulfillment/pickup UI flows against the refined recipient model, especially for adult direct-contact and address scenarios
+2. Finish recipient reporting/cleanup work, including long-term naming and enum cleanup around adult program variants
 3. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
 4. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
 5. Retire the remaining legacy `campaign_user_role` compatibility paths after the Team/member model is fully authoritative everywhere
