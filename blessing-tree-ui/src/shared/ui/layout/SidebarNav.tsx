@@ -131,26 +131,36 @@ export function SidebarNav({ isOpen, onNavigate }: SidebarNavProps) {
       <nav className="sidebar-nav">
         {visibleItems.map((item) => (
           <div key={item.label} className="sidebar-nav-group">
-            <NavLink
-              to={item.children?.length ? item.children[0].to : item.to}
-              end={item.end}
-              className={() =>
-                `sidebar-link nav-link ${
+            {item.children?.length ? (
+              <div
+                className={`sidebar-link nav-link ${
                   (item.label === 'People' &&
                     location.pathname.includes('/people')) ||
-                  item.children?.some((child) => location.pathname.startsWith(child.to)) ||
-                  (item.label !== 'People' &&
-                    !item.children?.length &&
-                    (item.end ? location.pathname === item.to : location.pathname.startsWith(item.to)))
+                  item.children.some((child) => location.pathname.startsWith(child.to))
                     ? 'active'
                     : ''
-                }`
-              }
-              onClick={onNavigate}
-            >
-              <i className={`bi ${item.icon} me-2`} aria-hidden="true" />
-              <span>{item.label}</span>
-            </NavLink>
+                }`}
+              >
+                <i className={`bi ${item.icon} me-2`} aria-hidden="true" />
+                <span>{item.label}</span>
+              </div>
+            ) : (
+              <NavLink
+                to={item.to}
+                end={item.end}
+                className={() =>
+                  `sidebar-link nav-link ${
+                    item.end ? location.pathname === item.to : location.pathname.startsWith(item.to)
+                      ? 'active'
+                      : ''
+                  }`
+                }
+                onClick={onNavigate}
+              >
+                <i className={`bi ${item.icon} me-2`} aria-hidden="true" />
+                <span>{item.label}</span>
+              </NavLink>
+            )}
             {item.children?.length ? (
               <div className="sidebar-subnav">
                 {item.children.map((child) => (

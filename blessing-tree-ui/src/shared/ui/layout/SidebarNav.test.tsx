@@ -40,7 +40,7 @@ describe('SidebarNav', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('link', { name: /^admin$/i })).toBeInTheDocument();
+    expect(screen.getByText(/^admin$/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /user management/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /llm configuration/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /health check/i })).toBeInTheDocument();
@@ -54,7 +54,8 @@ describe('SidebarNav', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('link', { name: /^people$/i })).toBeInTheDocument();
+    expect(screen.getByText(/^people$/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/intake/i)).toHaveLength(1);
     expect(screen.getByRole('link', { name: /intake/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /directory/i })).toBeInTheDocument();
   });
