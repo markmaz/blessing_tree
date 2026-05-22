@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
+  toGiftWorkflowStatusLabel,
   toRecipientProgramTypeLabel,
   toRecipientStatusLabel,
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
@@ -139,7 +140,20 @@ export function CampaignPeopleRecipientTable({
                 {recipient.wishlist ? (
                   <div className="campaign-team-table__person">
                     <strong>{recipient.wishlist.items.length} item{recipient.wishlist.items.length === 1 ? '' : 's'}</strong>
-                    <span>{recipient.wishlist.wishlistStatus}</span>
+                    <div className="campaign-people-wishlist-list">
+                      {recipient.wishlist.items.map((item) => (
+                        <div key={item.id} className="campaign-people-wishlist-list__item">
+                          <span className="campaign-people-wishlist-list__name">{item.description}</span>
+                          <span className="campaign-people-wishlist-list__meta">
+                            {toGiftWorkflowStatusLabel(
+                              item.giftWorkflow.isPickedUp,
+                              item.giftWorkflow.isFullyFulfilled,
+                              item.giftWorkflow.sponsorshipStatus
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <span className="text-muted">No wishlist yet</span>

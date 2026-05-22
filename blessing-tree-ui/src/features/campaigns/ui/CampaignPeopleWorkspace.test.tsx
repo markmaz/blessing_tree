@@ -115,7 +115,53 @@ const workspaceFixture: CampaignPeopleWorkspaceData = {
         pickedUpItemCount: 0,
         openItemCount: 1,
       },
-      recipients: [],
+      recipients: [
+        {
+          id: 'recipient-1',
+          campaignId: 'campaign-1',
+          recipientGroupId: 'group-1',
+          recipientKind: 'CHILD',
+          programType: 'CHILD_FAMILY',
+          privacyLevel: 'FULL_NAME',
+          displayLabel: 'Ava Johnson',
+          programRecipientNumber: null,
+          programRecipientId: null,
+          firstName: 'Ava',
+          lastName: 'Johnson',
+          birthYear: null,
+          age: 8,
+          gender: 'F',
+          addressLine1: null,
+          addressLine2: null,
+          city: null,
+          state: null,
+          postalCode: null,
+          directEmail: null,
+          directPhone: null,
+          facilityRoom: null,
+          subgroupLabel: null,
+          mobilityNotes: null,
+          notes: null,
+          status: 'ACTIVE',
+          group: {
+            id: 'group-1',
+            groupName: 'Johnson Household',
+            groupType: 'HOUSEHOLD',
+            status: 'ACTIVE',
+          },
+          wishlist: null,
+          workflowSummary: {
+            itemCount: 1,
+            sponsoredItemCount: 0,
+            fulfilledItemCount: 0,
+            readyForPickupItemCount: 0,
+            pickedUpItemCount: 0,
+            openItemCount: 1,
+          },
+          createdAt: null,
+          updatedAt: null,
+        },
+      ],
       createdAt: null,
       updatedAt: null,
     },
@@ -146,7 +192,53 @@ const workspaceFixture: CampaignPeopleWorkspaceData = {
         pickedUpItemCount: 0,
         openItemCount: 0,
       },
-      recipients: [],
+      recipients: [
+        {
+          id: 'recipient-2',
+          campaignId: 'campaign-1',
+          recipientGroupId: 'group-2',
+          recipientKind: 'ADULT',
+          programType: 'ADULT_PROGRAM',
+          privacyLevel: 'FULL_NAME',
+          displayLabel: 'Mary Smith',
+          programRecipientNumber: 1,
+          programRecipientId: 'MGWW-001',
+          firstName: 'Mary',
+          lastName: 'Smith',
+          birthYear: null,
+          age: 84,
+          gender: 'F',
+          addressLine1: '400 Elm St',
+          addressLine2: null,
+          city: 'Dallas',
+          state: 'TX',
+          postalCode: '75001',
+          directEmail: null,
+          directPhone: null,
+          facilityRoom: '214B',
+          subgroupLabel: null,
+          mobilityNotes: null,
+          notes: null,
+          status: 'ACTIVE',
+          group: {
+            id: 'group-2',
+            groupName: 'Maple Grove West Wing',
+            groupType: 'ADULT_PROGRAM',
+            status: 'ACTIVE',
+          },
+          wishlist: null,
+          workflowSummary: {
+            itemCount: 0,
+            sponsoredItemCount: 0,
+            fulfilledItemCount: 0,
+            readyForPickupItemCount: 0,
+            pickedUpItemCount: 0,
+            openItemCount: 0,
+          },
+          createdAt: null,
+          updatedAt: null,
+        },
+      ],
       createdAt: null,
       updatedAt: null,
     },
@@ -340,6 +432,41 @@ describe('CampaignPeopleWorkspace', () => {
     expect(within(groupTable).queryByText('Maple Grove West Wing')).not.toBeInTheDocument();
   });
 
+  it('shows expanded group members and wishlist gift rows in the directory', () => {
+    render(
+      <MemoryRouter>
+        <CampaignPeopleWorkspace
+          campaignName="Blessing Tree 2026"
+          access={access}
+          workspace={workspaceFixture}
+          isLoading={false}
+          isSaving={false}
+          error={null}
+          saveMessage={null}
+          onSaveGroup={vi.fn()}
+          onSaveContact={vi.fn()}
+          onDeleteContact={vi.fn()}
+          onSaveRecipient={vi.fn()}
+          onSaveWishlist={vi.fn()}
+          onSaveWishlistItem={vi.fn()}
+          onDeleteWishlistItem={vi.fn()}
+          onSearchAddresses={vi.fn().mockResolvedValue([])}
+          onClearSaveMessage={vi.fn()}
+          onClearError={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    const [groupTable, peopleTable] = screen.getAllByRole('table');
+
+    expect(within(groupTable).getByRole('button', { name: /Ava Johnson/ })).toBeInTheDocument();
+    expect(within(groupTable).getByRole('button', { name: /Mary Smith/ })).toBeInTheDocument();
+    expect(within(groupTable).getByRole('button', { name: /Ava Johnson.*Age 8/ })).toBeInTheDocument();
+    expect(within(groupTable).getByRole('button', { name: /Mary Smith.*MGWW-001/ })).toBeInTheDocument();
+    expect(within(peopleTable).getByText('Art kit')).toBeInTheDocument();
+    expect(within(peopleTable).getByText('Open')).toBeInTheDocument();
+  });
+
   it('opens the person drawer when a recipient row is selected', async () => {
     const user = userEvent.setup();
 
@@ -367,7 +494,9 @@ describe('CampaignPeopleWorkspace', () => {
       </MemoryRouter>
     );
 
-    await user.click(screen.getByText('Ava Johnson'));
+    const peopleTable = screen.getAllByRole('table')[1];
+
+    await user.click(within(peopleTable).getByRole('button', { name: /Ava Johnson/ }));
 
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Wishlist' })).toBeInTheDocument();

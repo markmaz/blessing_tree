@@ -267,6 +267,13 @@ export function CampaignPeopleWorkspace({
               setCreateGroupType(null);
               setSelectedGroupId(groupId);
             }}
+            onSelectRecipient={(recipientId) => {
+              setCreateGroupType(null);
+              setSelectedGroupId(null);
+              setIsCreateRecipientOpen(false);
+              setCreateRecipientGroupId(null);
+              setSelectedRecipientId(recipientId);
+            }}
           />
         </section>
 
