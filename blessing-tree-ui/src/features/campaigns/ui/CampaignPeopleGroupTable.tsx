@@ -15,7 +15,7 @@ interface CampaignPeopleGroupTableProps {
   onSelectRecipient: (recipientId: string) => void;
 }
 
-type GroupSortKey = 'group' | 'type' | 'contact' | 'people' | 'status';
+type GroupSortKey = 'group' | 'type' | 'contact' | 'people' | 'updated' | 'status';
 
 export function CampaignPeopleGroupTable({
   groups,
@@ -97,6 +97,13 @@ export function CampaignPeopleGroupTable({
               onSort={handleSort}
             />
             <SortableHeader
+              label="Last Updated"
+              sortKey="updated"
+              activeKey={sortKey}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
+            <SortableHeader
               label="Status"
               sortKey="status"
               activeKey={sortKey}
@@ -152,14 +159,14 @@ export function CampaignPeopleGroupTable({
                   <td>
                     <div className="campaign-team-table__person">
                       <strong>{group.recipientCount}</strong>
-                      <span>Updated {formatShortDate(group.updatedAt)}</span>
                     </div>
                   </td>
+                  <td>{formatShortDate(group.updatedAt)}</td>
                   <td>{toRecipientGroupStatusLabel(group.status)}</td>
                 </tr>
                 {isOpen ? (
                   <tr className="campaign-people-group-children-row">
-                    <td colSpan={5}>
+                    <td colSpan={6}>
                       {group.recipients.length > 0 ? (
                         <div className="campaign-people-group-children-wrap">
                           <table className="table table-sm mb-0 campaign-people-group-children-table">
@@ -267,6 +274,8 @@ function getGroupSortValue(group: CampaignPeopleGroup, sortKey: GroupSortKey) {
         : '';
     case 'people':
       return group.recipientCount;
+    case 'updated':
+      return group.updatedAt ?? '';
     case 'status':
       return toRecipientGroupStatusLabel(group.status);
     case 'group':
