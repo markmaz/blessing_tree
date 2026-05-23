@@ -79,8 +79,8 @@ export function ReportsPage() {
           <div>
             <div className="campaign-chip-row mb-3">
               <span className="campaign-chip campaign-chip-muted">{selectedCampaign.name}</span>
-              <span className="campaign-chip campaign-chip-muted">{workspace.counts.householdCount} households</span>
-              <span className="campaign-chip campaign-chip-muted">{workspace.counts.organizationCount} organizations</span>
+              <span className="campaign-chip campaign-chip-muted">People</span>
+              <span className="campaign-chip campaign-chip-muted">Reports</span>
             </div>
             <h1 className="h3 mb-1">People Reports</h1>
             <p className="text-muted mb-0">
@@ -101,10 +101,10 @@ export function ReportsPage() {
       </div>
 
       <div className="campaign-studio__stat-grid campaign-people-stats">
-        <StatCard label="Groups" value={workspace.counts.groupCount} />
-        <StatCard label="People" value={workspace.counts.recipientCount} />
-        <StatCard label="Wishlists" value={workspace.counts.wishlistCount} />
-        <StatCard label="Open Items" value={workspace.counts.openItemCount} />
+        <StatCard label="Total Groups" value={workspace.counts.groupCount} />
+        <StatCard label="Total People" value={workspace.counts.recipientCount} />
+        <StatCard label="Total Wishlists" value={workspace.counts.wishlistCount} />
+        <StatCard label="Open Gift Items" value={workspace.counts.openItemCount} />
       </div>
 
       <div className="row g-4">

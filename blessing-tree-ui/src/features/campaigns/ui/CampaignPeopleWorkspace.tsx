@@ -24,6 +24,7 @@ import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 
 interface CampaignPeopleWorkspaceProps {
   campaignName: string;
+  heroContextLabel?: string;
   access: CampaignAccess | null;
   workspace: CampaignPeopleWorkspaceData | null;
   isLoading: boolean;
@@ -59,6 +60,7 @@ interface CampaignPeopleWorkspaceProps {
 
 export function CampaignPeopleWorkspace({
   campaignName,
+  heroContextLabel,
   access,
   workspace,
   isLoading,
@@ -199,11 +201,13 @@ export function CampaignPeopleWorkspace({
                   {campaignName}
                 </span>
                 <span className="campaign-chip campaign-chip-muted">
-                  {workspace.counts.householdCount} households
+                  People
                 </span>
-                <span className="campaign-chip campaign-chip-muted">
-                  {workspace.counts.organizationCount} organizations
-                </span>
+                {heroContextLabel ? (
+                  <span className="campaign-chip campaign-chip-muted">
+                    {heroContextLabel}
+                  </span>
+                ) : null}
               </div>
               <h1 className="h3 mb-1">People</h1>
               <p className="text-muted mb-0">
@@ -231,10 +235,10 @@ export function CampaignPeopleWorkspace({
       ) : null}
 
       <div className="campaign-studio__stat-grid campaign-people-stats">
-        <StatCard label="Groups" value={workspace.counts.groupCount} />
-        <StatCard label="People" value={workspace.counts.recipientCount} />
-        <StatCard label="Wishlists" value={workspace.counts.wishlistCount} />
-        <StatCard label="Open Items" value={workspace.counts.openItemCount} />
+        <StatCard label="Total Groups" value={workspace.counts.groupCount} />
+        <StatCard label="Total People" value={workspace.counts.recipientCount} />
+        <StatCard label="Total Wishlists" value={workspace.counts.wishlistCount} />
+        <StatCard label="Open Gift Items" value={workspace.counts.openItemCount} />
       </div>
 
       <div className="campaign-team-workspace">

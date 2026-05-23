@@ -8,6 +8,7 @@ import '@/features/campaigns/ui/campaignPeople.css';
 
 export function PeopleIntakePage() {
   const {
+    campaignName,
     access,
     workspace,
     isLoading,
@@ -87,13 +88,13 @@ export function PeopleIntakePage() {
           <div>
             <div className="campaign-chip-row mb-3">
               <span className="campaign-chip campaign-chip-muted">
+                {campaignName}
+              </span>
+              <span className="campaign-chip campaign-chip-muted">
+                People
+              </span>
+              <span className="campaign-chip campaign-chip-muted">
                 Intake
-              </span>
-              <span className="campaign-chip campaign-chip-muted">
-                {workspace.counts.householdCount} households
-              </span>
-              <span className="campaign-chip campaign-chip-muted">
-                {workspace.counts.organizationCount} organizations
               </span>
             </div>
             <h2 className="h4 mb-1">Start New Intake</h2>

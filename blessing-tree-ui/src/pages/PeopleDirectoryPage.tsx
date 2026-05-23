@@ -24,6 +24,7 @@ export function PeopleDirectoryPage() {
   return (
     <CampaignPeopleWorkspace
       campaignName={campaignName}
+      heroContextLabel="Directory"
       access={access}
       workspace={workspace}
       isLoading={isLoading}
@@ -39,7 +40,7 @@ export function PeopleDirectoryPage() {
       onDeleteWishlistItem={onDeleteWishlistItem}
       onSearchAddresses={onSearchAddresses}
       onClearError={onClearError}
-      showHero={false}
+      showHero
       showCreateActions={false}
     />
   );

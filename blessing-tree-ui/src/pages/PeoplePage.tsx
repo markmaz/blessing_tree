@@ -68,16 +68,7 @@ export function PeoplePage() {
             <span className="campaign-chip campaign-chip-muted">
               {campaign?.name ?? 'Campaign'}
             </span>
-            {workspace ? (
-              <>
-                <span className="campaign-chip campaign-chip-muted">
-                  {workspace.counts.householdCount} households
-                </span>
-                <span className="campaign-chip campaign-chip-muted">
-                  {workspace.counts.organizationCount} organizations
-                </span>
-              </>
-            ) : null}
+            <span className="campaign-chip campaign-chip-muted">People</span>
           </div>
           <h1 className="h3 mb-1">People</h1>
           <p className="text-muted mb-0">

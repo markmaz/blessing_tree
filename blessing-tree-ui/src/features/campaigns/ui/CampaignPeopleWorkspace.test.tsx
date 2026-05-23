@@ -425,8 +425,8 @@ describe('CampaignPeopleWorkspace', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Groups')).toBeInTheDocument();
-    expect(screen.getByText('Open Items')).toBeInTheDocument();
+    expect(screen.getByText('Total Groups')).toBeInTheDocument();
+    expect(screen.getByText('Open Gift Items')).toBeInTheDocument();
     expect(screen.getAllByText('Johnson Household').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Maple Grove West Wing').length).toBeGreaterThan(0);
 
