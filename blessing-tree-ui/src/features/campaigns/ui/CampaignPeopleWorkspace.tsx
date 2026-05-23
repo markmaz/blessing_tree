@@ -523,8 +523,8 @@ export function CampaignPeopleWorkspace({
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
     <article className="campaign-studio__stat-card">
-      <div className="campaign-studio__stat-label">{label}</div>
-      <div className="campaign-studio__stat-value">{value}</div>
+      <span className="campaign-studio__stat-label">{label}</span>
+      <strong className="campaign-studio__stat-value">{value ?? 0}</strong>
     </article>
   );
 }

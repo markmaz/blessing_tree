@@ -8,7 +8,6 @@ import '@/features/campaigns/ui/campaignPeople.css';
 
 export function PeopleIntakePage() {
   const {
-    campaignName,
     access,
     workspace,
     isLoading,
@@ -83,26 +82,11 @@ export function PeopleIntakePage() {
         </div>
       ) : null}
 
-      <div className="campaign-hero-card">
-        <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
-          <div>
-            <div className="campaign-chip-row mb-3">
-              <span className="campaign-chip campaign-chip-muted">
-                {campaignName}
-              </span>
-              <span className="campaign-chip campaign-chip-muted">
-                People
-              </span>
-              <span className="campaign-chip campaign-chip-muted">
-                Intake
-              </span>
-            </div>
-            <h2 className="h4 mb-1">Start New Intake</h2>
-            <p className="text-muted mb-0">
-              Choose the type of intake you are entering, then stay in that flow to add children or adults and their wishlists.
-            </p>
-          </div>
-        </div>
+      <div>
+        <h1 className="h3 mb-1">People Intake</h1>
+        <p className="text-muted mb-0">
+          Choose the type of intake you are entering, then stay in that flow to add children or adults and their wishlists.
+        </p>
       </div>
 
       <div className="campaign-people-intake-grid">

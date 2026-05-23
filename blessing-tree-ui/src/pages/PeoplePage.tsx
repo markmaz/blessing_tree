@@ -61,23 +61,7 @@ export function PeoplePage() {
   }
 
   return (
-    <div className="vstack gap-4">
-      <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
-        <div>
-          <div className="campaign-chip-row mb-3">
-            <span className="campaign-chip campaign-chip-muted">
-              {campaign?.name ?? 'Campaign'}
-            </span>
-            <span className="campaign-chip campaign-chip-muted">People</span>
-          </div>
-          <h1 className="h3 mb-1">People</h1>
-          <p className="text-muted mb-0">
-            Use Intake for new family or organization entry, and Directory to search and maintain existing households, organizations, people, and wishlists.
-          </p>
-        </div>
-      </div>
-
-      <Outlet
+    <Outlet
         context={{
           campaignId,
           campaignName: campaign?.name ?? 'Campaign',
@@ -101,6 +85,5 @@ export function PeoplePage() {
           onClearError: clearError,
         } satisfies PeopleWorkspaceOutletContext}
       />
-    </div>
   );
 }

@@ -152,7 +152,24 @@ interface GroupResponse {
 
 interface PeopleWorkspaceResponse {
   campaign_id: string;
-  counts: CampaignPeopleWorkspaceData['counts'];
+  counts: {
+    group_count: number;
+    active_group_count: number;
+    household_count: number;
+    organization_count: number;
+    recipient_count: number;
+    child_count: number;
+    adult_count: number;
+    wishlist_count: number;
+    open_item_count: number;
+    sponsored_item_count: number;
+    fulfilled_item_count: number;
+    ready_for_pickup_item_count: number;
+    picked_up_item_count: number;
+    groups_with_pickup_contacts_count: number;
+    groups_missing_primary_contact_count: number;
+    adults_with_direct_contact_count: number;
+  };
   groups: GroupResponse[];
   recipients: RecipientResponse[];
   filters: {
@@ -183,7 +200,24 @@ export async function getCampaignPeopleWorkspace(
 
   return {
     campaignId: response.campaign_id,
-    counts: response.counts,
+    counts: {
+      groupCount: response.counts.group_count,
+      activeGroupCount: response.counts.active_group_count,
+      householdCount: response.counts.household_count,
+      organizationCount: response.counts.organization_count,
+      recipientCount: response.counts.recipient_count,
+      childCount: response.counts.child_count,
+      adultCount: response.counts.adult_count,
+      wishlistCount: response.counts.wishlist_count,
+      openItemCount: response.counts.open_item_count,
+      sponsoredItemCount: response.counts.sponsored_item_count,
+      fulfilledItemCount: response.counts.fulfilled_item_count,
+      readyForPickupItemCount: response.counts.ready_for_pickup_item_count,
+      pickedUpItemCount: response.counts.picked_up_item_count,
+      groupsWithPickupContactsCount: response.counts.groups_with_pickup_contacts_count,
+      groupsMissingPrimaryContactCount: response.counts.groups_missing_primary_contact_count,
+      adultsWithDirectContactCount: response.counts.adults_with_direct_contact_count,
+    },
     groups: response.groups.map(mapGroup),
     recipients: response.recipients.map(mapRecipient),
     filters: {
