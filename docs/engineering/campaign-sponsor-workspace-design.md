@@ -282,6 +282,8 @@ Initial public flow decision:
 
 - public sponsors should be able to choose gifts to sponsor during self-registration
 - the first implementation should collect sponsor information first, then move into gift selection against the current campaign's available unsponsored items
+- gift selection should be all-or-none, not partial quantity
+- the public flow should enforce a soft limit of `3` selected gifts per sponsor submission
 
 Suggested behavior:
 
@@ -317,6 +319,49 @@ Confirmed direction:
 - reuse the existing sponsor record when matched
 - update the sponsor identity when the public user changes their own contact details
 - create or update the campaign participation record for the current campaign rather than creating duplicate sponsor identities
+
+### Verification and Reservation Flow
+
+Public sponsor registration should be verified by email before gifts are actually reserved.
+
+Recommended flow:
+
+1. sponsor enters information
+2. sponsor selects up to `3` whole gifts
+3. system creates a pending public registration record
+4. system sends a verification email
+5. sponsor clicks the verification link
+6. system re-checks gift availability
+7. selected gifts move to `RESERVED`
+8. sponsor participation and communication log are finalized
+
+Important rule:
+
+- unverified sponsor registrations expire after `24 hours`
+- expired pending selections should release automatically and return those gifts to the available pool
+
+Rationale:
+
+- verified email becomes the trusted public identifier
+- gift inventory is not locked by fake or mistyped email submissions
+- expiration keeps the public pool healthy if a sponsor never completes verification
+
+### Public-Flow Abuse Protection
+
+The public sponsor flow should include:
+
+- rate limiting
+- honeypot or equivalent bot trap
+- server-side validation
+- verified-email gating before final reservation
+
+Primary matching key:
+
+- normalized verified email
+
+Secondary matching key:
+
+- normalized phone for staff review and enrichment, not automatic public identity resolution by itself
 
 ## QR Code and Flyer Flow
 
@@ -614,6 +659,32 @@ Campaign Studio should also be able to surface:
 - sponsor-facing template suggestions
 - sponsor audience schedules
 
+## Campaign Milestone Integration
+
+Sponsor self-registration should be governed by campaign milestones.
+
+Recommended milestone fields:
+
+- `sponsor_registration_start`
+- `sponsor_registration_end`
+
+Behavior:
+
+- the public sponsor signup page should only accept registrations when the current date/time is between those milestones
+- Campaign Studio should show the public sponsor flow as inactive before start and closed after end
+- QR flyers and public links can still exist outside that window, but the public page should show a clear registration closed or not-yet-open message
+
+Readiness integration:
+
+- missing sponsor-registration start/end milestones should block public sponsor signup activation
+- if public sponsor signup is enabled but those milestones are missing, Campaign Readiness should show a blocker
+- missing gift deadline milestones should also block the public “what happens next” messaging contract
+
+Post-registration messaging:
+
+- the confirmation screen and confirmation email should use the campaign gift deadline milestone to explain next steps
+- if the gift deadline milestone is missing, the campaign should fail readiness for public sponsor signup
+
 ## Data Normalization
 
 The sponsor workspace should follow the same data-quality rules already established in `People`.
@@ -647,9 +718,10 @@ Not required in v1:
 2. Sponsor intake + directory UI
 3. Sponsor communication log UI and logging APIs
 4. Public sponsor self-registration flow with gift selection
-5. Campaign communication integration into the interaction log
-6. QR flyer generation with one standard template
-7. Sponsor reporting surface
+5. Email verification, pending registration expiry, and reservation finalization
+6. Campaign communication integration into the interaction log
+7. QR flyer generation with one standard template
+8. Sponsor reporting surface
 
 ## Open Questions
 
@@ -659,6 +731,10 @@ Resolved for the initial implementation:
 2. Returning sponsors should reuse and update the same sponsor identity; campaign participation should be created or updated for the current campaign.
 3. Mass-communication log entries should be system-generated and read-only in normal operations.
 4. Sponsor flyer generation should use one standard template first.
+5. Public gift selections should not reserve inventory until the sponsor verifies their email.
+6. Unverified sponsor registrations should expire after `24 hours`.
+7. Public sponsor gift selection should be whole-item only with a soft limit of `3` gifts.
+8. Campaign milestones should control sponsor registration opening/closing and the sponsor confirmation/deadline messaging.
 
 Implementation assumption to keep momentum:
 
