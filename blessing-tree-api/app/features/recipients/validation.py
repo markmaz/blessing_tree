@@ -211,7 +211,38 @@ def validate_optional_phone(value: object, field_name: str) -> str | None:
             status_code=400,
             details={"field": field_name},
         )
+    digits = re.sub(r"\D", "", phone)
+    if len(digits) == 10:
+        return f"({digits[0:3]}) {digits[3:6]}-{digits[6:10]}"
+    if len(digits) == 11 and digits.startswith("1"):
+        return f"1 ({digits[1:4]}) {digits[4:7]}-{digits[7:11]}"
     return phone
+
+
+def validate_optional_state(value: object, field_name: str = "state") -> str | None:
+    if value in (None, ""):
+        return None
+    normalized = str(value).strip().upper()
+    if len(normalized) > 64:
+        raise ServiceError(
+            f"{field_name} is too long",
+            status_code=400,
+            details={"field": field_name, "max_length": 64},
+        )
+    return normalized
+
+
+def validate_optional_postal_code(value: object, field_name: str = "postal_code") -> str | None:
+    if value in (None, ""):
+        return None
+    normalized = re.sub(r"\s+", "", str(value).strip().upper())
+    if len(normalized) > 32:
+        raise ServiceError(
+            f"{field_name} is too long",
+            status_code=400,
+            details={"field": field_name, "max_length": 32},
+        )
+    return normalized
 
 
 def parse_bool(value: object, field_name: str, *, default: bool | None = None) -> bool:

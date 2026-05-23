@@ -23,6 +23,8 @@ from app.features.recipients.validation import (
     validate_optional_int,
     validate_optional_long_text,
     validate_optional_phone,
+    validate_optional_postal_code,
+    validate_optional_state,
     validate_optional_text,
     validate_age_fields,
     validate_age_unit,
@@ -134,8 +136,8 @@ class CampaignRecipientService:
             address_line1=validate_optional_text(payload.get("address_line1"), "address_line1"),
             address_line2=validate_optional_text(payload.get("address_line2"), "address_line2"),
             city=validate_optional_text(payload.get("city"), "city", max_length=128),
-            state=validate_optional_text(payload.get("state"), "state", max_length=64),
-            postal_code=validate_optional_text(payload.get("postal_code"), "postal_code", max_length=32),
+            state=validate_optional_state(payload.get("state"), "state"),
+            postal_code=validate_optional_postal_code(payload.get("postal_code"), "postal_code"),
         )
         self._validate_program_abbreviation_uniqueness(db, group)
         db.add(group)
@@ -181,11 +183,13 @@ class CampaignRecipientService:
             "address_line1": 255,
             "address_line2": 255,
             "city": 128,
-            "state": 64,
-            "postal_code": 32,
         }.items():
             if field_name in payload:
                 setattr(group, field_name, validate_optional_text(payload.get(field_name), field_name, max_length=max_length))
+        if "state" in payload:
+            group.state = validate_optional_state(payload.get("state"), "state")
+        if "postal_code" in payload:
+            group.postal_code = validate_optional_postal_code(payload.get("postal_code"), "postal_code")
         self._validate_program_abbreviation_uniqueness(db, group)
         if group.group_type == RECIPIENT_GROUP_TYPE_ORGANIZATION:
             self._sync_group_program_recipient_ids(db, group)
@@ -344,8 +348,8 @@ class CampaignRecipientService:
             address_line1=validate_optional_text(payload.get("address_line1"), "address_line1"),
             address_line2=validate_optional_text(payload.get("address_line2"), "address_line2"),
             city=validate_optional_text(payload.get("city"), "city", max_length=128),
-            state=validate_optional_text(payload.get("state"), "state", max_length=64),
-            postal_code=validate_optional_text(payload.get("postal_code"), "postal_code", max_length=32),
+            state=validate_optional_state(payload.get("state"), "state"),
+            postal_code=validate_optional_postal_code(payload.get("postal_code"), "postal_code"),
             direct_email=validate_optional_email(payload.get("direct_email"), "direct_email"),
             direct_phone=validate_optional_phone(payload.get("direct_phone"), "direct_phone"),
             facility_room=validate_optional_text(payload.get("facility_room"), "facility_room", max_length=64),
@@ -402,13 +406,15 @@ class CampaignRecipientService:
             "address_line1": 255,
             "address_line2": 255,
             "city": 128,
-            "state": 64,
-            "postal_code": 32,
             "facility_room": 64,
             "subgroup_label": 255,
         }.items():
             if field_name in payload:
                 setattr(recipient, field_name, validate_optional_text(payload.get(field_name), field_name, max_length=max_length))
+        if "state" in payload:
+            recipient.state = validate_optional_state(payload.get("state"), "state")
+        if "postal_code" in payload:
+            recipient.postal_code = validate_optional_postal_code(payload.get("postal_code"), "postal_code")
         if "birth_year" in payload:
             recipient.birth_year = validate_optional_int(payload.get("birth_year"), "birth_year", minimum=1900, maximum=3000)
         if "age" in payload or "age_unit" in payload:

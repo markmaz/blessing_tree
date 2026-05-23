@@ -12,6 +12,7 @@ import type {
 } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 import {
   formatContactDisplayName,
+  formatPhoneNumber,
   formatRecipientAge,
   formatShortDate,
   toGroupContactRoleLabel,
@@ -1188,7 +1189,7 @@ export function CampaignPeopleGroupDrawer({
                           {contact.isEmergencyContact ? <span className="campaign-chip">Emergency</span> : null}
                         </div>
                         <span className="text-muted small">
-                          {[contact.email, contact.phone, toPreferredContactLabel(contact.preferredContact)]
+                          {[contact.email, contact.phone ? formatPhoneNumber(contact.phone) : null, toPreferredContactLabel(contact.preferredContact)]
                             .filter(Boolean)
                             .join(' · ') || `Updated ${formatShortDate(contact.updatedAt)}`}
                         </span>

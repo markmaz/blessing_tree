@@ -168,7 +168,9 @@ export function CampaignPeopleWorkspace({
     }
     const wishlistItemCount = pendingDeleteRecipient.wishlist?.items.length ?? 0;
     return [
-      `Group: ${pendingDeleteRecipient.group?.groupName ?? 'No group'}`,
+      pendingDeleteRecipient.programRecipientId
+        ? `Person ID: ${pendingDeleteRecipient.programRecipientId}`
+        : `${pendingDeleteRecipient.recipientKind === 'CHILD' ? 'Child' : 'Person'} record`,
       pendingDeleteRecipient.wishlist ? '1 wishlist record' : 'No wishlist record',
       `${wishlistItemCount} gift item${wishlistItemCount === 1 ? '' : 's'}`,
     ];
