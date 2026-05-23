@@ -12,6 +12,7 @@ def serialize_campaign(campaign: Campaign) -> dict[str, Any]:
         "name": campaign.name,
         "year": campaign.year,
         "description": campaign.description,
+        "season_theme": campaign.season_theme,
         "status": campaign.status,
         "start_date": _serialize_date(campaign.start_date),
         "end_date": _serialize_date(campaign.end_date),

@@ -70,6 +70,12 @@ INVITE_URL = os.getenv("INVITE_URL")
 PASSWORD_RESET_URL = os.getenv("PASSWORD_RESET_URL")
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
 ORGANIZATION_NAME = os.getenv("ORGANIZATION_NAME", "Blessing Tree")
+GEOAPIFY_API_KEY = os.getenv("GEOAPIFY_API_KEY")
+GEOAPIFY_ADDRESS_AUTOCOMPLETE_URL = os.getenv(
+    "GEOAPIFY_ADDRESS_AUTOCOMPLETE_URL",
+    "https://api.geoapify.com/v1/geocode/autocomplete",
+)
+BT_ADDRESS_AUTOCOMPLETE_COUNTRY_CODE = os.getenv("BT_ADDRESS_AUTOCOMPLETE_COUNTRY_CODE", "us")
 
 IS_DARWIN = platform.system().lower() == "darwin"
 BT_CELERY_WORKER_POOL = os.getenv("BT_CELERY_WORKER_POOL", "solo" if IS_DARWIN else "prefork")

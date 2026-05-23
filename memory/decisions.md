@@ -70,6 +70,41 @@
 - Rationale: Blessing Tree campaigns are often repeated seasonally, and rebuilding the same operational setup each year would create avoidable admin overhead.
 - Consequence: the campaign create API should accept an optional source campaign reference, default missing dates from the source campaign shifted into the target year, keep clone operations campaign-scoped, and treat communication templates as campaign-owned assets rather than global shared templates.
 
+## Recipient Domain Direction
+
+- Status: active
+- Decision: keep one unified recipient domain built around `recipient_group`, `group_contact`, `recipient`, `wishlist`, and `wishlist_item`, but refine the meaning of those records so group/container context, operational contacts, and the actual gift recipient are clearly separated. Use `recipient_kind` plus explicit `program_type` instead of overloading `recipient_type`.
+- Rationale: Blessing Tree serves children in family intake flows and adults in program-based intake flows. Those are different intake programs, but they still share the same downstream sponsorship, fulfillment, pickup, and reporting pipeline.
+- Consequence: parents/guardians, staff, and coordinators remain contacts, not recipients; `recipient_group` remains the intake container; each actual recipient keeps one wishlist; the schema should evolve from `HOUSEHOLD | INSTITUTION` and `CHILD | ADULT | SENIOR` toward `HOUSEHOLD | ORGANIZATION`, a first-class `organization_type`, `recipient_kind`, and explicit `program_type` values such as `CHILD_FAMILY`, `ORGANIZATION_CHILD`, and `ORGANIZATION_ADULT`; recipient address/phone/email fields should be supported where appropriate for organization-submitted recipients; and future recipient APIs/UI should be built as one campaign-scoped recipient workspace rather than split program-specific products.
+
+## Recipient Workflow Reporting Direction
+
+- Status: active
+- Decision: expose sponsorship, fulfillment, pickup readiness, picked-up state, pickup-contact coverage, and adult direct-contact coverage as backend-authored workflow rollups on the People workspace contract.
+- Rationale: the simplified non-household model is most useful when downstream operators can see workflow readiness directly instead of inferring it repeatedly in frontend code.
+- Consequence: recipient rows, group rows, and workspace-level counts should carry workflow rollups, People Reports should use those rollups directly, and future sponsorship/fulfillment/pickup surfaces should build on the same contract instead of recalculating their own summaries.
+
+## Organization Recipient ID Direction
+
+- Status: active
+- Decision: support an optional program abbreviation on organization groups when printed recipient IDs are needed, and generate recipient IDs from that abbreviation plus a group-local sequence number, falling back to a derived abbreviation when the workflow does not capture one up front.
+- Rationale: intake operators want stable, printable identifiers for adult recipients, and the program abbreviation plus number matches how coordinators already think about these lists.
+- Consequence: `recipient_group` now carries `program_abbreviation`, organization-submitted adult recipients now carry generated `program_recipient_number` and `program_recipient_id`, the People intake UI should allow teams to capture the abbreviation when an organization uses printed IDs, and recipient tables/drawers should surface the generated ID read-only instead of asking users to type it manually.
+
+## Recipient Duplicate Protection Direction
+
+- Status: active
+- Decision: protect the People intake flow with two layers: hard backend conflict protection for exact duplicate recipients within the same group, and frontend duplicate hints that surface possible existing groups or people before a new intake record is created.
+- Rationale: seasonal data-entry operators are likely to create duplicate records when working from overlapping paper lists or parallel intake sessions, and the system needs to prevent silent collisions without over-modeling a full master-data matching engine yet.
+- Consequence: exact duplicate person saves within the same group now return a `409` instead of relying on raw database failures, and the Family/Organization plus person drawers now show candidate existing matches based on entered name/address/abbreviation details so users can reopen an existing record instead of creating a new one.
+
+## Recipient Age Entry Direction
+
+- Status: active
+- Decision: keep numeric `age` as the stored value, add `age_unit = MONTHS | YEARS`, and default intake UI to `YEARS`.
+- Rationale: children can be under a year old, and operators need to enter infants precisely without falling back to artificial range buckets like `0-3 months`.
+- Consequence: recipient intake should capture `Age` plus `Age Unit`, months should be available for infants and very young children, older records without a saved unit should be treated as `YEARS` by default, and age displays/sorting should format and compare using the combined value+unit representation instead of assuming raw years.
+
 ## Campaign Schedule Direction
 
 - Status: active
@@ -118,6 +153,13 @@
 - Decision: enforce small files, single responsibility, reusable components, feature-driven backend structure, version bumps for code changes, schema-plus-migration discipline including local MySQL apply/verify, backend-enforced authorization, additive API changes by default, narrow shared modules, mandatory review/tests/doc updates before completion, custom in-app confirmation UI instead of native browser dialogs, rounded-rectangle badges/controls instead of pill styling, and icons on all product UI buttons.
 - Rationale: the project is still early enough to avoid structural drift, and these rules reduce the chance of god files, mixed concerns, silent contract breakage, untested migrations, weak auth enforcement, invisible regressions, inconsistent low-quality browser-native dialog UX, soft default “pill UI” aesthetics becoming normal, and text-only button treatments drifting into the interface.
 - Consequence: future implementation should split oversized files proactively, organize backend work by feature, ship migrations with schema changes, apply and verify them against local MySQL when available, treat frontend access control as advisory only, avoid casual API breakage, keep shared modules intentionally small, bump version files for real code changes, treat review, tests, docs, and commit as part of task completion, never use `window.confirm`, `window.alert`, or `window.prompt` in the product UI, avoid `border-radius: 999px` style treatment for badges and similar controls, and ensure every product UI button includes an icon.
+
+## Branch Discipline Policy
+
+- Status: active
+- Decision: never commit implementation work directly to `main`; all feature work must happen on a feature branch first.
+- Rationale: direct commits to `main` make it too easy to bypass isolation, review, rollback boundaries, and feature-level verification.
+- Consequence: new work should start from a named feature branch, and `main` should only move through the normal integration flow after the feature branch work is complete.
 
 ## Automation Runtime Direction
 

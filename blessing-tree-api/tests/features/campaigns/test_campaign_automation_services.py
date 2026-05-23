@@ -26,6 +26,9 @@ from app.models.campaign_member import CampaignMember
 from app.models.campaign_member_access_role import CampaignMemberAccessRole
 from app.models.campaign_milestone import CampaignMilestone
 from app.models.communication_template import CommunicationTemplate
+from app.models.group_contact import GroupContact
+from app.models.recipient import Recipient
+from app.models.recipient_group import RecipientGroup
 
 
 @compiles(TINYINT, "sqlite")
@@ -162,6 +165,143 @@ def test_dispatch_schedule_sends_email_and_records_success(
     assert execution.failed_count == 0
 
 
+def test_dispatch_schedule_resolves_household_contacts(
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    campaign = _seed_campaign(db_session, status="ACTIVE")
+    template = _seed_template(
+        db_session,
+        campaign_id=campaign.id,
+        audience="HOUSEHOLD_CONTACT",
+        body_template="Hello {{contact.full_name}} from {{group.name}}",
+    )
+    group = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        group_type="HOUSEHOLD",
+        group_name="Johnson Household",
+        status="ACTIVE",
+    )
+    contact = GroupContact(
+        id=uuid.uuid4(),
+        recipient_group_id=group.id,
+        contact_role="PARENT",
+        first_name="Jamie",
+        last_name="Johnson",
+        email="jamie@example.com",
+        preferred_contact="EMAIL",
+        is_primary=True,
+        can_pick_up=True,
+        is_emergency_contact=False,
+    )
+    schedule = CampaignCommunicationSchedule(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        template_id=template.id,
+        scheduled_for=datetime(2026, 11, 2, 9, 0, 0),
+        status="SCHEDULED",
+    )
+    db_session.add_all([group, contact, schedule])
+    db_session.commit()
+
+    deliveries: list[dict[str, object]] = []
+
+    def _fake_send_email_message(*, recipients, subject, html, text_body=None) -> None:
+        deliveries.append(
+            {
+                "recipients": recipients,
+                "subject": subject,
+                "html": html,
+                "text_body": text_body,
+            }
+        )
+
+    monkeypatch.setattr(
+        "app.features.campaigns.automation_dispatch_service.send_email_message",
+        _fake_send_email_message,
+    )
+
+    result = CampaignAutomationDispatchService().dispatch_schedule(
+        db_session,
+        schedule_id=str(schedule.id),
+    )
+
+    assert result["status"] == "SUCCEEDED"
+    assert deliveries[0]["recipients"] == ["jamie@example.com"]
+    assert "Jamie Johnson" in str(deliveries[0]["html"])
+    assert "Johnson Household" in str(deliveries[0]["html"])
+
+
+def test_dispatch_schedule_resolves_direct_adult_recipients(
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    campaign = _seed_campaign(db_session, status="ACTIVE")
+    template = _seed_template(
+        db_session,
+        campaign_id=campaign.id,
+        audience="ADULT_RECIPIENT_DIRECT",
+        body_template="Hello {{recipient.full_name}}",
+    )
+    group = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        group_type="ORGANIZATION",
+        group_name="Maple Grove",
+        organization_type="SENIOR_PROGRAM",
+        status="ACTIVE",
+    )
+    recipient = Recipient(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        recipient_group_id=group.id,
+        recipient_kind="ADULT",
+        program_type="ORGANIZATION_ADULT",
+        privacy_level="FULL_NAME",
+        display_label="Mary Smith",
+        first_name="Mary",
+        last_name="Smith",
+        direct_email="mary@example.com",
+        status="ACTIVE",
+    )
+    schedule = CampaignCommunicationSchedule(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        template_id=template.id,
+        scheduled_for=datetime(2026, 11, 2, 9, 0, 0),
+        status="SCHEDULED",
+    )
+    db_session.add_all([group, recipient, schedule])
+    db_session.commit()
+
+    deliveries: list[dict[str, object]] = []
+
+    def _fake_send_email_message(*, recipients, subject, html, text_body=None) -> None:
+        deliveries.append(
+            {
+                "recipients": recipients,
+                "subject": subject,
+                "html": html,
+                "text_body": text_body,
+            }
+        )
+
+    monkeypatch.setattr(
+        "app.features.campaigns.automation_dispatch_service.send_email_message",
+        _fake_send_email_message,
+    )
+
+    result = CampaignAutomationDispatchService().dispatch_schedule(
+        db_session,
+        schedule_id=str(schedule.id),
+    )
+
+    assert result["status"] == "SUCCEEDED"
+    assert deliveries[0]["recipients"] == ["mary@example.com"]
+    assert "Mary Smith" in str(deliveries[0]["html"])
+
+
 def test_activate_campaign_blocks_until_readiness_is_ready(
     db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -281,6 +421,7 @@ def _seed_template(
     *,
     campaign_id,
     audience: str = "GENERAL",
+    body_template: str = "Hello {{volunteer.full_name}}",
 ) -> CommunicationTemplate:
     template = CommunicationTemplate(
         id=uuid.uuid4(),
@@ -290,7 +431,7 @@ def _seed_template(
         audience=audience,
         channel="EMAIL",
         subject_template="Volunteer Welcome for {{campaign.name}}",
-        body_template="Hello {{volunteer.full_name}}",
+        body_template=body_template,
         is_active=True,
         created_by_user_id=None,
     )

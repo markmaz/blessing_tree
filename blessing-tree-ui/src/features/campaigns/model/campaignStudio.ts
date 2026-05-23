@@ -74,11 +74,3 @@ export const milestoneDefinitions: Array<{
   { key: 'pickup_end', label: 'Pickup Window Closes', sortOrder: 7 },
   { key: 'campaign_close', label: 'Campaign Closes', sortOrder: 8 },
 ] as const;
-
-export const communicationAudienceOptions = [
-  'SPONSOR',
-  'VOLUNTEER',
-  'MANAGER',
-  'FAMILY',
-  'GENERAL',
-] as const;

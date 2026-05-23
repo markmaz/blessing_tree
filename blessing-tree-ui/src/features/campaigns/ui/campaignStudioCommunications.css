@@ -220,6 +220,14 @@
   gap: 1rem;
 }
 
+.campaign-template-workspace__field-help {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--blessing-text-light);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
 .campaign-template-workspace__header {
   display: flex;
   align-items: flex-start;

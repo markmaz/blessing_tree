@@ -46,12 +46,28 @@ export interface CampaignDirectoryUser {
   inactiveRoleKeys: string[];
 }
 
+export type CommunicationAudienceKey =
+  | 'SPONSOR'
+  | 'VOLUNTEER'
+  | 'MANAGER'
+  | 'HOUSEHOLD_CONTACT'
+  | 'ORGANIZATION_CONTACT'
+  | 'GROUP_PRIMARY_CONTACT'
+  | 'ADULT_RECIPIENT_DIRECT'
+  | 'GENERAL';
+
+export interface CommunicationAudienceOption {
+  key: CommunicationAudienceKey;
+  label: string;
+  description: string;
+}
+
 export interface CommunicationTemplate {
   id: string;
   campaignId: string;
   templateKey: string;
   name: string;
-  audience: string;
+  audience: CommunicationAudienceKey;
   channel: string;
   subjectTemplate: string;
   bodyTemplate: string;
@@ -150,6 +166,7 @@ export interface CampaignStudioData {
   summary: CampaignSummary;
   team: CampaignTeamSnapshot;
   communications: {
+    audienceCatalog: CommunicationAudienceOption[];
     templates: CommunicationTemplate[];
     schedules: CommunicationSchedule[];
   };
@@ -163,7 +180,7 @@ export interface CampaignStudioData {
 export interface CreateCommunicationTemplateInput {
   templateKey: string;
   name: string;
-  audience: string;
+  audience: CommunicationAudienceKey;
   subjectTemplate: string;
   bodyTemplate: string;
   isActive?: boolean;
@@ -172,7 +189,7 @@ export interface CreateCommunicationTemplateInput {
 export interface UpdateCommunicationTemplateInput {
   templateKey?: string;
   name?: string;
-  audience?: string;
+  audience?: CommunicationAudienceKey;
   subjectTemplate?: string;
   bodyTemplate?: string;
   isActive?: boolean;

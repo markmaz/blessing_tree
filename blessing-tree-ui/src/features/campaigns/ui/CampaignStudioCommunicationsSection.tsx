@@ -11,6 +11,7 @@ import {
   type CommunicationTemplateFocusTarget,
 } from '@/features/campaigns/model/campaignCommunicationTemplateBuilder';
 import type {
+  CommunicationAudienceOption,
   CommunicationTemplate,
   CreateCommunicationTemplateInput,
   UpdateCommunicationTemplateInput,
@@ -20,6 +21,7 @@ import { CampaignStudioTemplateLibrary } from '@/features/campaigns/ui/CampaignS
 import { CampaignStudioTemplateWorkspace } from '@/features/campaigns/ui/CampaignStudioTemplateWorkspace';
 
 interface CampaignStudioCommunicationsSectionProps {
+  audienceCatalog: CommunicationAudienceOption[];
   templates: CommunicationTemplate[];
   isSaving: boolean;
   requestedTemplateId?: string | null;
@@ -35,6 +37,7 @@ interface CampaignStudioCommunicationsSectionProps {
 }
 
 export function CampaignStudioCommunicationsSection({
+  audienceCatalog,
   templates,
   isSaving,
   requestedTemplateId = null,
@@ -167,6 +170,7 @@ export function CampaignStudioCommunicationsSection({
 
           <CampaignStudioTemplateWorkspace
             draft={draft}
+            audienceCatalog={audienceCatalog}
             activeTab={activeTab}
             isSaving={isSaving}
             isExisting={selectedTemplateId !== null}

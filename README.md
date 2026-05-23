@@ -4,7 +4,7 @@ Blessing Tree is a split frontend/backend application for managing a church gift
 
 ## Current Status
 
-- `blessing-tree-api/` is a Flask API with authentication, SQLAlchemy models, MySQL migrations, Celery-backed campaign automation, Valkey-backed audit logging, the RBAC foundation, Campaign Studio backend APIs, and an admin runtime slice for invitations, LLM configuration, health, and feature flags.
+- `blessing-tree-api/` is a Flask API with authentication, SQLAlchemy models, MySQL migrations, Celery-backed campaign automation, Valkey-backed audit logging, the RBAC foundation, Campaign Studio backend APIs, a refined recipient-domain foundation with new `People` workspace APIs, and an admin runtime slice for invitations, LLM configuration, health, and feature flags.
 - `blessing-tree-ui/` is a React 19 + TypeScript + Vite frontend with a protected app shell, Campaign Studio, a working admin workspace, and Playwright-backed browser E2E coverage for critical flows.
 - `files/` is legacy/reference material and is not part of the active application surface. Ignore it for normal development work.
 

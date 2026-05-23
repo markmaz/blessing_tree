@@ -36,6 +36,7 @@ class Campaign(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUIDBin(), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    season_theme: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
 
     start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)

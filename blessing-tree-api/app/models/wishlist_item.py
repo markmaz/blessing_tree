@@ -9,6 +9,14 @@ from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+from .recipient_constants import (
+    WISHLIST_ITEM_TYPE_CLOTHING,
+    WISHLIST_ITEM_TYPE_ESSENTIAL,
+    WISHLIST_ITEM_TYPE_EXPERIENCE,
+    WISHLIST_ITEM_TYPE_GIFT,
+    WISHLIST_ITEM_TYPE_GIFT_CARD,
+    WISHLIST_ITEM_TYPE_OTHER,
+)
 from .uuid_bin import UUIDBin
 
 if TYPE_CHECKING:
@@ -34,6 +42,19 @@ class WishlistItem(Base):
     )
 
     category: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    item_type: Mapped[str] = mapped_column(
+        Enum(
+            WISHLIST_ITEM_TYPE_GIFT,
+            WISHLIST_ITEM_TYPE_CLOTHING,
+            WISHLIST_ITEM_TYPE_ESSENTIAL,
+            WISHLIST_ITEM_TYPE_GIFT_CARD,
+            WISHLIST_ITEM_TYPE_EXPERIENCE,
+            WISHLIST_ITEM_TYPE_OTHER,
+            name="wishlist_item_type",
+        ),
+        nullable=False,
+        default=WISHLIST_ITEM_TYPE_GIFT,
+    )
     description: Mapped[str] = mapped_column(String(512), nullable=False)
     size: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     qty_requested: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
@@ -44,6 +65,8 @@ class WishlistItem(Base):
     )
     est_cost_cents: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     allow_substitute: Mapped[bool] = mapped_column(TINYINT(1), nullable=False, default=1)
+    do_not_substitute_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    recipient_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     status: Mapped[str] = mapped_column(
         Enum("OPEN", "COMMITTED", "RECEIVED", "WRAPPED", "PICKED_UP", "CANCELLED", name="wishlist_item_status"),

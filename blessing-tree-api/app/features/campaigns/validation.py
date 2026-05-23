@@ -27,6 +27,19 @@ def require_campaign_year(value: object) -> int:
     return year
 
 
+def parse_optional_season_theme(value: object) -> str | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if len(text) > 120:
+        raise ServiceError(
+            "Campaign season_theme is too long",
+            status_code=400,
+            details={"field": "season_theme"},
+        )
+    return text
+
+
 def parse_optional_date(value: object, field_name: str) -> date | None:
     if value in (None, ""):
         return None

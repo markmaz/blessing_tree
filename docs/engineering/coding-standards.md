@@ -45,6 +45,12 @@
 - Favor project-root documentation for cross-cutting topics.
 - Use redirect stubs for deprecated docs instead of deleting discoverability entirely.
 
+## Git Workflow
+
+- Never commit feature work directly to `main`.
+- Start all implementation work on a feature branch.
+- Merge into `main` only through the normal review/integration flow after the feature branch work is complete.
+
 ## Completion And Review
 
 - Run a code review before marking a task done. Review should check correctness, scope discipline, regressions, and obvious cleanup opportunities.

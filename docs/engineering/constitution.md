@@ -24,6 +24,7 @@
 - Shared modules must stay narrowly scoped and must not become dumping grounds.
 - New behavior should ship with tests unless deferred explicitly.
 - Automated frontend tests are mandatory for frontend behavior changes unless explicitly deferred and documented.
+- Never commit feature work directly to `main`. All implementation work must happen on a feature branch first.
 - Check in completed code work after verification.
 
 ## Invariants

@@ -14,8 +14,8 @@ interface AppFeaturesContextValue {
 
 const DEFAULT_FEATURES: AdminFeatureFlag[] = [
   {
-    featureKey: 'families',
-    label: 'Families',
+    featureKey: 'people',
+    label: 'People',
     description: '',
     isEnabled: true,
     createdAt: '',

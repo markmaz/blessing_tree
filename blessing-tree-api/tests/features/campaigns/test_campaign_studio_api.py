@@ -94,6 +94,7 @@ def test_get_campaign_studio_returns_aggregate_payload(
     payload = response.get_json()
     assert payload["campaign"]["id"] == campaign_id
     assert payload["team"]["counts"]["manager_count"] == 1
+    assert payload["communications"]["audience_catalog"][0]["key"] == "HOUSEHOLD_CONTACT"
     assert payload["communications"]["templates"][0]["template_key"] == "sponsor_reminder"
     assert payload["communications"]["schedules"][0]["status"] == "SCHEDULED"
     assert payload["milestones"][0]["milestone_key"] == "registration_open"
@@ -261,6 +262,39 @@ def test_create_template_and_schedule_then_readiness_reflects_changes(
     assert automation_item["category"] == "operational_health"
     assert automation_item["action_label"] == "Open Readiness"
     assert automation_item["blocking_for"] == ["operations"]
+
+
+def test_create_template_accepts_recipient_aware_audience_key(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/communications/templates",
+        json={
+            "template_key": "facility_outreach",
+            "name": "Facility Outreach",
+            "audience": "ADULT_PROGRAM_CONTACT",
+            "channel": "EMAIL",
+            "subject_template": "Facility update",
+            "body_template": "Hello {{contact.first_name}}.",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 201
+    payload = response.get_json()
+    assert payload["audience"] == "ORGANIZATION_CONTACT"
 
 
 def test_delete_template_removes_unscheduled_template(

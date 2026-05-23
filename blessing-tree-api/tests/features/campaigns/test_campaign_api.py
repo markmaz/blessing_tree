@@ -33,6 +33,13 @@ from app.models.donation import Donation
 from app.models.donation_line import DonationLine
 from app.models.fulfillment import Fulfillment
 from app.models.recipient import Recipient
+from app.models.recipient_constants import (
+    RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+    RECIPIENT_KIND_CHILD,
+    RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+    RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+    RECIPIENT_STATUS_ACTIVE,
+)
 from app.models.recipient_group import RecipientGroup
 from app.models.sponsor import Sponsor
 from app.models.sponsorship import Sponsorship
@@ -109,6 +116,7 @@ def _seed_campaign(db: Session, *, year: int, name: str, status: str = "ACTIVE",
         id=uuid.uuid4(),
         name=name,
         description=description,
+        season_theme="Grace & Renewal",
         year=year,
         start_date=date(year, 11, 1),
         end_date=date(year, 12, 31),
@@ -187,15 +195,22 @@ def test_get_campaign_summary_returns_all_v1_counts(
     session = campaign_api_module.SessionLocal()
     user = _seed_user(session)
     campaign = _seed_campaign(session, year=2026, name="Summary Campaign")
-    group = RecipientGroup(id=uuid.uuid4(), campaign_id=campaign.id, group_type="HOUSEHOLD", group_name="Family One")
+    group = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        group_type=RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+        group_name="Family One",
+        status="ACTIVE",
+    )
     recipient = Recipient(
         id=uuid.uuid4(),
         campaign_id=campaign.id,
         recipient_group_id=group.id,
-        recipient_type="CHILD",
-        privacy_level="FULL_NAME",
+        recipient_kind=RECIPIENT_KIND_CHILD,
+        program_type=RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+        privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
         display_label="Kid One",
-        status="ACTIVE",
+        status=RECIPIENT_STATUS_ACTIVE,
     )
     wishlist = Wishlist(id=uuid.uuid4(), campaign_id=campaign.id, recipient_id=recipient.id)
     wishlist_item = WishlistItem(
@@ -243,6 +258,62 @@ def test_get_campaign_summary_returns_all_v1_counts(
         "fulfillments": 1,
         "pickups": 0,
     }
+
+
+def test_campaign_detail_serializes_season_theme(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    user = _seed_user(session)
+    campaign = _seed_campaign(session, year=2026, name="Theme Campaign")
+    _assign_role(session, user, campaign, "CAMPAIGN_MANAGER")
+    user_id = str(user.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign_id}",
+        headers=_auth_header(user_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["season_theme"] == "Grace & Renewal"
+
+
+def test_season_reflection_avoids_recent_pair_ids(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    user = _seed_user(session)
+    campaign = _seed_campaign(session, year=2026, name="Reflection Campaign")
+    _assign_role(session, user, campaign, "CAMPAIGN_MANAGER")
+    user_id = str(user.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    first_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/season-reflection",
+        headers=_auth_header(user_id, "VOLUNTEER"),
+    )
+    assert first_response.status_code == 200
+    first_payload = first_response.get_json()
+
+    second_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/season-reflection?exclude_pair_ids={first_payload['pair_id']}",
+        headers=_auth_header(user_id, "VOLUNTEER"),
+    )
+    assert second_response.status_code == 200
+    second_payload = second_response.get_json()
+    assert second_payload["pair_id"] != first_payload["pair_id"]
 
 
 def test_create_campaign_allows_duplicate_year_and_creates_manager_assignment(

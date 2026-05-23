@@ -3,7 +3,23 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { parseStoredTemplateBlocks } from '@/features/campaigns/model/campaignCommunicationTemplateBuilder';
 import { CampaignStudioCommunicationsSection } from '@/features/campaigns/ui/CampaignStudioCommunicationsSection';
-import type { CommunicationTemplate } from '@/features/campaigns/model/campaignStudioTypes';
+import type {
+  CommunicationAudienceOption,
+  CommunicationTemplate,
+} from '@/features/campaigns/model/campaignStudioTypes';
+
+const audienceCatalog: CommunicationAudienceOption[] = [
+  {
+    key: 'SPONSOR',
+    label: 'Sponsors',
+    description: 'Sponsors connected to this campaign through active sponsorships.',
+  },
+  {
+    key: 'VOLUNTEER',
+    label: 'Volunteers',
+    description: 'Campaign roster members marked as volunteers.',
+  },
+];
 
 const templates: CommunicationTemplate[] = [
   {
@@ -53,6 +69,7 @@ describe('CampaignStudioCommunicationsSection', () => {
 
     render(
       <CampaignStudioCommunicationsSection
+        audienceCatalog={audienceCatalog}
         templates={[]}
         isSaving={false}
         onCreateTemplate={onCreateTemplate}
@@ -110,6 +127,7 @@ describe('CampaignStudioCommunicationsSection', () => {
 
     render(
       <CampaignStudioCommunicationsSection
+        audienceCatalog={audienceCatalog}
         templates={templates}
         isSaving={false}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
@@ -150,6 +168,7 @@ describe('CampaignStudioCommunicationsSection', () => {
 
     render(
       <CampaignStudioCommunicationsSection
+        audienceCatalog={audienceCatalog}
         templates={templates}
         isSaving={false}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
@@ -174,6 +193,7 @@ describe('CampaignStudioCommunicationsSection', () => {
 
     render(
       <CampaignStudioCommunicationsSection
+        audienceCatalog={audienceCatalog}
         templates={templates}
         isSaving={false}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
@@ -196,6 +216,7 @@ describe('CampaignStudioCommunicationsSection', () => {
 
     render(
       <CampaignStudioCommunicationsSection
+        audienceCatalog={audienceCatalog}
         templates={templates}
         isSaving={false}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
@@ -221,6 +242,7 @@ describe('CampaignStudioCommunicationsSection', () => {
 
     render(
       <CampaignStudioCommunicationsSection
+        audienceCatalog={audienceCatalog}
         templates={[]}
         isSaving={false}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
@@ -243,6 +265,7 @@ describe('CampaignStudioCommunicationsSection', () => {
 
     render(
       <CampaignStudioCommunicationsSection
+        audienceCatalog={audienceCatalog}
         templates={templates}
         isSaving={false}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}

@@ -58,9 +58,9 @@ Deliverables:
 Goal: make the app shell useful for staff/volunteers.
 
 - Dashboard: show live campaign and workload metrics
-- Families: connect to recipient groups and recipients
+- People: connect to recipient groups, recipients, and wishlists
 - Donations: connect to donation and fulfillment data
-- Reports: start with operational exports or summaries
+- Reports: start with campaign-aware operational summaries and exports
 - Admin: auth/user/campaign controls
 
 ## Phase 5: Operational Hardening

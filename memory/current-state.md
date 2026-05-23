@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 ## Project Snapshot
 
@@ -19,9 +19,11 @@ Last updated: 2026-05-21
   - operational team foundation now exists with `campaign_team`, `campaign_team_member`, `campaign_team_role`, and backend team-role-aware services
   - Team workspace API foundation now exists with member, access-role, team, membership, app-access, and aggregate workspace endpoints
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
-  - Campaign Studio backend support now exists for assignments, campaign-scoped communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, aggregate studio payloads, and create-from-previous-campaign cloning support
+  - Campaign Studio backend support now exists for assignments, campaign-scoped communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, aggregate studio payloads, create-from-previous-campaign cloning support, and a backend-driven communication audience catalog
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
   - local outbound email is now operational in development through a repo-owned SMTP sink plus configurable TLS/SSL flags, so invite delivery and scheduled communication dispatch can be exercised end to end without external SMTP credentials
+- recipient phases 1 through 7 now exist: the schema/model is refined, there is now a recipient feature package plus campaign-scoped APIs for groups, contacts, recipients, wishlists, wishlist items, and the aggregate `people-workspace` payload, the frontend now includes campaign-scoped `People > Intake` and `People > Directory` flows with wishlist/fulfillment alignment, Communications can now target recipient-aware audience types, the `people` feature flag/runtime naming replaces the older `families` key, and Reports now uses live People workspace data instead of placeholder rows
+  - the recipient runtime now uses `HOUSEHOLD | ORGANIZATION` group types plus first-class `organization_type`, and recipient program types are now `CHILD_FAMILY`, `ORGANIZATION_CHILD`, and `ORGANIZATION_ADULT`
   - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
   - admin LLM test/health now probes the real generation path against the configured model instead of treating `/models` reachability as sufficient
   - invitation-centric onboarding now supports Google, Yahoo, and local password from the invite funnel; generic Google/Yahoo OAuth remains limited to already-linked returning users, and invite validation now exposes accepted-vs-pending onboarding state for cleaner frontend handling
@@ -55,6 +57,7 @@ Last updated: 2026-05-21
   - Campaign Studio AI phase 5 now supports real Settings-section actions, including lifecycle/status suggestions, direct campaign settings update drafts, and inline edit-before-apply for settings/status payloads in the AI drawer
   - Campaign Studio AI now uses the configured admin LLM as the primary draft engine and falls back to the deterministic backend draft logic when the LLM is missing, disabled, unavailable, or returns an invalid structured response
   - the LLM draft normalizer now repairs common communications template field aliases like `subject`, `subject_line`, `body`, and `content` instead of dropping to deterministic fallback when the configured LLM omits the exact `subject_template` or `body_template` keys
+  - Campaign Studio communications now support recipient-aware audience keys such as household contacts, facility contacts, primary group contacts, and direct adult recipients, and the dispatch path now resolves those audiences from the recipient domain
   - Campaign Studio now uses a compact icon-only section rail at medium widths, and the schedule calendar/AI draft controls have responsive overflow guards for narrower layouts
   - Campaign Studio AI draft type selection now uses a compact horizontal segmented control in the rail instead of stacked mini-cards
   - Campaign Studio AI now uses a more Query Forge-like drawer pattern with a conversation thread, prompt copy action, prompt suggestions, clear/new-session tools, and a generic composer instead of a schedule-only `Draft Calendar Change` action
@@ -71,7 +74,17 @@ Last updated: 2026-05-21
   - a Vitest + Testing Library harness now exists for automated frontend tests
   - app admins can now create campaigns from the campaign library UI
   - campaign managers and app admins can now update campaign metadata from the detail page and Studio settings section
-  - page shells still exist for families, donations, reports, and admin
+  - the placeholder Families surface is now replaced by a campaign-aware People section with child `Intake` and `Directory` views so new entry work is separated from searchable maintenance
+  - the People workspace now also surfaces gift-workflow readiness directly in wishlist items, including sponsorship status, fulfillment progress, label state, pickup state, and authorized pickup contacts from the group record
+  - the People workspace and People Reports now also include backend-authored workflow rollups for sponsored, fulfilled, ready-for-pickup, picked-up, adult-direct-contact, and pickup-contact coverage counts, aligned to the simplified non-household recipient model
+  - organization intake can now capture `organization_type`, optional program abbreviations, and coordinator contacts from the start; adult recipients still get generated IDs such as `SAH-001` when a printed-ID workflow is used
+  - People intake now includes duplicate-protection guardrails: exact duplicate recipient saves in the same group now fail cleanly with a conflict response, and the Family/Organization plus person intake drawers now surface possible existing matches before a new record is created
+  - the People intake UX is now more group-first: family/organization drawers frame intake around the container record first, and contextual recipient drawers hide irrelevant direct-contact fields for household children while allowing organization child/adult flows to follow the selected organization type
+  - the current recipient runtime now supports two intake contexts:
+    - `HOUSEHOLD` for family/child flows
+    - `ORGANIZATION` for non-household recipient flows, with required `organization_type` to distinguish nursing homes, orphanages, ministries, partner orgs, and similar sources
+  - the recipient design direction now also treats organization-submitted recipient direct address/phone/email fields as part of the domain, with child direct-contact fields hidden in household flows and organization recipient fields available when needed
+  - page shells still exist for donations and admin
   - shared authenticated client exists for protected data APIs
 
 ## Current Runtime Facts
@@ -93,6 +106,8 @@ Last updated: 2026-05-21
   - `docs/engineering/campaign-team-implementation-plan.md`
   - `docs/engineering/campaign-readiness-design.md`
   - `docs/engineering/campaign-studio-ai-actions-design.md`
+  - `docs/engineering/campaign-recipient-design.md`
+  - `docs/engineering/campaign-recipient-implementation-plan.md`
   - `docs/engineering/rbac-design.md`
   - `docs/engineering/rbac-implementation-plan.md`
   - `docs/engineering/campaign-schedule-design.md`
@@ -120,6 +135,7 @@ Last updated: 2026-05-21
   - local login, refresh, logout, and protected campaign API routes were smoke-tested successfully against the running stack on 2026-05-20
 - backend CORS now accepts both `localhost` and `127.0.0.1` loopback frontend origins for local Studio work
 - local invitation onboarding has now been browser-smoke-tested end to end through the invite funnel using the local-password path; live Google/Yahoo provider smoke still depends on local provider credentials being configured
+- branch discipline is now explicit project policy: never commit feature work directly to `main`; use a feature branch first
 - Active-session automatic token refresh on 401 is now available through the shared frontend API client.
 - RBAC foundation now exists:
   - `db/migration/V003__Campaign_User_Roles.sql`
@@ -151,6 +167,21 @@ Last updated: 2026-05-21
     - `POST /api/v1/campaigns/<campaign_id>/teams/<team_id>/roles`
     - `PATCH /api/v1/campaigns/<campaign_id>/teams/<team_id>/roles/<role_id>`
     - `PATCH /api/v1/campaigns/<campaign_id>/teams/<team_id>/members/<member_id>` for team-role changes
+- Recipient workspace API now exists:
+  - `app/features/recipients/service.py`
+  - `app/features/recipients/serializers.py`
+  - `app/features/recipients/validation.py`
+  - `GET /api/v1/campaigns/<campaign_id>/people-workspace`
+  - `GET|POST /api/v1/campaigns/<campaign_id>/recipient-groups`
+  - `GET|PATCH /api/v1/campaigns/<campaign_id>/recipient-groups/<group_id>`
+  - `POST /api/v1/campaigns/<campaign_id>/recipient-groups/<group_id>/contacts`
+  - `PATCH|DELETE /api/v1/campaigns/<campaign_id>/recipient-groups/<group_id>/contacts/<contact_id>`
+  - `GET|POST /api/v1/campaigns/<campaign_id>/recipients`
+  - `GET|PATCH /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>`
+  - `GET|PUT /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist`
+  - `POST /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist/items`
+  - `PATCH|DELETE /api/v1/campaigns/<campaign_id>/recipients/<recipient_id>/wishlist/items/<item_id>`
+  - the current recipient code still uses `HOUSEHOLD | ADULT_PROGRAM` group types and `CHILD_FAMILY | ADULT_PROGRAM` program types, but the active design direction is to rename the non-household side to `ORGANIZATION` and add `organization_type`
 - Team design direction now explicitly distinguishes:
   - fixed app access roles for RBAC
   - team-scoped team roles for operational responsibility
@@ -210,6 +241,10 @@ Last updated: 2026-05-21
   - verified `communication_template.campaign_id`
   - verified `uq_communication_template_campaign_key`
   - verified campaign-scoped audience/active indexes and campaign foreign key
+  - `V014__Recipient_Refinement.sql` has been applied to the local `blessing_tree` database
+  - verified refined recipient domain columns on `recipient_group`, `group_contact`, `recipient`, `wishlist`, and `wishlist_item`
+  - verified recipient indexes for `recipient_kind`, `program_type`, and recipient-group status
+  - verified wishlist status index and `fk_wishlist_intake_completed_by_contact`
 - Current RBAC direction remains: minimal app roles, campaign-scoped assignments, code-defined capability bundles, and path-first campaign scope resolution.
 - Readiness direction is now explicitly lifecycle-aware and backend-driven:
   - grouped categories instead of one flat finding list

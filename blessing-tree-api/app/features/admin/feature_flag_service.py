@@ -14,12 +14,35 @@ class FeatureFlagService:
             flag.feature_key: flag for flag in db.query(AppFeatureFlag).order_by(AppFeatureFlag.feature_key.asc()).all()
         }
         changed = False
+        duplicate_legacy_people_flag = existing.get("families")
+        canonical_people_flag = existing.get("people")
+        if duplicate_legacy_people_flag is not None and canonical_people_flag is not None:
+            db.delete(duplicate_legacy_people_flag)
+            del existing["families"]
+            changed = True
+        legacy_people_flag = existing.get("families")
+        if legacy_people_flag is not None and "people" not in existing:
+            legacy_people_flag.feature_key = "people"
+            existing["people"] = legacy_people_flag
+            del existing["families"]
+            changed = True
         for item in FEATURE_FLAG_CATALOG:
-            if item["feature_key"] in existing:
+            feature_key = str(item["feature_key"])
+            if feature_key in existing:
+                existing_flag = existing[feature_key]
+                next_label = str(item["label"])
+                next_description = str(item["description"])
+                if (
+                    existing_flag.label != next_label
+                    or existing_flag.description != next_description
+                ):
+                    existing_flag.label = next_label
+                    existing_flag.description = next_description
+                    changed = True
                 continue
             db.add(
                 AppFeatureFlag(
-                    feature_key=str(item["feature_key"]),
+                    feature_key=feature_key,
                     label=str(item["label"]),
                     description=str(item["description"]),
                     is_enabled=bool(item["default_enabled"]),

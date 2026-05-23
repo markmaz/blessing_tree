@@ -12,7 +12,8 @@
   - router in `src/app/App.tsx`
   - protected app shell in `src/shared/ui/layout/AppLayout.tsx`
   - auth flow under `src/features/auth/`
-  - page shells for dashboard, families, donations, reports, and admin
+  - page shells and campaign-aware workspaces for dashboard, people, donations,
+    reports, and admin
 
 ## Important Current Architectural Reality
 

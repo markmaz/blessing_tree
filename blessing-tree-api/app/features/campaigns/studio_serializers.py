@@ -140,6 +140,7 @@ def serialize_studio_payload(
     team: dict[str, Any],
     templates: list[CommunicationTemplate],
     schedules: list[CampaignCommunicationSchedule],
+    audience_catalog: list[dict[str, str]],
     milestones: list[CampaignMilestone],
     schedule_items: list[dict[str, Any]],
     readiness: dict[str, Any],
@@ -150,6 +151,7 @@ def serialize_studio_payload(
         "summary": serialize_campaign_summary(str(campaign.id), summary),
         "team": serialize_team_snapshot(team["assignments"], team["counts"]),
         "communications": {
+            "audience_catalog": audience_catalog,
             "templates": [serialize_communication_template(template) for template in templates],
             "schedules": [serialize_communication_schedule(schedule) for schedule in schedules],
         },

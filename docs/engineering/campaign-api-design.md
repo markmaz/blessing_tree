@@ -35,6 +35,7 @@ Related design:
 - `docs/engineering/campaign-studio-design.md`
 - `docs/engineering/campaign-schedule-design.md`
 - `docs/engineering/campaign-readiness-design.md`
+- `docs/engineering/campaign-recipient-design.md`
 
 ## Locked Decisions
 

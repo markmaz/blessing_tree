@@ -29,6 +29,7 @@ export interface Campaign {
   name: string;
   year: number;
   description: string | null;
+  seasonTheme: string | null;
   status: CampaignStatus;
   startDate: string | null;
   endDate: string | null;
@@ -44,8 +45,35 @@ export interface CampaignUpsertInput {
   name: string;
   year: number;
   description: string | null;
+  seasonTheme: string | null;
   status: CampaignStatus;
   startDate: string | null;
   endDate: string | null;
   sourceCampaignId?: string | null;
+}
+
+export interface SeasonReflectionVerse {
+  id: string;
+  reference: string;
+  translation: string;
+  text: string;
+  tags: string[];
+}
+
+export interface SeasonReflectionPrayer {
+  id: string;
+  title: string;
+  citation: string;
+  text: string;
+  tags: string[];
+}
+
+export interface CampaignSeasonReflection {
+  campaignId: string;
+  seasonTheme: string | null;
+  source: 'llm' | 'fallback';
+  fallbackReason: string | null;
+  pairId: string;
+  verse: SeasonReflectionVerse;
+  prayer: SeasonReflectionPrayer;
 }

@@ -8,6 +8,7 @@ export interface CampaignEditorValues {
   name: string;
   year: string;
   description: string;
+  seasonTheme: string;
   status: CampaignStatus;
   startDate: string;
   endDate: string;
@@ -28,6 +29,7 @@ export function buildCampaignEditorValues(
     name: campaign?.name ?? '',
     year: campaign?.year ? String(campaign.year) : '',
     description: campaign?.description ?? '',
+    seasonTheme: campaign?.seasonTheme ?? '',
     status: campaign?.status ?? 'DRAFT',
     startDate: campaign?.startDate ?? '',
     endDate: campaign?.endDate ?? '',
@@ -42,6 +44,7 @@ export function toCampaignUpsertInput(
     name: values.name.trim(),
     year: Number(values.year),
     description: values.description.trim() || null,
+    seasonTheme: values.seasonTheme.trim() || null,
     status: values.status,
     startDate: values.startDate || null,
     endDate: values.endDate || null,

@@ -12,10 +12,12 @@ from app.features.campaigns.serializers import (
     serialize_campaign_list_item,
     serialize_campaign_summary,
 )
+from app.features.campaigns.season_reflection_service import CampaignSeasonReflectionService
 from app.features.campaigns.service import CampaignService
 from app.features.rbac.decorators import require_app_admin, require_campaign_capability
 
 _campaign_service = CampaignService()
+_season_reflection_service = CampaignSeasonReflectionService(campaigns=_campaign_service)
 
 
 @campaign_ns.route("")
@@ -88,6 +90,23 @@ class CampaignSummaryResource(Resource):
         with SessionLocal() as db:
             counts = _campaign_service.get_campaign_summary_counts(db, campaign_id)
         return serialize_campaign_summary(campaign_id, counts)
+
+
+@campaign_ns.route("/<string:campaign_id>/season-reflection")
+class CampaignSeasonReflectionResource(Resource):
+    @require_campaign_capability("campaign.view")
+    def get(self, campaign_id: str):
+        with SessionLocal() as db:
+            exclude_pair_ids = {
+                value.strip()
+                for value in str(request.args.get("exclude_pair_ids") or "").split(",")
+                if value.strip()
+            }
+            return _season_reflection_service.get_reflection(
+                db,
+                campaign_id,
+                exclude_pair_ids=exclude_pair_ids,
+            )
 
 
 def _as_bool(value: str | None) -> bool:
