@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CampaignPeopleRecipientDrawer } from '@/features/campaigns/ui/CampaignPeopleRecipientDrawer';
@@ -363,6 +363,33 @@ describe('CampaignPeopleRecipientDrawer', () => {
     await user.click(screen.getByRole('button', { name: /warm blanket/i }));
     expect(screen.getByRole('heading', { name: 'Edit Gift Item' })).toBeInTheDocument();
     expect(screen.getByLabelText('Description')).toHaveValue('Warm blanket');
+  });
+
+  it('shows a direct delete action for wishlist gifts in the adult drawer table', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CampaignPeopleRecipientDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        recipient={existingAdultRecipientWithWishlist}
+        groups={[organizationGroup]}
+        recipients={[existingAdultRecipientWithWishlist]}
+        onClose={vi.fn()}
+        onSaveRecipient={vi.fn()}
+        onSaveWishlistItem={vi.fn()}
+        onDeleteWishlistItem={vi.fn()}
+        onDeleteRecipient={vi.fn()}
+        onSelectExistingRecipient={vi.fn()}
+      />
+    );
+
+    const giftRow = screen.getByRole('button', { name: /warm blanket/i });
+    const giftDeleteButton = within(giftRow).getByRole('button');
+    await user.click(giftDeleteButton);
+    expect(screen.getByText('Delete Gift Item')).toBeInTheDocument();
+    expect(screen.getByText('Gift item: Warm blanket')).toBeInTheDocument();
   });
 
   it('can stay in create mode after saving a household child so another child can be entered immediately', async () => {
