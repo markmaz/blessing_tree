@@ -112,6 +112,13 @@
 - Rationale: sponsor operations are simpler than recipient intake but still campaign-aware, and a public signup path can remove a large amount of staff data entry while keeping outreach, assignment, and follow-up tied to the campaign.
 - Consequence: sponsor CRUD should live under campaign routes and UI sections, the sponsor communication log should use `sponsor_interaction` for both manual and mass-communication history, public sponsor signup should create or reuse sponsor identities and campaign participation records, and Campaign Studio should expose the public sponsor link, QR code, and flyer-generation controls.
 
+## Sponsor Self-Registration Direction
+
+- Status: active
+- Decision: the first public sponsor flow should let sponsors choose gifts during self-registration, should reuse and update existing sponsor identities when a returning sponsor is matched, and should use one standard QR flyer template. Mass-communication log entries should be system-generated and read-only.
+- Rationale: the self-registration path should reduce staff data entry as much as possible, and sponsors should not need to repeatedly re-enter the same personal information across campaigns.
+- Consequence: sponsor self-registration should collect sponsor information first, then offer available unsponsored gifts; matching should favor exact normalized email/phone reuse; campaign participation should be updated for the current campaign instead of duplicating sponsors; and communication log UI should treat mass-send entries as historical records rather than staff-editable notes.
+
 ## Campaign Schedule Direction
 
 - Status: active

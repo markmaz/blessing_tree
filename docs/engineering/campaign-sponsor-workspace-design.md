@@ -278,6 +278,11 @@ The public sponsor form should collect:
 - interest note optional
 - consent / acknowledgment checkbox if legally needed
 
+Initial public flow decision:
+
+- public sponsors should be able to choose gifts to sponsor during self-registration
+- the first implementation should collect sponsor information first, then move into gift selection against the current campaign's available unsponsored items
+
 Suggested behavior:
 
 - if sponsor already exists by normalized email, reuse that sponsor record
@@ -305,6 +310,13 @@ If an existing sponsor is matched:
 
 - update missing fields conservatively
 - do not blindly overwrite richer existing staff-entered data
+
+Confirmed direction:
+
+- sponsors should not need to re-enter their identity for every campaign
+- reuse the existing sponsor record when matched
+- update the sponsor identity when the public user changes their own contact details
+- create or update the campaign participation record for the current campaign rather than creating duplicate sponsor identities
 
 ## QR Code and Flyer Flow
 
@@ -634,16 +646,20 @@ Not required in v1:
 1. Sponsor workspace backend and CRUD APIs
 2. Sponsor intake + directory UI
 3. Sponsor communication log UI and logging APIs
-4. Campaign communication integration into the interaction log
-5. Public sponsor self-registration flow
-6. QR flyer generation
+4. Public sponsor self-registration flow with gift selection
+5. Campaign communication integration into the interaction log
+6. QR flyer generation with one standard template
 7. Sponsor reporting surface
 
 ## Open Questions
 
-These should be answered before implementation goes too far:
+Resolved for the initial implementation:
 
-1. Should a sponsor be allowed to self-register multiple times for the same campaign, updating the same campaign participation record, or should later public entries be blocked once a sponsorship exists?
-2. Do you want sponsors to select specific gifts themselves in the public flow later, or should public self-registration stay limited to “I want to sponsor” for now?
-3. For the communication log, do you want staff to be able to edit historical logged interactions freely, or should mass-communication entries be system-locked except for notes?
-4. For flyers, do you want one standard sponsor flyer template for all campaigns first, or do you want light campaign-level customization at launch?
+1. Public sponsor self-registration should allow gift selection during the same flow.
+2. Returning sponsors should reuse and update the same sponsor identity; campaign participation should be created or updated for the current campaign.
+3. Mass-communication log entries should be system-generated and read-only in normal operations.
+4. Sponsor flyer generation should use one standard template first.
+
+Implementation assumption to keep momentum:
+
+- the first public sponsor flow will collect sponsor information before showing available gifts, instead of allowing anonymous browsing/claiming first
