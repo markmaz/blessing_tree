@@ -11,16 +11,22 @@ import type { CampaignPeopleGroup } from '@/features/campaigns/model/campaignPeo
 
 interface CampaignPeopleGroupTableProps {
   groups: CampaignPeopleGroup[];
+  canEdit: boolean;
   onSelectGroup: (groupId: string) => void;
   onSelectRecipient: (recipientId: string) => void;
+  onRequestDeleteGroup: (groupId: string) => void;
+  onRequestDeleteRecipient: (recipientId: string) => void;
 }
 
 type GroupSortKey = 'group' | 'type' | 'contact' | 'people' | 'updated' | 'status';
 
 export function CampaignPeopleGroupTable({
   groups,
+  canEdit,
   onSelectGroup,
   onSelectRecipient,
+  onRequestDeleteGroup,
+  onRequestDeleteRecipient,
 }: CampaignPeopleGroupTableProps) {
   const [sortKey, setSortKey] = useState<GroupSortKey>('group');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -110,6 +116,7 @@ export function CampaignPeopleGroupTable({
               direction={sortDirection}
               onSort={handleSort}
             />
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -163,10 +170,22 @@ export function CampaignPeopleGroupTable({
                   </td>
                   <td>{formatShortDate(group.updatedAt)}</td>
                   <td>{toRecipientGroupStatusLabel(group.status)}</td>
+                  <td>
+                    {canEdit ? (
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() => onRequestDeleteGroup(group.id)}
+                      >
+                        <i className="bi bi-trash3" aria-hidden="true" />
+                        <span className="ms-2">Delete</span>
+                      </button>
+                    ) : null}
+                  </td>
                 </tr>
                 {isOpen ? (
                   <tr className="campaign-people-group-children-row">
-                    <td colSpan={6}>
+                    <td colSpan={7}>
                       {group.recipients.length > 0 ? (
                         <div className="campaign-people-group-children-wrap">
                           <table className="table table-sm mb-0 campaign-people-group-children-table">
@@ -177,6 +196,7 @@ export function CampaignPeopleGroupTable({
                                 <th>Details</th>
                                 <th>Wishlist</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -214,6 +234,20 @@ export function CampaignPeopleGroupTable({
                                       : 'No wishlist'}
                                   </td>
                                   <td>{toRecipientStatusLabel(recipient.status)}</td>
+                                  <td>
+                                    {canEdit ? (
+                                      <button
+                                        type="button"
+                                        className="btn btn-outline-danger btn-sm"
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          onRequestDeleteRecipient(recipient.id);
+                                        }}
+                                      >
+                                        <i className="bi bi-trash3" aria-hidden="true" />
+                                      </button>
+                                    ) : null}
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>

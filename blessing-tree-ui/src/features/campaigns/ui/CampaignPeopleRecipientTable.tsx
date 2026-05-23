@@ -9,14 +9,18 @@ import type { CampaignRecipient } from '@/features/campaigns/model/campaignPeopl
 
 interface CampaignPeopleRecipientTableProps {
   recipients: CampaignRecipient[];
+  canEdit: boolean;
   onSelectRecipient: (recipientId: string) => void;
+  onRequestDeleteRecipient: (recipientId: string) => void;
 }
 
 type RecipientSortKey = 'person' | 'program' | 'group' | 'age' | 'wishlist' | 'status';
 
 export function CampaignPeopleRecipientTable({
   recipients,
+  canEdit,
   onSelectRecipient,
+  onRequestDeleteRecipient,
 }: CampaignPeopleRecipientTableProps) {
   const [sortKey, setSortKey] = useState<RecipientSortKey>('person');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -108,6 +112,7 @@ export function CampaignPeopleRecipientTable({
               direction={sortDirection}
               onSort={handleSort}
             />
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -161,10 +166,22 @@ export function CampaignPeopleRecipientTable({
                     )}
                   </td>
                   <td>{toRecipientStatusLabel(recipient.status)}</td>
+                  <td>
+                    {canEdit ? (
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() => onRequestDeleteRecipient(recipient.id)}
+                      >
+                        <i className="bi bi-trash3" aria-hidden="true" />
+                        <span className="ms-2">Delete</span>
+                      </button>
+                    ) : null}
+                  </td>
                 </tr>
                 {isOpen && recipient.wishlist ? (
                   <tr className="campaign-people-recipient-children-row">
-                    <td colSpan={8}>
+                    <td colSpan={9}>
                       <div className="campaign-people-group-children-wrap">
                         <table className="table table-sm mb-0 campaign-people-group-children-table">
                           <thead>

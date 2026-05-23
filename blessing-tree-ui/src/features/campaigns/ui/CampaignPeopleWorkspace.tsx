@@ -20,6 +20,7 @@ import { CampaignPeopleGroupTable } from '@/features/campaigns/ui/CampaignPeople
 import { CampaignPeopleRecipientTable } from '@/features/campaigns/ui/CampaignPeopleRecipientTable';
 import { CampaignPeopleGroupDrawer } from '@/features/campaigns/ui/CampaignPeopleGroupDrawer';
 import { CampaignPeopleRecipientDrawer } from '@/features/campaigns/ui/CampaignPeopleRecipientDrawer';
+import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 
 interface CampaignPeopleWorkspaceProps {
   campaignName: string;
@@ -84,6 +85,9 @@ export function CampaignPeopleWorkspace({
   const [createGroupType, setCreateGroupType] = useState<RecipientGroupType | null>(null);
   const [isCreateRecipientOpen, setIsCreateRecipientOpen] = useState(false);
   const [createRecipientGroupId, setCreateRecipientGroupId] = useState<string | null>(null);
+  const [pendingDeleteGroupId, setPendingDeleteGroupId] = useState<string | null>(null);
+  const [pendingDeleteRecipientId, setPendingDeleteRecipientId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filteredGroups = useMemo(() => {
     if (!workspace) {
@@ -135,6 +139,40 @@ export function CampaignPeopleWorkspace({
     workspace?.groups.find((group) => group.id === selectedGroupId) ?? null;
   const selectedRecipient =
     workspace?.recipients.find((recipient) => recipient.id === selectedRecipientId) ?? null;
+  const pendingDeleteGroup =
+    workspace?.groups.find((group) => group.id === pendingDeleteGroupId) ?? null;
+  const pendingDeleteRecipient =
+    workspace?.recipients.find((recipient) => recipient.id === pendingDeleteRecipientId) ?? null;
+
+  const pendingDeleteGroupDetails = useMemo(() => {
+    if (!pendingDeleteGroup) {
+      return [];
+    }
+    const recipientCount = pendingDeleteGroup.recipients.length;
+    const wishlistCount = pendingDeleteGroup.recipients.filter((recipient) => recipient.wishlist).length;
+    const wishlistItemCount = pendingDeleteGroup.recipients.reduce(
+      (total, recipient) => total + (recipient.wishlist?.items.length ?? 0),
+      0
+    );
+    return [
+      `${pendingDeleteGroup.contacts.length} contact${pendingDeleteGroup.contacts.length === 1 ? '' : 's'}`,
+      `${recipientCount} ${pendingDeleteGroup.groupType === 'HOUSEHOLD' ? 'child' : 'person'} record${recipientCount === 1 ? '' : 's'}`,
+      `${wishlistCount} wishlist${wishlistCount === 1 ? '' : 's'}`,
+      `${wishlistItemCount} gift item${wishlistItemCount === 1 ? '' : 's'}`,
+    ];
+  }, [pendingDeleteGroup]);
+
+  const pendingDeleteRecipientDetails = useMemo(() => {
+    if (!pendingDeleteRecipient) {
+      return [];
+    }
+    const wishlistItemCount = pendingDeleteRecipient.wishlist?.items.length ?? 0;
+    return [
+      `Group: ${pendingDeleteRecipient.group?.groupName ?? 'No group'}`,
+      pendingDeleteRecipient.wishlist ? '1 wishlist record' : 'No wishlist record',
+      `${wishlistItemCount} gift item${wishlistItemCount === 1 ? '' : 's'}`,
+    ];
+  }, [pendingDeleteRecipient]);
 
   if (isLoading && !workspace) {
     return <p className="text-muted">Loading People workspace...</p>;
@@ -248,6 +286,7 @@ export function CampaignPeopleWorkspace({
 
           <CampaignPeopleGroupTable
             groups={filteredGroups}
+            canEdit={canEditPeople}
             onSelectGroup={(groupId) => {
               setCreateGroupType(null);
               setSelectedGroupId(groupId);
@@ -259,6 +298,8 @@ export function CampaignPeopleWorkspace({
               setCreateRecipientGroupId(null);
               setSelectedRecipientId(recipientId);
             }}
+            onRequestDeleteGroup={setPendingDeleteGroupId}
+            onRequestDeleteRecipient={setPendingDeleteRecipientId}
           />
         </section>
 
@@ -300,11 +341,13 @@ export function CampaignPeopleWorkspace({
 
           <CampaignPeopleRecipientTable
             recipients={filteredRecipients}
+            canEdit={canEditPeople}
             onSelectRecipient={(recipientId) => {
               setIsCreateRecipientOpen(false);
               setCreateRecipientGroupId(null);
               setSelectedRecipientId(recipientId);
             }}
+            onRequestDeleteRecipient={setPendingDeleteRecipientId}
           />
         </section>
       </div>
@@ -393,6 +436,78 @@ export function CampaignPeopleWorkspace({
           setCreateRecipientGroupId(nextGroupId);
           setSelectedRecipientId(null);
           setIsCreateRecipientOpen(true);
+        }}
+      />
+
+      <ConfirmationModal
+        open={pendingDeleteGroup !== null}
+        title={
+          pendingDeleteGroup?.groupType === 'HOUSEHOLD'
+            ? 'Delete Family'
+            : 'Delete Organization'
+        }
+        message={
+          pendingDeleteGroup
+            ? `Delete ${pendingDeleteGroup.groupName}? This cannot be undone.`
+            : ''
+        }
+        details={pendingDeleteGroupDetails}
+        confirmLabel={
+          pendingDeleteGroup?.groupType === 'HOUSEHOLD'
+            ? 'Delete Family'
+            : 'Delete Organization'
+        }
+        isSubmitting={isDeleting}
+        onClose={() => setPendingDeleteGroupId(null)}
+        onConfirm={async () => {
+          if (!pendingDeleteGroup) {
+            return;
+          }
+          setIsDeleting(true);
+          try {
+            const didDelete = await onDeleteGroup(pendingDeleteGroup.id);
+            if (didDelete) {
+              setPendingDeleteGroupId(null);
+            }
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
+      />
+
+      <ConfirmationModal
+        open={pendingDeleteRecipient !== null}
+        title={
+          pendingDeleteRecipient?.recipientKind === 'CHILD'
+            ? 'Delete Child'
+            : 'Delete Person'
+        }
+        message={
+          pendingDeleteRecipient
+            ? `Delete ${pendingDeleteRecipient.displayLabel}? This cannot be undone.`
+            : ''
+        }
+        details={pendingDeleteRecipientDetails}
+        confirmLabel={
+          pendingDeleteRecipient?.recipientKind === 'CHILD'
+            ? 'Delete Child'
+            : 'Delete Person'
+        }
+        isSubmitting={isDeleting}
+        onClose={() => setPendingDeleteRecipientId(null)}
+        onConfirm={async () => {
+          if (!pendingDeleteRecipient) {
+            return;
+          }
+          setIsDeleting(true);
+          try {
+            const didDelete = await onDeleteRecipient(pendingDeleteRecipient.id);
+            if (didDelete) {
+              setPendingDeleteRecipientId(null);
+            }
+          } finally {
+            setIsDeleting(false);
+          }
         }}
       />
     </section>
