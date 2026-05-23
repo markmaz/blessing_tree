@@ -442,7 +442,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
       />
     );
 
-    await user.click(screen.getByRole('button', { name: 'Add Another Child' }));
+    await user.click(screen.getAllByRole('button', { name: 'Add Another Child' })[0]);
     expect(onStartAnotherRecipient).toHaveBeenCalledTimes(1);
   });
 });

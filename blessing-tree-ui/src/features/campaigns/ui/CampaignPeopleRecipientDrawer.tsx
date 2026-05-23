@@ -452,6 +452,22 @@ export function CampaignPeopleRecipientDrawer({
           className="mb-3"
         />
       ) : null}
+      {recipient && onStartAnotherRecipient ? (
+        <div className="campaign-team-drawer__actions mb-3">
+          <button
+            type="button"
+            className="btn btn-outline-secondary btn-sm"
+            onClick={() => {
+              setSuccessMessage(null);
+              onStartAnotherRecipient();
+            }}
+            disabled={!canEdit || isSaving}
+          >
+            <i className="bi bi-person-plus me-2" aria-hidden="true" />
+            {nextRecipientButtonLabel}
+          </button>
+        </div>
+      ) : null}
       <div className="campaign-team-drawer__stack">
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
