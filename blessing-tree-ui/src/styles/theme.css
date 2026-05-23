@@ -684,6 +684,73 @@ a:hover {
   font-size: 0.8rem;
 }
 
+.confirmation-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(22, 12, 30, 0.48);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1200;
+}
+
+.confirmation-modal {
+  width: min(100%, 40rem);
+  background: rgba(252, 249, 244, 0.98);
+  border: 1px solid rgba(151, 114, 73, 0.22);
+  border-radius: 1.25rem;
+  box-shadow: 0 1.5rem 3rem rgba(34, 18, 50, 0.22);
+  padding: 1.5rem;
+}
+
+.confirmation-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.confirmation-modal__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--bs-secondary-color);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.confirmation-modal__body {
+  margin-top: 1.25rem;
+}
+
+.confirmation-modal__card {
+  border: 1px solid rgba(151, 114, 73, 0.18);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.68);
+  padding: 1rem 1.1rem;
+}
+
+.confirmation-modal__card-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.confirmation-modal__list {
+  padding-left: 1.2rem;
+}
+
+.confirmation-modal__list li + li {
+  margin-top: 0.35rem;
+}
+
 /* Top bar account */
 .avatar-circle {
   width: 34px;

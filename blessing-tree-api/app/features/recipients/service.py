@@ -191,6 +191,11 @@ class CampaignRecipientService:
         self._commit_with_duplicate_handling(db)
         return self.get_group(db, campaign_id, group_id)
 
+    def delete_group(self, db: Session, campaign_id: str, group_id: str) -> None:
+        group = self.get_group(db, campaign_id, group_id)
+        db.delete(group)
+        db.commit()
+
     def create_contact(self, db: Session, campaign_id: str, group_id: str, payload: dict[str, object]) -> GroupContact:
         group = self.get_group(db, campaign_id, group_id)
         contact = GroupContact(
@@ -431,6 +436,11 @@ class CampaignRecipientService:
         self._assign_program_recipient_identity(db, group, recipient)
         self._commit_with_duplicate_handling(db)
         return self.get_recipient(db, campaign_id, recipient_id)
+
+    def delete_recipient(self, db: Session, campaign_id: str, recipient_id: str) -> None:
+        recipient = self.get_recipient(db, campaign_id, recipient_id)
+        db.delete(recipient)
+        db.commit()
 
     def get_wishlist(self, db: Session, campaign_id: str, recipient_id: str) -> Wishlist:
         recipient = self.get_recipient(db, campaign_id, recipient_id)

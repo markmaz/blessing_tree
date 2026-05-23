@@ -267,6 +267,16 @@ export async function updateRecipientGroup(
   return mapGroup(response);
 }
 
+export async function deleteRecipientGroup(
+  campaignId: string,
+  groupId: string
+): Promise<void> {
+  await apiFetchJson(
+    `/api/v1/campaigns/${campaignId}/recipient-groups/${groupId}`,
+    { method: 'DELETE' }
+  );
+}
+
 export async function createRecipientGroupContact(
   campaignId: string,
   groupId: string,
@@ -328,6 +338,16 @@ export async function updateCampaignRecipient(
   );
 
   return mapRecipient(response);
+}
+
+export async function deleteCampaignRecipient(
+  campaignId: string,
+  recipientId: string
+): Promise<void> {
+  await apiFetchJson(
+    `/api/v1/campaigns/${campaignId}/recipients/${recipientId}`,
+    { method: 'DELETE' }
+  );
 }
 
 export async function upsertCampaignWishlist(

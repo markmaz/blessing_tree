@@ -13,6 +13,8 @@ export function PeopleDirectoryPage() {
     onSaveContact,
     onDeleteContact,
     onSaveRecipient,
+    onDeleteGroup,
+    onDeleteRecipient,
     onSaveWishlistItem,
     onDeleteWishlistItem,
     onSearchAddresses,
@@ -31,6 +33,8 @@ export function PeopleDirectoryPage() {
       onSaveContact={onSaveContact}
       onDeleteContact={onDeleteContact}
       onSaveRecipient={onSaveRecipient}
+      onDeleteGroup={onDeleteGroup}
+      onDeleteRecipient={onDeleteRecipient}
       onSaveWishlistItem={onSaveWishlistItem}
       onDeleteWishlistItem={onDeleteWishlistItem}
       onSearchAddresses={onSearchAddresses}

@@ -4,6 +4,8 @@ import {
   createCampaignWishlistItem,
   createRecipientGroup,
   createRecipientGroupContact,
+  deleteCampaignRecipient,
+  deleteRecipientGroup,
   deleteCampaignWishlistItem,
   deleteRecipientGroupContact,
   getCampaignPeopleWorkspace,
@@ -191,6 +193,36 @@ export function useCampaignPeopleWorkspace(campaignId: string | null) {
     [campaignId, performMutation]
   );
 
+  const removeGroup = useCallback(
+    async (groupId: string) => {
+      if (!campaignId) {
+        return false;
+      }
+
+      const didDelete = await performMutation(
+        () => deleteRecipientGroup(campaignId, groupId),
+        'Group removed.'
+      );
+      return didDelete !== null;
+    },
+    [campaignId, performMutation]
+  );
+
+  const removeRecipient = useCallback(
+    async (recipientId: string) => {
+      if (!campaignId) {
+        return false;
+      }
+
+      const didDelete = await performMutation(
+        () => deleteCampaignRecipient(campaignId, recipientId),
+        'Person removed.'
+      );
+      return didDelete !== null;
+    },
+    [campaignId, performMutation]
+  );
+
   const saveWishlist = useCallback(
     async (recipientId: string, input: WishlistUpsertInput): Promise<CampaignWishlist | null> => {
       if (!campaignId) {
@@ -281,6 +313,8 @@ export function useCampaignPeopleWorkspace(campaignId: string | null) {
     saveContact,
     removeContact,
     saveRecipient,
+    removeGroup,
+    removeRecipient,
     saveWishlist,
     saveWishlistItem,
     removeWishlistItem,

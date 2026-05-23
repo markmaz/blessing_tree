@@ -21,8 +21,8 @@ import {
   toWishlistIntakeMethodLabel,
   toWishlistItemTypeLabel,
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
-import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
+import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 
 interface CampaignPeopleRecipientDrawerProps {
   isOpen: boolean;
@@ -45,6 +45,7 @@ interface CampaignPeopleRecipientDrawerProps {
     itemId?: string
   ) => Promise<CampaignWishlistItem | null>;
   onDeleteWishlistItem: (recipientId: string, itemId: string) => Promise<boolean>;
+  onDeleteRecipient: (recipientId: string) => Promise<boolean>;
   onSelectExistingRecipient: (recipientId: string) => void;
   onStartAnotherRecipient?: (() => void) | null;
 }
@@ -138,6 +139,7 @@ export function CampaignPeopleRecipientDrawer({
   onSaveRecipient,
   onSaveWishlistItem,
   onDeleteWishlistItem,
+  onDeleteRecipient,
   onSelectExistingRecipient,
   onStartAnotherRecipient = null,
 }: CampaignPeopleRecipientDrawerProps) {
@@ -149,6 +151,9 @@ export function CampaignPeopleRecipientDrawer({
   const [itemError, setItemError] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isDeleteRecipientModalOpen, setIsDeleteRecipientModalOpen] = useState(false);
+  const [isDeleteItemModalOpen, setIsDeleteItemModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isProfileSectionOpen, setIsProfileSectionOpen] = useState(() => recipient === null);
   const [isWishlistSectionOpen, setIsWishlistSectionOpen] = useState(true);
   const [isWishlistMetaOpen, setIsWishlistMetaOpen] = useState(false);
@@ -211,6 +216,13 @@ export function CampaignPeopleRecipientDrawer({
       : isOrganizationChildIntake
         ? 'Add Another Child'
         : 'Add Another Person';
+  const deleteRecipientButtonLabel = isHouseholdIntake
+    ? 'Delete Child'
+    : isOrganizationAdultIntake
+      ? 'Delete Adult'
+      : isOrganizationChildIntake
+        ? 'Delete Child'
+        : 'Delete Person';
   const drawerTitle = recipient?.displayLabel
     ? isHouseholdIntake
       ? 'Child Intake'
@@ -286,6 +298,18 @@ export function CampaignPeopleRecipientDrawer({
     recipientDraft.recipientGroupId,
     recipients,
   ]);
+
+  const deleteRecipientDetails = useMemo(() => {
+    if (!recipient) {
+      return [];
+    }
+    const wishlistItemCount = recipient.wishlist?.items.length ?? 0;
+    return [
+      `${deleteRecipientButtonLabel.replace('Delete ', '')} record: ${recipient.displayLabel}`,
+      recipient.wishlist ? '1 wishlist record' : 'No wishlist record',
+      `${wishlistItemCount} gift item${wishlistItemCount === 1 ? '' : 's'} from this wishlist`,
+    ];
+  }, [deleteRecipientButtonLabel, recipient]);
 
   const handleSaveRecipient = async () => {
     if (!recipientDraft.recipientGroupId) {
@@ -943,6 +967,17 @@ export function CampaignPeopleRecipientDrawer({
           )}
 
           <div className="campaign-team-drawer__actions mt-3">
+            {recipient ? (
+              <button
+                type="button"
+                className="btn btn-outline-danger btn-sm"
+                onClick={() => setIsDeleteRecipientModalOpen(true)}
+                disabled={!canEdit || isSaving}
+              >
+                <i className="bi bi-trash3 me-2" aria-hidden="true" />
+                {deleteRecipientButtonLabel}
+              </button>
+            ) : null}
             <button
               type="button"
               className="btn btn-secondary btn-sm"
@@ -1398,17 +1433,15 @@ export function CampaignPeopleRecipientDrawer({
 
                 <div className="campaign-team-drawer__actions mt-3">
                   {editingItemId ? (
-                    <InlineConfirmAction
-                      buttonLabel="Delete"
-                      confirmLabel="Delete Item"
-                      message="Remove this wishlist item?"
+                    <button
+                      type="button"
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={() => setIsDeleteItemModalOpen(true)}
                       disabled={!canEdit}
-                      onConfirm={async () => {
-                        await onDeleteWishlistItem(recipient.id, editingItemId);
-                        setSuccessMessage('Wishlist item removed.');
-                        handleCloseItemModal();
-                      }}
-                    />
+                    >
+                      <i className="bi bi-trash3 me-2" aria-hidden="true" />
+                      Delete Item
+                    </button>
                   ) : null}
                   <button
                     type="button"
@@ -1435,6 +1468,56 @@ export function CampaignPeopleRecipientDrawer({
             document.body
           )
         : null}
+      {recipient ? (
+        <ConfirmationModal
+          open={isDeleteRecipientModalOpen}
+          title={deleteRecipientButtonLabel}
+          message={`Delete ${recipient.displayLabel}? This cannot be undone.`}
+          details={deleteRecipientDetails}
+          confirmLabel={deleteRecipientButtonLabel}
+          isSubmitting={isDeleting}
+          onClose={() => setIsDeleteRecipientModalOpen(false)}
+          onConfirm={async () => {
+            setIsDeleting(true);
+            try {
+              const didDelete = await onDeleteRecipient(recipient.id);
+              if (didDelete) {
+                setIsDeleteRecipientModalOpen(false);
+                onClose();
+              }
+            } finally {
+              setIsDeleting(false);
+            }
+          }}
+        />
+      ) : null}
+      {recipient && editingItemId ? (
+        <ConfirmationModal
+          open={isDeleteItemModalOpen}
+          title="Delete Gift Item"
+          message="Delete this gift from the wishlist? This cannot be undone."
+          details={[
+            `Gift item: ${itemDraft.description || 'Untitled item'}`,
+            `Type: ${toWishlistItemTypeLabel(itemDraft.itemType)}`,
+          ]}
+          confirmLabel="Delete Gift"
+          isSubmitting={isDeleting}
+          onClose={() => setIsDeleteItemModalOpen(false)}
+          onConfirm={async () => {
+            setIsDeleting(true);
+            try {
+              const didDelete = await onDeleteWishlistItem(recipient.id, editingItemId);
+              if (didDelete) {
+                setSuccessMessage('Wishlist item removed.');
+                setIsDeleteItemModalOpen(false);
+                handleCloseItemModal();
+              }
+            } finally {
+              setIsDeleting(false);
+            }
+          }}
+        />
+      ) : null}
     </CampaignStudioDrawer>
   );
 }

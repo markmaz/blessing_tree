@@ -18,6 +18,7 @@ import {
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
 import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
+import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 
 interface CampaignPeopleGroupDrawerProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ interface CampaignPeopleGroupDrawerProps {
     contactId?: string
   ) => Promise<CampaignPeopleGroupContact | null>;
   onDeleteContact: (groupId: string, contactId: string) => Promise<boolean>;
+  onDeleteGroup: (groupId: string) => Promise<boolean>;
   onSearchAddresses: (query: string) => Promise<CampaignAddressSuggestion[]>;
   onAddRecipientToGroup: (groupId: string) => void;
   onSelectGroup: (groupId: string) => void;
@@ -123,6 +125,7 @@ export function CampaignPeopleGroupDrawer({
   onSaveGroup,
   onSaveContact,
   onDeleteContact,
+  onDeleteGroup,
   onSearchAddresses,
   onAddRecipientToGroup,
   onSelectGroup,
@@ -156,6 +159,8 @@ export function CampaignPeopleGroupDrawer({
   const [contactDraft, setContactDraft] = useState<GroupContactUpsertInput>(emptyContactDraft);
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
+  const [isDeleteGroupModalOpen, setIsDeleteGroupModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isContactsSectionOpen, setIsContactsSectionOpen] = useState(() => group === null);
   const [addressSuggestions, setAddressSuggestions] = useState<CampaignAddressSuggestion[]>([]);
   const [isSearchingAddresses, setIsSearchingAddresses] = useState(false);
@@ -243,6 +248,25 @@ export function CampaignPeopleGroupDrawer({
     groups,
     isOrganizationGroup,
   ]);
+  const deleteGroupDetails = useMemo(() => {
+    if (!group) {
+      return [];
+    }
+    const recipientCount = group.recipients.length;
+    const wishlistCount = group.recipients.filter((recipient) => recipient.wishlist).length;
+    const wishlistItemCount = group.recipients.reduce(
+      (total, recipient) => total + (recipient.wishlist?.items.length ?? 0),
+      0
+    );
+    const contactCount = group.contacts.length;
+    return [
+      `${isOrganizationGroup ? 'Organization' : 'Family'} record: ${group.groupName}`,
+      `${contactCount} contact${contactCount === 1 ? '' : 's'}`,
+      `${recipientCount} ${group.groupType === 'HOUSEHOLD' ? 'child' : 'person'} record${recipientCount === 1 ? '' : 's'}`,
+      `${wishlistCount} wishlist${wishlistCount === 1 ? '' : 's'}`,
+      `${wishlistItemCount} gift item${wishlistItemCount === 1 ? '' : 's'}`,
+    ];
+  }, [group, isOrganizationGroup]);
 
   useEffect(() => {
     const query = addressLookupQuery.trim();
@@ -969,6 +993,17 @@ export function CampaignPeopleGroupDrawer({
           )}
 
           <div className="campaign-team-drawer__actions mt-3">
+            {group ? (
+              <button
+                type="button"
+                className="btn btn-outline-danger btn-sm"
+                onClick={() => setIsDeleteGroupModalOpen(true)}
+                disabled={!canEdit || isSaving}
+              >
+                <i className="bi bi-trash3 me-2" aria-hidden="true" />
+                {isOrganizationGroup ? 'Delete Organization' : 'Delete Family'}
+              </button>
+            ) : null}
             <button
               type="button"
               className="btn btn-secondary btn-sm"
@@ -1401,6 +1436,29 @@ export function CampaignPeopleGroupDrawer({
           )}
         </section>
       </div>
+      {group ? (
+        <ConfirmationModal
+          open={isDeleteGroupModalOpen}
+          title={isOrganizationGroup ? 'Delete Organization' : 'Delete Family'}
+          message={`Delete ${group.groupName}? This cannot be undone.`}
+          details={deleteGroupDetails}
+          confirmLabel={isOrganizationGroup ? 'Delete Organization' : 'Delete Family'}
+          isSubmitting={isDeleting}
+          onClose={() => setIsDeleteGroupModalOpen(false)}
+          onConfirm={async () => {
+            setIsDeleting(true);
+            try {
+              const didDelete = await onDeleteGroup(group.id);
+              if (didDelete) {
+                setIsDeleteGroupModalOpen(false);
+                onClose();
+              }
+            } finally {
+              setIsDeleting(false);
+            }
+          }}
+        />
+      ) : null}
     </CampaignStudioDrawer>
   );
 }

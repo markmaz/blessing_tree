@@ -38,6 +38,8 @@ export interface PeopleWorkspaceOutletContext {
     input: RecipientUpsertInput,
     recipientId?: string
   ) => Promise<CampaignRecipient | null>;
+  onDeleteGroup: (groupId: string) => Promise<boolean>;
+  onDeleteRecipient: (recipientId: string) => Promise<boolean>;
   onSaveWishlist: (
     recipientId: string,
     input: WishlistUpsertInput

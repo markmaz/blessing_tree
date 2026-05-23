@@ -78,6 +78,12 @@ class RecipientGroupDetailResource(Resource):
             group = _recipient_service.update_group(db, campaign_id, group_id, payload)
         return serialize_recipient_group(group)
 
+    @require_campaign_capability("campaign.recipients.edit")
+    def delete(self, campaign_id: str, group_id: str):
+        with SessionLocal() as db:
+            _recipient_service.delete_group(db, campaign_id, group_id)
+        return "", 204
+
 
 @campaign_ns.route("/<string:campaign_id>/recipient-groups/<string:group_id>/contacts")
 class RecipientGroupContactCreateResource(Resource):
@@ -143,6 +149,12 @@ class RecipientDetailResource(Resource):
         with SessionLocal() as db:
             recipient = _recipient_service.update_recipient(db, campaign_id, recipient_id, payload)
         return serialize_recipient(recipient)
+
+    @require_campaign_capability("campaign.recipients.edit")
+    def delete(self, campaign_id: str, recipient_id: str):
+        with SessionLocal() as db:
+            _recipient_service.delete_recipient(db, campaign_id, recipient_id)
+        return "", 204
 
 
 @campaign_ns.route("/<string:campaign_id>/recipients/<string:recipient_id>/wishlist")

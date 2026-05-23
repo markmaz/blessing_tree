@@ -42,6 +42,8 @@ interface CampaignPeopleWorkspaceProps {
     input: RecipientUpsertInput,
     recipientId?: string
   ) => Promise<CampaignRecipient | null>;
+  onDeleteGroup: (groupId: string) => Promise<boolean>;
+  onDeleteRecipient: (recipientId: string) => Promise<boolean>;
   onSaveWishlistItem: (
     recipientId: string,
     input: WishlistItemUpsertInput,
@@ -65,6 +67,8 @@ export function CampaignPeopleWorkspace({
   onSaveContact,
   onDeleteContact,
   onSaveRecipient,
+  onDeleteGroup,
+  onDeleteRecipient,
   onSaveWishlistItem,
   onDeleteWishlistItem,
   onSearchAddresses,
@@ -327,6 +331,7 @@ export function CampaignPeopleWorkspace({
         }}
         onSaveContact={onSaveContact}
         onDeleteContact={onDeleteContact}
+        onDeleteGroup={onDeleteGroup}
         onSearchAddresses={onSearchAddresses}
         onAddRecipientToGroup={(groupId) => {
           setCreateGroupType(null);
@@ -374,6 +379,7 @@ export function CampaignPeopleWorkspace({
         }}
         onSaveWishlistItem={onSaveWishlistItem}
         onDeleteWishlistItem={onDeleteWishlistItem}
+        onDeleteRecipient={onDeleteRecipient}
         onSelectExistingRecipient={(recipientId) => {
           setIsCreateRecipientOpen(false);
           setCreateRecipientGroupId(null);

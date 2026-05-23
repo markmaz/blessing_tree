@@ -17,6 +17,8 @@ export function PeopleIntakePage() {
     onSaveContact,
     onDeleteContact,
     onSaveRecipient,
+    onDeleteGroup,
+    onDeleteRecipient,
     onSaveWishlistItem,
     onDeleteWishlistItem,
     onSearchAddresses,
@@ -221,6 +223,7 @@ export function PeopleIntakePage() {
         }}
         onSaveContact={onSaveContact}
         onDeleteContact={onDeleteContact}
+        onDeleteGroup={onDeleteGroup}
         onSearchAddresses={onSearchAddresses}
         onAddRecipientToGroup={(groupId) => {
           setCreateGroupType(null);
@@ -275,6 +278,7 @@ export function PeopleIntakePage() {
         }}
         onSaveWishlistItem={onSaveWishlistItem}
         onDeleteWishlistItem={onDeleteWishlistItem}
+        onDeleteRecipient={onDeleteRecipient}
         onSelectExistingRecipient={(recipientId) => {
           setIsCreateRecipientOpen(false);
           setCreateRecipientGroupId(null);

@@ -290,6 +290,78 @@ def test_group_recipient_and_wishlist_crud_flow(app, monkeypatch: pytest.MonkeyP
     assert payload["items"][0]["gift_workflow"]["remaining_qty"] == 1
 
 
+def test_group_and_recipient_delete_flow(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+
+    group = _seed_household_group(session, campaign.id)
+    recipient = Recipient(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        recipient_group_id=group.id,
+        recipient_kind=RECIPIENT_KIND_CHILD,
+        program_type=RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+        privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+        display_label="Eli Johnson",
+        status=RECIPIENT_STATUS_ACTIVE,
+    )
+    session.add(recipient)
+    session.flush()
+    wishlist = Wishlist(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        recipient_id=recipient.id,
+        wishlist_status=WISHLIST_STATUS_READY,
+    )
+    session.add(wishlist)
+    session.flush()
+    session.add(
+        WishlistItem(
+            id=uuid.uuid4(),
+            wishlist_id=wishlist.id,
+            item_type=WISHLIST_ITEM_TYPE_GIFT,
+            description="Toy train",
+            qty_requested=1,
+            priority="MEDIUM",
+            allow_substitute=True,
+            status="OPEN",
+            qty_fulfilled=0,
+            label_code="delete-flow-item-1",
+            label_version=1,
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    recipient_id = str(recipient.id)
+    group_id = str(group.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+
+    delete_recipient_response = client.delete(
+        f"/api/v1/campaigns/{campaign_id}/recipients/{recipient_id}",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert delete_recipient_response.status_code == 204
+
+    with campaign_api_module.SessionLocal() as verify_session:
+        assert verify_session.query(Recipient).filter(Recipient.id == uuid.UUID(recipient_id)).one_or_none() is None
+        assert verify_session.query(Wishlist).filter(Wishlist.recipient_id == uuid.UUID(recipient_id)).one_or_none() is None
+
+    delete_group_response = client.delete(
+        f"/api/v1/campaigns/{campaign_id}/recipient-groups/{group_id}",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert delete_group_response.status_code == 204
+
+    with campaign_api_module.SessionLocal() as verify_session:
+        assert verify_session.query(RecipientGroup).filter(RecipientGroup.id == uuid.UUID(group_id)).one_or_none() is None
+
+
 def test_recipient_address_search_returns_suggestions(app, monkeypatch: pytest.MonkeyPatch) -> None:
     install_auth(monkeypatch)
     session = campaign_api_module.SessionLocal()

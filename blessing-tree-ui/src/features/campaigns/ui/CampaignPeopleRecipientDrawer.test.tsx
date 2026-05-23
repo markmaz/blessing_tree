@@ -221,6 +221,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
         onSaveRecipient={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
+        onDeleteRecipient={vi.fn()}
         onSelectExistingRecipient={vi.fn()}
       />
     );
@@ -248,6 +249,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
         onSaveRecipient={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
+        onDeleteRecipient={vi.fn()}
         onSelectExistingRecipient={vi.fn()}
       />
     );
@@ -280,6 +282,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
         onSaveRecipient={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
+        onDeleteRecipient={vi.fn()}
         onSelectExistingRecipient={vi.fn()}
       />
     );
@@ -310,6 +313,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
         onSaveRecipient={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
+        onDeleteRecipient={vi.fn()}
         onSelectExistingRecipient={onSelectExistingRecipient}
       />
     );
@@ -338,6 +342,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
         onSaveRecipient={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
+        onDeleteRecipient={vi.fn()}
         onSelectExistingRecipient={vi.fn()}
       />
     );
@@ -396,6 +401,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
         onSaveRecipient={onSaveRecipient}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
+        onDeleteRecipient={vi.fn()}
         onSelectExistingRecipient={vi.fn()}
       />
     );
@@ -437,6 +443,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
         onSaveRecipient={vi.fn()}
         onSaveWishlistItem={vi.fn()}
         onDeleteWishlistItem={vi.fn()}
+        onDeleteRecipient={vi.fn()}
         onSelectExistingRecipient={vi.fn()}
         onStartAnotherRecipient={onStartAnotherRecipient}
       />
