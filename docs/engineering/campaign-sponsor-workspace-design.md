@@ -324,6 +324,11 @@ Confirmed direction:
 
 Public sponsor registration should be verified by email before gifts are actually reserved.
 
+Implementation note:
+
+- use an explicit `pending_sponsor_registration` record or equivalent pending-public-registration table
+- do not force incomplete public registrations directly into final `sponsorship` rows before verification completes
+
 Recommended flow:
 
 1. sponsor enters information
@@ -345,6 +350,7 @@ Rationale:
 - verified email becomes the trusted public identifier
 - gift inventory is not locked by fake or mistyped email submissions
 - expiration keeps the public pool healthy if a sponsor never completes verification
+- keeping pending public state separate from final sponsorship state simplifies verification, expiry cleanup, audit logging, and reservation release
 
 ### Public-Flow Abuse Protection
 
