@@ -149,12 +149,14 @@ export function CampaignPeopleGroupDrawer({
   );
   const [groupError, setGroupError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isGroupDetailsOpen, setIsGroupDetailsOpen] = useState(() => group === null);
   const [householdPrimaryContactDraft, setHouseholdPrimaryContactDraft] = useState<GroupContactUpsertInput>(
     () => buildHouseholdPrimaryContactDraft(group)
   );
   const [contactDraft, setContactDraft] = useState<GroupContactUpsertInput>(emptyContactDraft);
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
+  const [isContactsSectionOpen, setIsContactsSectionOpen] = useState(() => group === null);
   const [addressSuggestions, setAddressSuggestions] = useState<CampaignAddressSuggestion[]>([]);
   const [isSearchingAddresses, setIsSearchingAddresses] = useState(false);
   const [addressLookupQuery, setAddressLookupQuery] = useState('');
@@ -184,6 +186,9 @@ export function CampaignPeopleGroupDrawer({
       ? 'Create the organization first, then add coordinator contacts and participating people.'
       : 'Create the family first, then add parent or guardian contacts and children.';
   const primaryHouseholdContact = group?.primaryContact ?? null;
+  const householdGuardianName = [householdPrimaryContactDraft.firstName?.trim(), householdPrimaryContactDraft.lastName?.trim()]
+    .filter(Boolean)
+    .join(' ');
   const additionalContacts = useMemo(
     () =>
       (group?.contacts ?? []).filter((contact) =>
@@ -280,6 +285,11 @@ export function CampaignPeopleGroupDrawer({
 
   useEffect(() => {
     setHouseholdPrimaryContactDraft(buildHouseholdPrimaryContactDraft(group));
+  }, [group]);
+
+  useEffect(() => {
+    setIsGroupDetailsOpen(group === null);
+    setIsContactsSectionOpen(group === null);
   }, [group]);
 
   const handleSaveGroup = async () => {
@@ -466,15 +476,29 @@ export function CampaignPeopleGroupDrawer({
       <div className="campaign-team-drawer__stack">
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
-            <div>
-              <h4 className="h6 mb-1">
-                {isOrganizationGroup ? 'Organization Details' : 'Family Details'}
-              </h4>
-              <p className="text-muted mb-0">
-                {isOrganizationGroup
-                  ? 'Capture the organization first, then add contacts and the children or adults submitted through that organization.'
-                  : 'Capture the family information first, then add contacts and children from the same intake record.'}
-              </p>
+            <div className="campaign-people-section-heading">
+              <button
+                type="button"
+                className="campaign-people-section-heading__toggle"
+                onClick={() => setIsGroupDetailsOpen((currentValue) => !currentValue)}
+                aria-expanded={isGroupDetailsOpen}
+                aria-label={isGroupDetailsOpen ? 'Collapse group details' : 'Expand group details'}
+              >
+                <i
+                  className={`bi ${isGroupDetailsOpen ? 'bi-chevron-down' : 'bi-chevron-right'}`}
+                  aria-hidden="true"
+                />
+              </button>
+              <div>
+                <h4 className="h6 mb-1">
+                  {isOrganizationGroup ? 'Organization Details' : 'Family Details'}
+                </h4>
+                <p className="text-muted mb-0">
+                  {isOrganizationGroup
+                    ? 'Capture the organization first, then add contacts and the children or adults submitted through that organization.'
+                    : 'Capture the family information first, then add contacts and children from the same intake record.'}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -516,6 +540,7 @@ export function CampaignPeopleGroupDrawer({
             </div>
           ) : null}
 
+          {isGroupDetailsOpen ? (
           <div className="campaign-team-form-grid">
             <label className="form-label">
               Group Type
@@ -920,6 +945,28 @@ export function CampaignPeopleGroupDrawer({
               />
             </label>
           </div>
+          ) : (
+            <div className="campaign-people-section-summary">
+              <div className="campaign-chip-row">
+                <span className="campaign-chip campaign-chip-muted">
+                  <i className={`bi ${isOrganizationGroup ? 'bi-diagram-3' : 'bi-house-door'} me-1`} aria-hidden="true" />
+                  {isOrganizationGroup ? groupDraft.groupName || 'Unnamed organization' : derivedFamilyName || 'Unnamed family'}
+                </span>
+                <span className="campaign-chip campaign-chip-muted">
+                  <i className="bi bi-geo-alt me-1" aria-hidden="true" />
+                  {[groupDraft.city, groupDraft.state].filter(Boolean).join(', ') || 'No location'}
+                </span>
+                <span className="campaign-chip campaign-chip-muted">
+                  <i className="bi bi-person-lines-fill me-1" aria-hidden="true" />
+                  {isOrganizationGroup
+                    ? primaryHouseholdContact
+                      ? formatContactDisplayName(primaryHouseholdContact)
+                      : `${additionalContacts.length} contacts`
+                    : householdGuardianName || 'No guardian set'}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="campaign-team-drawer__actions mt-3">
             <button
@@ -1027,18 +1074,45 @@ export function CampaignPeopleGroupDrawer({
 
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
-            <div>
-              <h4 className="h6 mb-1">{isOrganizationGroup ? 'Contacts' : 'Additional Contacts'}</h4>
-              <p className="text-muted mb-0">
-                {isOrganizationGroup
-                  ? 'Coordinators, social workers, and staff stay here as operational contacts.'
-                  : 'Use this area for secondary guardians, relatives, or other household contacts beyond the primary guardian.'}
-              </p>
+            <div className="campaign-people-section-heading">
+              <button
+                type="button"
+                className="campaign-people-section-heading__toggle"
+                onClick={() => setIsContactsSectionOpen((currentValue) => !currentValue)}
+                aria-expanded={isContactsSectionOpen}
+                aria-label={isContactsSectionOpen ? 'Collapse additional contacts' : 'Expand additional contacts'}
+              >
+                <i
+                  className={`bi ${isContactsSectionOpen ? 'bi-chevron-down' : 'bi-chevron-right'}`}
+                  aria-hidden="true"
+                />
+              </button>
+              <div>
+                <h4 className="h6 mb-1">{isOrganizationGroup ? 'Contacts' : 'Additional Contacts'}</h4>
+                <p className="text-muted mb-0">
+                  {isOrganizationGroup
+                    ? 'Coordinators, social workers, and staff stay here as operational contacts.'
+                    : 'Use this area for secondary guardians, relatives, or other household contacts beyond the primary guardian.'}
+                </p>
+              </div>
             </div>
           </div>
 
           {!group ? (
             <div className="campaign-studio__empty-note">Save the group before adding contacts.</div>
+          ) : !isContactsSectionOpen ? (
+            <div className="campaign-people-section-summary">
+              <div className="campaign-chip-row">
+                <span className="campaign-chip campaign-chip-muted">
+                  <i className="bi bi-people me-1" aria-hidden="true" />
+                  {additionalContacts.length} additional contacts
+                </span>
+                <span className="campaign-chip campaign-chip-muted">
+                  <i className="bi bi-person-check me-1" aria-hidden="true" />
+                  {group.authorizedPickupContacts.length} pickup contacts
+                </span>
+              </div>
+            </div>
           ) : (
             <>
               {group.authorizedPickupContacts.length ? (

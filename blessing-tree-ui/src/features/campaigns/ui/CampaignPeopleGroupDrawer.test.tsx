@@ -37,6 +37,112 @@ const organizationGroup: CampaignPeopleGroup = {
   updatedAt: null,
 };
 
+const householdGroup: CampaignPeopleGroup = {
+  id: 'group-household',
+  campaignId: 'campaign-1',
+  groupType: 'HOUSEHOLD',
+  groupName: 'Johnson Family',
+  organizationType: null,
+  programAbbreviation: null,
+  intakeSource: null,
+  externalReference: null,
+  notes: null,
+  status: 'ACTIVE',
+  addressLine1: '10 Oak St',
+  addressLine2: null,
+  city: 'Austin',
+  state: 'TX',
+  postalCode: '78701',
+  primaryContact: {
+    id: 'contact-primary',
+    recipientGroupId: 'group-household',
+    displayName: 'Mary Johnson',
+    contactRole: 'PARENT',
+    relationshipLabel: null,
+    firstName: 'Mary',
+    lastName: 'Johnson',
+    email: 'mary@example.com',
+    phone: '555-111-2222',
+    preferredContact: 'PHONE',
+    isPrimary: true,
+    canPickUp: true,
+    isEmergencyContact: false,
+    notes: null,
+    createdAt: null,
+    updatedAt: null,
+  },
+  contacts: [
+    {
+      id: 'contact-primary',
+      recipientGroupId: 'group-household',
+      displayName: 'Mary Johnson',
+      contactRole: 'PARENT',
+      relationshipLabel: null,
+      firstName: 'Mary',
+      lastName: 'Johnson',
+      email: 'mary@example.com',
+      phone: '555-111-2222',
+      preferredContact: 'PHONE',
+      isPrimary: true,
+      canPickUp: true,
+      isEmergencyContact: false,
+      notes: null,
+      createdAt: null,
+      updatedAt: null,
+    },
+    {
+      id: 'contact-secondary',
+      recipientGroupId: 'group-household',
+      displayName: 'Mark Johnson',
+      contactRole: 'GUARDIAN',
+      relationshipLabel: null,
+      firstName: 'Mark',
+      lastName: 'Johnson',
+      email: 'mark@example.com',
+      phone: '555-333-4444',
+      preferredContact: 'EMAIL',
+      isPrimary: false,
+      canPickUp: true,
+      isEmergencyContact: false,
+      notes: null,
+      createdAt: null,
+      updatedAt: null,
+    },
+  ],
+  authorizedPickupContacts: [
+    {
+      id: 'contact-secondary',
+      recipientGroupId: 'group-household',
+      displayName: 'Mark Johnson',
+      contactRole: 'GUARDIAN',
+      relationshipLabel: null,
+      firstName: 'Mark',
+      lastName: 'Johnson',
+      email: 'mark@example.com',
+      phone: '555-333-4444',
+      preferredContact: 'EMAIL',
+      isPrimary: false,
+      canPickUp: true,
+      isEmergencyContact: false,
+      notes: null,
+      createdAt: null,
+      updatedAt: null,
+    },
+  ],
+  recipientCount: 0,
+  workflowSummary: {
+    itemCount: 0,
+    sponsoredItemCount: 0,
+    fulfilledItemCount: 0,
+    readyForPickupItemCount: 0,
+    pickedUpItemCount: 0,
+    openItemCount: 0,
+  },
+  recipients: [],
+  createdAt: null,
+  updatedAt: null,
+};
+
 describe('CampaignPeopleGroupDrawer', () => {
   it('uses family-specific labels for household intake', () => {
     render(
@@ -139,6 +245,7 @@ describe('CampaignPeopleGroupDrawer', () => {
 
   it('does not search just by opening an existing organization record with an address', async () => {
     const onSearchAddresses = vi.fn().mockResolvedValue([]);
+    const user = userEvent.setup();
 
     render(
       <CampaignPeopleGroupDrawer
@@ -158,9 +265,8 @@ describe('CampaignPeopleGroupDrawer', () => {
       />
     );
 
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('123 Main St')).toBeInTheDocument();
-    });
+    await user.click(screen.getByLabelText('Expand group details'));
+    expect(screen.getByDisplayValue('123 Main St')).toBeInTheDocument();
 
     expect(onSearchAddresses).not.toHaveBeenCalled();
   });
@@ -276,5 +382,39 @@ describe('CampaignPeopleGroupDrawer', () => {
         undefined
       );
     });
+  });
+
+  it('starts family details and additional contacts collapsed when editing an existing household', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CampaignPeopleGroupDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        group={householdGroup}
+        groups={[householdGroup]}
+        onClose={vi.fn()}
+        onSaveGroup={vi.fn()}
+        onSaveContact={vi.fn()}
+        onDeleteContact={vi.fn()}
+        onSearchAddresses={vi.fn().mockResolvedValue([])}
+        onAddRecipientToGroup={vi.fn()}
+        onSelectGroup={vi.fn()}
+        onSelectRecipient={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByLabelText('Guardian First Name')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('First Name')).not.toBeInTheDocument();
+    expect(screen.getByText('Mary Johnson')).toBeInTheDocument();
+    expect(screen.getByText('1 additional contacts')).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Expand group details'));
+    expect(screen.getByLabelText('Guardian First Name')).toHaveValue('Mary');
+
+    await user.click(screen.getByLabelText('Expand additional contacts'));
+    expect(screen.getByLabelText('First Name')).toHaveValue('');
+    expect(screen.getAllByText('Mark Johnson').length).toBeGreaterThan(0);
   });
 });
