@@ -379,6 +379,15 @@ export function CampaignPeopleWorkspace({
           setCreateRecipientGroupId(null);
           setSelectedRecipientId(recipientId);
         }}
+        onStartAnotherRecipient={() => {
+          const nextGroupId = createRecipientGroupId ?? selectedRecipient?.recipientGroupId ?? null;
+          if (!nextGroupId) {
+            return;
+          }
+          setCreateRecipientGroupId(nextGroupId);
+          setSelectedRecipientId(null);
+          setIsCreateRecipientOpen(true);
+        }}
       />
     </section>
   );

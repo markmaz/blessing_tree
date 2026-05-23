@@ -513,4 +513,37 @@ describe('CampaignPeopleWorkspace', () => {
     expect(screen.getByText(/Authorized pickup contacts:/)).toBeInTheDocument();
     expect(within(drawer).getByRole('button', { name: /art kit/i })).toBeInTheDocument();
   });
+
+  it('lets directory users jump from a saved household child to add another child in the same family', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <CampaignPeopleWorkspace
+          campaignName="Blessing Tree 2026"
+          access={access}
+          workspace={workspaceFixture}
+          isLoading={false}
+          isSaving={false}
+          error={null}
+          onSaveGroup={vi.fn()}
+          onSaveContact={vi.fn()}
+          onDeleteContact={vi.fn()}
+          onSaveRecipient={vi.fn()}
+          onSaveWishlistItem={vi.fn()}
+          onDeleteWishlistItem={vi.fn()}
+          onSearchAddresses={vi.fn().mockResolvedValue([])}
+          onClearError={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+
+    const peopleTable = screen.getAllByRole('table')[1];
+    await user.click(within(peopleTable).getByRole('button', { name: /Ava Johnson.*Gender F/ }));
+    await user.click(screen.getAllByRole('button', { name: 'Add Another Child' })[0]);
+
+    expect(await screen.findByRole('heading', { name: 'Add Child' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Johnson Household')).toBeInTheDocument();
+    expect(screen.getByLabelText('First Name')).toHaveValue('');
+  });
 });
