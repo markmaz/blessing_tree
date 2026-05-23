@@ -1,4 +1,4 @@
-.campaign-people-stats {
+.campaign-studio__stat-grid.campaign-people-stats {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.7rem;
   margin-bottom: 1rem;
@@ -445,7 +445,7 @@
 }
 
 @media (max-width: 991.98px) {
-  .campaign-people-stats {
+  .campaign-studio__stat-grid.campaign-people-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -455,7 +455,7 @@
 }
 
 @media (max-width: 575.98px) {
-  .campaign-people-stats {
+  .campaign-studio__stat-grid.campaign-people-stats {
     grid-template-columns: minmax(0, 1fr);
   }
 }
