@@ -70,6 +70,48 @@ const emptyContactDraft: GroupContactUpsertInput = {
   notes: '',
 };
 
+const emptyHouseholdPrimaryContactDraft: GroupContactUpsertInput = {
+  contactRole: 'PARENT',
+  relationshipLabel: '',
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  preferredContact: 'NONE',
+  isPrimary: true,
+  canPickUp: true,
+  isEmergencyContact: false,
+  notes: '',
+};
+
+function buildHouseholdPrimaryContactDraft(
+  group: CampaignPeopleGroup | null
+): GroupContactUpsertInput {
+  const primaryContact = group?.primaryContact;
+  if (!primaryContact) {
+    return emptyHouseholdPrimaryContactDraft;
+  }
+
+  return {
+    contactRole: primaryContact.contactRole,
+    relationshipLabel: primaryContact.relationshipLabel ?? '',
+    firstName: primaryContact.firstName ?? '',
+    lastName: primaryContact.lastName ?? '',
+    email: primaryContact.email ?? '',
+    phone: primaryContact.phone ?? '',
+    preferredContact: primaryContact.preferredContact,
+    isPrimary: true,
+    canPickUp: primaryContact.canPickUp,
+    isEmergencyContact: primaryContact.isEmergencyContact,
+    notes: primaryContact.notes ?? '',
+  };
+}
+
+function buildFamilyName(lastName: string | null | undefined): string {
+  const normalizedLastName = lastName?.trim() ?? '';
+  return normalizedLastName ? `${normalizedLastName} Family` : '';
+}
+
 export function CampaignPeopleGroupDrawer({
   isOpen,
   isSaving,
@@ -107,6 +149,9 @@ export function CampaignPeopleGroupDrawer({
   );
   const [groupError, setGroupError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [householdPrimaryContactDraft, setHouseholdPrimaryContactDraft] = useState<GroupContactUpsertInput>(
+    () => buildHouseholdPrimaryContactDraft(group)
+  );
   const [contactDraft, setContactDraft] = useState<GroupContactUpsertInput>(emptyContactDraft);
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
@@ -122,6 +167,10 @@ export function CampaignPeopleGroupDrawer({
   );
   const currentGroupType = groupDraft.groupType;
   const isOrganizationGroup = currentGroupType === 'ORGANIZATION';
+  const derivedFamilyName = useMemo(
+    () => buildFamilyName(householdPrimaryContactDraft.lastName),
+    [householdPrimaryContactDraft.lastName]
+  );
   const groupNameLabel = isOrganizationGroup ? 'Organization Name' : 'Family Name';
   const programAbbreviationLabel = 'Program Abbreviation';
   const drawerTitle = group
@@ -134,8 +183,16 @@ export function CampaignPeopleGroupDrawer({
     : isOrganizationGroup
       ? 'Create the organization first, then add coordinator contacts and participating people.'
       : 'Create the family first, then add parent or guardian contacts and children.';
+  const primaryHouseholdContact = group?.primaryContact ?? null;
+  const additionalContacts = useMemo(
+    () =>
+      (group?.contacts ?? []).filter((contact) =>
+        primaryHouseholdContact ? contact.id !== primaryHouseholdContact.id : !contact.isPrimary
+      ),
+    [group?.contacts, primaryHouseholdContact]
+  );
   const possibleDuplicateGroups = useMemo(() => {
-    const normalizedName = groupDraft.groupName.trim().toLowerCase();
+    const normalizedName = (isOrganizationGroup ? groupDraft.groupName : derivedFamilyName).trim().toLowerCase();
     const normalizedAddress = groupDraft.addressLine1?.trim().toLowerCase() ?? '';
     const normalizedPostal = groupDraft.postalCode?.trim().toLowerCase() ?? '';
     const normalizedAbbreviation = groupDraft.programAbbreviation?.trim().toLowerCase() ?? '';
@@ -177,6 +234,7 @@ export function CampaignPeopleGroupDrawer({
     groupDraft.groupName,
     groupDraft.postalCode,
     groupDraft.programAbbreviation,
+    derivedFamilyName,
     groups,
     isOrganizationGroup,
   ]);
@@ -220,8 +278,16 @@ export function CampaignPeopleGroupDrawer({
     suppressAddressLookupValue,
   ]);
 
+  useEffect(() => {
+    setHouseholdPrimaryContactDraft(buildHouseholdPrimaryContactDraft(group));
+  }, [group]);
+
   const handleSaveGroup = async () => {
-    if (!groupDraft.groupName.trim()) {
+    if (!isOrganizationGroup && !householdPrimaryContactDraft.lastName?.trim()) {
+      setGroupError('Guardian last name is required.');
+      return;
+    }
+    if (isOrganizationGroup && !groupDraft.groupName.trim()) {
       setGroupError(`${groupNameLabel} is required.`);
       return;
     }
@@ -230,7 +296,7 @@ export function CampaignPeopleGroupDrawer({
       const savedGroup = await onSaveGroup(
         {
           ...groupDraft,
-          groupName: groupDraft.groupName.trim(),
+          groupName: isOrganizationGroup ? groupDraft.groupName.trim() : derivedFamilyName,
           organizationType: isOrganizationGroup ? (groupDraft.organizationType ?? 'OTHER') : null,
           programAbbreviation: isOrganizationGroup ? (groupDraft.programAbbreviation?.trim() || null) : null,
         },
@@ -238,7 +304,49 @@ export function CampaignPeopleGroupDrawer({
       );
 
       if (savedGroup) {
-        setSuccessMessage(group ? 'Group updated.' : 'Group added.');
+        if (!isOrganizationGroup) {
+          const savedPrimaryContact = await onSaveContact(
+            savedGroup.id,
+            {
+              ...householdPrimaryContactDraft,
+              contactRole: householdPrimaryContactDraft.contactRole ?? 'PARENT',
+              relationshipLabel: householdPrimaryContactDraft.relationshipLabel?.trim() || null,
+              firstName: householdPrimaryContactDraft.firstName?.trim() || null,
+              lastName: householdPrimaryContactDraft.lastName?.trim() || null,
+              email: householdPrimaryContactDraft.email?.trim() || null,
+              phone: householdPrimaryContactDraft.phone?.trim() || null,
+              notes: householdPrimaryContactDraft.notes?.trim() || null,
+              isPrimary: true,
+            },
+            primaryHouseholdContact?.id ?? undefined
+          );
+
+          if (savedPrimaryContact) {
+            setHouseholdPrimaryContactDraft({
+              contactRole: savedPrimaryContact.contactRole,
+              relationshipLabel: savedPrimaryContact.relationshipLabel ?? '',
+              firstName: savedPrimaryContact.firstName ?? '',
+              lastName: savedPrimaryContact.lastName ?? '',
+              email: savedPrimaryContact.email ?? '',
+              phone: savedPrimaryContact.phone ?? '',
+              preferredContact: savedPrimaryContact.preferredContact,
+              isPrimary: true,
+              canPickUp: savedPrimaryContact.canPickUp,
+              isEmergencyContact: savedPrimaryContact.isEmergencyContact,
+              notes: savedPrimaryContact.notes ?? '',
+            });
+          }
+        }
+
+        setSuccessMessage(
+          isOrganizationGroup
+            ? group
+              ? 'Group updated.'
+              : 'Group added.'
+            : group
+              ? 'Family updated.'
+              : 'Family added.'
+        );
         setGroupDraft({
           groupType: savedGroup.groupType,
           groupName: savedGroup.groupName,
@@ -454,20 +562,163 @@ export function CampaignPeopleGroupDrawer({
               </select>
             </label>
 
-            <label className="form-label campaign-team-form-grid__span-2">
-              {groupNameLabel}
-              <input
-                className="form-control mt-2"
-                value={groupDraft.groupName}
-                onChange={(event) =>
-                  setGroupDraft((currentValue) => ({
-                    ...currentValue,
-                    groupName: event.target.value,
-                  }))
-                }
-                disabled={!canEdit}
-              />
-            </label>
+            {isOrganizationGroup ? (
+              <label className="form-label campaign-team-form-grid__span-2">
+                {groupNameLabel}
+                <input
+                  className="form-control mt-2"
+                  value={groupDraft.groupName}
+                  onChange={(event) =>
+                    setGroupDraft((currentValue) => ({
+                      ...currentValue,
+                      groupName: event.target.value,
+                    }))
+                  }
+                  disabled={!canEdit}
+                />
+              </label>
+            ) : (
+              <>
+                <label className="form-label">
+                  Guardian Role
+                  <select
+                    className="form-select mt-2"
+                    value={householdPrimaryContactDraft.contactRole ?? 'PARENT'}
+                    onChange={(event) =>
+                      setHouseholdPrimaryContactDraft((currentValue) => ({
+                        ...currentValue,
+                        contactRole: event.target.value as GroupContactRole,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  >
+                    <option value="PARENT">Parent</option>
+                    <option value="GUARDIAN">Guardian</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </label>
+
+                <label className="form-label">
+                  Family Name
+                  <input
+                    className="form-control mt-2"
+                    value={derivedFamilyName || 'Enter guardian surname'}
+                    disabled
+                  />
+                </label>
+
+                <label className="form-label">
+                  Guardian First Name
+                  <input
+                    className="form-control mt-2"
+                    value={householdPrimaryContactDraft.firstName ?? ''}
+                    onChange={(event) =>
+                      setHouseholdPrimaryContactDraft((currentValue) => ({
+                        ...currentValue,
+                        firstName: event.target.value,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                </label>
+
+                <label className="form-label">
+                  Guardian Last Name
+                  <input
+                    className="form-control mt-2"
+                    value={householdPrimaryContactDraft.lastName ?? ''}
+                    onChange={(event) =>
+                      setHouseholdPrimaryContactDraft((currentValue) => ({
+                        ...currentValue,
+                        lastName: event.target.value,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                </label>
+
+                <label className="form-label">
+                  Guardian Email
+                  <input
+                    className="form-control mt-2"
+                    type="email"
+                    value={householdPrimaryContactDraft.email ?? ''}
+                    onChange={(event) =>
+                      setHouseholdPrimaryContactDraft((currentValue) => ({
+                        ...currentValue,
+                        email: event.target.value,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                </label>
+
+                <label className="form-label">
+                  Guardian Phone
+                  <input
+                    className="form-control mt-2"
+                    value={householdPrimaryContactDraft.phone ?? ''}
+                    onChange={(event) =>
+                      setHouseholdPrimaryContactDraft((currentValue) => ({
+                        ...currentValue,
+                        phone: event.target.value,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                </label>
+
+                <label className="form-label">
+                  Preferred Contact
+                  <select
+                    className="form-select mt-2"
+                    value={householdPrimaryContactDraft.preferredContact ?? 'NONE'}
+                    onChange={(event) =>
+                      setHouseholdPrimaryContactDraft((currentValue) => ({
+                        ...currentValue,
+                        preferredContact: event.target.value as PreferredContact,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  >
+                    <option value="NONE">None</option>
+                    <option value="EMAIL">Email</option>
+                    <option value="PHONE">Phone</option>
+                    <option value="TEXT">Text</option>
+                  </select>
+                </label>
+
+                <label className="campaign-team-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={householdPrimaryContactDraft.canPickUp ?? false}
+                    onChange={(event) =>
+                      setHouseholdPrimaryContactDraft((currentValue) => ({
+                        ...currentValue,
+                        canPickUp: event.target.checked,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                  <span>Can pick up gifts</span>
+                </label>
+
+                <label className="campaign-team-checkbox campaign-team-form-grid__span-2">
+                  <input
+                    type="checkbox"
+                    checked={householdPrimaryContactDraft.isEmergencyContact ?? false}
+                    onChange={(event) =>
+                      setHouseholdPrimaryContactDraft((currentValue) => ({
+                        ...currentValue,
+                        isEmergencyContact: event.target.checked,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                  <span>Emergency contact</span>
+                </label>
+              </>
+            )}
 
             {isOrganizationGroup ? (
               <label className="form-label">
@@ -777,9 +1028,11 @@ export function CampaignPeopleGroupDrawer({
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
             <div>
-              <h4 className="h6 mb-1">Contacts</h4>
+              <h4 className="h6 mb-1">{isOrganizationGroup ? 'Contacts' : 'Additional Contacts'}</h4>
               <p className="text-muted mb-0">
-                Parents, guardians, coordinators, social workers, and program staff stay here as operational contacts.
+                {isOrganizationGroup
+                  ? 'Coordinators, social workers, and staff stay here as operational contacts.'
+                  : 'Use this area for secondary guardians, relatives, or other household contacts beyond the primary guardian.'}
               </p>
             </div>
           </div>
@@ -807,10 +1060,12 @@ export function CampaignPeopleGroupDrawer({
               ) : null}
 
               <div className="campaign-team-inline-list mb-3">
-                {group.contacts.length === 0 ? (
-                  <div className="campaign-studio__empty-note">No contacts yet.</div>
+                {additionalContacts.length === 0 ? (
+                  <div className="campaign-studio__empty-note">
+                    {isOrganizationGroup ? 'No contacts yet.' : 'No additional contacts yet.'}
+                  </div>
                 ) : (
-                  group.contacts.map((contact) => (
+                  additionalContacts.map((contact) => (
                     <div key={contact.id} className="campaign-team-inline-item campaign-team-inline-item--stacked">
                       <div className="campaign-team-inline-item__content">
                         <strong>

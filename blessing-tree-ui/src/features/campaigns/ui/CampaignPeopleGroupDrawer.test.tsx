@@ -59,7 +59,9 @@ describe('CampaignPeopleGroupDrawer', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Add Family' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Family Name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Guardian First Name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Guardian Last Name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Family Name')).toHaveDisplayValue('Enter guardian surname');
   });
 
   it('uses organization-specific labels and can apply an address suggestion', async () => {
@@ -191,5 +193,88 @@ describe('CampaignPeopleGroupDrawer', () => {
     expect(screen.getByText('Possible existing records')).toBeInTheDocument();
     await user.click(screen.getAllByRole('button', { name: /maple grove/i })[0]);
     expect(onSelectGroup).toHaveBeenCalledWith('group-1');
+  });
+
+  it('derives the family name from the guardian surname and saves the primary guardian with the household', async () => {
+    const user = userEvent.setup();
+    const onSaveGroup = vi.fn().mockResolvedValue({
+      ...organizationGroup,
+      id: 'group-household',
+      groupType: 'HOUSEHOLD',
+      groupName: 'Johnson Family',
+      organizationType: null,
+      programAbbreviation: null,
+    });
+    const onSaveContact = vi.fn().mockResolvedValue({
+      id: 'contact-1',
+      recipientGroupId: 'group-household',
+      displayName: 'Mary Johnson',
+      contactRole: 'PARENT',
+      relationshipLabel: null,
+      firstName: 'Mary',
+      lastName: 'Johnson',
+      email: 'mary@example.com',
+      phone: '555-111-2222',
+      preferredContact: 'PHONE',
+      isPrimary: true,
+      canPickUp: true,
+      isEmergencyContact: false,
+      notes: null,
+      createdAt: null,
+      updatedAt: null,
+    });
+
+    render(
+      <CampaignPeopleGroupDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        group={null}
+        groups={[]}
+        initialGroupType="HOUSEHOLD"
+        onClose={vi.fn()}
+        onSaveGroup={onSaveGroup}
+        onSaveContact={onSaveContact}
+        onDeleteContact={vi.fn()}
+        onSearchAddresses={vi.fn().mockResolvedValue([])}
+        onAddRecipientToGroup={vi.fn()}
+        onSelectGroup={vi.fn()}
+        onSelectRecipient={vi.fn()}
+      />
+    );
+
+    await user.type(screen.getByLabelText('Guardian First Name'), 'Mary');
+    await user.type(screen.getByLabelText('Guardian Last Name'), 'Johnson');
+    await user.type(screen.getByLabelText('Guardian Email'), 'mary@example.com');
+    await user.type(screen.getByLabelText('Guardian Phone'), '555-111-2222');
+
+    expect(screen.getByLabelText('Family Name')).toHaveDisplayValue('Johnson Family');
+
+    await user.click(screen.getByRole('button', { name: 'Create Group' }));
+
+    await waitFor(() => {
+      expect(onSaveGroup).toHaveBeenCalledWith(
+        expect.objectContaining({
+          groupType: 'HOUSEHOLD',
+          groupName: 'Johnson Family',
+        }),
+        undefined
+      );
+    });
+
+    await waitFor(() => {
+      expect(onSaveContact).toHaveBeenCalledWith(
+        'group-household',
+        expect.objectContaining({
+          contactRole: 'PARENT',
+          firstName: 'Mary',
+          lastName: 'Johnson',
+          email: 'mary@example.com',
+          phone: '555-111-2222',
+          isPrimary: true,
+        }),
+        undefined
+      );
+    });
   });
 });
