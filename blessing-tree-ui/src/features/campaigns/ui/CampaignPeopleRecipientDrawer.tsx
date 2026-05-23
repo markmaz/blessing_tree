@@ -46,6 +46,7 @@ interface CampaignPeopleRecipientDrawerProps {
   ) => Promise<CampaignWishlistItem | null>;
   onDeleteWishlistItem: (recipientId: string, itemId: string) => Promise<boolean>;
   onSelectExistingRecipient: (recipientId: string) => void;
+  onStartAnotherRecipient?: (() => void) | null;
 }
 
 interface WishlistItemFormState {
@@ -138,6 +139,7 @@ export function CampaignPeopleRecipientDrawer({
   onSaveWishlistItem,
   onDeleteWishlistItem,
   onSelectExistingRecipient,
+  onStartAnotherRecipient = null,
 }: CampaignPeopleRecipientDrawerProps) {
   const [recipientDraft, setRecipientDraft] = useState<RecipientUpsertInput>(
     buildRecipientDraft(recipient, initialGroupId)
@@ -202,6 +204,13 @@ export function CampaignPeopleRecipientDrawer({
   const isOrganizationChildIntake = recipientProgram?.programType === 'ORGANIZATION_CHILD';
   const isOrganizationAdultIntake = recipientProgram?.programType === 'ORGANIZATION_ADULT';
   const showAdultDirectContact = isOrganizationAdultIntake;
+  const nextRecipientButtonLabel = isHouseholdIntake
+    ? 'Add Another Child'
+    : isOrganizationAdultIntake
+      ? 'Add Another Adult'
+      : isOrganizationChildIntake
+        ? 'Add Another Child'
+        : 'Add Another Person';
   const drawerTitle = recipient?.displayLabel
     ? isHouseholdIntake
       ? 'Child Intake'
@@ -1059,6 +1068,23 @@ export function CampaignPeopleRecipientDrawer({
                 ) : (
                   <div className="campaign-studio__empty-note mt-3">No wishlist items yet.</div>
                 )}
+
+                {onStartAnotherRecipient ? (
+                  <div className="campaign-team-drawer__actions mt-3">
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary btn-sm"
+                      onClick={() => {
+                        setSuccessMessage(null);
+                        onStartAnotherRecipient();
+                      }}
+                      disabled={!canEdit || isSaving}
+                    >
+                      <i className="bi bi-person-plus me-2" aria-hidden="true" />
+                      {nextRecipientButtonLabel}
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </>
           ) : (

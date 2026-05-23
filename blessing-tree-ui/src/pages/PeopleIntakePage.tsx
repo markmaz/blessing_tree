@@ -280,6 +280,13 @@ export function PeopleIntakePage() {
           setCreateRecipientGroupId(null);
           setSelectedRecipientId(recipientId);
         }}
+        onStartAnotherRecipient={() => {
+          if (!createRecipientGroupId) {
+            return;
+          }
+          setSelectedRecipientId(null);
+          setIsCreateRecipientOpen(true);
+        }}
       />
     </section>
   );

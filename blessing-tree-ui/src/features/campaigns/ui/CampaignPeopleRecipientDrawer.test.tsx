@@ -170,6 +170,41 @@ const existingAdultRecipientWithWishlist: CampaignRecipient = {
   },
 };
 
+const existingHouseholdChildWithWishlist: CampaignRecipient = {
+  ...existingAdultRecipientWithWishlist,
+  id: 'recipient-child-1',
+  recipientGroupId: 'group-household',
+  recipientKind: 'CHILD',
+  programType: 'CHILD_FAMILY',
+  displayLabel: 'Ava Johnson',
+  programRecipientNumber: null,
+  programRecipientId: null,
+  firstName: 'Ava',
+  lastName: 'Johnson',
+  birthYear: new Date().getFullYear() - 8,
+  age: 8,
+  group: {
+    id: 'group-household',
+    groupName: 'Johnson Household',
+    groupType: 'HOUSEHOLD',
+    organizationType: null,
+    status: 'ACTIVE',
+  },
+  wishlist: {
+    ...existingAdultRecipientWithWishlist.wishlist!,
+    id: 'wishlist-child-1',
+    recipientId: 'recipient-child-1',
+    items: [
+      {
+        ...existingAdultRecipientWithWishlist.wishlist!.items[0],
+        id: 'item-child-1',
+        wishlistId: 'wishlist-child-1',
+        description: 'Art kit',
+      },
+    ],
+  },
+};
+
 describe('CampaignPeopleRecipientDrawer', () => {
   it('uses child-intake framing and hides direct contact fields for a household intake', () => {
     render(
@@ -382,5 +417,32 @@ describe('CampaignPeopleRecipientDrawer', () => {
     expect(screen.getByLabelText('Last Name')).toHaveValue('');
     expect(screen.getByLabelText('Age')).toHaveValue(null);
     expect(screen.getByDisplayValue('Johnson Household')).toBeInTheDocument();
+  });
+
+  it('offers a direct add-another-child action after saving a child in a family intake flow', async () => {
+    const user = userEvent.setup();
+    const onStartAnotherRecipient = vi.fn();
+
+    render(
+      <CampaignPeopleRecipientDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        recipient={existingHouseholdChildWithWishlist}
+        initialGroupId="group-household"
+        lockedGroupId="group-household"
+        groups={[householdGroup]}
+        recipients={[existingHouseholdChildWithWishlist]}
+        onClose={vi.fn()}
+        onSaveRecipient={vi.fn()}
+        onSaveWishlistItem={vi.fn()}
+        onDeleteWishlistItem={vi.fn()}
+        onSelectExistingRecipient={vi.fn()}
+        onStartAnotherRecipient={onStartAnotherRecipient}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Add Another Child' }));
+    expect(onStartAnotherRecipient).toHaveBeenCalledTimes(1);
   });
 });
