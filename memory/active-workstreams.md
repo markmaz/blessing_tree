@@ -5,7 +5,7 @@ Last updated: 2026-05-22
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: The next feature slice is sponsor operations: define and build a campaign-scoped sponsor workspace, public sponsor self-registration flow, QR flyer generation, and sponsor communication logging on top of the existing sponsor/sponsorship models
+- Current step: The sponsor design and implementation plan are now documented; the next implementation step is phase 1 of the sponsor workspace plan: refine the sponsor domain and add the pending public registration foundation
 
 ## Recently Completed
 

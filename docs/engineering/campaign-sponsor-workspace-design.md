@@ -16,6 +16,10 @@ Goals:
 
 This is a workflow and API design document. It does not prescribe every implementation detail, but it should be specific enough to guide backend and frontend work.
 
+Implementation planning lives in:
+
+- `docs/engineering/campaign-sponsor-workspace-implementation-plan.md`
+
 ## Current State
 
 The backend already contains foundational sponsor models:
