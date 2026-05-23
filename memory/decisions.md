@@ -105,6 +105,13 @@
 - Rationale: children can be under a year old, and operators need to enter infants precisely without falling back to artificial range buckets like `0-3 months`.
 - Consequence: recipient intake should capture `Age` plus `Age Unit`, months should be available for infants and very young children, older records without a saved unit should be treated as `YEARS` by default, and age displays/sorting should format and compare using the combined value+unit representation instead of assuming raw years.
 
+## Sponsor Workspace Direction
+
+- Status: active
+- Decision: build sponsor operations as a campaign-scoped workspace that reuses the existing global `sponsor` identity model plus campaign-scoped `sponsorship`, `sponsor_interaction`, and `sponsor_reminder` records. Public sponsor self-registration should be campaign-specific, QR/flyer-driven, and managed from Campaign Studio.
+- Rationale: sponsor operations are simpler than recipient intake but still campaign-aware, and a public signup path can remove a large amount of staff data entry while keeping outreach, assignment, and follow-up tied to the campaign.
+- Consequence: sponsor CRUD should live under campaign routes and UI sections, the sponsor communication log should use `sponsor_interaction` for both manual and mass-communication history, public sponsor signup should create or reuse sponsor identities and campaign participation records, and Campaign Studio should expose the public sponsor link, QR code, and flyer-generation controls.
+
 ## Campaign Schedule Direction
 
 - Status: active

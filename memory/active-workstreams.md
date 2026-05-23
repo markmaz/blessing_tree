@@ -5,7 +5,7 @@ Last updated: 2026-05-22
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: The recipient runtime is now aligned to `HOUSEHOLD | ORGANIZATION` plus `organization_type`, recipient workflow rollups and organization-style recipient IDs are in place, and the next step is adding action-oriented sponsorship/fulfillment/pickup surfaces on top of that data
+- Current step: The next feature slice is sponsor operations: define and build a campaign-scoped sponsor workspace, public sponsor self-registration flow, QR flyer generation, and sponsor communication logging on top of the existing sponsor/sponsorship models
 
 ## Recently Completed
 
