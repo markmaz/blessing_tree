@@ -162,6 +162,7 @@ def serialize_recipient(recipient: Recipient) -> dict[str, Any]:
         "last_name": recipient.last_name,
         "birth_year": recipient.birth_year,
         "age": recipient.age,
+        "age_unit": recipient.age_unit,
         "gender": recipient.gender,
         "address_line1": recipient.address_line1,
         "address_line2": recipient.address_line2,

@@ -9,6 +9,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 from .recipient_constants import (
+    RECIPIENT_AGE_UNIT_MONTHS,
+    RECIPIENT_AGE_UNIT_YEARS,
     RECIPIENT_KIND_ADULT,
     RECIPIENT_KIND_CHILD,
     RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
@@ -76,6 +78,10 @@ class Recipient(Base):
     last_name: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
     birth_year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     age: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    age_unit: Mapped[Optional[str]] = mapped_column(
+        Enum(RECIPIENT_AGE_UNIT_MONTHS, RECIPIENT_AGE_UNIT_YEARS, name="recipient_age_unit"),
+        nullable=True,
+    )
     gender: Mapped[Optional[str]] = mapped_column(Enum("M", "F", "X", "U", name="gender"), nullable=True)
     address_line1: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     address_line2: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)

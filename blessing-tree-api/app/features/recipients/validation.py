@@ -6,6 +6,8 @@ from datetime import datetime
 
 from app.exceptions.service_error import ServiceError
 from app.models.recipient_constants import (
+    RECIPIENT_AGE_UNIT_MONTHS,
+    RECIPIENT_AGE_UNIT_YEARS,
     GROUP_CONTACT_ROLE_COORDINATOR,
     GROUP_CONTACT_ROLE_GUARDIAN,
     GROUP_CONTACT_ROLE_OTHER,
@@ -92,6 +94,10 @@ PREFERRED_CONTACTS = {
 RECIPIENT_KINDS = {
     RECIPIENT_KIND_CHILD,
     RECIPIENT_KIND_ADULT,
+}
+RECIPIENT_AGE_UNITS = {
+    RECIPIENT_AGE_UNIT_MONTHS,
+    RECIPIENT_AGE_UNIT_YEARS,
 }
 PROGRAM_TYPES = {
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
@@ -310,6 +316,17 @@ def validate_program_type(value: object) -> str:
     return normalized
 
 
+def validate_age_unit(value: object, *, required: bool = False, default: str = RECIPIENT_AGE_UNIT_YEARS) -> str | None:
+    if value in (None, ""):
+        if required:
+            raise ServiceError("age_unit is required", status_code=400, details={"field": "age_unit"})
+        return None
+    normalized = str(value or default).strip().upper()
+    if normalized not in RECIPIENT_AGE_UNITS:
+        raise ServiceError("Invalid age_unit", status_code=400, details={"field": "age_unit"})
+    return normalized
+
+
 def validate_privacy_level(value: object, *, default: str = RECIPIENT_PRIVACY_LEVEL_ANONYMOUS) -> str:
     normalized = str(value or default).strip().upper()
     if normalized not in RECIPIENT_PRIVACY_LEVELS:
@@ -371,6 +388,25 @@ def validate_optional_int(value: object, field_name: str, *, minimum: int | None
             details={"field": field_name, "maximum": maximum},
         )
     return parsed
+
+
+def validate_age_fields(age: int | None, age_unit: str | None) -> tuple[int | None, str | None]:
+    if age is None:
+        return None, None
+    normalized_unit = age_unit or RECIPIENT_AGE_UNIT_YEARS
+    if normalized_unit == RECIPIENT_AGE_UNIT_MONTHS and age > 36:
+        raise ServiceError(
+            "Invalid age",
+            status_code=400,
+            details={"field": "age", "maximum": 36, "age_unit": normalized_unit},
+        )
+    if normalized_unit == RECIPIENT_AGE_UNIT_YEARS and age > 130:
+        raise ServiceError(
+            "Invalid age",
+            status_code=400,
+            details={"field": "age", "maximum": 130, "age_unit": normalized_unit},
+        )
+    return age, normalized_unit
 
 
 def validate_optional_datetime(value: object, field_name: str) -> datetime | None:

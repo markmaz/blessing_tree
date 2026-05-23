@@ -236,11 +236,13 @@ def test_group_recipient_and_wishlist_crud_flow(app, monkeypatch: pytest.MonkeyP
             "privacy_level": "FULL_NAME",
             "display_label": "Eli Baker",
             "first_name": "Eli",
-            "age": 7,
+            "age": 3,
+            "age_unit": "MONTHS",
         },
         headers=auth_header(manager_id, "VOLUNTEER"),
     )
     assert create_recipient_response.status_code == 201
+    assert create_recipient_response.get_json()["age_unit"] == "MONTHS"
     recipient_id = create_recipient_response.get_json()["id"]
 
     upsert_wishlist_response = client.put(

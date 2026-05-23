@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
 import {
+  formatRecipientAge,
   formatShortDate,
   toGroupContactRoleLabel,
   toRecipientProgramTypeLabel,
@@ -224,7 +225,7 @@ export function CampaignPeopleGroupTable({
                                   </td>
                                   <td>{toRecipientProgramTypeLabel(recipient.programType)}</td>
                                   <td>
-                                    {[recipient.age !== null ? `Age ${recipient.age}` : null, recipient.facilityRoom ? `Room ${recipient.facilityRoom}` : null]
+                                    {[recipient.age !== null ? formatRecipientAge(recipient.age, recipient.ageUnit) : null, recipient.facilityRoom ? `Room ${recipient.facilityRoom}` : null]
                                       .filter(Boolean)
                                       .join(' · ') || 'No extra details'}
                                   </td>

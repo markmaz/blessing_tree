@@ -24,6 +24,8 @@ from app.features.recipients.validation import (
     validate_optional_long_text,
     validate_optional_phone,
     validate_optional_text,
+    validate_age_fields,
+    validate_age_unit,
     validate_preferred_contact,
     validate_privacy_level,
     validate_program_abbreviation,
@@ -44,6 +46,7 @@ from app.models.wishlist import Wishlist
 from app.models.wishlist_item import WishlistItem
 from app.models.fulfillment import Fulfillment
 from app.models.recipient_constants import (
+    RECIPIENT_AGE_UNIT_YEARS,
     RECIPIENT_GROUP_TYPE_ORGANIZATION,
     RECIPIENT_GROUP_STATUS_ACTIVE,
     RECIPIENT_KIND_ADULT,
@@ -321,6 +324,9 @@ class CampaignRecipientService:
             recipient_kind=recipient_kind,
             program_type=program_type,
         )
+        age = validate_optional_int(payload.get("age"), "age", minimum=0)
+        age_unit = validate_age_unit(payload.get("age_unit"), default=RECIPIENT_AGE_UNIT_YEARS) if age is not None else None
+        age, age_unit = validate_age_fields(age, age_unit)
         recipient = Recipient(
             id=uuid.uuid4(),
             campaign_id=uuid.UUID(campaign_id),
@@ -332,7 +338,8 @@ class CampaignRecipientService:
             first_name=validate_optional_text(payload.get("first_name"), "first_name", max_length=128),
             last_name=validate_optional_text(payload.get("last_name"), "last_name", max_length=128),
             birth_year=validate_optional_int(payload.get("birth_year"), "birth_year", minimum=1900, maximum=3000),
-            age=validate_optional_int(payload.get("age"), "age", minimum=0, maximum=130),
+            age=age,
+            age_unit=age_unit,
             gender=validate_optional_text(payload.get("gender"), "gender", max_length=1),
             address_line1=validate_optional_text(payload.get("address_line1"), "address_line1"),
             address_line2=validate_optional_text(payload.get("address_line2"), "address_line2"),
@@ -404,8 +411,14 @@ class CampaignRecipientService:
                 setattr(recipient, field_name, validate_optional_text(payload.get(field_name), field_name, max_length=max_length))
         if "birth_year" in payload:
             recipient.birth_year = validate_optional_int(payload.get("birth_year"), "birth_year", minimum=1900, maximum=3000)
-        if "age" in payload:
-            recipient.age = validate_optional_int(payload.get("age"), "age", minimum=0, maximum=130)
+        if "age" in payload or "age_unit" in payload:
+            next_age = recipient.age
+            if "age" in payload:
+                next_age = validate_optional_int(payload.get("age"), "age", minimum=0)
+            next_age_unit = recipient.age_unit
+            if "age_unit" in payload:
+                next_age_unit = validate_age_unit(payload.get("age_unit"), default=RECIPIENT_AGE_UNIT_YEARS) if next_age is not None else None
+            recipient.age, recipient.age_unit = validate_age_fields(next_age, next_age_unit)
         if "gender" in payload:
             recipient.gender = validate_optional_text(payload.get("gender"), "gender", max_length=1)
         if "direct_email" in payload:

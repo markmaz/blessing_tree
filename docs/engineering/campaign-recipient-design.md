@@ -267,6 +267,7 @@ Recommended fields:
 - `last_name`
 - `birth_year` nullable
 - `age` nullable
+- `age_unit` nullable
 - `gender` nullable
 - `address_line1` nullable
 - `address_line2` nullable
@@ -309,6 +310,7 @@ Important rules:
 - children typically use parent/guardian contacts through `group_contact`
 - organization recipients may optionally have direct recipient-level contact or address information
 - a recipient still belongs to an organization group for coordination, reporting, and communication
+- when birth date is not known, intake should capture `age + age_unit` instead of a coarse range bucket
 
 ### 4. Wishlist
 
@@ -379,11 +381,13 @@ Recommended `item_type` values:
   - `recipient_kind = CHILD`
   - `program_type = CHILD_FAMILY`
   - `age = 8`
+  - `age_unit = YEARS`
   - `gender = F`
 - Noah Johnson
   - `recipient_kind = CHILD`
   - `program_type = CHILD_FAMILY`
   - `age = 5`
+  - `age_unit = YEARS`
   - `gender = M`
 
 ### Organization-Based Program
@@ -405,11 +409,13 @@ Recommended `item_type` values:
   - `recipient_kind = ADULT`
   - `program_type = ORGANIZATION_ADULT`
   - `age = 84`
+  - `age_unit = YEARS`
   - `facility_room = 214B`
 - James Carter
   - `recipient_kind = ADULT`
   - `program_type = ORGANIZATION_ADULT`
   - `age = 79`
+  - `age_unit = YEARS`
   - `facility_room = 216A`
 
 This same `ORGANIZATION` shape also supports:
@@ -461,6 +467,7 @@ On `group_contact`:
 On `recipient`:
 
 - `program_type`
+- `age_unit`
 - `birth_year` or future `date_of_birth`
 - `address_line1`
 - `address_line2`
@@ -471,6 +478,12 @@ On `recipient`:
 - `direct_phone`
 - `facility_room`
 - `mobility_notes`
+
+Recommended intake behavior:
+
+- default `age_unit` to `YEARS`
+- allow intake workers to switch to `MONTHS` for infants and very young children
+- do not ask workers to enter age ranges like `0-3 months`
 
 On `wishlist`:
 

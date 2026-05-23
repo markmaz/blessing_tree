@@ -72,6 +72,7 @@ Refine the current schema without breaking the downstream gift pipeline.
 3. Update `recipient`
    - add `recipient_kind`
    - add `program_type`
+   - add `age_unit`
    - add recipient-level fields needed for organization recipients:
      - `address_line1`
      - `address_line2`
@@ -84,18 +85,24 @@ Refine the current schema without breaking the downstream gift pipeline.
      - `mobility_notes`
      - `birth_year` or later `date_of_birth`
 
-4. Update `wishlist`
+4. Add age-entry rule
+   - keep numeric `age` as the stored value
+   - add `age_unit = MONTHS | YEARS`
+   - default UI entry to `YEARS`
+   - support infant entry without age-range buckets
+
+5. Update `wishlist`
    - add `wishlist_status`
    - add `intake_method`
    - add `submitted_at`
    - add `intake_completed_by_contact_id`
 
-5. Update `wishlist_item`
+6. Update `wishlist_item`
    - add `item_type`
    - add `recipient_note`
    - add `do_not_substitute_reason`
 
-6. Create migration plan for current enums/data
+7. Create migration plan for current enums/data
    - map `INSTITUTION -> ORGANIZATION`
    - map `SENIOR -> recipient_kind=ADULT, program_type=ORGANIZATION_ADULT`
    - map child family rows to `program_type=CHILD_FAMILY`

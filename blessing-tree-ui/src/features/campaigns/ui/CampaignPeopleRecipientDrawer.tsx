@@ -5,6 +5,7 @@ import type {
   CampaignPeopleGroup,
   CampaignRecipient,
   CampaignWishlistItem,
+  RecipientAgeUnit,
   RecipientPrivacyLevel,
   RecipientStatus,
   RecipientUpsertInput,
@@ -15,6 +16,7 @@ import type {
 import {
   formatContactDisplayName,
   formatCurrencyFromCents,
+  formatRecipientAge,
   formatShortDate,
   toGiftWorkflowStatusLabel,
   toRecipientProgramTypeLabel,
@@ -90,13 +92,6 @@ function buildDisplayLabel(firstName: string | null | undefined, lastName: strin
   return [firstName?.trim(), lastName?.trim()].filter(Boolean).join(' ');
 }
 
-function deriveBirthYear(age: number | null | undefined): number | null {
-  if (age === null || age === undefined || Number.isNaN(age)) {
-    return null;
-  }
-  return new Date().getFullYear() - age;
-}
-
 function buildRecipientDraft(
   recipient: CampaignRecipient | null,
   initialGroupId: string | null
@@ -109,6 +104,7 @@ function buildRecipientDraft(
     lastName: recipient?.lastName ?? '',
     birthYear: recipient?.birthYear ?? null,
     age: recipient?.age ?? null,
+    ageUnit: recipient?.ageUnit ?? 'YEARS',
     gender: recipient?.gender ?? '',
     addressLine1: recipient?.addressLine1 ?? '',
     addressLine2: recipient?.addressLine2 ?? '',
@@ -181,10 +177,6 @@ export function CampaignPeopleRecipientDrawer({
     const generated = buildDisplayLabel(recipientDraft.firstName, recipientDraft.lastName);
     return generated || recipientDraft.displayLabel || '';
   }, [recipientDraft.displayLabel, recipientDraft.firstName, recipientDraft.lastName]);
-  const computedBirthYear = useMemo(() => {
-    return deriveBirthYear(recipientDraft.age) ?? recipientDraft.birthYear ?? null;
-  }, [recipientDraft.age, recipientDraft.birthYear]);
-
   const isOrganizationChildGroup = selectedGroup?.groupType === 'ORGANIZATION'
     && ['ORPHANAGE', 'CHILDRENS_HOME'].includes(selectedGroup.organizationType ?? '');
 
@@ -250,7 +242,7 @@ export function CampaignPeopleRecipientDrawer({
     const normalizedFirstName = recipientDraft.firstName?.trim().toLowerCase() ?? '';
     const normalizedLastName = recipientDraft.lastName?.trim().toLowerCase() ?? '';
     const age = recipientDraft.age;
-    const birthYear = computedBirthYear;
+    const ageUnit = recipientDraft.ageUnit ?? 'YEARS';
 
     if (
       normalizedDisplayName.length < 3 &&
@@ -272,15 +264,17 @@ export function CampaignPeopleRecipientDrawer({
           normalizedLastName.length >= 2 &&
           candidateFirstName === normalizedFirstName &&
           candidateLastName === normalizedLastName;
-        const matchingAge = age !== null && age !== undefined && candidate.age === age;
-        const matchingBirthYear =
-          birthYear !== null && birthYear !== undefined && candidate.birthYear === birthYear;
+        const matchingAge =
+          age !== null &&
+          age !== undefined &&
+          candidate.age === age &&
+          (candidate.ageUnit ?? 'YEARS') === ageUnit;
 
         if (sameGroup && (exactDisplayName || matchingName)) {
           return true;
         }
 
-        return matchingName && (matchingAge || matchingBirthYear);
+        return matchingName && matchingAge;
       })
       .sort((left, right) => {
         const leftSameGroup = left.recipientGroupId === recipientDraft.recipientGroupId ? 0 : 1;
@@ -289,10 +283,10 @@ export function CampaignPeopleRecipientDrawer({
       })
       .slice(0, 4);
   }, [
-    computedBirthYear,
     computedDisplayLabel,
     recipient?.id,
     recipientDraft.age,
+    recipientDraft.ageUnit,
     recipientDraft.firstName,
     recipientDraft.lastName,
     recipientDraft.recipientGroupId,
@@ -336,7 +330,8 @@ export function CampaignPeopleRecipientDrawer({
           programType: recipientProgram.programType,
           firstName: recipientDraft.firstName?.trim() || null,
           lastName: recipientDraft.lastName?.trim() || null,
-          birthYear: computedBirthYear,
+          birthYear: recipientDraft.birthYear ?? null,
+          ageUnit: recipientDraft.age ? recipientDraft.ageUnit ?? 'YEARS' : null,
           gender: recipientDraft.gender?.trim() || null,
           addressLine1: recipientDraft.addressLine1?.trim() || null,
           addressLine2: recipientDraft.addressLine2?.trim() || null,
@@ -554,8 +549,7 @@ export function CampaignPeopleRecipientDrawer({
                         {[
                           candidate.programRecipientId,
                           candidate.group?.groupName,
-                          candidate.age !== null ? `Age ${candidate.age}` : null,
-                          candidate.birthYear !== null ? `Born ${candidate.birthYear}` : null,
+                          candidate.age !== null ? formatRecipientAge(candidate.age, candidate.ageUnit) : null,
                         ]
                           .filter(Boolean)
                           .join(' · ')}
@@ -689,7 +683,6 @@ export function CampaignPeopleRecipientDrawer({
                   setRecipientDraft((currentValue) => ({
                     ...currentValue,
                     age: event.target.value ? Number(event.target.value) : null,
-                    birthYear: event.target.value ? deriveBirthYear(Number(event.target.value)) : null,
                   }))
                 }
                 disabled={!canEdit}
@@ -697,15 +690,21 @@ export function CampaignPeopleRecipientDrawer({
             </label>
 
             <label className="form-label">
-              Birth Year
-              <input
-                className="form-control mt-2"
-                type="number"
-                min="1900"
-                max="3000"
-                value={computedBirthYear ?? ''}
-                disabled
-              />
+              Age Unit
+              <select
+                className="form-select mt-2"
+                value={recipientDraft.ageUnit ?? 'YEARS'}
+                onChange={(event) =>
+                  setRecipientDraft((currentValue) => ({
+                    ...currentValue,
+                    ageUnit: event.target.value as RecipientAgeUnit,
+                  }))
+                }
+                disabled={!canEdit}
+              >
+                <option value="YEARS">Years</option>
+                <option value="MONTHS">Months</option>
+              </select>
             </label>
 
             <label className="form-label">

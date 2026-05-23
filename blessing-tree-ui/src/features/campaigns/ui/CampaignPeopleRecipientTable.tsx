@@ -1,6 +1,8 @@
 import { Fragment, useMemo, useState } from 'react';
 import {
+  formatRecipientAge,
   formatShortDate,
+  recipientAgeSortValue,
   toGiftWorkflowStatusLabel,
   toRecipientProgramTypeLabel,
   toRecipientStatusLabel,
@@ -157,7 +159,7 @@ export function CampaignPeopleRecipientTable({
                   <td>{recipient.programRecipientId ?? '—'}</td>
                   <td>{toRecipientProgramTypeLabel(recipient.programType)}</td>
                   <td>{recipient.group?.groupName ?? 'No group'}</td>
-                  <td>{recipient.age ?? recipient.birthYear ?? 'Not set'}</td>
+                  <td>{formatRecipientAge(recipient.age, recipient.ageUnit)}</td>
                   <td>
                     {recipient.wishlist ? (
                       <strong>{recipient.wishlist.items.length} item{recipient.wishlist.items.length === 1 ? '' : 's'}</strong>
@@ -268,7 +270,7 @@ function getRecipientSortValue(recipient: CampaignRecipient, sortKey: RecipientS
     case 'group':
       return recipient.group?.groupName ?? '';
     case 'age':
-      return recipient.age ?? recipient.birthYear ?? -1;
+      return recipientAgeSortValue(recipient.age, recipient.ageUnit);
     case 'wishlist':
       return recipient.wishlist?.items.length ?? -1;
     case 'status':

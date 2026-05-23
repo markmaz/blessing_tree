@@ -98,6 +98,13 @@
 - Rationale: seasonal data-entry operators are likely to create duplicate records when working from overlapping paper lists or parallel intake sessions, and the system needs to prevent silent collisions without over-modeling a full master-data matching engine yet.
 - Consequence: exact duplicate person saves within the same group now return a `409` instead of relying on raw database failures, and the Family/Organization plus person drawers now show candidate existing matches based on entered name/address/abbreviation details so users can reopen an existing record instead of creating a new one.
 
+## Recipient Age Entry Direction
+
+- Status: active
+- Decision: keep numeric `age` as the stored value, add `age_unit = MONTHS | YEARS`, and default intake UI to `YEARS`.
+- Rationale: children can be under a year old, and operators need to enter infants precisely without falling back to artificial range buckets like `0-3 months`.
+- Consequence: recipient intake should capture `Age` plus `Age Unit`, months should be available for infants and very young children, older records without a saved unit should be treated as `YEARS` by default, and age displays/sorting should format and compare using the combined value+unit representation instead of assuming raw years.
+
 ## Campaign Schedule Direction
 
 - Status: active

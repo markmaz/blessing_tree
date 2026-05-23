@@ -4,6 +4,7 @@ import type {
   PreferredContact,
   RecipientGroupStatus,
   RecipientGroupType,
+  RecipientAgeUnit,
   RecipientKind,
   RecipientPrivacyLevel,
   RecipientProgramType,
@@ -36,6 +37,29 @@ export function toRecipientProgramTypeLabel(value: RecipientProgramType): string
 
 export function toRecipientKindLabel(value: RecipientKind): string {
   return value === 'CHILD' ? 'Child' : 'Adult';
+}
+
+export function formatRecipientAge(age: number | null, ageUnit?: RecipientAgeUnit | null): string {
+  if (age === null || age === undefined) {
+    return 'Not set';
+  }
+  const normalizedUnit = ageUnit ?? 'YEARS';
+  const unitLabel =
+    normalizedUnit === 'MONTHS'
+      ? age === 1
+        ? 'month'
+        : 'months'
+      : age === 1
+        ? 'year'
+        : 'years';
+  return `${age} ${unitLabel}`;
+}
+
+export function recipientAgeSortValue(age: number | null, ageUnit?: RecipientAgeUnit | null): number {
+  if (age === null || age === undefined) {
+    return -1;
+  }
+  return (ageUnit ?? 'YEARS') === 'MONTHS' ? age : age * 12;
 }
 
 export function toRecipientStatusLabel(value: RecipientStatus): string {

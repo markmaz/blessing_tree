@@ -12,6 +12,7 @@ import type {
 } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 import {
   formatContactDisplayName,
+  formatRecipientAge,
   formatShortDate,
   toGroupContactRoleLabel,
   toPreferredContactLabel,
@@ -1080,7 +1081,7 @@ export function CampaignPeopleGroupDrawer({
                           recipient.firstName && recipient.lastName
                             ? `${recipient.firstName} ${recipient.lastName}`
                             : null,
-                          recipient.age !== null ? `Age ${recipient.age}` : null,
+                          recipient.age !== null ? formatRecipientAge(recipient.age, recipient.ageUnit) : null,
                           recipient.facilityRoom ? `Room ${recipient.facilityRoom}` : null,
                           recipient.wishlist ? `Wishlist ${recipient.wishlist.wishlistStatus}` : 'No wishlist yet',
                         ]

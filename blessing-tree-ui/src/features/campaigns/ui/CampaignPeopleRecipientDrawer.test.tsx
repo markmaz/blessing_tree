@@ -84,6 +84,7 @@ const existingAdultRecipient: CampaignRecipient = {
   lastName: 'Smith',
   birthYear: 1942,
   age: 84,
+  ageUnit: 'YEARS',
   gender: 'F',
   addressLine1: null,
   addressLine2: null,
@@ -265,7 +266,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
     expect(screen.getByLabelText('Direct Phone')).toBeInTheDocument();
   });
 
-  it('derives display name from first and last name and birth year from age', async () => {
+  it('derives display name from first and last name and supports age units', async () => {
     const user = userEvent.setup();
 
     render(
@@ -290,9 +291,10 @@ describe('CampaignPeopleRecipientDrawer', () => {
     await user.type(screen.getByLabelText('First Name'), 'Ava');
     await user.type(screen.getByLabelText('Last Name'), 'Johnson');
     await user.type(screen.getByLabelText('Age'), '8');
+    await user.selectOptions(screen.getByLabelText('Age Unit'), 'MONTHS');
 
     expect(screen.getByLabelText('Child Display Name')).toHaveValue('Ava Johnson');
-    expect(screen.getByLabelText('Birth Year')).toHaveValue(new Date().getFullYear() - 8);
+    expect(screen.getByLabelText('Age Unit')).toHaveValue('MONTHS');
   });
 
   it('shows possible duplicate recipients during adult intake', async () => {

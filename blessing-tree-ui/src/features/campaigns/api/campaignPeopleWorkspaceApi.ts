@@ -97,6 +97,7 @@ interface RecipientResponse {
   last_name: string | null;
   birth_year: number | null;
   age: number | null;
+  age_unit: CampaignRecipient['ageUnit'];
   gender: string | null;
   address_line1: string | null;
   address_line2: string | null;
@@ -450,6 +451,7 @@ function mapRecipient(response: RecipientResponse): CampaignRecipient {
     lastName: response.last_name,
     birthYear: response.birth_year,
     age: response.age,
+    ageUnit: response.age_unit,
     gender: response.gender,
     addressLine1: response.address_line1,
     addressLine2: response.address_line2,
@@ -583,6 +585,7 @@ function mapRecipientPayload(input: Partial<RecipientUpsertInput>): Record<strin
   if ('lastName' in input) payload.last_name = input.lastName ?? null;
   if ('birthYear' in input) payload.birth_year = input.birthYear ?? null;
   if ('age' in input) payload.age = input.age ?? null;
+  if ('ageUnit' in input) payload.age_unit = input.ageUnit ?? null;
   if ('gender' in input) payload.gender = input.gender ?? null;
   if ('addressLine1' in input) payload.address_line1 = input.addressLine1 ?? null;
   if ('addressLine2' in input) payload.address_line2 = input.addressLine2 ?? null;

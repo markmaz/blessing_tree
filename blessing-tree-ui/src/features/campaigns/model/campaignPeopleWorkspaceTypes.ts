@@ -21,6 +21,7 @@ export type GroupContactRole =
 export type PreferredContact = 'EMAIL' | 'PHONE' | 'TEXT' | 'NONE';
 
 export type RecipientKind = 'CHILD' | 'ADULT';
+export type RecipientAgeUnit = 'MONTHS' | 'YEARS';
 
 export type RecipientProgramType = 'CHILD_FAMILY' | 'ORGANIZATION_CHILD' | 'ORGANIZATION_ADULT';
 
@@ -136,6 +137,7 @@ export interface CampaignRecipient {
   lastName: string | null;
   birthYear: number | null;
   age: number | null;
+  ageUnit?: RecipientAgeUnit | null;
   gender: string | null;
   addressLine1: string | null;
   addressLine2: string | null;
@@ -265,6 +267,7 @@ export interface RecipientUpsertInput {
   lastName?: string | null;
   birthYear?: number | null;
   age?: number | null;
+  ageUnit?: RecipientAgeUnit | null;
   gender?: string | null;
   addressLine1?: string | null;
   addressLine2?: string | null;
