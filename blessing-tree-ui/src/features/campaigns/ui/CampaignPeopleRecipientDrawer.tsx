@@ -28,6 +28,7 @@ interface CampaignPeopleRecipientDrawerProps {
   isOpen: boolean;
   isSaving: boolean;
   canEdit: boolean;
+  stayInCreateModeAfterSave?: boolean;
   recipient: CampaignRecipient | null;
   initialGroupId?: string | null;
   lockedGroupId?: string | null;
@@ -126,6 +127,7 @@ export function CampaignPeopleRecipientDrawer({
   isOpen,
   isSaving,
   canEdit,
+  stayInCreateModeAfterSave = false,
   recipient,
   initialGroupId = null,
   lockedGroupId = null,
@@ -318,7 +320,26 @@ export function CampaignPeopleRecipientDrawer({
         recipient?.id
       );
       if (savedRecipient) {
-        setSuccessMessage(recipient ? 'Person updated.' : 'Person added.');
+        const shouldStayInCreateMode = !recipient && stayInCreateModeAfterSave;
+        if (shouldStayInCreateMode) {
+          setRecipientDraft(buildRecipientDraft(null, lockedGroupId ?? savedRecipient.recipientGroupId));
+          setRecipientError(null);
+          setIsProfileSectionOpen(true);
+          resetItemDraft();
+        }
+        setSuccessMessage(
+          shouldStayInCreateMode
+            ? isHouseholdIntake
+              ? 'Child added. Ready for the next child.'
+              : isOrganizationChildIntake
+                ? 'Child added. Ready for the next child.'
+                : isOrganizationAdultIntake
+                  ? 'Adult added. Ready for the next person.'
+                  : 'Person added. Ready for the next person.'
+            : recipient
+              ? 'Person updated.'
+              : 'Person added.'
+        );
       }
     } catch (saveError) {
       setRecipientError(saveError instanceof Error ? saveError.message : 'Unable to save this person.');

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { CampaignPeopleRecipientDrawer } from '@/features/campaigns/ui/CampaignPeopleRecipientDrawer';
@@ -321,5 +321,66 @@ describe('CampaignPeopleRecipientDrawer', () => {
     await user.click(screen.getByRole('button', { name: /warm blanket/i }));
     expect(screen.getByRole('heading', { name: 'Edit Gift Item' })).toBeInTheDocument();
     expect(screen.getByLabelText('Description')).toHaveValue('Warm blanket');
+  });
+
+  it('can stay in create mode after saving a household child so another child can be entered immediately', async () => {
+    const user = userEvent.setup();
+    const onSaveRecipient = vi.fn().mockResolvedValue({
+      ...existingAdultRecipient,
+      id: 'recipient-new',
+      recipientGroupId: 'group-household',
+      recipientKind: 'CHILD',
+      programType: 'CHILD_FAMILY',
+      displayLabel: 'Ava Johnson',
+      firstName: 'Ava',
+      lastName: 'Johnson',
+      age: 8,
+      birthYear: new Date().getFullYear() - 8,
+      group: {
+        id: 'group-household',
+        groupName: 'Johnson Household',
+        groupType: 'HOUSEHOLD',
+        organizationType: null,
+        status: 'ACTIVE',
+      },
+      wishlist: null,
+    });
+
+    render(
+      <CampaignPeopleRecipientDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        stayInCreateModeAfterSave
+        recipient={null}
+        initialGroupId="group-household"
+        lockedGroupId="group-household"
+        groups={[householdGroup]}
+        recipients={[]}
+        onClose={vi.fn()}
+        onSaveRecipient={onSaveRecipient}
+        onSaveWishlistItem={vi.fn()}
+        onDeleteWishlistItem={vi.fn()}
+        onSelectExistingRecipient={vi.fn()}
+      />
+    );
+
+    await user.type(screen.getByLabelText('First Name'), 'Ava');
+    await user.type(screen.getByLabelText('Last Name'), 'Johnson');
+    await user.type(screen.getByLabelText('Age'), '8');
+    await user.click(screen.getByRole('button', { name: 'Create Person' }));
+
+    await waitFor(() => {
+      expect(onSaveRecipient).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Child added. Ready for the next child.')).toBeInTheDocument();
+    });
+
+    expect(screen.getByLabelText('First Name')).toHaveValue('');
+    expect(screen.getByLabelText('Last Name')).toHaveValue('');
+    expect(screen.getByLabelText('Age')).toHaveValue(null);
+    expect(screen.getByDisplayValue('Johnson Household')).toBeInTheDocument();
   });
 });

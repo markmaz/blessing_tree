@@ -247,6 +247,7 @@ export function PeopleIntakePage() {
         isOpen={selectedRecipient !== null || isCreateRecipientOpen}
         isSaving={isSaving}
         canEdit={canEditPeople}
+        stayInCreateModeAfterSave={isCreateRecipientOpen && selectedRecipient === null && createRecipientGroupId !== null}
         recipient={selectedRecipient}
         initialGroupId={createRecipientGroupId}
         lockedGroupId={createRecipientGroupId}
@@ -260,9 +261,15 @@ export function PeopleIntakePage() {
         onSaveRecipient={async (input, recipientId) => {
           const savedRecipient = await onSaveRecipient(input, recipientId);
           if (savedRecipient) {
-            setIsCreateRecipientOpen(false);
-            setCreateRecipientGroupId(savedRecipient.recipientGroupId);
-            setSelectedRecipientId(savedRecipient.id);
+            if (!recipientId && createRecipientGroupId) {
+              setIsCreateRecipientOpen(true);
+              setCreateRecipientGroupId(savedRecipient.recipientGroupId);
+              setSelectedRecipientId(null);
+            } else {
+              setIsCreateRecipientOpen(false);
+              setCreateRecipientGroupId(savedRecipient.recipientGroupId);
+              setSelectedRecipientId(savedRecipient.id);
+            }
           }
           return savedRecipient;
         }}
