@@ -124,7 +124,18 @@ export function CampaignPeopleRecipientTable({
 
             return (
               <Fragment key={recipient.id}>
-                <tr className="campaign-team-table__row campaign-people-recipient-parent-row">
+                <tr
+                  className="campaign-team-table__row campaign-people-recipient-parent-row"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onSelectRecipient(recipient.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      onSelectRecipient(recipient.id);
+                    }
+                  }}
+                >
                   <td>
                     {hasWishlistItems ? (
                       <button
@@ -132,7 +143,10 @@ export function CampaignPeopleRecipientTable({
                         className="campaign-people-group-row__toggle"
                         aria-expanded={isOpen}
                         aria-label={isOpen ? `Collapse ${recipient.displayLabel}` : `Expand ${recipient.displayLabel}`}
-                        onClick={() => toggleOpen(recipient.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleOpen(recipient.id);
+                        }}
                       >
                         <i className={`bi ${isOpen ? 'bi-chevron-down' : 'bi-chevron-right'}`} aria-hidden="true" />
                       </button>
@@ -141,11 +155,7 @@ export function CampaignPeopleRecipientTable({
                     )}
                   </td>
                   <td>
-                    <button
-                      type="button"
-                      className="campaign-people-row__link"
-                      onClick={() => onSelectRecipient(recipient.id)}
-                    >
+                    <div className="campaign-people-row__link">
                       <span className="campaign-people-row__name">{recipient.displayLabel}</span>
                       <span className="campaign-people-row__meta">
                         {recipient.group?.groupType === 'ORGANIZATION' && recipient.facilityRoom
@@ -154,7 +164,7 @@ export function CampaignPeopleRecipientTable({
                             ? `Gender ${recipient.gender}`
                             : 'No profile details yet'}
                       </span>
-                    </button>
+                    </div>
                   </td>
                   <td>{recipient.programRecipientId ?? '—'}</td>
                   <td>{toRecipientProgramTypeLabel(recipient.programType)}</td>
@@ -173,7 +183,10 @@ export function CampaignPeopleRecipientTable({
                       <button
                         type="button"
                         className="btn btn-outline-danger btn-sm"
-                        onClick={() => onRequestDeleteRecipient(recipient.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onRequestDeleteRecipient(recipient.id);
+                        }}
                       >
                         <i className="bi bi-trash3" aria-hidden="true" />
                         <span className="ms-2">Delete</span>

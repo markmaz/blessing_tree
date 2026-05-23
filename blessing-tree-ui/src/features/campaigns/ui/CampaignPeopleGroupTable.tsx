@@ -126,7 +126,18 @@ export function CampaignPeopleGroupTable({
 
             return (
               <Fragment key={group.id}>
-                <tr className="campaign-team-table__row campaign-people-group-parent-row">
+                <tr
+                  className="campaign-team-table__row campaign-people-group-parent-row"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onSelectGroup(group.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      onSelectGroup(group.id);
+                    }
+                  }}
+                >
                   <td className="campaign-people-group-cell">
                     <div className="campaign-people-group-row">
                       <button
@@ -134,20 +145,19 @@ export function CampaignPeopleGroupTable({
                         className="campaign-people-group-row__toggle"
                         aria-expanded={isOpen}
                         aria-label={isOpen ? `Collapse ${group.groupName}` : `Expand ${group.groupName}`}
-                        onClick={() => toggleOpen(group.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleOpen(group.id);
+                        }}
                       >
                         <i className={`bi ${isOpen ? 'bi-chevron-down' : 'bi-chevron-right'}`} aria-hidden="true" />
                       </button>
-                      <button
-                        type="button"
-                        className="campaign-people-group-row__link"
-                        onClick={() => onSelectGroup(group.id)}
-                      >
+                      <div className="campaign-people-group-row__link">
                         <span className="campaign-people-group-row__name">{group.groupName}</span>
                         <span className="campaign-people-group-row__meta">
                           {group.city && group.state ? `${group.city}, ${group.state}` : group.intakeSource ?? 'No source yet'}
                         </span>
-                      </button>
+                      </div>
                     </div>
                   </td>
                   <td>{toRecipientGroupTypeLabel(group.groupType)}</td>
@@ -176,7 +186,10 @@ export function CampaignPeopleGroupTable({
                       <button
                         type="button"
                         className="btn btn-outline-danger btn-sm"
-                        onClick={() => onRequestDeleteGroup(group.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onRequestDeleteGroup(group.id);
+                        }}
                       >
                         <i className="bi bi-trash3" aria-hidden="true" />
                         <span className="ms-2">Delete</span>
