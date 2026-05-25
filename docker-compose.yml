@@ -1,0 +1,98 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      BT_SITE_ADDRESS: ${BT_SITE_ADDRESS:-:80}
+    depends_on:
+      frontend:
+        condition: service_started
+    ports:
+      - "${BT_HTTP_PORT:-80}:80"
+      - "${BT_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./deploy/docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: blessing-tree-ui/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    image: blessing-tree-ui:${BT_IMAGE_TAG:-local}
+    depends_on:
+      api:
+        condition: service_started
+    expose:
+      - "80"
+    restart: unless-stopped
+
+  api:
+    build:
+      context: blessing-tree-api
+      dockerfile: Dockerfile
+    image: blessing-tree-api:${BT_IMAGE_TAG:-local}
+    env_file:
+      - ${BT_ENV_FILE:-deploy/docker/blessing-tree.env}
+    environment:
+      VALKEY_ADDRESS: ${VALKEY_ADDRESS:-valkey}
+      VALKEY_PORT: ${VALKEY_PORT:-6379}
+      BT_CELERY_WORKER_POOL: ${BT_CELERY_WORKER_POOL:-prefork}
+    depends_on:
+      valkey:
+        condition: service_healthy
+    restart: unless-stopped
+
+  celery-worker:
+    image: blessing-tree-api:${BT_IMAGE_TAG:-local}
+    env_file:
+      - ${BT_ENV_FILE:-deploy/docker/blessing-tree.env}
+    environment:
+      VALKEY_ADDRESS: ${VALKEY_ADDRESS:-valkey}
+      VALKEY_PORT: ${VALKEY_PORT:-6379}
+      BT_CELERY_WORKER_POOL: ${BT_CELERY_WORKER_POOL:-prefork}
+    command: ["celery", "-A", "app.celery.celery", "worker", "-Q", "bt", "--loglevel=INFO"]
+    depends_on:
+      api:
+        condition: service_started
+      valkey:
+        condition: service_healthy
+    restart: unless-stopped
+
+  celery-beat:
+    image: blessing-tree-api:${BT_IMAGE_TAG:-local}
+    env_file:
+      - ${BT_ENV_FILE:-deploy/docker/blessing-tree.env}
+    environment:
+      VALKEY_ADDRESS: ${VALKEY_ADDRESS:-valkey}
+      VALKEY_PORT: ${VALKEY_PORT:-6379}
+      BT_CELERY_WORKER_POOL: ${BT_CELERY_WORKER_POOL:-prefork}
+    command: ["celery", "-A", "app.celery.celery", "beat", "--loglevel=INFO", "--schedule=/var/lib/blessing-tree/celerybeat-schedule"]
+    depends_on:
+      api:
+        condition: service_started
+      valkey:
+        condition: service_healthy
+    volumes:
+      - celery-beat:/var/lib/blessing-tree
+    restart: unless-stopped
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    command: ["valkey-server", "--appendonly", "yes"]
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  caddy-config:
+  caddy-data:
+  celery-beat:
+  valkey-data:

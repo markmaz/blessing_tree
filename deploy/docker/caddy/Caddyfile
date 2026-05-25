@@ -1,0 +1,4 @@
+{$BT_SITE_ADDRESS::80} {
+	encode zstd gzip
+	reverse_proxy frontend:80
+}

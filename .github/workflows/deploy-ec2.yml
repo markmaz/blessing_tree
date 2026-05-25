@@ -2,9 +2,6 @@ name: Deploy to EC2
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 concurrency:
   group: deploy-ec2

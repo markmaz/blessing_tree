@@ -1,0 +1,14 @@
+services:
+  frontend:
+    image: ${BT_UI_IMAGE:?BT_UI_IMAGE is required}
+    build: null
+
+  api:
+    image: ${BT_API_IMAGE:?BT_API_IMAGE is required}
+    build: null
+
+  celery-worker:
+    image: ${BT_API_IMAGE:?BT_API_IMAGE is required}
+
+  celery-beat:
+    image: ${BT_API_IMAGE:?BT_API_IMAGE is required}
