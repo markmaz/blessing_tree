@@ -46,7 +46,18 @@ class ScanEvent(Base):
     )
 
     action_taken: Mapped[str] = mapped_column(
-        Enum("LOOKUP", "MARK_RECEIVED", "MARK_WRAPPED", "MARK_PICKED_UP", "REPRINT", "ERROR", name="scan_action_taken"),
+        Enum(
+            "LOOKUP",
+            "MARK_RECEIVED",
+            "MARK_WRAPPED",
+            "MARK_READY",
+            "MARK_DISTRIBUTED",
+            "MARK_PICKED_UP",
+            "REPRINT",
+            "MARK_EXCEPTION",
+            "ERROR",
+            name="scan_action_taken",
+        ),
         nullable=False,
         default="LOOKUP",
     )

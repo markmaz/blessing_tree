@@ -11,18 +11,22 @@ import {
   deleteCommunicationSchedule,
   getCampaignStudio,
   saveCampaignMilestones,
+  sendCommunicationTemplateTestEmail,
+  updateCampaignGiftPolicy,
   updateCommunicationTemplate,
   updateCommunicationSchedule,
 } from '@/features/campaigns/api/campaignStudioApi';
 import { createCampaignAssignment } from '@/features/campaigns/api/campaignStudioTeamApi';
 import type {
   CampaignStudioData,
+  CommunicationTemplateTestEmailResult,
   CommunicationTemplate,
   CreateCampaignAssignmentInput,
   CreateCampaignEventInput,
   CreateCommunicationScheduleInput,
   CreateCommunicationTemplateInput,
   SaveCampaignMilestoneInput,
+  UpdateCampaignGiftPolicyInput,
   UpdateCommunicationTemplateInput,
   UpdateCommunicationScheduleInput,
   UpdateCampaignEventInput,
@@ -159,6 +163,38 @@ export function useCampaignStudio(campaignId: string | null) {
     );
   };
 
+  const sendTemplateTestEmail = async (
+    templateId: string,
+    recipientEmail?: string
+  ): Promise<CommunicationTemplateTestEmailResult | null> => {
+    if (!campaignId) {
+      return null;
+    }
+    setState((currentState) => ({
+      ...currentState,
+      isSaving: true,
+      error: null,
+      saveMessage: null,
+    }));
+
+    try {
+      const result = await sendCommunicationTemplateTestEmail(campaignId, templateId, recipientEmail);
+      setState((currentState) => ({
+        ...currentState,
+        isSaving: false,
+        saveMessage: `Test email sent to ${result.recipientEmail}.`,
+      }));
+      return result;
+    } catch (testEmailError) {
+      setState((currentState) => ({
+        ...currentState,
+        isSaving: false,
+        error: toErrorMessage(testEmailError, 'Unable to send test email'),
+      }));
+      return null;
+    }
+  };
+
   const addCommunicationSchedule = async (input: CreateCommunicationScheduleInput) => {
     if (!campaignId) {
       return false;
@@ -180,6 +216,18 @@ export function useCampaignStudio(campaignId: string | null) {
         await saveCampaignMilestones(campaignId, milestones);
       },
       'Milestones saved.'
+    );
+  };
+
+  const patchGiftPolicy = async (input: UpdateCampaignGiftPolicyInput) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await updateCampaignGiftPolicy(campaignId, input);
+      },
+      'Gift rules saved.'
     );
   };
 
@@ -341,10 +389,12 @@ export function useCampaignStudio(campaignId: string | null) {
     addCommunicationTemplate,
     patchCommunicationTemplate,
     removeCommunicationTemplate,
+    sendTemplateTestEmail,
     addCommunicationSchedule,
     patchCommunicationSchedule,
     removeCommunicationSchedule,
     persistMilestones,
+    patchGiftPolicy,
     addScheduleEvent,
     updateScheduleEvent,
     removeScheduleEvent,

@@ -1,14 +1,30 @@
 import { useMemo, useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import {
+  buildCampaignGiftsOperationsPath,
+  buildCampaignGiftsPoolPath,
+  buildCampaignGiftsReportsPath,
+  buildCampaignGiftsSearchPath,
   buildCampaignPeopleDirectoryPath,
   buildCampaignPeopleIntakePath,
+  buildCampaignPeopleReportsPath,
+  buildCampaignSponsorsDirectoryPath,
+  buildCampaignSponsorsIntakePath,
+  buildCampaignSponsorsReportsPath,
   routes,
 } from '@/app/routes';
 import { useAppFeatures } from '@/features/admin/model/appFeaturesContext';
 import { useAuth } from '@/features/auth/model/authContext';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
-import { isAppAdminRole } from '@/features/campaigns/model/campaignPermissions';
+import {
+  canUseGiftOperations,
+  canUseGiftPool,
+  canUseGiftSearch,
+  canViewPeople,
+  canViewReports,
+  canViewSponsors,
+  isAppAdminRole,
+} from '@/features/campaigns/model/campaignPermissions';
 
 interface SidebarNavProps {
   isOpen: boolean;
@@ -20,6 +36,7 @@ interface SidebarChildItem {
   label: string;
   to: string;
   icon: string;
+  featureKey?: string;
 }
 
 interface SidebarItem {
@@ -57,17 +74,62 @@ const navItems: SidebarItem[] = [
         to: routes.CAMPAIGNS,
         icon: 'bi-search',
       },
+      {
+        label: 'Reports',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-clipboard-data',
+        featureKey: 'reports',
+      },
     ],
   },
   {
-    label: 'Donations',
-    to: routes.DONATIONS,
-    icon: 'bi-cash-stack',
+    label: 'Sponsors',
+    to: routes.CAMPAIGNS,
+    icon: 'bi-award',
+    children: [
+      {
+        label: 'Intake',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-person-plus',
+      },
+      {
+        label: 'Directory',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-search-heart',
+      },
+      {
+        label: 'Reports',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-clipboard2-pulse',
+      },
+    ],
   },
   {
-    label: 'Reports',
-    to: routes.REPORTS,
-    icon: 'bi-clipboard-data',
+    label: 'Gifts',
+    to: routes.CAMPAIGNS,
+    icon: 'bi-gift',
+    children: [
+      {
+        label: 'Search',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-search',
+      },
+      {
+        label: 'Operations',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-clipboard-check',
+      },
+      {
+        label: 'Gift Pool',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-box-seam',
+      },
+      {
+        label: 'Gift Status',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-clipboard2-pulse',
+      },
+    ],
   },
   {
     label: 'Admin',
@@ -78,6 +140,11 @@ const navItems: SidebarItem[] = [
         label: 'User Management',
         to: routes.ADMIN_USERS,
         icon: 'bi-people-fill',
+      },
+      {
+        label: 'Campaign Operations',
+        to: routes.ADMIN_CAMPAIGN_OPERATIONS,
+        icon: 'bi-signpost-split',
       },
       {
         label: 'LLM Configuration',
@@ -102,12 +169,17 @@ export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNav
   const location = useLocation();
   const { role } = useAuth();
   const { isFeatureEnabled } = useAppFeatures();
-  const { selectedCampaignId, selectedCampaign } = useCampaigns();
+  const { campaigns = [], selectedCampaignId, selectedCampaign } = useCampaigns();
   const locationCampaignId = (() => {
     const match = location.pathname.match(/^\/campaigns\/([^/]+)/);
     return match?.[1] ?? null;
   })();
   const resolvedCampaignId = selectedCampaignId ?? locationCampaignId;
+  const campaignAccess =
+    campaigns.find((campaign) => campaign.id === resolvedCampaignId)?.userAccess ??
+    (selectedCampaign?.id === resolvedCampaignId ? selectedCampaign.userAccess : null);
+  const campaignAccessIsPending = Boolean(resolvedCampaignId && !campaignAccess);
+  const canShowDuringCampaignLoad = (allowed: boolean) => campaignAccessIsPending || allowed;
   const resolvedNavItems = useMemo(
     () =>
       navItems.map((item) =>
@@ -120,20 +192,98 @@ export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNav
                 to: resolvedCampaignId
                   ? child.label === 'Directory'
                     ? buildCampaignPeopleDirectoryPath(resolvedCampaignId)
-                    : buildCampaignPeopleIntakePath(resolvedCampaignId)
+                    : child.label === 'Reports'
+                      ? buildCampaignPeopleReportsPath(resolvedCampaignId)
+                      : buildCampaignPeopleIntakePath(resolvedCampaignId)
                   : routes.CAMPAIGNS,
               })),
             }
+          : item.label === 'Sponsors'
+            ? {
+                ...item,
+                to: resolvedCampaignId ? buildCampaignSponsorsIntakePath(resolvedCampaignId) : routes.CAMPAIGNS,
+                children: item.children?.map((child) => ({
+                  ...child,
+                  to: resolvedCampaignId
+                    ? child.label === 'Directory'
+                      ? buildCampaignSponsorsDirectoryPath(resolvedCampaignId)
+                      : child.label === 'Reports'
+                        ? buildCampaignSponsorsReportsPath(resolvedCampaignId)
+                        : buildCampaignSponsorsIntakePath(resolvedCampaignId)
+                    : routes.CAMPAIGNS,
+                })),
+              }
+          : item.label === 'Gifts'
+            ? {
+                ...item,
+                to: resolvedCampaignId ? buildCampaignGiftsSearchPath(resolvedCampaignId) : routes.CAMPAIGNS,
+                children: item.children?.map((child) => ({
+                  ...child,
+                  to: resolvedCampaignId
+                    ? child.label === 'Operations'
+                      ? buildCampaignGiftsOperationsPath(resolvedCampaignId)
+                      : child.label === 'Gift Pool'
+                        ? buildCampaignGiftsPoolPath(resolvedCampaignId)
+                        : child.label === 'Gift Status'
+                          ? buildCampaignGiftsReportsPath(resolvedCampaignId)
+                      : buildCampaignGiftsSearchPath(resolvedCampaignId)
+                    : routes.CAMPAIGNS,
+                })),
+              }
           : item
       ),
     [resolvedCampaignId]
   );
-  const visibleItems = resolvedNavItems.filter((item) => {
-    if (item.label === 'People') return isFeatureEnabled('people');
-    if (item.to === routes.DONATIONS) return isFeatureEnabled('donations');
-    if (item.to === routes.REPORTS) return isFeatureEnabled('reports');
-    if (item.to === routes.ADMIN) return isAppAdminRole(role);
-    return true;
+  const visibleItems = resolvedNavItems.flatMap((item) => {
+    const visibleChildren = item.children?.filter((child) => {
+      if (child.featureKey && !isFeatureEnabled(child.featureKey)) {
+        return false;
+      }
+
+      if (item.label === 'People') {
+        if (child.label === 'Reports') {
+          return canShowDuringCampaignLoad(canViewReports(campaignAccess));
+        }
+        return canShowDuringCampaignLoad(canViewPeople(campaignAccess));
+      }
+
+      if (item.label === 'Sponsors') {
+        if (child.label === 'Reports') {
+          return canShowDuringCampaignLoad(canViewReports(campaignAccess));
+        }
+        return canShowDuringCampaignLoad(canViewSponsors(campaignAccess));
+      }
+
+      if (item.label === 'Gifts') {
+        if (child.label === 'Search') {
+          return isFeatureEnabled('sponsors') && canShowDuringCampaignLoad(canUseGiftSearch(campaignAccess));
+        }
+        if (child.label === 'Operations') {
+          return isFeatureEnabled('sponsors') && canShowDuringCampaignLoad(canUseGiftOperations(campaignAccess));
+        }
+        if (child.label === 'Gift Pool') {
+          return isFeatureEnabled('donations') && canShowDuringCampaignLoad(canUseGiftPool(campaignAccess));
+        }
+        if (child.label === 'Gift Status') {
+          return isFeatureEnabled('reports') && canShowDuringCampaignLoad(canViewReports(campaignAccess));
+        }
+      }
+
+      return true;
+    });
+    const visibleItem = {
+      ...item,
+      children: visibleChildren,
+    };
+    if (visibleItem.label === 'People') {
+      return isFeatureEnabled('people') && visibleItem.children?.length ? [visibleItem] : [];
+    }
+    if (visibleItem.label === 'Sponsors') {
+      return isFeatureEnabled('sponsors') && visibleItem.children?.length ? [visibleItem] : [];
+    }
+    if (visibleItem.label === 'Gifts') return visibleItem.children?.length ? [visibleItem] : [];
+    if (item.to === routes.ADMIN) return isAppAdminRole(role) ? [visibleItem] : [];
+    return [visibleItem];
   });
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const defaultExpandedGroups = useMemo(
@@ -163,7 +313,7 @@ export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNav
       <nav className="sidebar-nav">
         {visibleItems.map((item) => (
           <div key={item.label} className="sidebar-nav-group">
-            {item.label === 'People' && !resolvedCampaignId ? null : item.children?.length ? (
+            {(item.label === 'People' || item.label === 'Sponsors' || item.label === 'Gifts') && !resolvedCampaignId ? null : item.children?.length ? (
               (() => {
                 const isExpanded = expandedGroups[item.label] ?? defaultExpandedGroups[item.label] ?? false;
 
@@ -272,7 +422,10 @@ function isSidebarItemActive(item: SidebarItem, pathname: string) {
   if (item.label === 'Campaigns') {
     return (
       pathname === routes.CAMPAIGNS ||
-      (/^\/campaigns\/[^/]+$/.test(pathname) && !pathname.includes('/people')) ||
+      (/^\/campaigns\/[^/]+$/.test(pathname) &&
+        !pathname.includes('/people') &&
+        !pathname.includes('/sponsors') &&
+        !pathname.includes('/gifts')) ||
       /^\/campaigns\/[^/]+\/studio$/.test(pathname)
     );
   }

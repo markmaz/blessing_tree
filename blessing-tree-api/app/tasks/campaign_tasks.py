@@ -12,6 +12,7 @@ from app.features.campaigns.automation_lifecycle_service import (
     CampaignAutomationLifecycleService,
 )
 from app.features.campaigns.automation_repository import CampaignAutomationRepository
+from app.features.gifts.reminder_service import GiftReminderService
 from app.features.campaigns.runtime_health import record_campaign_worker_heartbeat
 
 
@@ -28,6 +29,14 @@ def advance_lifecycle_task() -> dict[str, object]:
     return _run_task(
         task_name="advance_lifecycle",
         action=_advance_lifecycle,
+    )
+
+
+@celery.task(name=f"{BT_TASK_NAMESPACE}.campaigns.evaluate_gift_reminders")
+def evaluate_gift_reminders_task() -> dict[str, object]:
+    return _run_task(
+        task_name="evaluate_gift_reminders",
+        action=_evaluate_gift_reminders,
     )
 
 
@@ -82,3 +91,31 @@ def _advance_lifecycle() -> dict[str, object]:
         "activated": activation_results,
         "closed": closure_results,
     }
+
+
+def _evaluate_gift_reminders() -> dict[str, object]:
+    service = GiftReminderService()
+    now = datetime.now(UTC).replace(tzinfo=None)
+    with SessionLocal() as db:
+        return service.evaluate_due_rules(db, now=now)
+
+
+@celery.task(name=f"{BT_TASK_NAMESPACE}.campaigns.send_public_sponsor_verification_email")
+def send_public_sponsor_verification_email_task(
+    email: str,
+    display_name: str,
+    campaign_name: str,
+    public_slug: str,
+    verification_token: str,
+) -> None:
+    app = create_app()
+    with app.app_context():
+        from app.email.mailer import send_public_sponsor_verification_email
+
+        send_public_sponsor_verification_email(
+            email=email,
+            display_name=display_name,
+            campaign_name=campaign_name,
+            public_slug=public_slug,
+            verification_token=verification_token,
+        )

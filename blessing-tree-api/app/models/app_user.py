@@ -14,6 +14,7 @@ from .uuid_bin import UUIDBin
 if TYPE_CHECKING:
     from .auth import AuthIdentity
     from .campaign_member import CampaignMember
+    from .app_user_settings import AppUserSettings
     from app.features.rbac.models.campaign_user_role import CampaignUserRole
 
 
@@ -52,4 +53,11 @@ class AppUser(Base):
     campaign_members: Mapped[List["CampaignMember"]] = relationship(
         back_populates="app_user",
         passive_deletes=True,
+    )
+
+    settings: Mapped[Optional["AppUserSettings"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        uselist=False,
     )

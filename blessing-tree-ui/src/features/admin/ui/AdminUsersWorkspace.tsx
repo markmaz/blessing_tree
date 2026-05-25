@@ -16,6 +16,7 @@ import {
 import {
   createAdminInvite,
   resendAdminInvite,
+  updateAdminUserRole,
   updateAdminUserStatus,
 } from '@/features/admin/api/adminApi';
 import { AdminUserInviteDrawer } from '@/features/admin/ui/AdminUserInviteDrawer';
@@ -148,6 +149,24 @@ export function AdminUsersWorkspace({
     }
   };
 
+  const handleUpdateUserRole = async (userId: string, role: string) => {
+    setIsSaving(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await updateAdminUserRole(userId, role);
+      await onDataChanged();
+      setSuccessMessage('User app access updated.');
+    } catch (roleError) {
+      setErrorMessage(
+        roleError instanceof Error ? roleError.message : 'Unable to update user app access.'
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <>
       <div className="content-card admin-users-workspace">
@@ -249,9 +268,11 @@ export function AdminUsersWorkspace({
       <AdminUserDetailDrawer
         isOpen={selectedUser !== null}
         user={selectedUser}
+        roleCatalog={roleCatalog}
         isSaving={isSaving}
         onClose={() => setSelectedUser(null)}
         onResendInvite={(invitationId) => void handleResendInvite(invitationId)}
+        onUpdateRole={(userId, role) => void handleUpdateUserRole(userId, role)}
       />
     </>
   );

@@ -17,9 +17,11 @@ from app.celery import celery, init_celery
 from app.config import FRONTEND_BASE_URL, LOG_QUEUE, VALKEY_ADDRESS, VALKEY_CONFIG, VALKEY_PORT
 from app.exceptions.service_error import ServiceError
 from app.extensions import mail
+from app.features.account import account_ns
 from app.features.admin import admin_ns
 from app.features.campaigns import campaign_ns
 from app.features.meta import meta_ns
+from app.features.public import public_ns
 from app.routes.auth_routes import auth_ns, init_oauth
 from app.services.auth import AuthService
 from app.utils import build_url
@@ -108,9 +110,11 @@ def create_app():
     )
 
     api.add_namespace(auth_ns, path=build_url("/", NAME, VERSION, "auth"))
+    api.add_namespace(account_ns, path=build_url("/", NAME, VERSION, "account"))
     api.add_namespace(admin_ns, path=build_url("/", NAME, VERSION, "admin"))
     api.add_namespace(campaign_ns, path=build_url("/", NAME, VERSION, "campaigns"))
     api.add_namespace(meta_ns, path=build_url("/", NAME, VERSION, "meta"))
+    api.add_namespace(public_ns, path=build_url("/", NAME, VERSION, "public"))
 
     @api.errorhandler(ServiceError)
     def handle_api_service_error(error):

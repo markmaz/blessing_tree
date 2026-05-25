@@ -15,6 +15,7 @@ import type {
   CommunicationTemplate,
   CreateCommunicationTemplateInput,
   UpdateCommunicationTemplateInput,
+  CommunicationTemplateTestEmailResult,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudioSectionCard';
 import { CampaignStudioTemplateLibrary } from '@/features/campaigns/ui/CampaignStudioTemplateLibrary';
@@ -34,6 +35,10 @@ interface CampaignStudioCommunicationsSectionProps {
     input: UpdateCommunicationTemplateInput
   ) => Promise<CommunicationTemplate | null>;
   onDeleteTemplate: (templateId: string) => Promise<boolean>;
+  onSendTestEmail?: (
+    templateId: string,
+    recipientEmail?: string
+  ) => Promise<CommunicationTemplateTestEmailResult | null>;
 }
 
 export function CampaignStudioCommunicationsSection({
@@ -45,6 +50,7 @@ export function CampaignStudioCommunicationsSection({
   onCreateTemplate,
   onUpdateTemplate,
   onDeleteTemplate,
+  onSendTestEmail,
 }: CampaignStudioCommunicationsSectionProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
     templates[0]?.id ?? null
@@ -197,6 +203,11 @@ export function CampaignStudioCommunicationsSection({
               })
             }
             onSave={handleSave}
+            onSendTestEmail={(recipientEmail) =>
+              selectedTemplateId && onSendTestEmail
+                ? onSendTestEmail(selectedTemplateId, recipientEmail)
+                : Promise.resolve(null)
+            }
             onInsertMergeField={handleInsertMergeField}
             onFocusTarget={setFocusedTarget}
           />

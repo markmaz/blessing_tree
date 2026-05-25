@@ -125,7 +125,7 @@ def test_get_campaign_capabilities_unions_multiple_active_roles() -> None:
     db.close()
 
 
-def test_get_campaign_capabilities_prefers_member_access_roles_when_member_exists() -> None:
+def test_get_campaign_capabilities_unions_member_and_direct_user_roles() -> None:
     db = _build_session()
     service = AuthorizationService()
     user = _create_user("VOLUNTEER")
@@ -166,7 +166,7 @@ def test_get_campaign_capabilities_prefers_member_access_roles_when_member_exist
     capabilities = service.get_campaign_capabilities(db, user.id, campaign.id)
 
     assert CAMPAIGN_GIFTS_CHECK_IN_CAPABILITY in capabilities
-    assert CAMPAIGN_DONATIONS_EDIT_CAPABILITY not in capabilities
+    assert CAMPAIGN_DONATIONS_EDIT_CAPABILITY in capabilities
     db.close()
 
 

@@ -6,24 +6,28 @@ import pytest
 
 from app.features.campaigns import api as campaign_api_module
 from app.features.campaigns import recipient_api as recipient_api_module
+from app.models.campaign_gift_policy import CampaignGiftPolicy
 from app.models.group_contact import GroupContact
 from app.models.recipient import Recipient
 from app.models.recipient_constants import (
     GROUP_CONTACT_ROLE_PARENT,
     PREFERRED_CONTACT_EMAIL,
     RECIPIENT_GROUP_STATUS_ACTIVE,
-    RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
+    RECIPIENT_GROUP_TYPE_ORGANIZATION,
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
     RECIPIENT_KIND_ADULT,
     RECIPIENT_KIND_CHILD,
     RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
-    RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
+    RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
     RECIPIENT_STATUS_ACTIVE,
     WISHLIST_ITEM_TYPE_GIFT,
     WISHLIST_STATUS_READY,
 )
 from app.models.recipient_group import RecipientGroup
+from app.models.sponsor import Sponsor
+from app.models.sponsorship import Sponsorship
+from app.models.sponsorship_item import SponsorshipItem
 from app.models.wishlist import Wishlist
 from app.models.wishlist_item import WishlistItem
 from tests.features.campaigns.studio_test_support import (
@@ -50,11 +54,12 @@ def _seed_household_group(session, campaign_id):
     return group
 
 
-def _seed_adult_program_group(session, campaign_id):
+def _seed_organization_group(session, campaign_id):
     group = RecipientGroup(
         id=uuid.uuid4(),
         campaign_id=campaign_id,
-        group_type=RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
+        group_type=RECIPIENT_GROUP_TYPE_ORGANIZATION,
+        organization_type="SENIOR_PROGRAM",
         group_name="Senior At Home",
         program_abbreviation="SAH",
         status=RECIPIENT_GROUP_STATUS_ACTIVE,
@@ -81,7 +86,8 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     facility = RecipientGroup(
         id=uuid.uuid4(),
         campaign_id=campaign.id,
-        group_type=RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
+        group_type=RECIPIENT_GROUP_TYPE_ORGANIZATION,
+        organization_type="SENIOR_PROGRAM",
         group_name="Maple Grove",
         program_abbreviation="MG",
         status=RECIPIENT_GROUP_STATUS_ACTIVE,
@@ -113,7 +119,7 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
         campaign_id=campaign.id,
         recipient_group_id=facility.id,
         recipient_kind=RECIPIENT_KIND_ADULT,
-        program_type=RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
+        program_type=RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
         privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
         display_label="Mary Smith",
         program_recipient_number=1,
@@ -131,21 +137,53 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     )
     session.add(wishlist)
     session.flush()
-    session.add(
-        WishlistItem(
-            id=uuid.uuid4(),
-            wishlist_id=wishlist.id,
-            item_type=WISHLIST_ITEM_TYPE_GIFT,
-            description="Toy train",
-            qty_requested=1,
-            priority="MEDIUM",
-            allow_substitute=True,
-            status="OPEN",
-            qty_fulfilled=0,
-            label_code="people-workspace-item-1",
-            label_version=1,
-        )
+    open_item = WishlistItem(
+        id=uuid.uuid4(),
+        wishlist_id=wishlist.id,
+        item_type=WISHLIST_ITEM_TYPE_GIFT,
+        description="Toy train",
+        qty_requested=1,
+        priority="MEDIUM",
+        allow_substitute=True,
+        status="OPEN",
+        qty_fulfilled=0,
+        label_code="people-workspace-item-1",
+        label_version=1,
     )
+    distributed_item = WishlistItem(
+        id=uuid.uuid4(),
+        wishlist_id=wishlist.id,
+        item_type=WISHLIST_ITEM_TYPE_GIFT,
+        description="Blanket",
+        qty_requested=1,
+        priority="MEDIUM",
+        allow_substitute=True,
+        status="DISTRIBUTED",
+        qty_fulfilled=0,
+        label_code="people-workspace-item-2",
+        label_version=1,
+    )
+    sponsor = Sponsor(
+        id=uuid.uuid4(),
+        display_name="Sponsor One",
+        preferred_contact="EMAIL",
+        source="STAFF_ENTRY",
+    )
+    sponsorship = Sponsorship(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        sponsor_id=sponsor.id,
+        status="ACTIVE",
+        interest_status="COMMITTED",
+        drop_off_status="RECEIVED",
+    )
+    sponsorship_item = SponsorshipItem(
+        id=uuid.uuid4(),
+        sponsorship_id=sponsorship.id,
+        wishlist_item_id=distributed_item.id,
+        qty_committed=1,
+    )
+    session.add_all([open_item, distributed_item, sponsor, sponsorship, sponsorship_item])
     manager_id = str(manager.id)
     campaign_id = str(campaign.id)
     session.commit()
@@ -165,9 +203,9 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     assert payload["counts"]["recipient_count"] == 2
     assert payload["counts"]["wishlist_count"] == 1
     assert payload["counts"]["open_item_count"] == 1
-    assert payload["counts"]["sponsored_item_count"] == 0
-    assert payload["counts"]["fulfilled_item_count"] == 0
-    assert payload["counts"]["ready_for_pickup_item_count"] == 0
+    assert payload["counts"]["sponsored_item_count"] == 1
+    assert payload["counts"]["fulfilled_item_count"] == 1
+    assert payload["counts"]["ready_for_pickup_item_count"] == 1
     assert payload["counts"]["picked_up_item_count"] == 0
     assert payload["counts"]["groups_with_pickup_contacts_count"] == 1
     assert payload["counts"]["groups_missing_primary_contact_count"] == 1
@@ -177,8 +215,12 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     assert payload["groups"][0]["contacts"][0]["email"] == "sarah@example.com"
     assert payload["groups"][0]["authorized_pickup_contacts"][0]["email"] == "sarah@example.com"
     assert payload["groups"][0]["workflow_summary"]["open_item_count"] == 1
-    assert payload["recipients"][0]["wishlist"]["items"][0]["gift_workflow"]["label_code"] == "people-workspace-item-1"
-    assert payload["recipients"][0]["wishlist"]["items"][0]["gift_workflow"]["sponsorship_status"] == "UNSPONSORED"
+    open_payload_item = next(
+        item
+        for item in payload["recipients"][0]["wishlist"]["items"]
+        if item["gift_workflow"]["label_code"] == "people-workspace-item-1"
+    )
+    assert open_payload_item["gift_workflow"]["sponsorship_status"] == "UNSPONSORED"
     assert payload["recipients"][0]["workflow_summary"]["open_item_count"] == 1
     assert sorted(payload["filters"]["program_types"]) == [
         RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
@@ -290,6 +332,56 @@ def test_group_recipient_and_wishlist_crud_flow(app, monkeypatch: pytest.MonkeyP
     assert payload["items"][0]["description"] == "Soccer ball"
     assert payload["items"][0]["size"] == "Youth"
     assert payload["items"][0]["gift_workflow"]["remaining_qty"] == 1
+
+
+def test_wishlist_item_create_enforces_campaign_gift_policy_limit(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    household = _seed_household_group(session, campaign.id)
+    recipient = Recipient(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        recipient_group_id=household.id,
+        recipient_kind=RECIPIENT_KIND_CHILD,
+        program_type=RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+        privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+        display_label="Eli Johnson",
+        status=RECIPIENT_STATUS_ACTIVE,
+    )
+    session.add_all(
+        [
+            recipient,
+            CampaignGiftPolicy(
+                id=uuid.uuid4(),
+                campaign_id=campaign.id,
+                max_wishlist_items_per_recipient=1,
+            ),
+        ]
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    recipient_id = str(recipient.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    first_response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/recipients/{recipient_id}/wishlist/items",
+        json={"description": "Soccer ball"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    second_response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/recipients/{recipient_id}/wishlist/items",
+        json={"description": "Art kit"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 409
+    assert "allows up to 1 wishlist gifts" in second_response.get_json()["error"]
 
 
 def test_group_and_recipient_delete_flow(app, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -420,7 +512,7 @@ def test_recipient_program_alignment_rejects_invalid_group_program_combination(a
         json={
             "recipient_group_id": group_id,
             "recipient_kind": "ADULT",
-            "program_type": "ADULT_PROGRAM",
+            "program_type": "ORGANIZATION_ADULT",
             "privacy_level": "FULL_NAME",
             "display_label": "Invalid Household Adult",
         },
@@ -431,16 +523,16 @@ def test_recipient_program_alignment_rejects_invalid_group_program_combination(a
     assert "Household groups" in response.get_json()["error"]
 
 
-def test_adult_program_recipient_accepts_direct_contact_fields(app, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_organization_recipient_accepts_direct_contact_fields(app, monkeypatch: pytest.MonkeyPatch) -> None:
     install_auth(monkeypatch)
     session = campaign_api_module.SessionLocal()
     manager = seed_user(session, name="Manager User")
     campaign = seed_campaign(session)
     assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
-    adult_program = _seed_adult_program_group(session, campaign.id)
+    organization = _seed_organization_group(session, campaign.id)
     manager_id = str(manager.id)
     campaign_id = str(campaign.id)
-    group_id = str(adult_program.id)
+    group_id = str(organization.id)
     session.commit()
     session.close()
 
@@ -450,7 +542,7 @@ def test_adult_program_recipient_accepts_direct_contact_fields(app, monkeypatch:
         json={
             "recipient_group_id": group_id,
             "recipient_kind": "ADULT",
-            "program_type": "ADULT_PROGRAM",
+            "program_type": "ORGANIZATION_ADULT",
             "privacy_level": "FULL_NAME",
             "display_label": "Mary Carter",
             "first_name": "Mary",
@@ -467,7 +559,7 @@ def test_adult_program_recipient_accepts_direct_contact_fields(app, monkeypatch:
 
     assert response.status_code == 201
     payload = response.get_json()
-    assert payload["program_type"] == RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM
+    assert payload["program_type"] == RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT
     assert payload["program_recipient_number"] == 1
     assert payload["program_recipient_id"] == "SAH-001"
     assert payload["address_line1"] == "12 River Road"

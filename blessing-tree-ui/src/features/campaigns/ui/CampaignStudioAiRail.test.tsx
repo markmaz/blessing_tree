@@ -21,6 +21,8 @@ const campaign: Campaign = {
   year: 2026,
   description: 'Demo campaign',
   seasonTheme: 'Grace & Renewal',
+  publicSponsorSlug: null,
+  publicSponsorSignupEnabled: false,
   status: 'ACTIVE',
   startDate: '2026-11-01',
   endDate: '2026-12-20',

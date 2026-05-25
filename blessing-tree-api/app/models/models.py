@@ -16,14 +16,19 @@ from .admin_user_invitation import AdminUserInvitation
 from .app_user import AppUser
 from .app_feature_flag import AppFeatureFlag
 from .auth import AuthIdentity
+from .app_user_settings import AppUserSettings
 from .base import Base
 from .campaign import Campaign
 from .campaign_automation_execution import CampaignAutomationExecution
 from .campaign_communication_schedule import CampaignCommunicationSchedule
 from .campaign_event import CampaignEvent
+from .campaign_gift_policy import CampaignGiftPolicy
+from .campaign_gift_reminder_rule import CampaignGiftReminderRule
 from .campaign_member import CampaignMember
 from .campaign_member_access_role import CampaignMemberAccessRole
 from .campaign_milestone import CampaignMilestone
+from .campaign_milestone_definition import CampaignMilestoneDefinition
+from .campaign_readiness_rule_definition import CampaignReadinessRuleDefinition
 from .campaign_team import CampaignTeam
 from .campaign_team_member import CampaignTeamMember
 from .campaign_team_role import CampaignTeamRole
@@ -31,10 +36,12 @@ from .communication_template import CommunicationTemplate
 from .donation import Donation
 from .donation_line import DonationLine
 from .fulfillment import Fulfillment
+from .gift_reservation import GiftReservation
 from .group_contact import GroupContact
 from .item_event import ItemEvent
 from .label_print_item import LabelPrintItem
 from .label_print_job import LabelPrintJob
+from .pending_sponsor_registration import PendingSponsorRegistration
 from .pickup import Pickup
 from .pickup_item import PickupItem
 from .recipient import Recipient
@@ -55,6 +62,7 @@ __all__ = [
     "AdminUserInvitation",
     "AppUser",
     "AppFeatureFlag",
+    "AppUserSettings",
     "AuthIdentity",
     "Base",
     "CampaignUserRole",
@@ -62,9 +70,13 @@ __all__ = [
     "CampaignAutomationExecution",
     "CampaignCommunicationSchedule",
     "CampaignEvent",
+    "CampaignGiftPolicy",
+    "CampaignGiftReminderRule",
     "CampaignMember",
     "CampaignMemberAccessRole",
     "CampaignMilestone",
+    "CampaignMilestoneDefinition",
+    "CampaignReadinessRuleDefinition",
     "CampaignTeam",
     "CampaignTeamMember",
     "CampaignTeamRole",
@@ -72,10 +84,12 @@ __all__ = [
     "Donation",
     "DonationLine",
     "Fulfillment",
+    "GiftReservation",
     "GroupContact",
     "ItemEvent",
     "LabelPrintItem",
     "LabelPrintJob",
+    "PendingSponsorRegistration",
     "Pickup",
     "PickupItem",
     "Recipient",

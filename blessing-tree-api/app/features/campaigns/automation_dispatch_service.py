@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
@@ -19,6 +20,10 @@ from app.features.campaigns.automation_constants import (
 from app.features.campaigns.automation_repository import CampaignAutomationRepository
 from app.features.campaigns.recipient_resolver import CampaignRecipientResolver
 from app.features.campaigns.template_renderer import CampaignTemplateRenderer
+from app.features.campaigns.studio_constants import COMMUNICATION_AUDIENCE_SPONSOR
+from app.models.sponsor_constants import SPONSOR_INTERACTION_ORIGIN_CAMPAIGN_COMMUNICATION
+from app.models.sponsor_interaction import SponsorInteraction
+from app.models.sponsorship import Sponsorship
 
 
 class CampaignAutomationDispatchService:
@@ -97,6 +102,7 @@ class CampaignAutomationDispatchService:
         delivered_count = 0
         failed_count = 0
         errors: list[str] = []
+        sponsor_contacted_ids: list[str] = []
         for recipient in recipients:
             subject, html_body, text_body = self.template_renderer.render(
                 campaign_name=schedule.campaign.name,
@@ -113,10 +119,21 @@ class CampaignAutomationDispatchService:
                     text_body=text_body,
                 )
                 delivered_count += 1
+                if recipient.sponsor_id:
+                    sponsor_contacted_ids.append(recipient.sponsor_id)
             except Exception as exc:
                 failed_count += 1
                 if len(errors) < 5:
                     errors.append(f"{recipient.email}: {exc}")
+
+        if schedule.template.audience == COMMUNICATION_AUDIENCE_SPONSOR:
+            self._record_sponsor_communications(
+                db,
+                schedule=schedule,
+                recipients=recipients,
+                delivered_sponsor_ids=sponsor_contacted_ids,
+                subject=subject if recipients else schedule.template.subject_template,
+            )
 
         if delivered_count == 0:
             self.repository.mark_schedule_attempt(
@@ -197,3 +214,44 @@ class CampaignAutomationDispatchService:
         )
         db.commit()
         return {"schedule_id": str(schedule.id), "status": CAMPAIGN_AUTOMATION_STATUS_BLOCKED}
+
+    def _record_sponsor_communications(
+        self,
+        db: Session,
+        *,
+        schedule,
+        recipients,
+        delivered_sponsor_ids: list[str],
+        subject: str,
+    ) -> None:
+        occurred_at = datetime.now(UTC).replace(tzinfo=None)
+        delivered_id_set = set(delivered_sponsor_ids)
+        for recipient in recipients:
+            if not recipient.sponsor_id:
+                continue
+            sponsorship = (
+                db.query(Sponsorship)
+                .filter(
+                    Sponsorship.campaign_id == schedule.campaign_id,
+                    Sponsorship.sponsor_id == recipient.sponsor_id,
+                )
+                .one_or_none()
+            )
+            if sponsorship is None:
+                continue
+            interaction = SponsorInteraction(
+                id=uuid.uuid4(),
+                campaign_id=schedule.campaign_id,
+                sponsor_id=sponsorship.sponsor_id,
+                channel="EMAIL",
+                direction="OUTBOUND",
+                subject=subject,
+                origin_type=SPONSOR_INTERACTION_ORIGIN_CAMPAIGN_COMMUNICATION,
+                outcome="COMPLETED" if recipient.sponsor_id in delivered_id_set else "BOUNCED",
+                notes=f"Campaign schedule {schedule.id} delivered to sponsor audience.",
+                occurred_at=occurred_at,
+                related_sponsorship_id=sponsorship.id,
+                related_schedule_id=schedule.id,
+            )
+            db.add(interaction)
+            sponsorship.sponsor.last_contacted_at = occurred_at

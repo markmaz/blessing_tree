@@ -1,11 +1,11 @@
 # Active Workstreams
 
-Last updated: 2026-05-22
+Last updated: 2026-05-25
 
 ## Current Phase
 
 - Active roadmap phase: Phase 3
-- Current step: The sponsor design and implementation plan are now documented; the next implementation step is phase 1 of the sponsor workspace plan: refine the sponsor domain and add the pending public registration foundation
+- Current step: Gift workflow and sponsor self-registration polish is in progress. User access implementation is complete for the current phase, and the latest work moved public sponsor gift selection behind email verification, added explicit Sponsor Flyer navigation, relabeled `Season Theme` as `Campaign Purpose`, and added near-real-time polling to the Gift Status page.
 
 ## Recently Completed
 
@@ -146,15 +146,62 @@ Last updated: 2026-05-22
 - Promoted additional coding rules into engineering policy for file size, single responsibility, version bumps, review, commit discipline, naming, and feature-driven backend structure
 - Promoted additional delivery rules into engineering policy for migrations, backend-authoritative authz, additive APIs, shared-module scope, tests, and doc updates
 - Initialized a single top-level Git repository with root `.gitignore` and `.gitattributes`
+- Started sponsor workspace implementation with sponsor-domain refinement, `pending_sponsor_registration`, public sponsor campaign config fields, campaign-scoped sponsor CRUD endpoints, sponsor interaction endpoints, public sponsor signup/verification endpoints, and staff/public sponsor frontend pages
+- Verified the current sponsor slice on 2026-05-23 with:
+  - `./.venv/bin/python -m pytest tests/features/campaigns/test_sponsor_api.py` from `blessing-tree-api` (`4 passed`)
+  - `npm run build` from `blessing-tree-ui` (passed with the existing Vite large-chunk warning)
+  - `npm test` from `blessing-tree-ui` (`23 files passed`, `82 tests passed`)
+- Applied and verified `V023__Sponsor_Workspace_Foundation.sql` and `V024__Campaign_Public_Sponsor_Config.sql` against local MySQL `blessing_tree` on 2026-05-23, including sponsor/sponsorship/interaction/campaign columns, `pending_sponsor_registration`, and expected new indexes
+- Fixed a backend startup regression discovered during live smoke testing by lazily resolving `send_public_sponsor_verification_email_task` from the public sponsor API, avoiding a `factory -> public API -> campaign_tasks -> factory` circular import
+- Live-smoke-tested the sponsor slice on 2026-05-23 against a fresh backend/frontend pair using disposable smoke data:
+  - protected sponsor workspace initial load, sponsor create, interaction create, and sponsor search all returned expected HTTP responses
+  - public sponsor config, public signup submission, and verification flow returned expected HTTP responses
+  - browser smoke verified protected Sponsors Directory, Intake, Reports, Campaign Studio sponsor flyer, and public sponsor signup pages with no page errors, console errors, or failed non-favicon responses
+- Implemented the admin-managed milestone/readiness backend foundation with `campaign_milestone_definition`, `campaign_readiness_rule_definition`, admin Campaign Operations APIs, seeded sponsor readiness blockers, and database-backed missing-milestone readiness evaluation
+- Applied and verified `V025__Admin_Milestone_Readiness_Definitions.sql` against local MySQL `blessing_tree`
+- Completed the next milestone/readiness phase by wiring Campaign Studio milestone validation, frontend milestone dropdowns, and Campaign Studio AI milestone draft/normalizer paths to database-defined milestone definitions as the runtime source
+- Added the initial Admin -> Campaign Operations UI with typed frontend API mapping, navigation, milestone definition create/edit, and missing-milestone readiness rule create/edit flows
+- Polished Admin -> Campaign Operations with milestone referenced-rule visibility, rule impact preview copy, and explicit confirmation gates before deactivating active system milestone definitions or system readiness rules
+- Completed sponsor polish pass for API contract and mail behavior:
+  - public sponsor verification responses now map backend snake-case sponsor payloads into the frontend camel-case verification screen contract
+  - public sponsor config registration metadata now maps `starts_on`, `ends_on`, and `missing_milestones`
+  - public sponsor signup no longer fails the request when Celery/email delivery is unavailable; it returns an explicit `email_delivery_status`
+  - sponsor workspace open-need counts now only count open wishlist items
+  - focused frontend API tests cover public sponsor config, signup delivery status, and verification mapping
+- Removed the old recipient runtime compatibility aliases for `ADULT_PROGRAM`/facility-style names; backend runtime and tests now use `ORGANIZATION`, `organization_type`, and `ORGANIZATION_ADULT` directly
+- Implemented campaign user access management:
+  - simplified campaign roles to Campaign Manager, People, Sponsors, Gift Operations, Gift Search, Reports Only, and View Only
+  - added Admin User Management campaign-access GET/PUT APIs and a simple one-select-per-campaign drawer UI
+  - changed authorization to union direct `campaign_user_role` grants with member access-role grants
+  - added frontend capability helpers, sidebar filtering, and protected route capability gates
+  - refined gift workflow endpoint guards around search, commit, operations, pool, distribution, and reports
+  - applied and verified `V033__User_Access_Role_Catalog.sql` against local MySQL `blessing_tree`; remaining legacy role key count is 0
+- Implemented gift workflow/reporting polish:
+  - Gift Status visual report now supports drawer actions, manual status changes including picked up/distributed, gift tag printing, and near-real-time visible-tab polling so scan updates appear without manual refresh
+  - left navigation now uses `Gift Status` for the visual gift report and no longer exposes the old Donations menu item
+  - gift tag content now focuses on recipient/family-or-group/age/gender plus QR code and purpose-based theme treatment instead of internal IDs or gift descriptions
+  - focused frontend build passed after the polling change
+- Implemented sponsor flyer/campaign purpose polish:
+  - Campaign Studio now has explicit Sponsor Flyer links in the header and Overview, plus an `Open Sponsor Flyer` action in Settings for existing campaigns
+  - user-facing `Season Theme` copy is now `Campaign Purpose`; storage/API still use `season_theme`
+  - current purpose-to-image treatment is simple keyword-based icon/accent mapping for gift tags; a real campaign asset/theme editor is still open
+- Implemented verify-first public sponsor self-registration:
+  - public signup page is now Blessing Tree branded and only collects sponsor/contact details before verification
+  - public verification page now owns NL gift search and gift reservation after the email token is verified
+  - backend ignores pre-verification selected gift IDs and exposes `POST /api/v1/public/campaigns/<public_slug>/sponsors/verified-gifts` for verified gift commits
+  - verification result payload now includes `selection_limit`
+  - verified with `.venv/bin/python -m pytest tests/features/campaigns/test_sponsor_api.py -q`, `npm test -- src/features/campaigns/api/publicSponsorApi.test.ts --run`, and `npm run build`
 
 ## Immediate Next Steps
 
-1. Replace the current non-household recipient runtime naming/model from `ADULT_PROGRAM` to `ORGANIZATION` plus `organization_type`
-2. Validate sponsorship/fulfillment/pickup UI flows against the refined recipient model, especially for organization-submitted direct-contact/address scenarios
-3. Add workflow polish for People intake and directory around organization coordination, sorting, and search ergonomics
-4. Use teams, team roles, and member filters as audience sources in the Communications builder and future scheduler flows
-5. Improve automation/admin ergonomics around retries, SMTP/LLM configuration visibility, and richer execution diagnostics
+1. Live browser-check the latest public sponsor signup -> email verification -> verified gift search/reserve flow with the user-controlled backend/frontend processes
+2. Live browser-check Sponsor Flyer navigation/print and Gift Status auto-refresh after a public scan action
+3. Live browser-check Admin -> User Management campaign-access assignment and restricted user sessions for the major role bundles
+4. Decide whether to build the Sponsor Flyer editor next: editable copy/instructions/logo/artwork/theme, PDF/export treatment, and print-friendly QA
+5. Decide the next depth for `Campaign Purpose`: keep keyword icon mapping, add selectable assets, or integrate LLM/image generation for purpose-themed gift tags
+6. Continue QueryForge-style NL reporting/querying design/implementation after the current gift/sponsor surfaces are verified
 
 ## Blockers Or Ambiguities
 
 - Query Forge is a good source for auth/config patterns, but not all of its runtime surface belongs in Blessing Tree
+- The user controls local backend/frontend/Celery processes; do not start long-running app or worker processes unless explicitly asked

@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session, sessionmaker
 import app.models.models  # noqa: F401
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns import campaign_ns
+from app.features.public import public_ns
 
 
 @compiles(TINYINT, "sqlite")
@@ -37,17 +38,27 @@ def app(monkeypatch: pytest.MonkeyPatch) -> Generator[Flask, None, None]:
 
     Base.metadata.create_all(engine)
     session_factory = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+    seed_session = session_factory()
+    _seed_default_milestone_definitions(seed_session)
+    seed_session.commit()
+    seed_session.close()
     session_manager = _SessionManager(session_factory)
 
     monkeypatch.setattr("app.features.campaigns.api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.campaigns.recipient_api.SessionLocal", session_manager)
+    monkeypatch.setattr("app.features.campaigns.sponsor_api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.campaigns.studio_api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.campaigns.team_api.SessionLocal", session_manager)
+    monkeypatch.setattr("app.features.gifts.api.SessionLocal", session_manager)
+    monkeypatch.setattr("app.features.gifts.public_api.SessionLocal", session_manager)
+    monkeypatch.setattr("app.features.public.sponsor_public_api.SessionLocal", session_manager)
+    monkeypatch.setattr("app.features.public.sponsor_public_api._enforce_rate_limit", lambda **_kwargs: None)
     monkeypatch.setattr("app.features.rbac.decorators.SessionLocal", session_manager)
 
     app = Flask(__name__)
     api = Api(app)
     api.add_namespace(campaign_ns, path="/api/v1/campaigns")
+    api.add_namespace(public_ns, path="/api/v1/public")
 
     @api.errorhandler(ServiceError)
     def handle_api_service_error(error: ServiceError):
@@ -117,3 +128,21 @@ def assign_role(db: Session, user, campaign, role_key: str):
     db.add(assignment)
     db.flush()
     return assignment
+
+
+def _seed_default_milestone_definitions(db: Session) -> None:
+    from app.features.campaigns.studio_constants import MILESTONE_DEFINITIONS
+    from app.models.campaign_milestone_definition import CampaignMilestoneDefinition
+
+    for sort_order, (milestone_key, label) in enumerate(MILESTONE_DEFINITIONS.items(), start=1):
+        db.add(
+            CampaignMilestoneDefinition(
+                id=uuid.uuid4(),
+                milestone_key=milestone_key,
+                label=label,
+                feature_area="GENERAL",
+                default_sort_order=sort_order,
+                is_active=True,
+                is_system=True,
+            )
+        )

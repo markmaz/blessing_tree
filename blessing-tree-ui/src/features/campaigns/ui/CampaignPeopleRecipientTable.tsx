@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   formatRecipientAge,
   formatShortDate,
@@ -8,6 +8,7 @@ import {
   toRecipientStatusLabel,
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
 import type { CampaignRecipient } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
+import { clampTablePage, TablePagination } from '@/shared/ui/TablePagination';
 
 interface CampaignPeopleRecipientTableProps {
   recipients: CampaignRecipient[];
@@ -27,6 +28,8 @@ export function CampaignPeopleRecipientTable({
   const [sortKey, setSortKey] = useState<RecipientSortKey>('person');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [openRecipientIds, setOpenRecipientIds] = useState<Record<string, boolean>>({});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const sortedRecipients = useMemo(() => {
     const sorted = [...recipients];
@@ -47,6 +50,15 @@ export function CampaignPeopleRecipientTable({
     return sorted;
   }, [recipients, sortDirection, sortKey]);
 
+  useEffect(() => {
+    setPage((currentPage) => clampTablePage(currentPage, sortedRecipients.length, pageSize));
+  }, [pageSize, sortedRecipients.length]);
+
+  const pagedRecipients = useMemo(() => {
+    const safePage = clampTablePage(page, sortedRecipients.length, pageSize);
+    return sortedRecipients.slice((safePage - 1) * pageSize, safePage * pageSize);
+  }, [page, pageSize, sortedRecipients]);
+
   const handleSort = (nextKey: RecipientSortKey) => {
     if (sortKey === nextKey) {
       setSortDirection((currentValue) => (currentValue === 'asc' ? 'desc' : 'asc'));
@@ -66,8 +78,9 @@ export function CampaignPeopleRecipientTable({
   }
 
   return (
-    <div className="campaign-team-table-wrap">
-      <table className="table campaign-team-table mb-0">
+    <>
+      <div className="campaign-team-table-wrap">
+        <table className="table campaign-team-table mb-0">
         <thead>
           <tr>
             <th style={{ width: 40 }} />
@@ -118,7 +131,7 @@ export function CampaignPeopleRecipientTable({
           </tr>
         </thead>
         <tbody>
-          {sortedRecipients.map((recipient) => {
+          {pagedRecipients.map((recipient) => {
             const hasWishlistItems = (recipient.wishlist?.items.length ?? 0) > 0;
             const isOpen = !!openRecipientIds[recipient.id];
 
@@ -241,8 +254,20 @@ export function CampaignPeopleRecipientTable({
             );
           })}
         </tbody>
-      </table>
-    </div>
+        </table>
+      </div>
+      <TablePagination
+        page={page}
+        pageSize={pageSize}
+        totalItems={sortedRecipients.length}
+        itemLabel="people"
+        onPageChange={setPage}
+        onPageSizeChange={(nextPageSize) => {
+          setPageSize(nextPageSize);
+          setPage(1);
+        }}
+      />
+    </>
   );
 }
 

@@ -13,6 +13,8 @@ def serialize_campaign(campaign: Campaign) -> dict[str, Any]:
         "year": campaign.year,
         "description": campaign.description,
         "season_theme": campaign.season_theme,
+        "public_sponsor_slug": campaign.public_sponsor_slug,
+        "public_sponsor_signup_enabled": bool(campaign.public_sponsor_signup_enabled),
         "status": campaign.status,
         "start_date": _serialize_date(campaign.start_date),
         "end_date": _serialize_date(campaign.end_date),

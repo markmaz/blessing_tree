@@ -16,12 +16,14 @@ if TYPE_CHECKING:
     from .campaign_member import CampaignMember
     from .campaign_team import CampaignTeam
     from .campaign_communication_schedule import CampaignCommunicationSchedule
+    from .campaign_gift_reminder_rule import CampaignGiftReminderRule
     from .communication_template import CommunicationTemplate
     from .campaign_milestone import CampaignMilestone
     from app.features.rbac.models.campaign_user_role import CampaignUserRole
     from .donation import Donation
     from .label_print_job import LabelPrintJob
     from .pickup import Pickup
+    from .pending_sponsor_registration import PendingSponsorRegistration
     from .recipient_group import RecipientGroup
     from .scan_event import ScanEvent
     from .sponsor_interaction import SponsorInteraction
@@ -37,6 +39,8 @@ class Campaign(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     season_theme: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    public_sponsor_slug: Mapped[Optional[str]] = mapped_column(String(120), nullable=True, unique=True, index=True)
+    public_sponsor_signup_enabled: Mapped[bool] = mapped_column(nullable=False, default=False)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
 
     start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
@@ -118,6 +122,11 @@ class Campaign(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    pending_sponsor_registrations: Mapped[List["PendingSponsorRegistration"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
     milestones: Mapped[List["CampaignMilestone"]] = relationship(
         back_populates="campaign",
         cascade="all, delete-orphan",
@@ -129,6 +138,11 @@ class Campaign(Base):
         passive_deletes=True,
     )
     communication_templates: Mapped[List["CommunicationTemplate"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    gift_reminder_rules: Mapped[List["CampaignGiftReminderRule"]] = relationship(
         back_populates="campaign",
         cascade="all, delete-orphan",
         passive_deletes=True,

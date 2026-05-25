@@ -1,0 +1,125 @@
+.gift-workflow-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.gift-workflow-page .campaign-studio-page__header {
+  margin-bottom: 0.25rem;
+}
+
+.gift-workflow-page > .content-card,
+.gift-workflow-page > .campaign-team-workspace__section,
+.gift-workflow-page > .alert,
+.gift-workflow-page > .campaign-studio__stat-grid {
+  margin-block: 0;
+}
+
+.gift-workflow-page .content-card,
+.gift-workflow-page .campaign-team-workspace__section {
+  padding: 1.2rem;
+}
+
+.gift-workflow-page .campaign-studio__stat-grid {
+  gap: 0.85rem;
+}
+
+.gift-workflow-page .campaign-team-toolbar {
+  gap: 1rem;
+}
+
+.gift-workflow-page .campaign-team-drawer__stack {
+  gap: 1.15rem;
+}
+
+.gift-tag-preview {
+  height: 100%;
+  border: 1px solid rgba(31, 122, 77, 0.18);
+  border-radius: 0.65rem;
+  background: #ffffff;
+  padding: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.gift-tag-preview__topline,
+.gift-tag-preview__body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.gift-tag-preview__campaign {
+  color: var(--blessing-text-light);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.gift-tag-preview__theme {
+  width: 2.15rem;
+  height: 2.15rem;
+  min-width: 2.15rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--gift-tag-accent, #5d3581) 12%, white);
+  color: var(--gift-tag-accent, #5d3581);
+  font-size: 1.1rem;
+}
+
+.gift-tag-preview__recipient {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.gift-tag-preview__label {
+  color: var(--blessing-text-light);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.gift-tag-preview__recipient strong {
+  color: var(--blessing-text-dark);
+  font-size: 1.05rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.gift-tag-preview__recipient span:not(.gift-tag-preview__label) {
+  color: var(--blessing-text-light);
+  font-size: 0.88rem;
+  line-height: 1.25;
+}
+
+.gift-tag-preview__scan-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  color: var(--blessing-purple-dark);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media print {
+  .gift-tag-preview__scan-link {
+    display: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .gift-workflow-page {
+    gap: 1rem;
+  }
+
+  .gift-workflow-page .content-card,
+  .gift-workflow-page .campaign-team-workspace__section {
+    padding: 1rem;
+  }
+}

@@ -98,6 +98,11 @@ export interface CampaignWorkflowRollup {
   readyForPickupItemCount: number;
   pickedUpItemCount: number;
   openItemCount: number;
+  coverageRule?: 'ONE_GIFT_SPONSORED' | 'MIN_GIFTS_SPONSORED' | 'ALL_GIFTS_SPONSORED';
+  coverageRequiredCount?: number;
+  coverageSponsoredCount?: number;
+  coverageRemainingCount?: number;
+  coverageMet?: boolean;
 }
 
 export interface CampaignWishlist {
@@ -198,6 +203,8 @@ export interface CampaignPeopleWorkspaceCounts {
   fulfilledItemCount: number;
   readyForPickupItemCount: number;
   pickedUpItemCount: number;
+  recipientsCoveredCount?: number;
+  recipientsNeedingGiftsCount?: number;
   groupsWithPickupContactsCount: number;
   groupsMissingPrimaryContactCount: number;
   adultsWithDirectContactCount: number;

@@ -1,5 +1,6 @@
 import type {
   CampaignMilestone,
+  CampaignMilestoneDefinition,
   CampaignScheduleItem,
   CommunicationSchedule,
   CommunicationTemplate,
@@ -21,6 +22,7 @@ interface CampaignStudioScheduleModalProps {
   isEditing: boolean;
   item: CampaignScheduleItem | null;
   selectedDate: string | null;
+  milestoneDefinitions: CampaignMilestoneDefinition[];
   milestones: CampaignMilestone[];
   schedules: CommunicationSchedule[];
   templates: CommunicationTemplate[];
@@ -45,6 +47,7 @@ export function CampaignStudioScheduleModal({
   isEditing,
   item,
   selectedDate,
+  milestoneDefinitions,
   milestones,
   schedules,
   templates,
@@ -128,6 +131,7 @@ export function CampaignStudioScheduleModal({
 
         {editorType === 'milestone' ? (
           <CampaignStudioScheduleMilestoneEditor
+            milestoneDefinitions={milestoneDefinitions}
             milestones={milestones}
             editingItem={item}
             selectedDate={selectedDate}
@@ -139,6 +143,7 @@ export function CampaignStudioScheduleModal({
 
         {editorType === 'communication' ? (
           <CampaignStudioScheduleCommunicationEditor
+            milestoneDefinitions={milestoneDefinitions}
             schedules={schedules}
             templates={templates}
             editingScheduleId={item?.sourceType === 'communication' ? item.sourceId : null}

@@ -22,6 +22,8 @@ interface CampaignResponse {
   year: number;
   description: string | null;
   season_theme: string | null;
+  public_sponsor_slug: string | null;
+  public_sponsor_signup_enabled: boolean;
   status: Campaign['status'];
   start_date: string | null;
   end_date: string | null;
@@ -154,6 +156,8 @@ function mapCampaign(campaign: CampaignResponse): Campaign {
     year: campaign.year,
     description: campaign.description,
     seasonTheme: campaign.season_theme,
+    publicSponsorSlug: campaign.public_sponsor_slug,
+    publicSponsorSignupEnabled: campaign.public_sponsor_signup_enabled,
     status: campaign.status,
     startDate: campaign.start_date,
     endDate: campaign.end_date,
@@ -177,6 +181,8 @@ function serializeCampaignUpsertInput(input: CampaignUpsertInput) {
     year: input.year,
     description: input.description,
     season_theme: input.seasonTheme,
+    public_sponsor_slug: input.publicSponsorSlug ?? null,
+    public_sponsor_signup_enabled: input.publicSponsorSignupEnabled ?? false,
     status: input.status,
     start_date: input.startDate,
     end_date: input.endDate,

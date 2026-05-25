@@ -26,9 +26,6 @@ COMMUNICATION_AUDIENCES = frozenset(
 COMMUNICATION_AUDIENCE_ALIASES = {
     "FAMILY": COMMUNICATION_AUDIENCE_HOUSEHOLD_CONTACT,
     "FACILITY": COMMUNICATION_AUDIENCE_ORGANIZATION_CONTACT,
-    "ADULT_PROGRAM": COMMUNICATION_AUDIENCE_ORGANIZATION_CONTACT,
-    "ADULT_PROGRAM_CONTACT": COMMUNICATION_AUDIENCE_ORGANIZATION_CONTACT,
-    "CARE_FACILITY_CONTACT": COMMUNICATION_AUDIENCE_ORGANIZATION_CONTACT,
     "ORGANIZATION": COMMUNICATION_AUDIENCE_ORGANIZATION_CONTACT,
     "PRIMARY_CONTACT": COMMUNICATION_AUDIENCE_GROUP_PRIMARY_CONTACT,
     "RECIPIENT_DIRECT": COMMUNICATION_AUDIENCE_ADULT_RECIPIENT_DIRECT,
@@ -103,6 +100,8 @@ CAMPAIGN_EVENT_SOURCE_COMMUNICATION = "communication"
 MILESTONE_DEFINITIONS = {
     "registration_open": "Registration Opens",
     "registration_close": "Registration Closes",
+    "sponsor_registration_start": "Sponsor Registration Starts",
+    "sponsor_registration_end": "Sponsor Registration Ends",
     "sponsor_outreach_start": "Sponsor Outreach Starts",
     "gift_intake_start": "Gift Intake Starts",
     "gift_intake_end": "Gift Intake Ends",
@@ -111,7 +110,25 @@ MILESTONE_DEFINITIONS = {
     "campaign_close": "Campaign Closes",
 }
 
-REQUIRED_MILESTONE_KEYS = frozenset(MILESTONE_DEFINITIONS.keys())
+REQUIRED_MILESTONE_KEYS = frozenset(
+    {
+        "registration_open",
+        "registration_close",
+        "sponsor_outreach_start",
+        "gift_intake_start",
+        "gift_intake_end",
+        "pickup_start",
+        "pickup_end",
+        "campaign_close",
+    }
+)
+PUBLIC_SPONSOR_REQUIRED_MILESTONE_KEYS = frozenset(
+    {
+        "sponsor_registration_start",
+        "sponsor_registration_end",
+        "gift_intake_end",
+    }
+)
 
 READINESS_READY = "READY"
 READINESS_NEEDS_ATTENTION = "NEEDS_ATTENTION"

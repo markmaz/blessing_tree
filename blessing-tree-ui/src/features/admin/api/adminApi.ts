@@ -3,6 +3,7 @@ import type {
   AdminFeatureFlag,
   AdminFeaturesPayload,
   AdminHealthPayload,
+  AdminUserCampaignAccessPayload,
   AdminInvitation,
   AdminLlmModelsPayload,
   AdminLlmPayload,
@@ -43,6 +44,27 @@ function normalizeUserPayload(payload: AdminUsersPayload): AdminUsersPayload {
       roleKey: item.roleKey ?? (item as unknown as { role_key?: string }).role_key ?? '',
       label: item.label,
       description: item.description,
+      capabilities: item.capabilities ?? [],
+    })),
+  };
+}
+
+function normalizeCampaignAccessPayload(payload: AdminUserCampaignAccessPayload): AdminUserCampaignAccessPayload {
+  return {
+    userId: payload.userId ?? (payload as unknown as { user_id?: string }).user_id ?? '',
+    roleCatalog: (payload.roleCatalog ??
+      (payload as unknown as { role_catalog?: AdminUserCampaignAccessPayload['roleCatalog'] }).role_catalog ??
+      []
+    ).map((item) => ({
+      roleKey: item.roleKey ?? (item as unknown as { role_key?: string }).role_key ?? '',
+      label: item.label,
+      description: item.description,
+      capabilities: item.capabilities ?? [],
+    })),
+    campaigns: (payload.campaigns ?? []).map((row) => ({
+      campaign: row.campaign,
+      roleKeys: row.roleKeys ?? (row as unknown as { role_keys?: string[] }).role_keys ?? [],
+      capabilities: row.capabilities ?? [],
     })),
   };
 }
@@ -166,6 +188,54 @@ export async function updateAdminUserStatus(
     invitations: [],
     roleCatalog: [],
   }).users[0];
+}
+
+export async function updateAdminUserRole(
+  userId: string,
+  role: string
+): Promise<AdminUsersPayload['users'][number]> {
+  const payload = await apiFetchJson<{ user: AdminUsersPayload['users'][number] }>(
+    `/api/v1/admin/users/${userId}/role`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    }
+  );
+  return normalizeUserPayload({
+    users: [payload.user],
+    invitations: [],
+    roleCatalog: [],
+  }).users[0];
+}
+
+export async function fetchAdminUserCampaignAccess(
+  userId: string
+): Promise<AdminUserCampaignAccessPayload> {
+  const payload = await apiFetchJson<AdminUserCampaignAccessPayload>(
+    `/api/v1/admin/users/${userId}/campaign-access`
+  );
+  return normalizeCampaignAccessPayload(payload);
+}
+
+export async function updateAdminUserCampaignAccess(
+  userId: string,
+  assignments: Array<{ campaignId: string; roleKeys: string[] }>
+): Promise<AdminUserCampaignAccessPayload> {
+  const payload = await apiFetchJson<AdminUserCampaignAccessPayload>(
+    `/api/v1/admin/users/${userId}/campaign-access`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        assignments: assignments.map((assignment) => ({
+          campaign_id: assignment.campaignId,
+          role_keys: assignment.roleKeys,
+        })),
+      }),
+    }
+  );
+  return normalizeCampaignAccessPayload(payload);
 }
 
 export async function fetchAdminLlmConfig(): Promise<AdminLlmPayload> {

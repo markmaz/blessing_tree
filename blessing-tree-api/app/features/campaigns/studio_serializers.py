@@ -11,7 +11,9 @@ from app.features.campaigns.serializers import (
 from app.features.rbac.models.campaign_user_role import CampaignUserRole
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
 from app.models.campaign_event import CampaignEvent
+from app.models.campaign_gift_policy import CampaignGiftPolicy
 from app.models.campaign_milestone import CampaignMilestone
+from app.models.campaign_milestone_definition import CampaignMilestoneDefinition
 from app.models.communication_template import CommunicationTemplate
 
 
@@ -124,8 +126,38 @@ def serialize_milestone(milestone: CampaignMilestone) -> dict[str, Any]:
     }
 
 
+def serialize_milestone_definition(definition: CampaignMilestoneDefinition) -> dict[str, Any]:
+    return {
+        "id": str(definition.id) if definition.id else None,
+        "milestone_key": definition.milestone_key,
+        "label": definition.label,
+        "description": definition.description,
+        "feature_area": definition.feature_area,
+        "default_sort_order": definition.default_sort_order,
+        "is_active": bool(definition.is_active),
+        "is_system": bool(definition.is_system),
+        "created_at": _serialize_datetime(definition.created_at),
+        "updated_at": _serialize_datetime(definition.updated_at),
+    }
+
+
 def serialize_readiness(payload: dict[str, Any]) -> dict[str, Any]:
     return payload
+
+
+def serialize_gift_policy(policy: CampaignGiftPolicy) -> dict[str, Any]:
+    return {
+        "id": str(policy.id),
+        "campaign_id": str(policy.campaign_id),
+        "max_gifts_per_sponsor": policy.max_gifts_per_sponsor,
+        "max_wishlist_items_per_recipient": policy.max_wishlist_items_per_recipient,
+        "recipient_coverage_rule": policy.recipient_coverage_rule,
+        "recipient_coverage_required_count": policy.recipient_coverage_required_count,
+        "allow_partial_sponsor_commitments": bool(policy.allow_partial_sponsor_commitments),
+        "reservation_hold_minutes": policy.reservation_hold_minutes,
+        "created_at": _serialize_datetime(policy.created_at),
+        "updated_at": _serialize_datetime(policy.updated_at),
+    }
 
 
 def serialize_ai_draft(payload: dict[str, Any]) -> dict[str, Any]:
@@ -142,6 +174,8 @@ def serialize_studio_payload(
     schedules: list[CampaignCommunicationSchedule],
     audience_catalog: list[dict[str, str]],
     milestones: list[CampaignMilestone],
+    milestone_definitions: list[CampaignMilestoneDefinition],
+    gift_policy: CampaignGiftPolicy,
     schedule_items: list[dict[str, Any]],
     readiness: dict[str, Any],
 ) -> dict[str, Any]:
@@ -158,7 +192,12 @@ def serialize_studio_payload(
         "schedule": {
             "items": [serialize_schedule_item(item) for item in schedule_items],
         },
+        "milestone_definitions": [
+            serialize_milestone_definition(definition)
+            for definition in milestone_definitions
+        ],
         "milestones": [serialize_milestone(milestone) for milestone in milestones],
+        "gift_policy": serialize_gift_policy(gift_policy),
         "readiness": serialize_readiness(readiness),
     }
 

@@ -1,7 +1,7 @@
 import type {
   CampaignStudioData,
 } from '@/features/campaigns/model/campaignStudioTypes';
-import { buildCampaignDetailPath } from '@/app/routes';
+import { buildCampaignDetailPath, buildCampaignSponsorFlyerPath } from '@/app/routes';
 import { campaignSummaryLabels } from '@/features/campaigns/api/campaignApi';
 import { formatScheduleDateRange, sourceLabel } from '@/features/campaigns/model/campaignSchedule';
 import { CampaignStatusBadge } from '@/features/campaigns/ui/CampaignStatusBadge';
@@ -67,6 +67,13 @@ export function CampaignStudioOverview({
               <i className="bi bi-layout-text-window-reverse me-2" aria-hidden="true" />
               Open Detail View
             </Link>
+            <Link
+              className="btn btn-outline-secondary btn-sm"
+              to={buildCampaignSponsorFlyerPath(campaign.id)}
+            >
+              <i className="bi bi-qr-code-scan me-2" aria-hidden="true" />
+              Sponsor Flyer
+            </Link>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
@@ -95,6 +102,9 @@ export function CampaignStudioOverview({
 
             <dt className="col-sm-5">Access</dt>
             <dd className="col-sm-7">{access.capabilities.length} capabilities active</dd>
+
+            <dt className="col-sm-5">Campaign Purpose</dt>
+            <dd className="col-sm-7">{campaign.seasonTheme || 'Not set'}</dd>
           </dl>
         </article>
 

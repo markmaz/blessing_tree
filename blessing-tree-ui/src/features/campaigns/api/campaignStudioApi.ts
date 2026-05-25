@@ -3,6 +3,8 @@ import { mapCampaignScheduleItem } from '@/features/campaigns/api/campaignStudio
 import {
   type CampaignAssignment,
   type CampaignMilestone,
+  type CampaignGiftPolicy,
+  type CampaignMilestoneDefinition,
   type CampaignReadiness,
   type CampaignScheduleItem,
   type CampaignStudioData,
@@ -10,11 +12,13 @@ import {
   type CommunicationAudienceOption,
   type CommunicationSchedule,
   type CommunicationTemplate,
+  type CommunicationTemplateTestEmailResult,
   type CreateCommunicationScheduleInput,
   type CreateCommunicationTemplateInput,
   type SaveCampaignMilestoneInput,
   type UpdateCommunicationTemplateInput,
   type UpdateCommunicationScheduleInput,
+  type UpdateCampaignGiftPolicyInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import {
   type Campaign,
@@ -35,6 +39,8 @@ interface CampaignResponse {
   year: number;
   description: string | null;
   season_theme: string | null;
+  public_sponsor_slug: string | null;
+  public_sponsor_signup_enabled: boolean;
   status: Campaign['status'];
   start_date: string | null;
   end_date: string | null;
@@ -111,6 +117,12 @@ interface CommunicationScheduleResponse {
   updated_at: string | null;
 }
 
+interface CommunicationTemplateTestEmailResponse {
+  template_id: string;
+  recipient_email: string;
+  subject: string;
+}
+
 interface CampaignMilestoneResponse {
   id: string;
   campaign_id: string;
@@ -119,6 +131,19 @@ interface CampaignMilestoneResponse {
   occurs_on: string | null;
   notes: string | null;
   sort_order: number;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+interface CampaignMilestoneDefinitionResponse {
+  id: string | null;
+  milestone_key: string;
+  label: string;
+  description: string | null;
+  feature_area: string;
+  default_sort_order: number;
+  is_active: boolean;
+  is_system: boolean;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -165,6 +190,19 @@ interface CampaignReadinessResponse {
   category_counts: CampaignReadiness['categoryCounts'];
 }
 
+interface CampaignGiftPolicyResponse {
+  id: string;
+  campaign_id: string;
+  max_gifts_per_sponsor: number;
+  max_wishlist_items_per_recipient: number;
+  recipient_coverage_rule: CampaignGiftPolicy['recipientCoverageRule'];
+  recipient_coverage_required_count: number;
+  allow_partial_sponsor_commitments: boolean;
+  reservation_hold_minutes: number;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
 interface CampaignStudioResponse {
   campaign: CampaignResponse;
   access: CampaignAccessResponse;
@@ -178,7 +216,9 @@ interface CampaignStudioResponse {
   schedule: {
     items: CampaignScheduleItemResponse[];
   };
+  milestone_definitions: CampaignMilestoneDefinitionResponse[];
   milestones: CampaignMilestoneResponse[];
+  gift_policy: CampaignGiftPolicyResponse;
   readiness: CampaignReadinessResponse;
 }
 
@@ -202,7 +242,9 @@ export async function getCampaignStudio(campaignId: string): Promise<CampaignStu
     schedule: {
       items: response.schedule.items.map(mapCampaignScheduleItem),
     },
+    milestoneDefinitions: response.milestone_definitions.map(mapCampaignMilestoneDefinition),
     milestones: response.milestones.map(mapCampaignMilestone),
+    giftPolicy: mapCampaignGiftPolicy(response.gift_policy),
     readiness: mapCampaignReadiness(response.readiness),
   };
 }
@@ -275,6 +317,29 @@ export async function deleteCommunicationTemplate(
   await apiFetchJson(`/api/v1/campaigns/${campaignId}/communications/templates/${templateId}`, {
     method: 'DELETE',
   });
+}
+
+export async function sendCommunicationTemplateTestEmail(
+  campaignId: string,
+  templateId: string,
+  recipientEmail?: string
+): Promise<CommunicationTemplateTestEmailResult> {
+  const response = await apiFetchJson<CommunicationTemplateTestEmailResponse>(
+    `/api/v1/campaigns/${campaignId}/communications/templates/${templateId}/test-email`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipient_email: recipientEmail?.trim() || null,
+      }),
+    }
+  );
+
+  return {
+    templateId: response.template_id,
+    recipientEmail: response.recipient_email,
+    subject: response.subject,
+  };
 }
 
 export async function createCommunicationSchedule(
@@ -366,6 +431,30 @@ export async function saveCampaignMilestones(
   return response.map(mapCampaignMilestone);
 }
 
+export async function updateCampaignGiftPolicy(
+  campaignId: string,
+  input: UpdateCampaignGiftPolicyInput
+): Promise<CampaignGiftPolicy> {
+  const payload: Record<string, unknown> = {};
+  if ('maxGiftsPerSponsor' in input) payload.max_gifts_per_sponsor = input.maxGiftsPerSponsor;
+  if ('maxWishlistItemsPerRecipient' in input) payload.max_wishlist_items_per_recipient = input.maxWishlistItemsPerRecipient;
+  if ('recipientCoverageRule' in input) payload.recipient_coverage_rule = input.recipientCoverageRule;
+  if ('recipientCoverageRequiredCount' in input) payload.recipient_coverage_required_count = input.recipientCoverageRequiredCount;
+  if ('allowPartialSponsorCommitments' in input) payload.allow_partial_sponsor_commitments = input.allowPartialSponsorCommitments;
+  if ('reservationHoldMinutes' in input) payload.reservation_hold_minutes = input.reservationHoldMinutes;
+
+  const response = await apiFetchJson<CampaignGiftPolicyResponse>(
+    `/api/v1/campaigns/${campaignId}/gift-policy`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  return mapCampaignGiftPolicy(response);
+}
+
 function mapCampaign(campaign: CampaignResponse): Campaign {
   return {
     id: campaign.id,
@@ -373,6 +462,8 @@ function mapCampaign(campaign: CampaignResponse): Campaign {
     year: campaign.year,
     description: campaign.description,
     seasonTheme: campaign.season_theme,
+    publicSponsorSlug: campaign.public_sponsor_slug,
+    publicSponsorSignupEnabled: campaign.public_sponsor_signup_enabled,
     status: campaign.status,
     startDate: campaign.start_date,
     endDate: campaign.end_date,
@@ -500,6 +591,38 @@ function mapCampaignMilestone(
     sortOrder: milestone.sort_order,
     createdAt: milestone.created_at,
     updatedAt: milestone.updated_at,
+  };
+}
+
+function mapCampaignMilestoneDefinition(
+  definition: CampaignMilestoneDefinitionResponse
+): CampaignMilestoneDefinition {
+  return {
+    id: definition.id,
+    milestoneKey: definition.milestone_key,
+    label: definition.label,
+    description: definition.description,
+    featureArea: definition.feature_area,
+    defaultSortOrder: definition.default_sort_order,
+    isActive: definition.is_active,
+    isSystem: definition.is_system,
+    createdAt: definition.created_at,
+    updatedAt: definition.updated_at,
+  };
+}
+
+function mapCampaignGiftPolicy(policy: CampaignGiftPolicyResponse): CampaignGiftPolicy {
+  return {
+    id: policy.id,
+    campaignId: policy.campaign_id,
+    maxGiftsPerSponsor: policy.max_gifts_per_sponsor,
+    maxWishlistItemsPerRecipient: policy.max_wishlist_items_per_recipient,
+    recipientCoverageRule: policy.recipient_coverage_rule,
+    recipientCoverageRequiredCount: policy.recipient_coverage_required_count,
+    allowPartialSponsorCommitments: policy.allow_partial_sponsor_commitments,
+    reservationHoldMinutes: policy.reservation_hold_minutes,
+    createdAt: policy.created_at,
+    updatedAt: policy.updated_at,
   };
 }
 

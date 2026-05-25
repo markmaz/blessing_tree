@@ -35,6 +35,7 @@ class ResolvedCampaignRecipient:
     email: str
     display_name: str
     merge_fields: dict[str, str]
+    sponsor_id: str | None = None
 
 
 class CampaignRecipientResolver:
@@ -192,6 +193,7 @@ class CampaignRecipientResolver:
                     "sponsor.first_name": _first_name(sponsor.display_name),
                     "sponsor.full_name": sponsor.display_name,
                 },
+                sponsor_id=str(sponsor.id),
             )
             for sponsor in sponsor_rows
             if sponsor.email

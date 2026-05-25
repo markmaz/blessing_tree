@@ -29,6 +29,9 @@ from app.models.communication_template import CommunicationTemplate
 from app.models.group_contact import GroupContact
 from app.models.recipient import Recipient
 from app.models.recipient_group import RecipientGroup
+from app.models.sponsor import Sponsor
+from app.models.sponsor_interaction import SponsorInteraction
+from app.models.sponsorship import Sponsorship
 
 
 @compiles(TINYINT, "sqlite")
@@ -300,6 +303,64 @@ def test_dispatch_schedule_resolves_direct_adult_recipients(
     assert result["status"] == "SUCCEEDED"
     assert deliveries[0]["recipients"] == ["mary@example.com"]
     assert "Mary Smith" in str(deliveries[0]["html"])
+
+
+def test_dispatch_schedule_logs_sponsor_interactions_for_mass_send(
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    campaign = _seed_campaign(db_session, status="ACTIVE")
+    template = _seed_template(
+        db_session,
+        campaign_id=campaign.id,
+        audience="SPONSOR",
+        body_template="Hello {{sponsor.full_name}}",
+    )
+    sponsor = Sponsor(
+        id=uuid.uuid4(),
+        display_name="Morgan Sponsor",
+        email="morgan@example.com",
+        preferred_contact="EMAIL",
+        source="STAFF_ENTRY",
+        is_active=True,
+    )
+    db_session.add(sponsor)
+    db_session.flush()
+    sponsorship = Sponsorship(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        sponsor_id=sponsor.id,
+        status="ACTIVE",
+        interest_status="COMMITTED",
+        drop_off_status="NOT_STARTED",
+        self_registered=False,
+    )
+    schedule = CampaignCommunicationSchedule(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        template_id=template.id,
+        scheduled_for=datetime(2026, 11, 2, 9, 0, 0),
+        status="SCHEDULED",
+    )
+    db_session.add_all([sponsorship, schedule])
+    db_session.commit()
+
+    monkeypatch.setattr(
+        "app.features.campaigns.automation_dispatch_service.send_email_message",
+        lambda **kwargs: None,
+    )
+
+    result = CampaignAutomationDispatchService().dispatch_schedule(
+        db_session,
+        schedule_id=str(schedule.id),
+    )
+
+    interactions = db_session.query(SponsorInteraction).all()
+    assert result["status"] == "SUCCEEDED"
+    assert len(interactions) == 1
+    assert interactions[0].origin_type == "CAMPAIGN_COMMUNICATION"
+    assert interactions[0].related_schedule_id == schedule.id
+    assert interactions[0].outcome == "COMPLETED"
 
 
 def test_activate_campaign_blocks_until_readiness_is_ready(

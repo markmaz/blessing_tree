@@ -25,6 +25,12 @@ class DonationLine(Base):
         nullable=False,
         index=True,
     )
+    campaign_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUIDBin(),
+        ForeignKey("campaign.id", ondelete="CASCADE", onupdate="CASCADE"),
+        nullable=True,
+        index=True,
+    )
 
     line_type: Mapped[str] = mapped_column(
         Enum("GOODS", "GIFT_CARD", "MONEY", name="donation_line_type"),
@@ -36,7 +42,23 @@ class DonationLine(Base):
     category: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     size: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    quantity_available: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    quantity_assigned: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     estimated_value_cents: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    age_min: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    age_max: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    gender_fit: Mapped[str] = mapped_column(
+        Enum("ANY", "F", "M", "X", "U", "UNSPECIFIED", name="donation_line_gender_fit"),
+        nullable=False,
+        default="ANY",
+        index=True,
+    )
+    gift_condition: Mapped[str] = mapped_column(
+        Enum("NEW", "LIKE_NEW", "USED_ACCEPTABLE", name="donation_line_gift_condition"),
+        nullable=False,
+        default="NEW",
+    )
+    source_label: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     storage_location_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUIDBin(),
@@ -49,6 +71,18 @@ class DonationLine(Base):
         Enum("UNASSIGNED", "ASSIGNED", "CONSUMED", name="donation_line_status"),
         nullable=False,
         default="UNASSIGNED",
+        index=True,
+    )
+    inventory_status: Mapped[str] = mapped_column(
+        Enum("AVAILABLE", "PARTIALLY_ASSIGNED", "ASSIGNED", "CONSUMED", "ARCHIVED", name="donation_line_inventory_status"),
+        nullable=False,
+        default="AVAILABLE",
+        index=True,
+    )
+    received_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUIDBin(),
+        ForeignKey("app_user.id", ondelete="SET NULL", onupdate="CASCADE"),
+        nullable=True,
         index=True,
     )
 
@@ -66,7 +100,9 @@ class DonationLine(Base):
     )
 
     __table_args__ = (
+        Index("idx_donation_line_campaign", "campaign_id"),
         Index("idx_donation_line_donation", "donation_id"),
         Index("idx_donation_line_status", "status"),
+        Index("idx_donation_line_inventory_status", "inventory_status"),
         Index("idx_donation_line_storage", "storage_location_id"),
     )

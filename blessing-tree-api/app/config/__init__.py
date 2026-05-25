@@ -85,6 +85,11 @@ BT_CAMPAIGN_LIFECYCLE_POLL_SECONDS = int(os.getenv("BT_CAMPAIGN_LIFECYCLE_POLL_S
 BT_CAMPAIGN_AUTOMATION_HEARTBEAT_TTL_SECONDS = int(
     os.getenv("BT_CAMPAIGN_AUTOMATION_HEARTBEAT_TTL_SECONDS", "180")
 )
+BT_TRUSTED_PROXY_IPS = tuple(
+    value.strip()
+    for value in os.getenv("BT_TRUSTED_PROXY_IPS", "").split(",")
+    if value.strip()
+)
 
 # Qdrant
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")

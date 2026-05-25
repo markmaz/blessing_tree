@@ -1,11 +1,11 @@
 # Campaign Sponsor Workspace Implementation Plan
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 ## Status
 
-- Planned
-- Implementation has not started yet
+- In progress on `feature/sponsor-workspace`
+- Sponsor implementation has started with domain refinement, pending public registration storage, campaign-scoped sponsor APIs, public sponsor signup/verification APIs, staff-facing sponsor workspace pages, public signup/verify pages, and sponsor flyer routing
 - Sponsor domain foundation already exists in the backend through:
   - `sponsor`
   - `sponsorship`
@@ -56,7 +56,7 @@ The delivery path should be:
 
 ## Phase 1: Sponsor Domain Refinement
 
-Status: planned
+Status: implemented in the current working tree; local MySQL apply/verify completed on 2026-05-23
 
 ### Goal
 
@@ -108,7 +108,7 @@ Refine the existing sponsor tables so they support real campaign operations and 
 
 ## Phase 2: Pending Public Registration Foundation
 
-Status: planned
+Status: implemented in the current working tree; local MySQL apply/verify and live-stack smoke testing completed on 2026-05-23
 
 ### Goal
 
@@ -152,7 +152,7 @@ Create an explicit pending-registration layer so public self-registration does n
 
 ## Phase 3: Staff-Facing Sponsor Workspace APIs
 
-Status: planned
+Status: implemented in the current working tree; live-stack smoke testing completed on 2026-05-23, pending implementation review
 
 ### Goal
 
@@ -194,7 +194,7 @@ Expose campaign-scoped sponsor CRUD and workspace APIs for the staff-facing spon
 
 ## Phase 4: Staff-Facing Sponsor UI
 
-Status: planned
+Status: in progress in the current working tree; browser smoke testing completed on 2026-05-23, pending focused test coverage and polish review
 
 ### Goal
 

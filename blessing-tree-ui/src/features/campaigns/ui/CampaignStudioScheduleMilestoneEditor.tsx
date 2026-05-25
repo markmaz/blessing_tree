@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { milestoneDefinitions } from '@/features/campaigns/model/campaignStudio';
 import type {
   CampaignMilestone,
+  CampaignMilestoneDefinition,
   CampaignScheduleItem,
   SaveCampaignMilestoneInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
@@ -14,6 +14,7 @@ interface MilestoneFormState {
 }
 
 interface CampaignStudioScheduleMilestoneEditorProps {
+  milestoneDefinitions: CampaignMilestoneDefinition[];
   milestones: CampaignMilestone[];
   editingItem: CampaignScheduleItem | null;
   selectedDate: string | null;
@@ -23,6 +24,7 @@ interface CampaignStudioScheduleMilestoneEditorProps {
 }
 
 export function CampaignStudioScheduleMilestoneEditor({
+  milestoneDefinitions,
   milestones,
   editingItem,
   selectedDate,
@@ -35,19 +37,20 @@ export function CampaignStudioScheduleMilestoneEditor({
       ? milestones.find((milestone) => milestone.id === editingItem.sourceId) ?? null
       : null;
   const [formState, setFormState] = useState<MilestoneFormState>(() =>
-    buildFormState(editingMilestone, selectedDate)
+    buildFormState(editingMilestone, selectedDate, milestoneDefinitions)
   );
 
   useEffect(() => {
-    setFormState(buildFormState(editingMilestone, selectedDate));
-  }, [editingMilestone, selectedDate]);
+    setFormState(buildFormState(editingMilestone, selectedDate, milestoneDefinitions));
+  }, [editingMilestone, selectedDate, milestoneDefinitions]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const nextMilestones = buildNextMilestones(
       milestones,
       editingMilestone,
-      formState
+      formState,
+      milestoneDefinitions
     );
     const didSave = await onSaveMilestones(nextMilestones);
     if (didSave) {
@@ -84,7 +87,7 @@ export function CampaignStudioScheduleMilestoneEditor({
           required
         >
           {milestoneDefinitions.map((definition) => (
-            <option key={definition.key} value={definition.key}>
+            <option key={definition.milestoneKey} value={definition.milestoneKey}>
               {definition.label}
             </option>
           ))}
@@ -155,11 +158,12 @@ export function CampaignStudioScheduleMilestoneEditor({
 
 function buildFormState(
   editingMilestone: CampaignMilestone | null,
-  selectedDate: string | null
+  selectedDate: string | null,
+  milestoneDefinitions: CampaignMilestoneDefinition[]
 ): MilestoneFormState {
   if (!editingMilestone) {
     return {
-      milestoneKey: milestoneDefinitions[0]?.key ?? '',
+      milestoneKey: milestoneDefinitions[0]?.milestoneKey ?? '',
       occursOn: selectedDate ?? '',
       notes: '',
     };
@@ -175,10 +179,11 @@ function buildFormState(
 function buildNextMilestones(
   milestones: CampaignMilestone[],
   editingMilestone: CampaignMilestone | null,
-  formState: MilestoneFormState
+  formState: MilestoneFormState,
+  milestoneDefinitions: CampaignMilestoneDefinition[]
 ): SaveCampaignMilestoneInput[] {
   const definition = milestoneDefinitions.find(
-    (milestone) => milestone.key === formState.milestoneKey
+    (milestone) => milestone.milestoneKey === formState.milestoneKey
   );
 
   if (!definition) {
@@ -194,11 +199,11 @@ function buildNextMilestones(
     .map(toSaveInput);
 
   nextMilestones.push({
-    milestoneKey: definition.key,
+    milestoneKey: definition.milestoneKey,
     label: definition.label,
     occursOn: formState.occursOn,
     notes: formState.notes.trim() || null,
-    sortOrder: definition.sortOrder,
+    sortOrder: definition.defaultSortOrder,
   });
 
   return nextMilestones.sort((left, right) => left.sortOrder - right.sortOrder);

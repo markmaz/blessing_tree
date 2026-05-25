@@ -19,12 +19,12 @@ from app.models.recipient_constants import (
     PREFERRED_CONTACT_EMAIL,
     PREFERRED_CONTACT_PHONE,
     RECIPIENT_GROUP_STATUS_ACTIVE,
-    RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
+    RECIPIENT_GROUP_TYPE_ORGANIZATION,
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
     RECIPIENT_KIND_ADULT,
     RECIPIENT_KIND_CHILD,
     RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
-    RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
+    RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
     RECIPIENT_STATUS_ACTIVE,
     WISHLIST_INTAKE_METHOD_PHONE,
@@ -159,7 +159,7 @@ def test_household_child_recipient_flow_supports_group_contact_and_wishlist_meta
     db.close()
 
 
-def test_adult_program_recipient_flow_supports_direct_contact_fields() -> None:
+def test_organization_recipient_flow_supports_direct_contact_fields() -> None:
     db = _build_session()
     campaign = _create_campaign()
     db.add(campaign)
@@ -168,7 +168,8 @@ def test_adult_program_recipient_flow_supports_direct_contact_fields() -> None:
     group = RecipientGroup(
         id=uuid.uuid4(),
         campaign_id=campaign.id,
-        group_type=RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
+        group_type=RECIPIENT_GROUP_TYPE_ORGANIZATION,
+        organization_type="SENIOR_PROGRAM",
         group_name="Maple Grove - West Wing",
         program_abbreviation="MGWW",
         status=RECIPIENT_GROUP_STATUS_ACTIVE,
@@ -188,7 +189,7 @@ def test_adult_program_recipient_flow_supports_direct_contact_fields() -> None:
         campaign_id=campaign.id,
         recipient_group_id=group.id,
         recipient_kind=RECIPIENT_KIND_ADULT,
-        program_type=RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
+        program_type=RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
         privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
         display_label="Mary Smith",
         program_recipient_number=1,
@@ -212,10 +213,10 @@ def test_adult_program_recipient_flow_supports_direct_contact_fields() -> None:
     db.refresh(recipient)
     db.refresh(group)
 
-    assert group.group_type == RECIPIENT_GROUP_TYPE_ADULT_PROGRAM
+    assert group.group_type == RECIPIENT_GROUP_TYPE_ORGANIZATION
     assert group.program_abbreviation == "MGWW"
     assert recipient.recipient_kind == RECIPIENT_KIND_ADULT
-    assert recipient.program_type == RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM
+    assert recipient.program_type == RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT
     assert recipient.program_recipient_number == 1
     assert recipient.program_recipient_id == "MGWW-001"
     assert recipient.address_line1 == "400 Elm St"
@@ -229,7 +230,7 @@ def test_adult_program_recipient_flow_supports_direct_contact_fields() -> None:
     db.close()
 
 
-def test_second_adult_program_context_can_store_group_and_direct_contact_details() -> None:
+def test_second_organization_context_can_store_group_and_direct_contact_details() -> None:
     db = _build_session()
     campaign = _create_campaign()
     db.add(campaign)
@@ -238,7 +239,8 @@ def test_second_adult_program_context_can_store_group_and_direct_contact_details
     group = RecipientGroup(
         id=uuid.uuid4(),
         campaign_id=campaign.id,
-        group_type=RECIPIENT_GROUP_TYPE_ADULT_PROGRAM,
+        group_type=RECIPIENT_GROUP_TYPE_ORGANIZATION,
+        organization_type="SENIOR_PROGRAM",
         group_name="Senior At Home",
         program_abbreviation="SAH",
         status=RECIPIENT_GROUP_STATUS_ACTIVE,
@@ -262,7 +264,7 @@ def test_second_adult_program_context_can_store_group_and_direct_contact_details
         campaign_id=campaign.id,
         recipient_group_id=group.id,
         recipient_kind=RECIPIENT_KIND_ADULT,
-        program_type=RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM,
+        program_type=RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
         privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
         display_label="James Carter",
         program_recipient_number=1,
@@ -284,10 +286,10 @@ def test_second_adult_program_context_can_store_group_and_direct_contact_details
     db.refresh(group)
     db.refresh(recipient)
 
-    assert group.group_type == RECIPIENT_GROUP_TYPE_ADULT_PROGRAM
+    assert group.group_type == RECIPIENT_GROUP_TYPE_ORGANIZATION
     assert group.program_abbreviation == "SAH"
     assert group.address_line1 == "100 Program Way"
-    assert recipient.program_type == RECIPIENT_PROGRAM_TYPE_ADULT_PROGRAM
+    assert recipient.program_type == RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT
     assert recipient.program_recipient_number == 1
     assert recipient.program_recipient_id == "SAH-001"
     assert recipient.address_line1 == "42 Oak Drive"

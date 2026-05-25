@@ -61,6 +61,11 @@ beat_schedule["campaigns-advance-lifecycle"] = {
     "schedule": float(BT_CAMPAIGN_LIFECYCLE_POLL_SECONDS),
     "options": {"queue": "bt"},
 }
+beat_schedule["campaigns-evaluate-gift-reminders"] = {
+    "task": "bt.campaigns.evaluate_gift_reminders",
+    "schedule": float(BT_CAMPAIGN_AUTOMATION_POLL_SECONDS),
+    "options": {"queue": "bt"},
+}
 celery.conf.beat_schedule = beat_schedule
 
 __all__ = ["BT_TASK_NAMESPACE", "celery", "init_celery"]

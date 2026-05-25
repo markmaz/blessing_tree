@@ -342,6 +342,30 @@
   grid-column: span 2;
 }
 
+.campaign-team-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.9rem;
+  color: var(--blessing-text-light);
+  font-size: 0.9rem;
+}
+
+.campaign-team-table-pagination__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.campaign-team-table-pagination__size {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-weight: 700;
+}
+
 @media (max-width: 1100px) {
   .campaign-team-stats {
     grid-template-columns: 1fr;
@@ -384,5 +408,11 @@
 
   .campaign-team-table-wrap {
     overflow-x: auto;
+  }
+
+  .campaign-team-table-pagination,
+  .campaign-team-table-pagination__controls {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

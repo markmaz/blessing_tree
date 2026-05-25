@@ -53,6 +53,7 @@ blessing_tree/
 - [ROADMAP.md](/Users/mmaslak/Local%20Documents/projects/blessing_tree/ROADMAP.md): implementation roadmap
 - [blessing-tree-api/README.md](/Users/mmaslak/Local%20Documents/projects/blessing_tree/blessing-tree-api/README.md): backend overview, routes, setup notes
 - [blessing-tree-ui/README.md](/Users/mmaslak/Local%20Documents/projects/blessing_tree/blessing-tree-ui/README.md): frontend overview, routes, setup notes
+- [docs/deployment/ec2-github-actions.md](/Users/mmaslak/Local%20Documents/projects/blessing_tree/docs/deployment/ec2-github-actions.md): GitHub Actions deployment to EC2
 - [graphify-out/GRAPH_REPORT.md](/Users/mmaslak/Local%20Documents/projects/blessing_tree/graphify-out/GRAPH_REPORT.md): knowledge graph report
 
 ## Frontend

@@ -209,6 +209,16 @@ class AdminInvitationService:
         db.refresh(user)
         return user
 
+    def update_user_role(self, db: Session, user_id: str, role: object) -> AppUser:
+        user = db.query(AppUser).filter(AppUser.id == user_id).one_or_none()
+        if user is None:
+            raise ServiceError("User not found", status_code=404, details={"user_id": user_id})
+
+        user.role = validate_global_role(role)
+        db.commit()
+        db.refresh(user)
+        return user
+
     @staticmethod
     def list_global_role_catalog() -> list[dict[str, str]]:
         return [dict(item) for item in GLOBAL_APP_ROLE_CATALOG]

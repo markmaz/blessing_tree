@@ -1,0 +1,12 @@
+ALTER TABLE scan_event
+  MODIFY COLUMN action_taken ENUM(
+    'LOOKUP',
+    'MARK_RECEIVED',
+    'MARK_WRAPPED',
+    'MARK_READY',
+    'MARK_DISTRIBUTED',
+    'MARK_PICKED_UP',
+    'REPRINT',
+    'MARK_EXCEPTION',
+    'ERROR'
+  ) NOT NULL DEFAULT 'LOOKUP';

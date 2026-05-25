@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+import re
 
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns.constants import (
@@ -38,6 +39,43 @@ def parse_optional_season_theme(value: object) -> str | None:
             details={"field": "season_theme"},
         )
     return text
+
+
+def parse_optional_public_sponsor_slug(value: object) -> str | None:
+    text = str(value or "").strip().lower()
+    if not text:
+        return None
+    normalized = re.sub(r"[^a-z0-9]+", "-", text).strip("-")
+    if not normalized:
+        raise ServiceError(
+            "Campaign public_sponsor_slug is invalid",
+            status_code=400,
+            details={"field": "public_sponsor_slug"},
+        )
+    if len(normalized) > 120:
+        raise ServiceError(
+            "Campaign public_sponsor_slug is too long",
+            status_code=400,
+            details={"field": "public_sponsor_slug"},
+        )
+    return normalized
+
+
+def parse_optional_bool(value: object, field_name: str) -> bool | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    normalized = str(value).strip().lower()
+    if normalized in {"1", "true", "yes", "y", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "n", "off"}:
+        return False
+    raise ServiceError(
+        f"Invalid boolean for {field_name}",
+        status_code=400,
+        details={"field": field_name},
+    )
 
 
 def parse_optional_date(value: object, field_name: str) -> date | None:

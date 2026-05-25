@@ -11,7 +11,9 @@ from app.features.admin.llm_runtime_service import LlmRuntimeUnavailableError
 from app.models.admin_llm_configuration import AdminLlmConfiguration
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
 from app.models.campaign_event import CampaignEvent
+from app.models.campaign_gift_policy import CampaignGiftPolicy
 from app.models.campaign_milestone import CampaignMilestone
+from app.models.campaign_milestone_definition import CampaignMilestoneDefinition
 from app.models.communication_template import CommunicationTemplate
 from tests.features.campaigns.studio_test_support import (
     assign_role,
@@ -97,13 +99,62 @@ def test_get_campaign_studio_returns_aggregate_payload(
     assert payload["communications"]["audience_catalog"][0]["key"] == "HOUSEHOLD_CONTACT"
     assert payload["communications"]["templates"][0]["template_key"] == "sponsor_reminder"
     assert payload["communications"]["schedules"][0]["status"] == "SCHEDULED"
+    assert payload["milestone_definitions"][0]["milestone_key"] == "registration_open"
     assert payload["milestones"][0]["milestone_key"] == "registration_open"
+    assert payload["gift_policy"]["max_gifts_per_sponsor"] == 3
+    assert payload["gift_policy"]["recipient_coverage_rule"] == "ALL_GIFTS_SPONSORED"
     assert payload["readiness"]["status"] == "NEEDS_ATTENTION"
     assert payload["readiness"]["overall_status"] == "NEEDS_ATTENTION"
     assert payload["readiness"]["phase_status"]["activate"] == "NEEDS_ATTENTION"
     assert "planning_gaps" in payload["readiness"]["groups"]
     assert "launch_checks" in payload["readiness"]["groups"]
     assert payload["readiness"]["items"][0]["action_label"].startswith("Open ")
+
+
+def test_patch_gift_policy_updates_campaign_rules(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.patch(
+        f"/api/v1/campaigns/{campaign_id}/gift-policy",
+        json={
+            "max_gifts_per_sponsor": 2,
+            "max_wishlist_items_per_recipient": 4,
+            "recipient_coverage_rule": "MIN_GIFTS_SPONSORED",
+            "recipient_coverage_required_count": 2,
+            "reservation_hold_minutes": 720,
+            "allow_partial_sponsor_commitments": True,
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["max_gifts_per_sponsor"] == 2
+    assert payload["max_wishlist_items_per_recipient"] == 4
+    assert payload["recipient_coverage_rule"] == "MIN_GIFTS_SPONSORED"
+    assert payload["recipient_coverage_required_count"] == 2
+    assert payload["reservation_hold_minutes"] == 720
+    assert payload["allow_partial_sponsor_commitments"] is True
+
+    with campaign_api_module.SessionLocal() as verify_session:
+        policy = (
+            verify_session.query(CampaignGiftPolicy)
+            .filter(CampaignGiftPolicy.campaign_id == uuid.UUID(campaign_id))
+            .one()
+        )
+        assert policy.max_gifts_per_sponsor == 2
 
 
 def test_post_assignment_creates_campaign_role_assignment(
@@ -125,13 +176,13 @@ def test_post_assignment_creates_campaign_role_assignment(
     client = app.test_client()
     response = client.post(
         f"/api/v1/campaigns/{campaign_id}/assignments",
-        json={"user_id": volunteer_id, "role_key": "VOLUNTEER_VIEWER"},
+        json={"user_id": volunteer_id, "role_key": "CAMPAIGN_VIEWER"},
         headers=auth_header(manager_id, "VOLUNTEER"),
     )
 
     assert response.status_code == 201
     payload = response.get_json()
-    assert payload["role_key"] == "VOLUNTEER_VIEWER"
+    assert payload["role_key"] == "CAMPAIGN_VIEWER"
     assert payload["user"]["display_name"] == "Volunteer User"
 
 
@@ -196,6 +247,228 @@ def test_put_milestones_replaces_campaign_milestones(
     assert response.status_code == 200
     payload = response.get_json()
     assert [item["milestone_key"] for item in payload] == ["registration_open", "pickup_start"]
+
+
+def test_post_template_test_email_renders_and_sends_to_requested_address(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    sent_messages: list[dict[str, object]] = []
+
+    def _fake_send_email_message(*, recipients, subject, html, text_body=None) -> None:
+        sent_messages.append(
+            {
+                "recipients": recipients,
+                "subject": subject,
+                "html": html,
+                "text_body": text_body,
+            }
+        )
+
+    monkeypatch.setattr(
+        "app.features.campaigns.studio_service.send_email_message",
+        _fake_send_email_message,
+    )
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session, name="Christmas Giving")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    template = CommunicationTemplate(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        template_key="sponsor_test",
+        name="Sponsor Test",
+        audience="SPONSOR",
+        channel="EMAIL",
+        subject_template="Hello {{sponsor.first_name}} for {{campaign.name}}",
+        body_template="Dear {{sponsor.full_name}},\n\nPickup is {{milestone.date}}.",
+        is_active=True,
+        created_by_user_id=manager.id,
+    )
+    session.add(template)
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    template_id = str(template.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/communications/templates/{template_id}/test-email",
+        json={"recipient_email": "reviewer@example.com"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["recipient_email"] == "reviewer@example.com"
+    assert payload["subject"] == "[Test] Hello Taylor for Christmas Giving"
+    assert len(sent_messages) == 1
+    assert sent_messages[0]["recipients"] == ["reviewer@example.com"]
+    assert "Taylor Reed" in sent_messages[0]["html"]
+    assert "December 19, 2026" in sent_messages[0]["text_body"]
+
+
+def test_put_milestones_accepts_active_configured_milestone_definition(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    session.add(
+        CampaignMilestoneDefinition(
+            id=uuid.uuid4(),
+            milestone_key="custom_sponsor_check",
+            label="Custom Sponsor Check",
+            feature_area="SPONSORS",
+            default_sort_order=42,
+            is_active=True,
+            is_system=False,
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.put(
+        f"/api/v1/campaigns/{campaign_id}/milestones",
+        json={
+            "milestones": [
+                {
+                    "milestone_key": "custom_sponsor_check",
+                    "occurs_on": "2026-10-15",
+                },
+            ]
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload[0]["milestone_key"] == "custom_sponsor_check"
+    assert payload[0]["label"] == "Custom Sponsor Check"
+    assert payload[0]["sort_order"] == 42
+
+    studio_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/studio",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert studio_response.status_code == 200
+    studio_payload = studio_response.get_json()
+    custom_definition = next(
+        definition
+        for definition in studio_payload["milestone_definitions"]
+        if definition["milestone_key"] == "custom_sponsor_check"
+    )
+    assert custom_definition["label"] == "Custom Sponsor Check"
+    assert custom_definition["default_sort_order"] == 42
+
+
+def test_put_milestones_rejects_inactive_configured_milestone_definition(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    session.add(
+        CampaignMilestoneDefinition(
+            id=uuid.uuid4(),
+            milestone_key="retired_gate",
+            label="Retired Gate",
+            feature_area="GENERAL",
+            default_sort_order=42,
+            is_active=False,
+            is_system=False,
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.put(
+        f"/api/v1/campaigns/{campaign_id}/milestones",
+        json={
+            "milestones": [
+                {
+                    "milestone_key": "retired_gate",
+                    "occurs_on": "2026-10-15",
+                },
+            ]
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["details"]["field"] == "milestone_key"
+
+
+def test_put_milestones_preserves_existing_inactive_configured_milestone(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    session.add(
+        CampaignMilestoneDefinition(
+            id=uuid.uuid4(),
+            milestone_key="retired_gate_with_date",
+            label="Retired Gate With Date",
+            feature_area="GENERAL",
+            default_sort_order=42,
+            is_active=False,
+            is_system=False,
+        )
+    )
+    session.add(
+        CampaignMilestone(
+            id=uuid.uuid4(),
+            campaign_id=campaign.id,
+            milestone_key="retired_gate_with_date",
+            label="Retired Gate With Date",
+            occurs_on=date(2026, 10, 15),
+            sort_order=42,
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.put(
+        f"/api/v1/campaigns/{campaign_id}/milestones",
+        json={"milestones": []},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    session = campaign_api_module.SessionLocal()
+    retained = (
+        session.query(CampaignMilestone)
+        .filter(
+            CampaignMilestone.campaign_id == uuid.UUID(campaign_id),
+            CampaignMilestone.milestone_key == "retired_gate_with_date",
+        )
+        .one_or_none()
+    )
+    assert retained is not None
+    assert retained.occurs_on == date(2026, 10, 15)
+    session.close()
 
 
 def test_create_template_and_schedule_then_readiness_reflects_changes(
@@ -284,7 +557,7 @@ def test_create_template_accepts_recipient_aware_audience_key(
         json={
             "template_key": "facility_outreach",
             "name": "Facility Outreach",
-            "audience": "ADULT_PROGRAM_CONTACT",
+            "audience": "ORGANIZATION_CONTACT",
             "channel": "EMAIL",
             "subject_template": "Facility update",
             "body_template": "Hello {{contact.first_name}}.",
@@ -634,6 +907,124 @@ def test_post_ai_draft_returns_schedule_communication_action_with_warning(
         "status": "SCHEDULED",
         "notes": "Schedule Volunteer Reminder on 2026-11-08 at 9am",
     }
+
+
+def test_post_ai_draft_uses_configured_milestone_catalog(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    session.add(
+        CampaignMilestoneDefinition(
+            id=uuid.uuid4(),
+            milestone_key="custom_sponsor_check",
+            label="Custom Sponsor Check",
+            feature_area="SPONSORS",
+            default_sort_order=42,
+            is_active=True,
+            is_system=False,
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ai/draft",
+        json={
+            "section": "schedule",
+            "requested_action_type": "milestone",
+            "prompt": "Place Custom Sponsor Check on 2026-10-15",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["actions"][0]["action_type"] == "create_milestone"
+    assert payload["actions"][0]["payload"] == {
+        "milestone_key": "custom_sponsor_check",
+        "label": "Custom Sponsor Check",
+        "occurs_on": "2026-10-15",
+        "notes": "Place Custom Sponsor Check on 2026-10-15",
+        "sort_order": 42,
+    }
+
+
+def test_post_ai_readiness_draft_handles_configured_missing_milestone_rule(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.models.campaign_readiness_rule_definition import CampaignReadinessRuleDefinition
+
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    session.add(
+        CampaignMilestoneDefinition(
+            id=uuid.uuid4(),
+            milestone_key="custom_sponsor_check",
+            label="Custom Sponsor Check",
+            feature_area="SPONSORS",
+            default_sort_order=42,
+            is_active=True,
+            is_system=False,
+        )
+    )
+    session.add(
+        CampaignReadinessRuleDefinition(
+            id=uuid.uuid4(),
+            rule_key="missing_custom_sponsor_check",
+            name="Missing Custom Sponsor Check",
+            rule_type="MISSING_MILESTONE",
+            feature_area="SPONSORS",
+            condition_type="ALWAYS",
+            condition_config_json={},
+            milestone_key="custom_sponsor_check",
+            severity="warning",
+            category="planning_gaps",
+            blocking_for_json=[],
+            section="schedule",
+            action_label="Open Schedule",
+            message="Custom sponsor check is missing.",
+            is_active=True,
+            is_system=False,
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ai/draft",
+        json={
+            "section": "readiness",
+            "prompt": "Fix readiness milestones",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    action = next(
+        action
+        for action in payload["actions"]
+        if action["action_type"] == "create_milestone"
+        and action["payload"]["milestone_key"] == "custom_sponsor_check"
+    )
+    assert action["payload"]["milestone_key"] == "custom_sponsor_check"
+    assert action["payload"]["label"] == "Custom Sponsor Check"
+    assert action["payload"]["sort_order"] == 42
 
 
 def test_post_ai_draft_returns_communications_template_and_schedule_bundle(
@@ -1053,3 +1444,132 @@ def test_readiness_blocks_activation_when_date_range_is_missing(
     assert item["category"] == "blockers"
     assert item["action_label"] == "Open Settings"
     assert item["blocking_for"] == ["activate", "operations"]
+
+
+def test_readiness_shows_each_missing_public_sponsor_milestone(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    campaign.public_sponsor_slug = "public-sponsor-readiness"
+    campaign.public_sponsor_signup_enabled = True
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/readiness",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    readiness = response.get_json()
+    assert readiness["status"] == "BLOCKED"
+    items_by_code = {item["code"]: item for item in readiness["items"]}
+    expected_codes = {
+        "missing_public_sponsor_registration_start",
+        "missing_public_sponsor_registration_end",
+        "missing_public_sponsor_gift_turn_in",
+    }
+    assert expected_codes <= set(items_by_code)
+    assert "missing_required_milestone_gift_intake_end" not in items_by_code
+    assert "start milestone is missing" in items_by_code["missing_public_sponsor_registration_start"]["message"]
+    assert "end milestone is missing" in items_by_code["missing_public_sponsor_registration_end"]["message"]
+    assert "gift turn-in deadline milestone is missing" in items_by_code["missing_public_sponsor_gift_turn_in"]["message"]
+    for code in expected_codes:
+        assert items_by_code[code]["category"] == "blockers"
+        assert items_by_code[code]["action_label"] == "Open Schedule"
+        assert items_by_code[code]["blocking_for"] == ["activate", "operations"]
+
+
+def test_readiness_uses_configured_missing_milestone_rules(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.models.campaign_milestone_definition import CampaignMilestoneDefinition
+    from app.models.campaign_readiness_rule_definition import CampaignReadinessRuleDefinition
+
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session)
+    campaign = seed_campaign(session)
+    campaign.public_sponsor_slug = "dynamic-sponsor-readiness"
+    campaign.public_sponsor_signup_enabled = True
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    session.add(
+        CampaignMilestoneDefinition(
+            id=uuid.uuid4(),
+            milestone_key="dynamic_sponsor_gate",
+            label="Dynamic Sponsor Gate",
+            feature_area="SPONSORS",
+            default_sort_order=99,
+            is_active=True,
+            is_system=False,
+        )
+    )
+    session.add(
+        CampaignReadinessRuleDefinition(
+            id=uuid.uuid4(),
+            rule_key="missing_dynamic_sponsor_gate",
+            name="Missing Dynamic Sponsor Gate",
+            rule_type="MISSING_MILESTONE",
+            feature_area="SPONSORS",
+            condition_type="CAMPAIGN_FIELD_TRUE",
+            condition_config_json={"field": "public_sponsor_signup_enabled"},
+            milestone_key="dynamic_sponsor_gate",
+            severity="error",
+            category="blockers",
+            blocking_for_json=["activate", "operations"],
+            section="schedule",
+            action_label="Open Schedule",
+            message="Dynamic sponsor gate is missing.",
+            is_active=True,
+            is_system=False,
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/readiness",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    readiness = response.get_json()
+    item = next(item for item in readiness["items"] if item["code"] == "missing_dynamic_sponsor_gate")
+    assert item["message"] == "Dynamic sponsor gate is missing."
+    assert item["category"] == "blockers"
+    assert item["blocking_for"] == ["activate", "operations"]
+
+    session = campaign_api_module.SessionLocal()
+    session.add(
+        CampaignMilestone(
+            id=uuid.uuid4(),
+            campaign_id=uuid.UUID(campaign_id),
+            milestone_key="dynamic_sponsor_gate",
+            label="Dynamic Sponsor Gate",
+            occurs_on=date(2026, 10, 15),
+            sort_order=99,
+        )
+    )
+    session.commit()
+    session.close()
+
+    resolved_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/readiness",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert resolved_response.status_code == 200
+    resolved_codes = {item["code"] for item in resolved_response.get_json()["items"]}
+    assert "missing_dynamic_sponsor_gate" not in resolved_codes

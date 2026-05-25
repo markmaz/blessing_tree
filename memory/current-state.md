@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-22
+Last updated: 2026-05-25
 
 ## Project Snapshot
 
@@ -16,15 +16,19 @@ Last updated: 2026-05-22
   - RBAC foundation now exists with campaign role persistence, capability bundles, and an authorization service
   - campaign roster foundation now exists with a new `campaign_member` model and migration
   - member-centric RBAC transition now exists with a new `campaign_member_access_role` model and member-first authorization resolution
+  - user access management now has a simple campaign-role catalog for Campaign Manager, People, Sponsors, Gift Operations, Gift Search, Reports Only, and View Only; admins can assign campaign access through Admin -> User Management, and authorization now unions direct `campaign_user_role` and member access role grants
   - operational team foundation now exists with `campaign_team`, `campaign_team_member`, `campaign_team_role`, and backend team-role-aware services
   - Team workspace API foundation now exists with member, access-role, team, membership, app-access, and aggregate workspace endpoints
   - first campaign feature package now exists with protected list, detail, access, summary, create, and update routes
   - Campaign Studio backend support now exists for assignments, campaign-scoped communication templates, communication schedules, milestone dates, manual schedule events, unified schedule reads, readiness output, aggregate studio payloads, create-from-previous-campaign cloning support, and a backend-driven communication audience catalog
   - campaign automation runtime now exists with Celery task entry points, due communication dispatch, lifecycle transitions, execution logging, worker heartbeat, and readiness-backed health reporting
+  - admin-managed milestone/readiness configuration is underway: backend definition tables, admin Campaign Operations APIs, seeded sponsor blocker rules, dynamic missing-milestone readiness evaluation, Studio milestone validation against active definitions, and AI draft/normalizer use of the active milestone catalog now exist
   - local outbound email is now operational in development through a repo-owned SMTP sink plus configurable TLS/SSL flags, so invite delivery and scheduled communication dispatch can be exercised end to end without external SMTP credentials
-  - sponsor workspace implementation has not started yet, but the backend already includes foundational sponsor models (`sponsor`, `sponsorship`, `sponsorship_item`, `sponsor_interaction`, `sponsor_reminder`) and the design direction is now documented for campaign-scoped CRUD, public self-registration, QR flyer generation, and communication-log integration
+  - sponsor workspace implementation is now in progress on `feature/sponsor-workspace`: the backend has sponsor-domain refinement migrations, campaign-scoped sponsor workspace CRUD, sponsor interaction logging, pending public registration storage, public sponsor signup/verification endpoints, verify-first public gift selection, resilient public sponsor email delivery reporting, sponsor readiness/config fields, and focused backend API tests; `V023` and `V024` have been applied and verified against local MySQL `blessing_tree`
+  - public sponsor self-registration now collects sponsor details first, sends verification email, verifies the token through `/api/v1/public/campaigns/<public_slug>/sponsors/verify`, and only then allows gift selection through `POST /api/v1/public/campaigns/<public_slug>/sponsors/verified-gifts`; pre-verification gift IDs are ignored/rejected by design
+  - gift workflow backend slices now include natural-language gift search, staff gift operations, public scan lookup/actions, gift pool inventory, gift label/tag print payloads, reminder rules, gift policy rules, and gift status/report APIs
 - recipient phases 1 through 7 now exist: the schema/model is refined, there is now a recipient feature package plus campaign-scoped APIs for groups, contacts, recipients, wishlists, wishlist items, and the aggregate `people-workspace` payload, the frontend now includes campaign-scoped `People > Intake` and `People > Directory` flows with wishlist/fulfillment alignment, Communications can now target recipient-aware audience types, the `people` feature flag/runtime naming replaces the older `families` key, and Reports now uses live People workspace data instead of placeholder rows
-  - the recipient runtime now uses `HOUSEHOLD | ORGANIZATION` group types plus first-class `organization_type`, and recipient program types are now `CHILD_FAMILY`, `ORGANIZATION_CHILD`, and `ORGANIZATION_ADULT`
+  - the recipient runtime now uses `HOUSEHOLD | ORGANIZATION` group types plus first-class `organization_type`, and recipient program types are now `CHILD_FAMILY`, `ORGANIZATION_CHILD`, and `ORGANIZATION_ADULT`; old `ADULT_PROGRAM` compatibility aliases have been removed from runtime code
   - admin runtime now exists with Query Forge-style user invitations, global LLM configuration, health probes for database/Celery/LLM, and authenticated feature-flag reads plus app-admin feature toggles
   - admin LLM test/health now probes the real generation path against the configured model instead of treating `/models` reachability as sufficient
   - invitation-centric onboarding now supports Google, Yahoo, and local password from the invite funnel; generic Google/Yahoo OAuth remains limited to already-linked returning users, and invite validation now exposes accepted-vs-pending onboarding state for cleaner frontend handling
@@ -37,16 +41,23 @@ Last updated: 2026-05-22
 - Frontend:
   - React + TypeScript + Vite
   - protected shell exists
+  - sponsor workspace frontend work is now in progress with protected Sponsors child routes for Intake, Directory, and Reports; sponsor workspace API hooks/types; sponsor table/drawer/workspace UI; branded public sponsor signup and verification pages; verified-only NL gift search/reservation; and a Campaign Studio sponsor flyer page using `qrcode.react`; browser smoke has verified earlier sponsor pages against disposable live-stack smoke data, and focused API mapper tests now cover public sponsor config/signup/verification/verified-gift contracts
+  - Campaign Studio now exposes visible Sponsor Flyer navigation from the Studio header and Overview, while Settings exposes the same flyer action for existing campaigns
+  - the old user-facing `Season Theme` language has been relabeled to `Campaign Purpose`; the underlying API/database field remains `season_theme`, and gift tag image/icon/accent treatment currently uses simple purpose keyword mapping rather than generated or selectable artwork
+  - gift workflow frontend pages now include Gift Search, Gift Operations, Gift Pool, public gift scan, Gift Status visual report, gift tag previews/printing, and near-real-time Gift Status polling while the tab is visible; the page pauses background refresh while drawers/saves are active
   - the protected app shell now includes a footer with `QueryForge, LLC` copyright plus frontend/backend version display
   - the admin page now supports user invitations, LLM configuration/testing, runtime health visibility, and app feature enable/disable controls
   - Playwright browser E2E coverage now exists for invite onboarding, create-from-previous-campaign, and communications template save flows
   - admin user management now uses a Query Forge-style searchable/sortable table workspace with row actions plus invite and detail drawers instead of the earlier combined invite card, includes top filter cards for `All`, `Active`, and `Invited`, and supports activate/deactivate directly from the menu
+  - Admin -> User Management detail drawers now include campaign access assignment, and the protected sidebar/router now gate campaign areas by selected campaign capabilities
+  - Admin -> Campaign Operations now exists with milestone definition and readiness rule management backed by the admin Campaign Operations APIs, including referenced-rule visibility for milestones, rule impact previews, and confirmation gates before active system definitions/rules can be deactivated
   - the admin area now exposes child navigation in the left sidebar under `Admin` for user management, LLM configuration, health checks, and app capabilities, with feature toggles no longer mixed into the LLM page
   - the Admin LLM page now has provider-specific behavior so `OpenAI` uses a default endpoint plus model presets instead of making admins type raw base URLs, while `OpenAI-Compatible` remains fully editable
   - the Admin LLM page can now also load the configured provider's available models into a combo/input model field so admins can type custom models or choose from what the provider actually exposes, and it now surfaces provider catalog failures instead of silently showing only fallback presets
   - campaign provider, top-bar switcher, campaign list page, and campaign detail page now exist
   - dashboard is now campaign-aware and loads live summary/access data from the backend
   - Campaign Studio now has live Team, Communications, Schedule, Readiness, and Settings sections backed by the backend studio APIs
+  - Campaign Studio now receives a backend milestone definition catalog and uses it for milestone and milestone-linked communication dropdowns instead of relying only on the frontend hardcoded list
   - Campaign Studio AI direction is now explicitly defined as a structured draft/review/apply action system rather than a mostly advisory prompt helper
   - Campaign Studio Readiness now uses grouped lifecycle-aware backend output with summary cards, phase status, grouped findings, direct section actions, and AI prompt integration
   - Campaign Studio Schedule is now calendar-first, with modal create/edit/delete for events, milestones, and communication schedules directly from the month grid
@@ -145,6 +156,7 @@ Last updated: 2026-05-22
   - `app/features/rbac/services/authorization_service.py`
   - `app/features/rbac/decorators.py`
   - `app/features/rbac/scope.py`
+  - `db/migration/V033__User_Access_Role_Catalog.sql` normalizes legacy campaign role keys to the simplified access catalog and was applied on 2026-05-24; local verification showed zero remaining legacy role keys
 - Team transition layer now exists:
   - `db/migration/V008__Campaign_Member_Access_Roles.sql`
   - `app/models/campaign_member_access_role.py`

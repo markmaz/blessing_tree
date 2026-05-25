@@ -5,12 +5,14 @@ import { AdminUsersWorkspace } from '@/features/admin/ui/AdminUsersWorkspace';
 import {
   createAdminInvite,
   resendAdminInvite,
+  updateAdminUserRole,
   updateAdminUserStatus,
 } from '@/features/admin/api/adminApi';
 
 vi.mock('@/features/admin/api/adminApi', () => ({
   createAdminInvite: vi.fn(),
   resendAdminInvite: vi.fn(),
+  updateAdminUserRole: vi.fn(),
   updateAdminUserStatus: vi.fn(),
 }));
 
@@ -87,6 +89,10 @@ describe('AdminUsersWorkspace', () => {
       ...users[1],
       isActive: false,
     });
+    vi.mocked(updateAdminUserRole).mockResolvedValue({
+      ...users[1],
+      role: 'ADMIN',
+    });
   });
 
   it('filters, sorts, and opens the detail drawer', async () => {
@@ -133,7 +139,7 @@ describe('AdminUsersWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Bob Smith' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText(/latest invitation status/i)).toBeInTheDocument();
-    expect(within(dialog).getByText(/coordinator/i)).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(/global app access/i)).toHaveValue('COORDINATOR');
     expect(within(dialog).getByRole('button', { name: /resend invite/i })).toBeInTheDocument();
   });
 
@@ -177,6 +183,30 @@ describe('AdminUsersWorkspace', () => {
 
     await waitFor(() => {
       expect(updateAdminUserStatus).toHaveBeenCalledWith('user-2', false);
+      expect(onDataChanged).toHaveBeenCalled();
+    });
+  });
+
+  it('updates global app access from the detail drawer', async () => {
+    const user = userEvent.setup();
+    const onDataChanged = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <AdminUsersWorkspace
+        users={users}
+        invitations={invitations}
+        roleCatalog={roleCatalog}
+        onDataChanged={onDataChanged}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Bob Smith' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.selectOptions(within(dialog).getByLabelText(/global app access/i), 'ADMIN');
+    await user.click(within(dialog).getByRole('button', { name: /save app access/i }));
+
+    await waitFor(() => {
+      expect(updateAdminUserRole).toHaveBeenCalledWith('user-2', 'ADMIN');
       expect(onDataChanged).toHaveBeenCalled();
     });
   });

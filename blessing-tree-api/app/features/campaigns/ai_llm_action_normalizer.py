@@ -5,7 +5,6 @@ from collections.abc import Mapping
 from typing import Any
 
 from app.exceptions.service_error import ServiceError
-from app.features.campaigns.studio_constants import MILESTONE_DEFINITIONS
 from app.features.campaigns.studio_validation import validate_audience
 from app.features.campaigns.validation import validate_status_transition
 from app.models.campaign_member_constants import (
@@ -21,6 +20,7 @@ class NormalizationState:
         campaign_name: str,
         templates,
         milestones,
+        milestone_definitions,
         teams,
         members,
         readiness,
@@ -31,6 +31,14 @@ class NormalizationState:
         self.templates = {template.name.casefold(): template for template in templates}
         self.templates_by_key = {template.template_key.casefold(): template for template in templates}
         self.milestones = {milestone.milestone_key: milestone for milestone in milestones}
+        self.milestone_catalog = {
+            definition.milestone_key: {
+                "key": definition.milestone_key,
+                "label": definition.label,
+                "sort_order": definition.default_sort_order,
+            }
+            for definition in milestone_definitions
+        }
         self.teams = {team.name.casefold(): team for team in teams}
         self.members = {member.display_name.casefold(): member for member in members}
         self.readiness = readiness
@@ -51,6 +59,7 @@ def normalize_llm_draft(
     campaign,
     templates,
     milestones,
+    milestone_definitions,
     teams,
     members,
     readiness,
@@ -64,6 +73,7 @@ def normalize_llm_draft(
         campaign_name=campaign.name,
         templates=templates,
         milestones=milestones,
+        milestone_definitions=milestone_definitions,
         teams=teams,
         members=members,
         readiness=readiness,
@@ -109,7 +119,7 @@ def _normalize_action(
     if action_type == "create_event":
         return _event_action(payload, state)
     if action_type == "create_milestone":
-        return _milestone_action(payload)
+        return _milestone_action(payload, state)
     if action_type == "create_template":
         return _template_action(payload, state)
     if action_type == "create_communication_schedule":
@@ -149,9 +159,10 @@ def _event_action(payload: Mapping[str, Any], state: NormalizationState) -> dict
     )
 
 
-def _milestone_action(payload: Mapping[str, Any]) -> dict[str, Any]:
-    milestone_key = _resolve_milestone_key(payload)
-    label = MILESTONE_DEFINITIONS[milestone_key]
+def _milestone_action(payload: Mapping[str, Any], state: NormalizationState) -> dict[str, Any]:
+    milestone_key = _resolve_milestone_key(payload, state)
+    definition = state.milestone_catalog[milestone_key]
+    label = str(definition["label"])
     return _action(
         "create_milestone",
         "schedule",
@@ -162,7 +173,7 @@ def _milestone_action(payload: Mapping[str, Any]) -> dict[str, Any]:
             "label": label,
             "occurs_on": _required_text(payload.get("occurs_on"), "occurs_on"),
             "notes": _optional_text(payload.get("notes")),
-            "sort_order": list(MILESTONE_DEFINITIONS.keys()).index(milestone_key) + 1,
+            "sort_order": int(definition["sort_order"]),
         },
         {"api": "campaign_milestone.replace", "method": "PUT"},
     )
@@ -211,7 +222,7 @@ def _schedule_action(payload: Mapping[str, Any], state: NormalizationState) -> d
     else:
         raise ValueError("Communication schedule needs template_name or template_key that matches a known or drafted template")
 
-    milestone_key = _resolve_optional_milestone_key(payload)
+    milestone_key = _resolve_optional_milestone_key(payload, state)
     scheduled_for = _optional_text(payload.get("scheduled_for"))
     if milestone_key is None and scheduled_for is None:
         raise ValueError("Communication schedule needs milestone_key or scheduled_for")
@@ -324,23 +335,24 @@ def _action(action_type: str, section: str, title: str, summary: str, payload: M
     }
 
 
-def _resolve_milestone_key(payload: Mapping[str, Any]) -> str:
+def _resolve_milestone_key(payload: Mapping[str, Any], state: NormalizationState) -> str:
     key = _optional_text(payload.get("milestone_key"))
-    if key and key in MILESTONE_DEFINITIONS:
+    if key and key in state.milestone_catalog:
         return key
     name = _optional_text(payload.get("milestone_name"))
     if name:
         normalized = name.casefold()
-        for milestone_key, label in MILESTONE_DEFINITIONS.items():
+        for milestone_key, definition in state.milestone_catalog.items():
+            label = str(definition["label"])
             if label.casefold() == normalized or milestone_key.replace("_", " ") == normalized:
                 return milestone_key
     raise ValueError("Milestone action references an unknown milestone")
 
 
-def _resolve_optional_milestone_key(payload: Mapping[str, Any]) -> str | None:
+def _resolve_optional_milestone_key(payload: Mapping[str, Any], state: NormalizationState) -> str | None:
     if payload.get("milestone_key") in (None, "") and payload.get("milestone_name") in (None, ""):
         return None
-    return _resolve_milestone_key(payload)
+    return _resolve_milestone_key(payload, state)
 
 
 def _derive_template_key(name: str) -> str:

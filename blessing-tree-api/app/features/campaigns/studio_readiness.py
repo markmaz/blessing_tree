@@ -20,8 +20,10 @@ from app.features.campaigns.studio_constants import (
 from app.features.campaigns.studio_readiness_rules import (
     build_automation_rules,
     build_communications_rules,
+    build_gift_reminder_rules,
     build_lifecycle_rules,
     build_metadata_rules,
+    build_public_sponsor_rules,
     build_schedule_rules,
     build_team_rules,
 )
@@ -37,15 +39,35 @@ def build_campaign_readiness(
     templates,
     manual_events,
     automation_snapshot: dict[str, object] | None = None,
+    configured_items: list[dict[str, object]] | None = None,
+    gift_reminder_rules=None,
 ) -> dict[str, object]:
+    configured_items = configured_items or []
+    configured_codes = {str(item.get("code")) for item in configured_items}
+    schedule_items = build_schedule_rules(milestones, schedules, manual_events)
+    if any(code.startswith("missing_required_milestone_") for code in configured_codes):
+        schedule_items = [
+            item
+            for item in schedule_items
+            if item.get("code") != "missing_milestones"
+        ]
+    public_sponsor_items = [
+        item
+        for item in build_public_sponsor_rules(campaign, milestones)
+        if str(item.get("code")) not in configured_codes
+    ]
     items = [
         *build_metadata_rules(campaign),
         *build_team_rules(assignments, role_counts),
-        *build_schedule_rules(milestones, schedules, manual_events),
+        *schedule_items,
         *build_communications_rules(templates, schedules),
+        *public_sponsor_items,
+        *configured_items,
+        *build_gift_reminder_rules(campaign, milestones, templates, gift_reminder_rules or []),
         *build_automation_rules(campaign, schedules, automation_snapshot or {}),
         *build_lifecycle_rules(campaign),
     ]
+    items = _dedupe_missing_milestone_items(items)
 
     groups = {category: [] for category in READINESS_CATEGORIES}
     for item in items:
@@ -70,6 +92,38 @@ def build_campaign_readiness(
             category: len(groups[category]) for category in READINESS_CATEGORIES
         },
     }
+
+
+def _dedupe_missing_milestone_items(items: list[dict[str, object]]) -> list[dict[str, object]]:
+    severity_rank = {"error": 3, "warning": 2, "info": 1}
+    highest_by_milestone: dict[str, int] = {}
+    for item in items:
+        milestone_key = _missing_milestone_key(item)
+        if not milestone_key:
+            continue
+        highest_by_milestone[milestone_key] = max(
+            highest_by_milestone.get(milestone_key, 0),
+            severity_rank.get(str(item.get("severity")), 0),
+        )
+
+    deduped: list[dict[str, object]] = []
+    for item in items:
+        milestone_key = _missing_milestone_key(item)
+        if milestone_key and severity_rank.get(str(item.get("severity")), 0) < highest_by_milestone[milestone_key]:
+            continue
+        deduped.append(item)
+    return deduped
+
+
+def _missing_milestone_key(item: dict[str, object]) -> str | None:
+    details = item.get("details")
+    if isinstance(details, dict) and details.get("rule_type") == "MISSING_MILESTONE":
+        milestone_key = details.get("milestone_key")
+        return str(milestone_key) if milestone_key else None
+    code = str(item.get("code") or "")
+    if code == "missing_milestones" or code.startswith("missing_required_milestone_"):
+        return ""
+    return None
 
 
 def build_phase_status(items: list[dict[str, object]]) -> dict[str, str]:

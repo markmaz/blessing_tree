@@ -83,6 +83,20 @@ interface WishlistResponse {
   updated_at: string | null;
 }
 
+interface WorkflowSummaryResponse {
+  item_count: number;
+  sponsored_item_count: number;
+  fulfilled_item_count: number;
+  ready_for_pickup_item_count: number;
+  picked_up_item_count: number;
+  open_item_count: number;
+  coverage_rule: CampaignRecipient['workflowSummary']['coverageRule'];
+  coverage_required_count: number;
+  coverage_sponsored_count: number;
+  coverage_remaining_count: number;
+  coverage_met: boolean;
+}
+
 interface RecipientResponse {
   id: string;
   campaign_id: string;
@@ -119,7 +133,7 @@ interface RecipientResponse {
     status: CampaignPeopleGroup['status'];
   } | null;
   wishlist: WishlistResponse | null;
-  workflow_summary: CampaignRecipient['workflowSummary'];
+  workflow_summary: WorkflowSummaryResponse;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -144,7 +158,7 @@ interface GroupResponse {
   contacts: GroupContactResponse[];
   authorized_pickup_contacts: GroupContactResponse[];
   recipient_count: number;
-  workflow_summary: CampaignPeopleGroup['workflowSummary'];
+  workflow_summary: WorkflowSummaryResponse;
   recipients: RecipientResponse[];
   created_at: string | null;
   updated_at: string | null;
@@ -166,6 +180,8 @@ interface PeopleWorkspaceResponse {
     fulfilled_item_count: number;
     ready_for_pickup_item_count: number;
     picked_up_item_count: number;
+    recipients_covered_count: number;
+    recipients_needing_gifts_count: number;
     groups_with_pickup_contacts_count: number;
     groups_missing_primary_contact_count: number;
     adults_with_direct_contact_count: number;
@@ -214,6 +230,8 @@ export async function getCampaignPeopleWorkspace(
       fulfilledItemCount: response.counts.fulfilled_item_count,
       readyForPickupItemCount: response.counts.ready_for_pickup_item_count,
       pickedUpItemCount: response.counts.picked_up_item_count,
+      recipientsCoveredCount: response.counts.recipients_covered_count,
+      recipientsNeedingGiftsCount: response.counts.recipients_needing_gifts_count,
       groupsWithPickupContactsCount: response.counts.groups_with_pickup_contacts_count,
       groupsMissingPrimaryContactCount: response.counts.groups_missing_primary_contact_count,
       adultsWithDirectContactCount: response.counts.adults_with_direct_contact_count,
@@ -463,7 +481,7 @@ function mapGroup(response: GroupResponse): CampaignPeopleGroup {
     contacts: response.contacts.map(mapGroupContact),
     authorizedPickupContacts: response.authorized_pickup_contacts.map(mapGroupContact),
     recipientCount: response.recipient_count,
-    workflowSummary: response.workflow_summary,
+    workflowSummary: mapWorkflowSummary(response.workflow_summary),
     recipients: response.recipients.map(mapRecipient),
     createdAt: response.created_at,
     updatedAt: response.updated_at,
@@ -509,9 +527,25 @@ function mapRecipient(response: RecipientResponse): CampaignRecipient {
         }
       : null,
     wishlist: response.wishlist ? mapWishlist(response.wishlist) : null,
-    workflowSummary: response.workflow_summary,
+    workflowSummary: mapWorkflowSummary(response.workflow_summary),
     createdAt: response.created_at,
     updatedAt: response.updated_at,
+  };
+}
+
+function mapWorkflowSummary(response: WorkflowSummaryResponse): CampaignRecipient['workflowSummary'] {
+  return {
+    itemCount: response.item_count,
+    sponsoredItemCount: response.sponsored_item_count,
+    fulfilledItemCount: response.fulfilled_item_count,
+    readyForPickupItemCount: response.ready_for_pickup_item_count,
+    pickedUpItemCount: response.picked_up_item_count,
+    openItemCount: response.open_item_count,
+    coverageRule: response.coverage_rule,
+    coverageRequiredCount: response.coverage_required_count,
+    coverageSponsoredCount: response.coverage_sponsored_count,
+    coverageRemainingCount: response.coverage_remaining_count,
+    coverageMet: response.coverage_met,
   };
 }
 

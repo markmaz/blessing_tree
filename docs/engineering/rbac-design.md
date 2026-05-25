@@ -2,7 +2,9 @@
 
 ## Status
 
-- Proposed and accepted for implementation planning on 2026-05-20
+- Updated for user-access implementation planning on 2026-05-24
+- Backend foundation exists: global app roles, campaign role assignments, capability constants, and campaign capability route guards
+- Remaining work is mostly operational usability: role catalog refinement, Admin User Management workflows, frontend nav/route gating, and endpoint audit
 
 ## Summary
 
@@ -108,13 +110,21 @@ roles defined in code.
 
 ## Role Catalog
 
-Recommended initial campaign roles:
+Recommended campaign roles:
 
 - `CAMPAIGN_MANAGER`
-- `RECIPIENT_COORDINATOR`
-- `DONATION_ENTRY`
-- `GIFT_CHECKIN`
-- `VOLUNTEER_VIEWER`
+- `PEOPLE_MANAGER`
+- `SPONSOR_MANAGER`
+- `GIFT_OPERATIONS`
+- `GIFT_SEARCH_USER`
+- `REPORTS_VIEWER`
+- `CAMPAIGN_VIEWER`
+
+Compatibility note:
+
+- The current code already has `RECIPIENT_COORDINATOR`, `DONATION_ENTRY`, `GIFT_CHECKIN`, and `VOLUNTEER_VIEWER`.
+- We can either rename these in-place through a migration/UI label pass, or keep the stored keys and present friendlier labels in the UI.
+- Prefer stable stored keys only if there is already production-like data depending on them. In current development mode, renaming to clearer role keys is acceptable.
 
 Recommended capability bundles:
 
@@ -122,30 +132,55 @@ Recommended capability bundles:
 
 - all campaign-scoped capabilities
 
-### `RECIPIENT_COORDINATOR`
+### `PEOPLE_MANAGER`
 
 - `campaign.view`
 - `campaign.recipients.view`
 - `campaign.recipients.edit`
-- `campaign.sponsors.view`
+- `campaign.pickups.manage`
 - `campaign.reports.view`
 
-### `DONATION_ENTRY`
+### `SPONSOR_MANAGER`
+
+- `campaign.view`
+- `campaign.sponsors.view`
+- `campaign.sponsors.manage`
+- `campaign.reports.view`
+
+### `GIFT_OPERATIONS`
+
+- `campaign.view`
+- `campaign.gifts.search`
+- `campaign.gifts.commit`
+- `campaign.gifts.check_in`
+- `campaign.gifts.wrap`
+- `campaign.gifts.distribute`
+- `campaign.gifts.pool.manage`
+- `campaign.reports.view`
+
+### `GIFT_SEARCH_USER`
+
+- `campaign.view`
+- `campaign.gifts.search`
+- `campaign.gifts.commit`
+- `campaign.sponsors.view`
+
+### `REPORTS_VIEWER`
+
+- `campaign.view`
+- `campaign.reports.view`
+
+### `CAMPAIGN_VIEWER`
+
+- `campaign.view`
+
+### Optional Future `DONATION_ENTRY`
+
+Keep this as a narrow role only if donation entry becomes materially separate from gift pool operations.
 
 - `campaign.view`
 - `campaign.donations.view`
 - `campaign.donations.edit`
-
-### `GIFT_CHECKIN`
-
-- `campaign.view`
-- `campaign.gifts.check_in`
-- `campaign.gifts.wrap`
-
-### `VOLUNTEER_VIEWER`
-
-- `campaign.view`
-- limited read-only screens as needed
 
 ## Multiple Roles Per Campaign
 
@@ -258,6 +293,20 @@ Frontend should use effective capabilities for:
 - nav visibility
 - disabling or hiding buttons/forms
 - page-specific guard components
+
+Navigation should be capability-based, not role-name-based.
+
+Example mapping:
+
+- Campaign Studio: `campaign.admin` for editing settings/rules; `campaign.view` for read-only view
+- People: `campaign.recipients.view`; edit actions require `campaign.recipients.edit`
+- Sponsors: `campaign.sponsors.view`; mutating sponsor actions require `campaign.sponsors.manage`
+- Gift Search: `campaign.gifts.search`
+- Gift commit/reserve actions: `campaign.gifts.commit`
+- Gift Operations/Scan: `campaign.gifts.check_in`, `campaign.gifts.wrap`, `campaign.gifts.distribute`
+- Gift Pool: `campaign.gifts.pool.manage`
+- Reports: `campaign.reports.view`
+- Admin: global `APP_ADMIN`
 
 The frontend should not hardcode business access decisions independently from
 backend capability names.

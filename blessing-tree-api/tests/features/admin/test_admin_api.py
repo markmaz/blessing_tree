@@ -39,6 +39,10 @@ def app(monkeypatch: pytest.MonkeyPatch) -> Generator[Flask, None, None]:
 
     Base.metadata.create_all(engine)
     session_factory = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+    seed_session = session_factory()
+    _seed_default_milestone_definitions(seed_session)
+    seed_session.commit()
+    seed_session.close()
     session_manager = _SessionManager(session_factory)
 
     monkeypatch.setattr("app.features.admin.api.SessionLocal", session_manager)
@@ -94,6 +98,38 @@ def seed_user(db: Session, *, email: str, role: str = "VOLUNTEER", name: str = "
     db.add(user)
     db.flush()
     return user
+
+
+def seed_campaign(db: Session, *, name: str, year: int = 2026, status: str = "ACTIVE"):
+    from app.models.campaign import Campaign
+
+    campaign = Campaign(
+        id=uuid.uuid4(),
+        name=name,
+        year=year,
+        status=status,
+    )
+    db.add(campaign)
+    db.flush()
+    return campaign
+
+
+def _seed_default_milestone_definitions(db: Session) -> None:
+    from app.features.campaigns.studio_constants import MILESTONE_DEFINITIONS
+    from app.models.campaign_milestone_definition import CampaignMilestoneDefinition
+
+    for sort_order, (milestone_key, label) in enumerate(MILESTONE_DEFINITIONS.items(), start=1):
+        db.add(
+            CampaignMilestoneDefinition(
+                id=uuid.uuid4(),
+                milestone_key=milestone_key,
+                label=label,
+                feature_area="GENERAL",
+                default_sort_order=sort_order,
+                is_active=True,
+                is_system=True,
+            )
+        )
 
 
 def test_admin_invitation_accept_flow(
@@ -258,6 +294,135 @@ def test_invite_google_callback_accepts_invitation_and_links_identity(
     with client.session_transaction() as session:
         assert "bt_invite_token" not in session
         assert "bt_invite_provider" not in session
+
+
+def test_admin_can_manage_campaign_operation_definitions(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    from app.features.admin import api as admin_api
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="ops-admin@blessingtree.test", role="ADMIN", name="Ops Admin")
+        admin_user_id = str(admin_user.id)
+        db.commit()
+
+    headers = auth_header(admin_user_id, "ADMIN")
+
+    milestone_response = client.post(
+        "/api/v1/admin/campaign-operations/milestone-definitions",
+        json={
+            "milestone_key": "custom_turn_in",
+            "label": "Custom Turn-In",
+            "description": "Custom admin-defined date.",
+            "feature_area": "GIFTS",
+            "default_sort_order": 50,
+        },
+        headers=headers,
+    )
+
+    assert milestone_response.status_code == 201
+    milestone = milestone_response.get_json()["milestone_definition"]
+    assert milestone["milestone_key"] == "custom_turn_in"
+    assert milestone["feature_area"] == "GIFTS"
+
+    duplicate_response = client.post(
+        "/api/v1/admin/campaign-operations/milestone-definitions",
+        json={
+            "milestone_key": "custom_turn_in",
+            "label": "Duplicate",
+            "feature_area": "GIFTS",
+        },
+        headers=headers,
+    )
+    assert duplicate_response.status_code == 409
+
+    options_response = client.get(
+        "/api/v1/admin/campaign-operations/readiness-rule-options",
+        headers=headers,
+    )
+    assert options_response.status_code == 200
+    assert "CAMPAIGN_FIELD_TRUE" in options_response.get_json()["condition_types"]
+    assert any(item["milestone_key"] == "custom_turn_in" for item in options_response.get_json()["milestone_definitions"])
+
+    rule_response = client.post(
+        "/api/v1/admin/campaign-operations/readiness-rules",
+        json={
+            "rule_key": "missing_custom_turn_in",
+            "name": "Missing Custom Turn-In",
+            "rule_type": "MISSING_MILESTONE",
+            "feature_area": "GIFTS",
+            "condition_type": "ALWAYS",
+            "milestone_key": "custom_turn_in",
+            "severity": "warning",
+            "category": "launch_checks",
+            "blocking_for": ["activate"],
+            "section": "schedule",
+            "message": "Add the custom turn-in milestone.",
+        },
+        headers=headers,
+    )
+
+    assert rule_response.status_code == 201
+    rule = rule_response.get_json()["readiness_rule"]
+    assert rule["rule_key"] == "missing_custom_turn_in"
+    assert rule["blocking_for"] == ["activate"]
+
+    blocked_deactivate_response = client.patch(
+        f"/api/v1/admin/campaign-operations/milestone-definitions/{milestone['id']}",
+        json={"is_active": False},
+        headers=headers,
+    )
+    assert blocked_deactivate_response.status_code == 409
+    blocked_payload = blocked_deactivate_response.get_json()
+    assert blocked_payload["details"]["milestone_key"] == "custom_turn_in"
+    assert blocked_payload["details"]["active_readiness_rule_count"] == 1
+
+    patch_response = client.patch(
+        f"/api/v1/admin/campaign-operations/readiness-rules/{rule['id']}",
+        json={"is_active": False, "message": "Custom turn-in is currently disabled."},
+        headers=headers,
+    )
+    assert patch_response.status_code == 200
+    assert patch_response.get_json()["readiness_rule"]["is_active"] is False
+
+    deactivate_response = client.patch(
+        f"/api/v1/admin/campaign-operations/milestone-definitions/{milestone['id']}",
+        json={"is_active": False},
+        headers=headers,
+    )
+    assert deactivate_response.status_code == 200
+    assert deactivate_response.get_json()["milestone_definition"]["is_active"] is False
+
+
+def test_campaign_operation_definition_mutation_requires_admin(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    from app.features.admin import api as admin_api
+
+    with admin_api.SessionLocal() as db:
+        user = seed_user(db, email="not-admin@blessingtree.test", role="VOLUNTEER", name="Not Admin")
+        user_id = str(user.id)
+        db.commit()
+
+    response = client.post(
+        "/api/v1/admin/campaign-operations/milestone-definitions",
+        json={
+            "milestone_key": "blocked_for_non_admin",
+            "label": "Blocked",
+            "feature_area": "GENERAL",
+        },
+        headers=auth_header(user_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 403
 
 
 def test_feature_flags_list_and_update(
@@ -530,3 +695,109 @@ def test_admin_can_deactivate_and_reactivate_user(
     )
     assert reactivate_response.status_code == 200
     assert reactivate_response.get_json()["user"]["is_active"] is True
+
+
+def test_admin_can_update_user_global_app_role(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    from app.features.admin import api as admin_api
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="admin-role@blessingtree.test", role="ADMIN", name="Admin User")
+        member_user = seed_user(db, email="member-role@blessingtree.test", role="COORDINATOR", name="Member User")
+        admin_user_id = str(admin_user.id)
+        member_user_id = str(member_user.id)
+        db.commit()
+
+    response = client.patch(
+        f"/api/v1/admin/users/{member_user_id}/role",
+        json={"role": "ADMIN"},
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["user"]["role"] == "ADMIN"
+
+
+def test_admin_can_manage_simple_campaign_access(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    from app.features.admin import api as admin_api
+    from app.features.rbac.models.campaign_user_role import CampaignUserRole
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="admin-access@blessingtree.test", role="ADMIN", name="Admin User")
+        member_user = seed_user(db, email="member-access@blessingtree.test", role="COORDINATOR", name="Member User")
+        campaign = seed_campaign(db, name="Holiday 2026")
+        other_campaign = seed_campaign(db, name="Holiday 2025", year=2025)
+        admin_user_id = str(admin_user.id)
+        member_user_id = str(member_user.id)
+        campaign_id = str(campaign.id)
+        other_campaign_id = str(other_campaign.id)
+        db.commit()
+
+    update_response = client.put(
+        f"/api/v1/admin/users/{member_user_id}/campaign-access",
+        json={
+            "assignments": [
+                {"campaign_id": campaign_id, "role_keys": ["GIFT_CHECKIN"]},
+                {"campaign_id": other_campaign_id, "role_keys": []},
+            ],
+        },
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+
+    assert update_response.status_code == 200
+    update_payload = update_response.get_json()
+    assert update_payload["user_id"] == member_user_id
+    assert any(item["role_key"] == "GIFT_OPERATIONS" for item in update_payload["role_catalog"])
+    assigned_campaign = next(row for row in update_payload["campaigns"] if row["campaign"]["id"] == campaign_id)
+    unassigned_campaign = next(row for row in update_payload["campaigns"] if row["campaign"]["id"] == other_campaign_id)
+    assert assigned_campaign["role_keys"] == ["GIFT_OPERATIONS"]
+    assert "campaign.gifts.check_in" in assigned_campaign["capabilities"]
+    assert "campaign.gifts.distribute" in assigned_campaign["capabilities"]
+    assert unassigned_campaign["role_keys"] == []
+    assert unassigned_campaign["capabilities"] == []
+
+    get_response = client.get(
+        f"/api/v1/admin/users/{member_user_id}/campaign-access",
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+
+    assert get_response.status_code == 200
+    get_payload = get_response.get_json()
+    get_assigned_campaign = next(row for row in get_payload["campaigns"] if row["campaign"]["id"] == campaign_id)
+    assert get_assigned_campaign["role_keys"] == ["GIFT_OPERATIONS"]
+
+    with admin_api.SessionLocal() as db:
+        rows = db.query(CampaignUserRole).filter(CampaignUserRole.user_id == uuid.UUID(member_user_id)).all()
+        assert [(str(row.campaign_id), row.role_key) for row in rows] == [(campaign_id, "GIFT_OPERATIONS")]
+
+
+def test_campaign_access_management_requires_app_admin(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    from app.features.admin import api as admin_api
+
+    with admin_api.SessionLocal() as db:
+        user = seed_user(db, email="access-nonadmin@blessingtree.test", role="COORDINATOR", name="Not Admin")
+        target_user = seed_user(db, email="access-target@blessingtree.test", role="COORDINATOR", name="Target")
+        user_id = str(user.id)
+        target_user_id = str(target_user.id)
+        db.commit()
+
+    response = client.get(
+        f"/api/v1/admin/users/{target_user_id}/campaign-access",
+        headers=auth_header(user_id, "COORDINATOR"),
+    )
+
+    assert response.status_code == 403

@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.exceptions.service_error import ServiceError
+from app.features.campaigns.gift_policy_service import CampaignGiftPolicyService
 from app.features.campaigns.service import CampaignService
 from app.features.recipients.validation import (
     parse_bool,
@@ -56,17 +57,30 @@ from app.models.recipient_constants import (
     WISHLIST_ITEM_TYPE_GIFT,
 )
 
+FULFILLED_GIFT_STATUSES = {
+    "RECEIVED",
+    "WRAPPED",
+    "TAGGED",
+    "READY_FOR_DISTRIBUTION",
+    "DISTRIBUTED",
+    "PICKED_UP",
+}
+OPEN_SPONSORSHIP_STATUSES = {"OPEN", "RESERVED"}
+
 
 class CampaignRecipientService:
     def __init__(self, campaign_service: CampaignService | None = None) -> None:
         self.campaigns = campaign_service or CampaignService()
+        self.gift_policy = CampaignGiftPolicyService(self.campaigns)
 
     def get_workspace_payload(self, db: Session, campaign_id: str) -> dict[str, object]:
+        policy = self.gift_policy.get_policy(db, campaign_id)
         groups = self.list_groups(db, campaign_id)
         recipients = self.list_recipients(db, campaign_id)
         return {
             "campaign_id": campaign_id,
-            "counts": self._build_counts(groups, recipients),
+            "counts": self._build_counts(groups, recipients, policy),
+            "gift_policy": policy,
             "groups": groups,
             "recipients": recipients,
         }
@@ -503,6 +517,7 @@ class CampaignRecipientService:
         payload: dict[str, object],
     ) -> WishlistItem:
         wishlist = self.upsert_wishlist(db, campaign_id, recipient_id, {})
+        self.gift_policy.enforce_wishlist_item_limit(db, campaign_id=campaign_id, wishlist=wishlist)
         item = WishlistItem(
             id=uuid.uuid4(),
             wishlist_id=wishlist.id,
@@ -772,7 +787,7 @@ class CampaignRecipientService:
             recipient.program_recipient_id = None
 
     @staticmethod
-    def _build_counts(groups: list[RecipientGroup], recipients: list[Recipient]) -> dict[str, int]:
+    def _build_counts(groups: list[RecipientGroup], recipients: list[Recipient], policy) -> dict[str, int]:
         group_counts = Counter(group.group_type for group in groups)
         recipient_counts = Counter(recipient.recipient_kind for recipient in recipients)
         wishlists = [recipient.wishlist for recipient in recipients if recipient.wishlist is not None]
@@ -786,9 +801,18 @@ class CampaignRecipientService:
         ready_for_pickup_item_count = 0
         picked_up_item_count = 0
         open_items_count = 0
+        recipients_needing_gifts_count = 0
+        recipients_covered_count = 0
+        for recipient in recipients:
+            recipient_items = list(recipient.wishlist.items or []) if recipient.wishlist is not None else []
+            coverage = _recipient_coverage_summary(policy, recipient_items)
+            if coverage["is_covered"]:
+                recipients_covered_count += 1
+            elif coverage["required_count"] > 0:
+                recipients_needing_gifts_count += 1
         for item in wishlist_items:
             qty_fulfilled = sum(row.quantity_fulfilled for row in list(item.fulfillment_rows or []))
-            is_fully_fulfilled = qty_fulfilled >= item.qty_requested
+            is_fully_fulfilled = item.status in FULFILLED_GIFT_STATUSES or qty_fulfilled >= item.qty_requested
             is_picked_up = item.pickup_item is not None or item.picked_up_at is not None
             if is_fully_fulfilled:
                 fulfilled_item_count += 1
@@ -796,7 +820,7 @@ class CampaignRecipientService:
                 ready_for_pickup_item_count += 1
             if is_picked_up:
                 picked_up_item_count += 1
-            if not is_fully_fulfilled and not is_picked_up:
+            if item.status in OPEN_SPONSORSHIP_STATUSES and item.sponsorship_item is None and not is_picked_up:
                 open_items_count += 1
         groups_with_pickup_contacts_count = sum(
             1 for group in groups if any(contact.can_pick_up for contact in list(group.contacts or []))
@@ -835,6 +859,8 @@ class CampaignRecipientService:
             "fulfilled_item_count": fulfilled_item_count,
             "ready_for_pickup_item_count": ready_for_pickup_item_count,
             "picked_up_item_count": picked_up_item_count,
+            "recipients_covered_count": recipients_covered_count,
+            "recipients_needing_gifts_count": recipients_needing_gifts_count,
             "groups_with_pickup_contacts_count": groups_with_pickup_contacts_count,
             "groups_missing_primary_contact_count": groups_missing_primary_contact_count,
             "adults_with_direct_contact_count": adults_with_direct_contact_count,
@@ -877,3 +903,26 @@ class CampaignRecipientService:
             joinedload(WishlistItem.pickup_item)
             .joinedload(PickupItem.pickup),
         )
+
+
+def _recipient_coverage_summary(policy, items: list[WishlistItem]) -> dict[str, int | bool | str]:
+    total_count = len(items)
+    sponsored_count = sum(1 for item in items if item.sponsorship_item is not None)
+    required_count = _recipient_required_sponsored_count(policy, total_count)
+    return {
+        "rule": policy.recipient_coverage_rule,
+        "required_count": required_count,
+        "sponsored_count": sponsored_count,
+        "remaining_count": max(required_count - sponsored_count, 0),
+        "is_covered": total_count > 0 and sponsored_count >= required_count,
+    }
+
+
+def _recipient_required_sponsored_count(policy, total_count: int) -> int:
+    if total_count <= 0:
+        return 0
+    if policy.recipient_coverage_rule == "ONE_GIFT_SPONSORED":
+        return 1
+    if policy.recipient_coverage_rule == "MIN_GIFTS_SPONSORED":
+        return min(policy.recipient_coverage_required_count, total_count)
+    return total_count

@@ -30,4 +30,5 @@ SECTION_ACTION_LABELS = {
     "schedule": "Open Schedule",
     "readiness": "Open Readiness",
     "settings": "Open Settings",
+    "sponsors": "Open Sponsors",
 }

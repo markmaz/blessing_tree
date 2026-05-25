@@ -9,6 +9,16 @@ from app.models.recipient_group import RecipientGroup
 from app.models.wishlist import Wishlist
 from app.models.wishlist_item import WishlistItem
 
+FULFILLED_GIFT_STATUSES = {
+    "RECEIVED",
+    "WRAPPED",
+    "TAGGED",
+    "READY_FOR_DISTRIBUTION",
+    "DISTRIBUTED",
+    "PICKED_UP",
+}
+OPEN_SPONSORSHIP_STATUSES = {"OPEN", "RESERVED"}
+
 
 def serialize_group_contact(contact: GroupContact) -> dict[str, Any]:
     return {
@@ -83,7 +93,7 @@ def serialize_wishlist_item(item: WishlistItem) -> dict[str, Any]:
     }
 
 
-def serialize_workflow_summary(items: list[WishlistItem]) -> dict[str, Any]:
+def serialize_workflow_summary(items: list[WishlistItem], gift_policy: Any | None = None) -> dict[str, Any]:
     sponsored_count = 0
     fulfilled_count = 0
     ready_for_pickup_count = 0
@@ -95,7 +105,7 @@ def serialize_workflow_summary(items: list[WishlistItem]) -> dict[str, Any]:
         fulfillment_rows = list(item.fulfillment_rows or [])
         pickup_item = item.pickup_item
         qty_fulfilled = sum(row.quantity_fulfilled for row in fulfillment_rows)
-        is_fully_fulfilled = qty_fulfilled >= item.qty_requested
+        is_fully_fulfilled = item.status in FULFILLED_GIFT_STATUSES or qty_fulfilled >= item.qty_requested
         is_picked_up = pickup_item is not None or item.picked_up_at is not None
 
         if sponsorship_item is not None:
@@ -106,10 +116,11 @@ def serialize_workflow_summary(items: list[WishlistItem]) -> dict[str, Any]:
             ready_for_pickup_count += 1
         if is_picked_up:
             picked_up_count += 1
-        if not is_fully_fulfilled and not is_picked_up:
+        if item.status in OPEN_SPONSORSHIP_STATUSES and sponsorship_item is None and not is_picked_up:
             open_count += 1
 
     total_count = len(items)
+    coverage = _recipient_coverage_summary(gift_policy, items, sponsored_count)
 
     return {
         "item_count": total_count,
@@ -118,6 +129,11 @@ def serialize_workflow_summary(items: list[WishlistItem]) -> dict[str, Any]:
         "ready_for_pickup_item_count": ready_for_pickup_count,
         "picked_up_item_count": picked_up_count,
         "open_item_count": open_count,
+        "coverage_rule": coverage["rule"],
+        "coverage_required_count": coverage["required_count"],
+        "coverage_sponsored_count": coverage["sponsored_count"],
+        "coverage_remaining_count": coverage["remaining_count"],
+        "coverage_met": coverage["is_covered"],
     }
 
 
@@ -146,7 +162,7 @@ def serialize_wishlist(wishlist: Wishlist) -> dict[str, Any]:
     }
 
 
-def serialize_recipient(recipient: Recipient) -> dict[str, Any]:
+def serialize_recipient(recipient: Recipient, gift_policy: Any | None = None) -> dict[str, Any]:
     wishlist_items = list(recipient.wishlist.items or []) if recipient.wishlist is not None else []
     return {
         "id": str(recipient.id),
@@ -188,13 +204,13 @@ def serialize_recipient(recipient: Recipient) -> dict[str, Any]:
             else None
         ),
         "wishlist": serialize_wishlist(recipient.wishlist) if recipient.wishlist is not None else None,
-        "workflow_summary": serialize_workflow_summary(wishlist_items),
+        "workflow_summary": serialize_workflow_summary(wishlist_items, gift_policy),
         "created_at": _serialize_datetime(recipient.created_at),
         "updated_at": _serialize_datetime(recipient.updated_at),
     }
 
 
-def serialize_recipient_group(group: RecipientGroup) -> dict[str, Any]:
+def serialize_recipient_group(group: RecipientGroup, gift_policy: Any | None = None) -> dict[str, Any]:
     contacts = list(group.contacts or [])
     recipients = list(group.recipients or [])
     pickup_contacts = [contact for contact in contacts if contact.can_pick_up]
@@ -228,8 +244,8 @@ def serialize_recipient_group(group: RecipientGroup) -> dict[str, Any]:
         "contacts": [serialize_group_contact(contact) for contact in contacts],
         "authorized_pickup_contacts": [serialize_group_contact(contact) for contact in pickup_contacts],
         "recipient_count": len(recipients),
-        "workflow_summary": serialize_workflow_summary(workflow_items),
-        "recipients": [serialize_recipient(recipient) for recipient in recipients],
+        "workflow_summary": serialize_workflow_summary(workflow_items, gift_policy),
+        "recipients": [serialize_recipient(recipient, gift_policy) for recipient in recipients],
         "created_at": _serialize_datetime(group.created_at),
         "updated_at": _serialize_datetime(group.updated_at),
     }
@@ -239,11 +255,12 @@ def serialize_people_workspace(
     *,
     campaign_id: str,
     counts: dict[str, int],
+    gift_policy: Any | None = None,
     groups: list[RecipientGroup],
     recipients: list[Recipient],
 ) -> dict[str, Any]:
-    group_rows = [serialize_recipient_group(group) for group in groups]
-    recipient_rows = [serialize_recipient(recipient) for recipient in recipients]
+    group_rows = [serialize_recipient_group(group, gift_policy) for group in groups]
+    recipient_rows = [serialize_recipient(recipient, gift_policy) for recipient in recipients]
     return {
         "campaign_id": campaign_id,
         "counts": counts,
@@ -256,6 +273,30 @@ def serialize_people_workspace(
             "recipient_kinds": sorted({recipient["recipient_kind"] for recipient in recipient_rows}),
             "recipient_statuses": sorted({recipient["status"] for recipient in recipient_rows}),
         },
+    }
+
+
+def _recipient_coverage_summary(
+    gift_policy: Any | None,
+    items: list[WishlistItem],
+    sponsored_count: int,
+) -> dict[str, Any]:
+    rule = getattr(gift_policy, "recipient_coverage_rule", "ALL_GIFTS_SPONSORED")
+    total_count = len(items)
+    if total_count <= 0:
+        required_count = 0
+    elif rule == "ONE_GIFT_SPONSORED":
+        required_count = 1
+    elif rule == "MIN_GIFTS_SPONSORED":
+        required_count = min(int(getattr(gift_policy, "recipient_coverage_required_count", 1) or 1), total_count)
+    else:
+        required_count = total_count
+    return {
+        "rule": rule,
+        "required_count": required_count,
+        "sponsored_count": sponsored_count,
+        "remaining_count": max(required_count - sponsored_count, 0),
+        "is_covered": total_count > 0 and sponsored_count >= required_count,
     }
 
 

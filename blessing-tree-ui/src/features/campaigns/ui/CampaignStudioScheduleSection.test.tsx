@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { CampaignStudioScheduleSection } from '@/features/campaigns/ui/CampaignStudioScheduleSection';
 import type {
   CampaignMilestone,
+  CampaignMilestoneDefinition,
   CampaignScheduleItem,
   CommunicationSchedule,
   CommunicationTemplate,
@@ -63,6 +64,21 @@ const milestones: CampaignMilestone[] = [
   },
 ];
 
+const milestoneDefinitions: CampaignMilestoneDefinition[] = [
+  {
+    id: 'definition-1',
+    milestoneKey: 'registration_open',
+    label: 'Registration Opens',
+    description: null,
+    featureArea: 'GENERAL',
+    defaultSortOrder: 1,
+    isActive: true,
+    isSystem: true,
+    createdAt: null,
+    updatedAt: null,
+  },
+];
+
 const templates: CommunicationTemplate[] = [
   {
     id: 'template-1',
@@ -91,6 +107,7 @@ describe('CampaignStudioScheduleSection', () => {
       <CampaignStudioScheduleSection
         access={managerAccess}
         items={scheduleItems}
+        milestoneDefinitions={milestoneDefinitions}
         milestones={milestones}
         schedules={schedules}
         templates={templates}
@@ -136,6 +153,7 @@ describe('CampaignStudioScheduleSection', () => {
       <CampaignStudioScheduleSection
         access={managerAccess}
         items={scheduleItems}
+        milestoneDefinitions={milestoneDefinitions}
         milestones={milestones}
         schedules={schedules}
         templates={templates}
@@ -161,6 +179,7 @@ describe('CampaignStudioScheduleSection', () => {
       <CampaignStudioScheduleSection
         access={viewerAccess}
         items={scheduleItems}
+        milestoneDefinitions={milestoneDefinitions}
         milestones={milestones}
         schedules={schedules}
         templates={templates}
@@ -189,6 +208,7 @@ describe('CampaignStudioScheduleSection', () => {
       <CampaignStudioScheduleSection
         access={managerAccess}
         items={scheduleItems}
+        milestoneDefinitions={milestoneDefinitions}
         milestones={milestones}
         schedules={schedules}
         templates={templates}

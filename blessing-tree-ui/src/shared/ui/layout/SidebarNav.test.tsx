@@ -30,6 +30,40 @@ describe('SidebarNav', () => {
       isFeatureEnabled: () => true,
     });
     mockUseCampaigns.mockReturnValue({
+      campaigns: [
+        {
+          id: 'campaign-123',
+          name: 'Blessing Tree 2026',
+          year: 2026,
+          description: null,
+          seasonTheme: 'Grace & Renewal',
+          status: 'ACTIVE',
+          startDate: '2026-11-01',
+          endDate: '2026-12-20',
+          createdAt: null,
+          updatedAt: null,
+          userAccess: {
+            campaignId: 'campaign-123',
+            globalAppRole: 'APP_ADMIN',
+            roleKeys: ['CAMPAIGN_MANAGER'],
+            capabilities: [
+              'campaign.view',
+              'campaign.admin',
+              'campaign.recipients.view',
+              'campaign.recipients.edit',
+              'campaign.sponsors.view',
+              'campaign.sponsors.manage',
+              'campaign.gifts.search',
+              'campaign.gifts.check_in',
+              'campaign.gifts.wrap',
+              'campaign.gifts.distribute',
+              'campaign.gifts.pool.manage',
+              'campaign.reports.view',
+            ],
+          },
+        },
+      ],
+      isLoading: false,
       selectedCampaignId: 'campaign-123',
       selectedCampaign: {
         id: 'campaign-123',
@@ -42,6 +76,25 @@ describe('SidebarNav', () => {
         endDate: '2026-12-20',
         createdAt: null,
         updatedAt: null,
+        userAccess: {
+          campaignId: 'campaign-123',
+          globalAppRole: 'APP_ADMIN',
+          roleKeys: ['CAMPAIGN_MANAGER'],
+          capabilities: [
+            'campaign.view',
+            'campaign.admin',
+            'campaign.recipients.view',
+            'campaign.recipients.edit',
+            'campaign.sponsors.view',
+            'campaign.sponsors.manage',
+            'campaign.gifts.search',
+            'campaign.gifts.check_in',
+            'campaign.gifts.wrap',
+            'campaign.gifts.distribute',
+            'campaign.gifts.pool.manage',
+            'campaign.reports.view',
+          ],
+        },
       },
     });
   });
@@ -55,6 +108,7 @@ describe('SidebarNav', () => {
 
     expect(screen.getByText(/^admin$/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /user management/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /campaign operations/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /llm configuration/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /health check/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /app capabilities/i })).toBeInTheDocument();
@@ -71,6 +125,21 @@ describe('SidebarNav', () => {
     expect(screen.getAllByText(/intake/i)).toHaveLength(1);
     expect(screen.getByRole('link', { name: /intake/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /directory/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /reports/i })).toHaveAttribute(
+      'href',
+      '/campaigns/campaign-123/people/reports'
+    );
+  });
+
+  it('renders a visible icon for the sponsor navigation group', () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/campaigns/campaign-123/sponsors/intake']}>
+        <SidebarNav isOpen onNavigate={() => {}} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: /sponsors/i })).toBeInTheDocument();
+    expect(container.querySelector('.sidebar-link .bi-award')).toBeInTheDocument();
   });
 
   it('highlights only the people directory path instead of also highlighting campaigns', () => {
@@ -105,10 +174,16 @@ describe('SidebarNav', () => {
       'href',
       '/campaigns/campaign-xyz/people/directory'
     );
+    expect(screen.getByRole('link', { name: /reports/i })).toHaveAttribute(
+      'href',
+      '/campaigns/campaign-xyz/people/reports'
+    );
   });
 
   it('does not render people child links without a campaign context', () => {
     mockUseCampaigns.mockReturnValue({
+      campaigns: [],
+      isLoading: false,
       selectedCampaignId: null,
       selectedCampaign: null,
     });
@@ -121,6 +196,49 @@ describe('SidebarNav', () => {
 
     expect(screen.queryByRole('link', { name: /intake/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /directory/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /reports/i })).not.toBeInTheDocument();
+  });
+
+  it('hides campaign areas that are not allowed by the selected campaign access', () => {
+    mockUseCampaigns.mockReturnValue({
+      campaigns: [
+        {
+          id: 'campaign-123',
+          name: 'Blessing Tree 2026',
+          year: 2026,
+          description: null,
+          seasonTheme: 'Grace & Renewal',
+          status: 'ACTIVE',
+          startDate: '2026-11-01',
+          endDate: '2026-12-20',
+          createdAt: null,
+          updatedAt: null,
+          userAccess: {
+            campaignId: 'campaign-123',
+            globalAppRole: 'APP_USER',
+            roleKeys: ['PEOPLE_MANAGER'],
+            capabilities: [
+              'campaign.view',
+              'campaign.recipients.view',
+              'campaign.recipients.edit',
+            ],
+          },
+        },
+      ],
+      isLoading: false,
+      selectedCampaignId: 'campaign-123',
+      selectedCampaign: null,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/campaigns/campaign-123/people/intake']}>
+        <SidebarNav isOpen onNavigate={() => {}} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: /people/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /sponsors/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /gifts/i })).not.toBeInTheDocument();
   });
 
   it('allows grouped navigation sections to collapse and expand', async () => {
