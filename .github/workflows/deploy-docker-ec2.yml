@@ -1,0 +1,114 @@
+name: Deploy Docker to EC2
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-docker-ec2
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/blessing-tree
+  EC2_PORT: ${{ vars.EC2_PORT || '22' }}
+  EC2_DEPLOY_PATH: ${{ vars.EC2_DEPLOY_PATH || '/opt/blessing-tree' }}
+  BT_HTTP_PORT: ${{ vars.BT_HTTP_PORT || '80' }}
+  BT_HTTPS_PORT: ${{ vars.BT_HTTPS_PORT || '443' }}
+
+jobs:
+  build-and-deploy:
+    name: Build images and deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: blessing-tree-api
+          file: blessing-tree-api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-api:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}-api:latest
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+      - name: Build and push UI image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: blessing-tree-ui/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-ui:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}-ui:latest
+          build-args: |
+            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL || secrets.VITE_API_BASE_URL || '' }}
+          cache-from: type=gha,scope=ui
+          cache-to: type=gha,mode=max,scope=ui
+
+      - name: Resolve image tags
+        id: images
+        run: |
+          set -euo pipefail
+          echo "api=${IMAGE_PREFIX}-api:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "ui=${IMAGE_PREFIX}-ui:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_deploy_key
+          chmod 600 ~/.ssh/ec2_deploy_key
+          ssh-keyscan -p "$EC2_PORT" -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload compose files
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/ec2_deploy_key -p "$EC2_PORT" "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "mkdir -p '$EC2_DEPLOY_PATH/compose' /tmp/blessing-tree-deploy"
+          scp -i ~/.ssh/ec2_deploy_key -P "$EC2_PORT" \
+            docker-compose.yml docker-compose.prod.yml \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:$EC2_DEPLOY_PATH/compose/"
+          ssh -i ~/.ssh/ec2_deploy_key -p "$EC2_PORT" "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "mkdir -p '$EC2_DEPLOY_PATH/compose/deploy/docker/caddy'"
+          scp -i ~/.ssh/ec2_deploy_key -P "$EC2_PORT" deploy/docker/caddy/Caddyfile \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:$EC2_DEPLOY_PATH/compose/deploy/docker/caddy/Caddyfile"
+          scp -i ~/.ssh/ec2_deploy_key -P "$EC2_PORT" scripts/deploy/ec2_docker_deploy.sh \
+            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/blessing-tree-deploy/ec2_docker_deploy.sh"
+
+      - name: Deploy on EC2
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/ec2_deploy_key -p "$EC2_PORT" "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
+            "chmod +x /tmp/blessing-tree-deploy/ec2_docker_deploy.sh && \
+             BT_APP_DIR='$EC2_DEPLOY_PATH' \
+             BT_RELEASE_ID='${{ github.sha }}' \
+             BT_API_IMAGE='${{ steps.images.outputs.api }}' \
+             BT_UI_IMAGE='${{ steps.images.outputs.ui }}' \
+             BT_HTTP_PORT='$BT_HTTP_PORT' \
+             BT_HTTPS_PORT='$BT_HTTPS_PORT' \
+             GHCR_USERNAME='${{ secrets.GHCR_USERNAME }}' \
+             GHCR_TOKEN='${{ secrets.GHCR_TOKEN }}' \
+             /tmp/blessing-tree-deploy/ec2_docker_deploy.sh"
