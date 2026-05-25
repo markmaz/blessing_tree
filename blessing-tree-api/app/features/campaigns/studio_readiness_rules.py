@@ -9,7 +9,10 @@ from app.features.campaigns.readiness_constants import (
     READINESS_PHASE_OPERATIONS,
     SECTION_ACTION_LABELS,
 )
-from app.features.campaigns.studio_constants import REQUIRED_MILESTONE_KEYS
+from app.features.campaigns.studio_constants import (
+    PUBLIC_SPONSOR_REQUIRED_MILESTONE_KEYS,
+    REQUIRED_MILESTONE_KEYS,
+)
 from app.features.rbac.constants import CAMPAIGN_MANAGER_ROLE
 
 
@@ -236,6 +239,95 @@ def build_lifecycle_rules(campaign) -> list[dict[str, object]]:
             blocking_for=[],
         )
     ]
+
+
+def build_public_sponsor_rules(campaign, milestones) -> list[dict[str, object]]:
+    if not getattr(campaign, "public_sponsor_signup_enabled", False):
+        return []
+
+    milestone_keys = {milestone.milestone_key for milestone in milestones}
+    missing_definitions = [
+        (
+            "sponsor_registration_start",
+            "missing_public_sponsor_registration_start",
+            "Public sponsor signup is enabled, but the sponsor registration start milestone is missing.",
+        ),
+        (
+            "sponsor_registration_end",
+            "missing_public_sponsor_registration_end",
+            "Public sponsor signup is enabled, but the sponsor registration end milestone is missing.",
+        ),
+        (
+            "gift_intake_end",
+            "missing_public_sponsor_gift_turn_in",
+            "Public sponsor signup is enabled, but the gift turn-in deadline milestone is missing.",
+        ),
+    ]
+
+    return [
+        readiness_item(
+            severity="error",
+            category=READINESS_CATEGORY_BLOCKERS,
+            code=code,
+            section="schedule",
+            message=message,
+            blocking_for=[READINESS_PHASE_ACTIVATE, READINESS_PHASE_OPERATIONS],
+            details={"missing_key": key},
+        )
+        for key, code, message in missing_definitions
+        if key in PUBLIC_SPONSOR_REQUIRED_MILESTONE_KEYS and key not in milestone_keys
+    ]
+
+
+def build_gift_reminder_rules(campaign, milestones, templates, reminder_rules) -> list[dict[str, object]]:
+    enabled_rules = [rule for rule in reminder_rules if rule.is_enabled]
+    if not enabled_rules:
+        return []
+
+    milestone_keys = {milestone.milestone_key for milestone in milestones}
+    active_template_ids = {template.id for template in templates if template.is_active}
+    category = (
+        READINESS_CATEGORY_OPERATIONAL_HEALTH
+        if campaign.status == "ACTIVE"
+        else READINESS_CATEGORY_LAUNCH_CHECKS
+    )
+    blocking_for = (
+        [READINESS_PHASE_OPERATIONS]
+        if campaign.status == "ACTIVE"
+        else [READINESS_PHASE_ACTIVATE]
+    )
+
+    items: list[dict[str, object]] = []
+    for rule in enabled_rules:
+        if not rule.template_id or rule.template_id not in active_template_ids:
+            items.append(
+                readiness_item(
+                    severity="warning",
+                    category=category,
+                    code="missing_gift_reminder_template",
+                    section="communications",
+                    message=f"Gift reminder rule '{rule.label}' needs an active sponsor email template.",
+                    blocking_for=blocking_for,
+                    details={"rule_id": str(rule.id), "rule_key": rule.rule_key},
+                )
+            )
+        if not rule.milestone_key or rule.milestone_key not in milestone_keys:
+            items.append(
+                readiness_item(
+                    severity="warning",
+                    category=category,
+                    code="missing_gift_reminder_milestone",
+                    section="schedule",
+                    message=f"Gift reminder rule '{rule.label}' needs a valid campaign milestone.",
+                    blocking_for=blocking_for,
+                    details={
+                        "rule_id": str(rule.id),
+                        "rule_key": rule.rule_key,
+                        "milestone_key": rule.milestone_key,
+                    },
+                )
+            )
+    return items
 
 
 def readiness_item(

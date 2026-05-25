@@ -9,6 +9,8 @@ export interface CampaignEditorValues {
   year: string;
   description: string;
   seasonTheme: string;
+  publicSponsorSlug: string;
+  publicSponsorSignupEnabled: boolean;
   status: CampaignStatus;
   startDate: string;
   endDate: string;
@@ -30,6 +32,8 @@ export function buildCampaignEditorValues(
     year: campaign?.year ? String(campaign.year) : '',
     description: campaign?.description ?? '',
     seasonTheme: campaign?.seasonTheme ?? '',
+    publicSponsorSlug: campaign?.publicSponsorSlug ?? '',
+    publicSponsorSignupEnabled: campaign?.publicSponsorSignupEnabled ?? false,
     status: campaign?.status ?? 'DRAFT',
     startDate: campaign?.startDate ?? '',
     endDate: campaign?.endDate ?? '',
@@ -45,6 +49,8 @@ export function toCampaignUpsertInput(
     year: Number(values.year),
     description: values.description.trim() || null,
     seasonTheme: values.seasonTheme.trim() || null,
+    publicSponsorSlug: values.publicSponsorSlug.trim() || null,
+    publicSponsorSignupEnabled: values.publicSponsorSignupEnabled,
     status: values.status,
     startDate: values.startDate || null,
     endDate: values.endDate || null,

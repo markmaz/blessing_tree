@@ -11,7 +11,6 @@ from app.features.admin.llm_runtime_service import (
 )
 from app.features.campaigns.ai_llm_action_normalizer import normalize_llm_draft
 from app.features.campaigns.service import CampaignService
-from app.features.campaigns.studio_constants import MILESTONE_DEFINITIONS
 from app.features.campaigns.studio_service import CampaignStudioService
 from app.features.campaigns.team_workspace_service import CampaignTeamWorkspaceService
 from app.features.rbac.constants import CAMPAIGN_ROLE_CATALOG
@@ -102,6 +101,7 @@ class CampaignStudioLlmDraftService:
                     campaign=campaign,
                     templates=self.studio.list_templates(db, campaign_id),
                     milestones=self.studio.list_milestones(db, campaign_id),
+                    milestone_definitions=self.studio.milestone_definitions.list_active_definitions(db),
                     teams=workspace["teams"],
                     members=workspace["members"],
                     readiness=readiness,
@@ -152,7 +152,14 @@ class CampaignStudioLlmDraftService:
             },
             "allowed_actions": list(allowed_actions),
             "requested_action_type": requested_action_type,
-            "milestone_catalog": [{"key": key, "label": label} for key, label in MILESTONE_DEFINITIONS.items()],
+            "milestone_catalog": [
+                {
+                    "key": definition.milestone_key,
+                    "label": definition.label,
+                    "sort_order": definition.default_sort_order,
+                }
+                for definition in self.studio.milestone_definitions.list_active_definitions(db)
+            ],
             "role_catalog": [{"role_key": role["role_key"], "label": role["label"]} for role in CAMPAIGN_ROLE_CATALOG],
         }
         if section in {"schedule", "communications", "readiness"}:

@@ -1,6 +1,6 @@
-import { milestoneDefinitions } from '@/features/campaigns/model/campaignStudio';
 import type {
   CampaignMilestone,
+  CampaignMilestoneDefinition,
   SaveCampaignMilestoneInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudioSectionCard';
@@ -14,17 +14,19 @@ interface MilestoneDraft {
 }
 
 interface CampaignStudioMilestonesEditorProps {
+  milestoneDefinitions: CampaignMilestoneDefinition[];
   milestones: CampaignMilestone[];
   isSaving: boolean;
   onSave: (milestones: SaveCampaignMilestoneInput[]) => Promise<boolean>;
 }
 
 export function CampaignStudioMilestonesEditor({
+  milestoneDefinitions,
   milestones,
   isSaving,
   onSave,
 }: CampaignStudioMilestonesEditorProps) {
-  const drafts = buildMilestoneDrafts(milestones);
+  const drafts = buildMilestoneDrafts(milestoneDefinitions, milestones);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -107,15 +109,18 @@ export function CampaignStudioMilestonesEditor({
   );
 }
 
-function buildMilestoneDrafts(milestones: CampaignMilestone[]): MilestoneDraft[] {
+function buildMilestoneDrafts(
+  milestoneDefinitions: CampaignMilestoneDefinition[],
+  milestones: CampaignMilestone[]
+): MilestoneDraft[] {
   return milestoneDefinitions.map((definition) => {
-    const milestone = milestones.find((item) => item.milestoneKey === definition.key);
+    const milestone = milestones.find((item) => item.milestoneKey === definition.milestoneKey);
     return {
-      milestoneKey: definition.key,
+      milestoneKey: definition.milestoneKey,
       label: milestone?.label ?? definition.label,
       occursOn: milestone?.occursOn ?? '',
       notes: milestone?.notes ?? '',
-      sortOrder: milestone?.sortOrder ?? definition.sortOrder,
+      sortOrder: milestone?.sortOrder ?? definition.defaultSortOrder,
     };
   });
 }

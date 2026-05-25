@@ -3,6 +3,7 @@ export type CampaignStudioSectionId =
   | 'team'
   | 'communications'
   | 'schedule'
+  | 'gift_rules'
   | 'readiness'
   | 'settings';
 
@@ -39,6 +40,12 @@ export const campaignStudioSections: CampaignStudioSection[] = [
     description: 'Timeline, calendar planning, and milestone timing.',
   },
   {
+    id: 'gift_rules',
+    label: 'Gift Rules',
+    icon: 'bi-sliders2',
+    description: 'Wishlist, sponsor, and recipient coverage policy.',
+  },
+  {
     id: 'readiness',
     label: 'Readiness',
     icon: 'bi-clipboard-check',
@@ -67,10 +74,12 @@ export const milestoneDefinitions: Array<{
 }> = [
   { key: 'registration_open', label: 'Registration Opens', sortOrder: 1 },
   { key: 'registration_close', label: 'Registration Closes', sortOrder: 2 },
-  { key: 'sponsor_outreach_start', label: 'Sponsor Outreach Starts', sortOrder: 3 },
-  { key: 'gift_intake_start', label: 'Gift Intake Starts', sortOrder: 4 },
-  { key: 'gift_intake_end', label: 'Gift Intake Ends', sortOrder: 5 },
-  { key: 'pickup_start', label: 'Pickup Window Opens', sortOrder: 6 },
-  { key: 'pickup_end', label: 'Pickup Window Closes', sortOrder: 7 },
-  { key: 'campaign_close', label: 'Campaign Closes', sortOrder: 8 },
+  { key: 'sponsor_registration_start', label: 'Sponsor Registration Starts', sortOrder: 3 },
+  { key: 'sponsor_registration_end', label: 'Sponsor Registration Ends', sortOrder: 4 },
+  { key: 'sponsor_outreach_start', label: 'Sponsor Outreach Starts', sortOrder: 5 },
+  { key: 'gift_intake_start', label: 'Gift Intake Starts', sortOrder: 6 },
+  { key: 'gift_intake_end', label: 'Gift Intake Ends', sortOrder: 7 },
+  { key: 'pickup_start', label: 'Pickup Window Opens', sortOrder: 8 },
+  { key: 'pickup_end', label: 'Pickup Window Closes', sortOrder: 9 },
+  { key: 'campaign_close', label: 'Campaign Closes', sortOrder: 10 },
 ] as const;

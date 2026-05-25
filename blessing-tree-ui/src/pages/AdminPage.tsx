@@ -22,7 +22,7 @@ export function AdminPage() {
         <div>
           <h1 className="h3 mb-1">Admin</h1>
           <p className="text-muted mb-0">
-            Manage users, LLM runtime settings, and system health from the admin menu.
+            Manage users, campaign operations, LLM runtime settings, and system health from the admin menu.
           </p>
         </div>
       </div>

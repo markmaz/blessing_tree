@@ -22,6 +22,14 @@ const DEFAULT_FEATURES: AdminFeatureFlag[] = [
     updatedAt: '',
   },
   {
+    featureKey: 'sponsors',
+    label: 'Sponsors',
+    description: '',
+    isEnabled: true,
+    createdAt: '',
+    updatedAt: '',
+  },
+  {
     featureKey: 'donations',
     label: 'Donations',
     description: '',

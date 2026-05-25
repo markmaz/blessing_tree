@@ -105,6 +105,27 @@
 - Rationale: children can be under a year old, and operators need to enter infants precisely without falling back to artificial range buckets like `0-3 months`.
 - Consequence: recipient intake should capture `Age` plus `Age Unit`, months should be available for infants and very young children, older records without a saved unit should be treated as `YEARS` by default, and age displays/sorting should format and compare using the combined value+unit representation instead of assuming raw years.
 
+## Sponsor Workspace Direction
+
+- Status: active
+- Decision: build sponsor operations as a campaign-scoped workspace that reuses the existing global `sponsor` identity model plus campaign-scoped `sponsorship`, `sponsor_interaction`, and `sponsor_reminder` records. Public sponsor self-registration should be campaign-specific, QR/flyer-driven, and managed from Campaign Studio.
+- Rationale: sponsor operations are simpler than recipient intake but still campaign-aware, and a public signup path can remove a large amount of staff data entry while keeping outreach, assignment, and follow-up tied to the campaign.
+- Consequence: sponsor CRUD should live under campaign routes and UI sections, the sponsor communication log should use `sponsor_interaction` for both manual and mass-communication history, public sponsor signup should create or reuse sponsor identities and campaign participation records, and Campaign Studio should expose the public sponsor link, QR code, and flyer-generation controls.
+
+## Sponsor Self-Registration Direction
+
+- Status: active
+- Decision: the public sponsor flow should collect sponsor details first, verify the sponsor's email, and only then allow natural-language gift search and gift reservation on the confirmation page. It should reuse and update existing sponsor identities when a returning sponsor is matched, and should use one standard QR flyer template until a dedicated flyer editor exists. Mass-communication log entries should be system-generated and read-only. Pending registrations should expire according to campaign gift policy, sponsor registration should be controlled by campaign start/end/gift-deadline milestones, and incomplete public signup state should live in an explicit pending-registration record rather than final sponsorship rows.
+- Rationale: the self-registration path should reduce staff data entry as much as possible, and sponsors should not need to repeatedly re-enter the same personal information across campaigns. Verified-email gating plus expiry protects the inventory pool from bad submissions, while milestone-gated registration keeps the public flow aligned to real campaign operations.
+- Consequence: sponsor self-registration should not show gifts or require selected gifts on the initial signup page; matching should favor exact normalized verified email reuse; campaign participation should be updated for the current campaign instead of duplicating sponsors; verified sponsors should choose gifts through the verified confirmation page using the same NL gift-search pipeline used elsewhere; gift commits before token verification should fail; Campaign Readiness should block public sponsor signup when sponsor-registration or gift-deadline milestones are missing; and communication log UI should treat mass-send entries as historical records rather than staff-editable notes.
+
+## Campaign Purpose Direction
+
+- Status: active
+- Decision: use `Campaign Purpose` as the user-facing concept for campaign-specific seasonal/treatment context, while preserving the existing `season_theme` API/database field until a schema rename is worth the migration cost.
+- Rationale: operators think in campaign purpose terms such as Christmas giving, Easter baskets, coats, or Catholic Charities. The old `Season Theme` label was too vague and did not make it clear that the value drives gift tag treatment.
+- Consequence: UI copy should say `Campaign Purpose`; backend and frontend model code may still reference `seasonTheme`/`season_theme`; gift tag theme treatment currently uses simple purpose keyword mapping for icon/accent, and a future campaign asset/theme editor can add selectable or generated artwork without blocking the current workflow.
+
 ## Campaign Schedule Direction
 
 - Status: active

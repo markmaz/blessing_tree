@@ -235,6 +235,18 @@
   gap: 1rem;
 }
 
+.campaign-template-workspace__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.campaign-template-workspace__test-email {
+  min-width: min(100%, 15rem);
+  margin: 0;
+}
+
 .campaign-template-badge-row {
   display: flex;
   flex-wrap: wrap;
@@ -771,6 +783,11 @@
   .campaign-template-workspace__header,
   .campaign-template-preview-card__heading {
     flex-direction: column;
+  }
+
+  .campaign-template-workspace__header-actions {
+    justify-content: flex-start;
+    width: 100%;
   }
 
   .campaign-template-block-card__header {

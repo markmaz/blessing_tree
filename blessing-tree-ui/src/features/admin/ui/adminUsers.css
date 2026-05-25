@@ -263,6 +263,32 @@
   font-weight: 600;
 }
 
+.admin-users-campaign-access {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-users-campaign-access__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
+  gap: 1rem;
+  align-items: center;
+  margin: 0;
+}
+
+.admin-users-campaign-access__campaign {
+  display: block;
+  font-weight: 700;
+  color: #2f2d29;
+}
+
+.admin-users-campaign-access__meta {
+  display: block;
+  color: #7b7368;
+  font-size: 0.86rem;
+}
+
 @media (max-width: 991.98px) {
   .admin-users-workspace__header,
   .admin-users-toolbar {
@@ -277,7 +303,8 @@
 
 @media (max-width: 767.98px) {
   .admin-users-form-grid,
-  .admin-users-detail-grid {
+  .admin-users-detail-grid,
+  .admin-users-campaign-access__row {
     grid-template-columns: minmax(0, 1fr);
   }
 

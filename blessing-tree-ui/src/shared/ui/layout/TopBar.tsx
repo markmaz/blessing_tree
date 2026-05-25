@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CampaignSwitcher } from '@/features/campaigns/ui/CampaignSwitcher';
 import { useAuth } from '@/features/auth/model/authContext';
 import { logout as logoutRequest } from '@/shared/api/authApi';
@@ -69,16 +69,16 @@ export function TopBar({ pageTitle, onToggleSidebar }: TopBarProps) {
               aria-labelledby="accountDropdown"
             >
               <li>
-                <button type="button" className="dropdown-item">
+                <Link to={routes.ACCOUNT_PROFILE} className="dropdown-item">
                   <i className="bi bi-person me-2" aria-hidden="true" />
                   Profile
-                </button>
+                </Link>
               </li>
               <li>
-                <button type="button" className="dropdown-item">
+                <Link to={routes.ACCOUNT_SETTINGS} className="dropdown-item">
                   <i className="bi bi-sliders me-2" aria-hidden="true" />
                   Settings
-                </button>
+                </Link>
               </li>
               <li>
                 <hr className="dropdown-divider" />

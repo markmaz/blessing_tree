@@ -20,7 +20,16 @@ const getPageTitle = (pathname: string) => {
   if (pathname.startsWith('/campaigns/') && pathname.includes('/people')) {
     return 'People';
   }
+  if (pathname.startsWith('/campaigns/') && pathname.includes('/sponsors')) {
+    return 'Sponsors';
+  }
+  if (pathname.startsWith('/campaigns/') && pathname.includes('/gifts')) {
+    return 'Gifts';
+  }
+  if (pathname.startsWith('/scan/gifts')) return 'Gift Scan';
   if (pathname.startsWith('/campaigns')) return 'Campaigns';
+  if (pathname.startsWith('/account/profile')) return 'Profile';
+  if (pathname.startsWith('/account/settings')) return 'Settings';
   if (pathname.startsWith('/donations')) return 'Donations';
   if (pathname.startsWith('/reports')) return 'Reports';
   if (pathname.startsWith('/admin')) return 'Admin';

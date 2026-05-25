@@ -10,6 +10,12 @@ FEATURE_FLAG_CATALOG = (
         "default_enabled": True,
     },
     {
+        "feature_key": "sponsors",
+        "label": "Sponsors",
+        "description": "Show the campaign-aware Sponsors workspace in the main application navigation.",
+        "default_enabled": True,
+    },
+    {
         "feature_key": "donations",
         "label": "Donations",
         "description": "Enable the Donations workspace and navigation entry.",

@@ -30,6 +30,8 @@ export interface Campaign {
   year: number;
   description: string | null;
   seasonTheme: string | null;
+  publicSponsorSlug: string | null;
+  publicSponsorSignupEnabled: boolean;
   status: CampaignStatus;
   startDate: string | null;
   endDate: string | null;
@@ -46,6 +48,8 @@ export interface CampaignUpsertInput {
   year: number;
   description: string | null;
   seasonTheme: string | null;
+  publicSponsorSlug?: string | null;
+  publicSponsorSignupEnabled?: boolean;
   status: CampaignStatus;
   startDate: string | null;
   endDate: string | null;

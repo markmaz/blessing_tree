@@ -12,7 +12,6 @@ from app.features.campaigns.studio_constants import (
     CAMPAIGN_EVENT_SOURCE_COMMUNICATION,
     CAMPAIGN_EVENT_SOURCE_MANUAL,
     CAMPAIGN_EVENT_SOURCE_MILESTONE,
-    MILESTONE_DEFINITIONS,
 )
 from app.features.campaigns.studio_validation import (
     parse_bool,
@@ -221,7 +220,7 @@ class CampaignStudioScheduleService:
 
         title = schedule.template.name if getattr(schedule, "template", None) is not None else "Communication"
         if schedule.milestone_key and not title:
-            title = f"{MILESTONE_DEFINITIONS.get(schedule.milestone_key, schedule.milestone_key)} Communication"
+            title = f"{schedule.milestone_key} Communication"
 
         return {
             "id": f"{CAMPAIGN_EVENT_SOURCE_COMMUNICATION}:{schedule.id}",

@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   formatRecipientAge,
   formatShortDate,
@@ -9,6 +9,7 @@ import {
   toRecipientStatusLabel,
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
 import type { CampaignPeopleGroup } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
+import { clampTablePage, TablePagination } from '@/shared/ui/TablePagination';
 
 interface CampaignPeopleGroupTableProps {
   groups: CampaignPeopleGroup[];
@@ -32,6 +33,8 @@ export function CampaignPeopleGroupTable({
   const [sortKey, setSortKey] = useState<GroupSortKey>('group');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [openGroupIds, setOpenGroupIds] = useState<Record<string, boolean>>({});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const sortedGroups = useMemo(() => {
     const sorted = [...groups];
@@ -52,6 +55,15 @@ export function CampaignPeopleGroupTable({
     return sorted;
   }, [groups, sortDirection, sortKey]);
 
+  useEffect(() => {
+    setPage((currentPage) => clampTablePage(currentPage, sortedGroups.length, pageSize));
+  }, [pageSize, sortedGroups.length]);
+
+  const pagedGroups = useMemo(() => {
+    const safePage = clampTablePage(page, sortedGroups.length, pageSize);
+    return sortedGroups.slice((safePage - 1) * pageSize, safePage * pageSize);
+  }, [page, pageSize, sortedGroups]);
+
   const handleSort = (nextKey: GroupSortKey) => {
     if (sortKey === nextKey) {
       setSortDirection((currentValue) => (currentValue === 'asc' ? 'desc' : 'asc'));
@@ -71,57 +83,58 @@ export function CampaignPeopleGroupTable({
   }
 
   return (
-    <div className="campaign-team-table-wrap">
-      <table className="table campaign-team-table mb-0">
-        <thead>
-          <tr>
-            <SortableHeader
-              label="Group"
-              sortKey="group"
-              activeKey={sortKey}
-              direction={sortDirection}
-              onSort={handleSort}
-            />
-            <SortableHeader
-              label="Type"
-              sortKey="type"
-              activeKey={sortKey}
-              direction={sortDirection}
-              onSort={handleSort}
-            />
-            <SortableHeader
-              label="Primary Contact"
-              sortKey="contact"
-              activeKey={sortKey}
-              direction={sortDirection}
-              onSort={handleSort}
-            />
-            <SortableHeader
-              label="People"
-              sortKey="people"
-              activeKey={sortKey}
-              direction={sortDirection}
-              onSort={handleSort}
-            />
-            <SortableHeader
-              label="Last Updated"
-              sortKey="updated"
-              activeKey={sortKey}
-              direction={sortDirection}
-              onSort={handleSort}
-            />
-            <SortableHeader
-              label="Status"
-              sortKey="status"
-              activeKey={sortKey}
-              direction={sortDirection}
-              onSort={handleSort}
-            />
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedGroups.map((group) => {
+    <>
+      <div className="campaign-team-table-wrap">
+        <table className="table campaign-team-table mb-0">
+          <thead>
+            <tr>
+              <SortableHeader
+                label="Group"
+                sortKey="group"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Type"
+                sortKey="type"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Primary Contact"
+                sortKey="contact"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="People"
+                sortKey="people"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Last Updated"
+                sortKey="updated"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Status"
+                sortKey="status"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+              />
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pagedGroups.map((group) => {
             const isOpen = !!openGroupIds[group.id];
 
             return (
@@ -275,10 +288,22 @@ export function CampaignPeopleGroupTable({
                 ) : null}
               </Fragment>
             );
-          })}
-        </tbody>
-      </table>
-    </div>
+            })}
+          </tbody>
+        </table>
+      </div>
+      <TablePagination
+        page={page}
+        pageSize={pageSize}
+        totalItems={sortedGroups.length}
+        itemLabel="groups"
+        onPageChange={setPage}
+        onPageSizeChange={(nextPageSize) => {
+          setPageSize(nextPageSize);
+          setPage(1);
+        }}
+      />
+    </>
   );
 }
 

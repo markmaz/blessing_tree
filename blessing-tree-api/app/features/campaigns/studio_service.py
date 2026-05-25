@@ -5,13 +5,18 @@ from collections.abc import Mapping
 
 from sqlalchemy.orm import Session, joinedload
 
+from app.email import send_email_message
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns.automation_readiness_service import (
     CampaignAutomationReadinessService,
 )
+from app.features.campaigns.gift_policy_service import CampaignGiftPolicyService
+from app.features.campaigns.milestone_definition_service import CampaignMilestoneDefinitionService
+from app.features.campaigns.readiness_definition_service import CampaignReadinessDefinitionService
 from app.features.campaigns.service import CampaignService
 from app.features.campaigns.studio_readiness import build_campaign_readiness
 from app.features.campaigns.studio_schedule_service import CampaignStudioScheduleService
+from app.features.campaigns.template_renderer import CampaignTemplateRenderer
 from app.features.campaigns.studio_team_service import CampaignStudioTeamService
 from app.features.campaigns.studio_validation import (
     parse_bool,
@@ -26,8 +31,11 @@ from app.features.campaigns.studio_validation import (
 )
 from app.features.campaigns.studio_constants import get_communication_audience_catalog
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
+from app.models.campaign_gift_reminder_rule import CampaignGiftReminderRule
 from app.models.campaign_milestone import CampaignMilestone
+from app.models.campaign_milestone_definition import CampaignMilestoneDefinition
 from app.models.communication_template import CommunicationTemplate
+from app.models.app_user import AppUser
 
 
 class CampaignStudioService:
@@ -36,6 +44,10 @@ class CampaignStudioService:
         self.schedule = CampaignStudioScheduleService(self.campaigns)
         self.team = CampaignStudioTeamService(self.campaigns)
         self.automation_readiness = CampaignAutomationReadinessService()
+        self.readiness_definitions = CampaignReadinessDefinitionService()
+        self.milestone_definitions = CampaignMilestoneDefinitionService()
+        self.gift_policy = CampaignGiftPolicyService(self.campaigns)
+        self.template_renderer = CampaignTemplateRenderer()
 
     def get_studio_payload(self, db: Session, user_id: str, campaign_id: str) -> dict[str, object]:
         campaign = self.campaigns.get_campaign(db, campaign_id)
@@ -45,7 +57,9 @@ class CampaignStudioService:
         templates = self.list_templates(db, campaign_id)
         schedules = self.list_schedules(db, campaign_id)
         audience_catalog = get_communication_audience_catalog()
+        milestone_definitions = self.milestone_definitions.list_active_definitions(db)
         milestones = self.list_milestones(db, campaign_id)
+        gift_policy = self.gift_policy.get_policy(db, campaign_id)
         schedule_items = self.schedule.list_schedule_items(db, campaign_id)
         readiness = self.get_readiness(db, campaign_id)
         return {
@@ -56,7 +70,9 @@ class CampaignStudioService:
             "templates": templates,
             "schedules": schedules,
             "audience_catalog": audience_catalog,
+            "milestone_definitions": milestone_definitions,
             "milestones": milestones,
+            "gift_policy": gift_policy,
             "schedule_items": schedule_items,
             "readiness": readiness,
         }
@@ -150,6 +166,45 @@ class CampaignStudioService:
         db.delete(template)
         db.commit()
 
+    def send_template_test_email(
+        self,
+        db: Session,
+        *,
+        campaign_id: str,
+        template_id: str,
+        user_id: str,
+        recipient_email: object = None,
+    ) -> dict[str, object]:
+        campaign = self.campaigns.get_campaign(db, campaign_id)
+        template = self._get_template(db, campaign_id, template_id)
+        user = db.query(AppUser).filter(AppUser.id == uuid.UUID(str(user_id))).one_or_none()
+        if user is None:
+            raise ServiceError("User not found", status_code=404)
+
+        target_email = str(recipient_email or user.email or "").strip()
+        if "@" not in target_email or len(target_email) > 255:
+            raise ServiceError("A valid test recipient email is required", status_code=400, details={"field": "recipient_email"})
+
+        subject, html_body, text_body = self.template_renderer.render(
+            campaign_name=campaign.name,
+            campaign_year=campaign.year,
+            subject_template=template.subject_template,
+            body_template=template.body_template,
+            merge_fields=_sample_template_merge_fields(user.display_name),
+        )
+        test_subject = f"[Test] {subject}"
+        send_email_message(
+            recipients=[target_email],
+            subject=test_subject,
+            html=html_body,
+            text_body=text_body,
+        )
+        return {
+            "template_id": str(template.id),
+            "recipient_email": target_email,
+            "subject": test_subject,
+        }
+
     def list_schedules(self, db: Session, campaign_id: str) -> list[CampaignCommunicationSchedule]:
         return (
             db.query(CampaignCommunicationSchedule)
@@ -162,7 +217,7 @@ class CampaignStudioService:
     def create_schedule(self, db: Session, campaign_id: str, payload: Mapping[str, object]) -> CampaignCommunicationSchedule:
         self.campaigns.get_campaign(db, campaign_id)
         template = self._get_template(db, campaign_id, payload.get("template_id"))
-        milestone_key = self._optional_milestone_key(payload.get("milestone_key"))
+        milestone_key = self._optional_milestone_key(db, payload.get("milestone_key"))
         scheduled_for = parse_optional_datetime(payload.get("scheduled_for"), "scheduled_for")
         self._validate_schedule_timing(milestone_key, scheduled_for)
         schedule = CampaignCommunicationSchedule(
@@ -189,7 +244,7 @@ class CampaignStudioService:
         if "template_id" in payload:
             schedule.template_id = self._get_template(db, campaign_id, payload.get("template_id")).id
         if "milestone_key" in payload:
-            schedule.milestone_key = self._optional_milestone_key(payload.get("milestone_key"))
+            schedule.milestone_key = self._optional_milestone_key(db, payload.get("milestone_key"))
         if "scheduled_for" in payload:
             schedule.scheduled_for = parse_optional_datetime(payload.get("scheduled_for"), "scheduled_for")
         self._validate_schedule_timing(schedule.milestone_key, schedule.scheduled_for)
@@ -215,15 +270,29 @@ class CampaignStudioService:
 
     def replace_milestones(self, db: Session, campaign_id: str, payload: object) -> list[CampaignMilestone]:
         self.campaigns.get_campaign(db, campaign_id)
-        items = require_milestone_list(payload)
         existing = {
             milestone.milestone_key: milestone
             for milestone in db.query(CampaignMilestone).filter(CampaignMilestone.campaign_id == campaign_id).all()
         }
+        active_definitions = self.milestone_definitions.get_active_definition_defaults(db)
+        definition_defaults = dict(active_definitions)
+        inactive_existing_keys = [key for key in existing if key not in active_definitions]
+        if inactive_existing_keys:
+            inactive_existing_definitions = (
+                db.query(CampaignMilestoneDefinition)
+                .filter(CampaignMilestoneDefinition.milestone_key.in_(inactive_existing_keys))
+                .all()
+            )
+            for definition in inactive_existing_definitions:
+                definition_defaults[definition.milestone_key] = {
+                    "label": definition.label,
+                    "sort_order": definition.default_sort_order,
+                }
+        items = require_milestone_list(payload, definition_defaults)
         submitted_keys = {item["milestone_key"] for item in items}
 
         for milestone_key, milestone in existing.items():
-            if milestone_key not in submitted_keys:
+            if milestone_key in active_definitions and milestone_key not in submitted_keys:
                 db.delete(milestone)
 
         for item in items:
@@ -250,10 +319,20 @@ class CampaignStudioService:
         schedules = self.list_schedules(db, campaign_id)
         templates = self.list_templates(db, campaign_id)
         manual_events = self.schedule.list_events(db, campaign_id)
+        gift_reminder_rules = (
+            db.query(CampaignGiftReminderRule)
+            .filter(CampaignGiftReminderRule.campaign_id == campaign.id)
+            .all()
+        )
         automation_snapshot = self.automation_readiness.build_snapshot(
             db,
             campaign_id=campaign_id,
             schedules=schedules,
+        )
+        configured_items = self.readiness_definitions.build_configured_items(
+            db,
+            campaign=campaign,
+            milestones=milestones,
         )
         return build_campaign_readiness(
             campaign,
@@ -264,6 +343,8 @@ class CampaignStudioService:
             templates=templates,
             manual_events=manual_events,
             automation_snapshot=automation_snapshot,
+            configured_items=configured_items,
+            gift_reminder_rules=gift_reminder_rules,
         )
 
     @staticmethod
@@ -304,11 +385,13 @@ class CampaignStudioService:
             )
         return schedule
 
-    @staticmethod
-    def _optional_milestone_key(value: object) -> str | None:
+    def _optional_milestone_key(self, db: Session, value: object) -> str | None:
         if value in (None, ""):
             return None
-        return validate_milestone_key(value)
+        return validate_milestone_key(
+            value,
+            self.milestone_definitions.get_active_definition_defaults(db).keys(),
+        )
 
     @staticmethod
     def _validate_schedule_timing(milestone_key: str | None, scheduled_for) -> None:
@@ -318,3 +401,25 @@ class CampaignStudioService:
                 status_code=400,
                 details={"fields": ["milestone_key", "scheduled_for"]},
             )
+
+
+def _sample_template_merge_fields(manager_name: str) -> dict[str, str]:
+    return {
+        "campaign.start_date": "November 1, 2026",
+        "campaign.end_date": "December 20, 2026",
+        "manager.name": manager_name,
+        "contact.first_name": "Pat",
+        "contact.full_name": "Pat Coordinator",
+        "group.name": "Johnson Household",
+        "recipient.first_name": "Ava",
+        "recipient.full_name": "Ava Johnson",
+        "sponsor.first_name": "Taylor",
+        "sponsor.full_name": "Taylor Reed",
+        "volunteer.first_name": "Chris",
+        "volunteer.full_name": "Chris Walker",
+        "milestone.label": "Pickup Weekend",
+        "milestone.date": "December 19, 2026",
+        "event.title": "Volunteer Orientation",
+        "event.start_at": "November 3, 2026 at 6:00 PM",
+        "location.map_url": "https://maps.example.com/pickup-warehouse",
+    }

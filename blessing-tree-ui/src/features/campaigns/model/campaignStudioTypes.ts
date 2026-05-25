@@ -102,6 +102,19 @@ export interface CampaignMilestone {
   updatedAt: string | null;
 }
 
+export interface CampaignMilestoneDefinition {
+  id: string | null;
+  milestoneKey: string;
+  label: string;
+  description: string | null;
+  featureArea: string;
+  defaultSortOrder: number;
+  isActive: boolean;
+  isSystem: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
 export type CampaignScheduleSourceType = 'manual' | 'milestone' | 'communication';
 
 export type CampaignScheduleEventType =
@@ -160,6 +173,24 @@ export interface CampaignReadiness {
   >;
 }
 
+export type RecipientCoverageRule =
+  | 'ONE_GIFT_SPONSORED'
+  | 'MIN_GIFTS_SPONSORED'
+  | 'ALL_GIFTS_SPONSORED';
+
+export interface CampaignGiftPolicy {
+  id: string;
+  campaignId: string;
+  maxGiftsPerSponsor: number;
+  maxWishlistItemsPerRecipient: number;
+  recipientCoverageRule: RecipientCoverageRule;
+  recipientCoverageRequiredCount: number;
+  allowPartialSponsorCommitments: boolean;
+  reservationHoldMinutes: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
 export interface CampaignStudioData {
   campaign: Campaign;
   access: CampaignAccess;
@@ -173,7 +204,9 @@ export interface CampaignStudioData {
   schedule: {
     items: CampaignScheduleItem[];
   };
+  milestoneDefinitions: CampaignMilestoneDefinition[];
   milestones: CampaignMilestone[];
+  giftPolicy: CampaignGiftPolicy;
   readiness: CampaignReadiness;
 }
 
@@ -193,6 +226,12 @@ export interface UpdateCommunicationTemplateInput {
   subjectTemplate?: string;
   bodyTemplate?: string;
   isActive?: boolean;
+}
+
+export interface CommunicationTemplateTestEmailResult {
+  templateId: string;
+  recipientEmail: string;
+  subject: string;
 }
 
 export interface CreateCampaignAssignmentInput {
@@ -223,6 +262,15 @@ export interface SaveCampaignMilestoneInput {
   occursOn: string;
   notes?: string | null;
   sortOrder: number;
+}
+
+export interface UpdateCampaignGiftPolicyInput {
+  maxGiftsPerSponsor?: number;
+  maxWishlistItemsPerRecipient?: number;
+  recipientCoverageRule?: RecipientCoverageRule;
+  recipientCoverageRequiredCount?: number;
+  allowPartialSponsorCommitments?: boolean;
+  reservationHoldMinutes?: number;
 }
 
 export interface CreateCampaignEventInput {

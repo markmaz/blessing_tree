@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { milestoneDefinitions } from '@/features/campaigns/model/campaignStudio';
 import type {
+  CampaignMilestoneDefinition,
   CommunicationSchedule,
   CommunicationTemplate,
   CreateCommunicationScheduleInput,
@@ -18,6 +18,7 @@ interface CommunicationFormState {
 
 interface CampaignStudioScheduleCommunicationEditorProps {
   schedules: CommunicationSchedule[];
+  milestoneDefinitions: CampaignMilestoneDefinition[];
   templates: CommunicationTemplate[];
   editingScheduleId: string | null;
   selectedDate: string | null;
@@ -33,6 +34,7 @@ interface CampaignStudioScheduleCommunicationEditorProps {
 
 export function CampaignStudioScheduleCommunicationEditor({
   schedules,
+  milestoneDefinitions,
   templates,
   editingScheduleId,
   selectedDate,
@@ -135,7 +137,7 @@ export function CampaignStudioScheduleCommunicationEditor({
         >
           <option value="">No milestone</option>
           {milestoneDefinitions.map((definition) => (
-            <option key={definition.key} value={definition.key}>
+            <option key={definition.milestoneKey} value={definition.milestoneKey}>
               {definition.label}
             </option>
           ))}

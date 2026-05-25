@@ -12,6 +12,7 @@ from app.features.campaigns.studio_serializers import (
     serialize_communication_schedule,
     serialize_communication_template,
     serialize_directory_user,
+    serialize_gift_policy,
     serialize_milestone,
     serialize_readiness,
     serialize_schedule_item,
@@ -19,6 +20,7 @@ from app.features.campaigns.studio_serializers import (
     serialize_team_snapshot,
 )
 from app.features.campaigns.ai_draft_service import CampaignStudioAiDraftService
+from app.features.campaigns.gift_policy_service import CampaignGiftPolicyService
 from app.features.campaigns.studio_schedule_service import CampaignStudioScheduleService
 from app.features.campaigns.studio_service import CampaignStudioService
 from app.features.campaigns.studio_team_service import CampaignStudioTeamService
@@ -28,6 +30,7 @@ _studio_service = CampaignStudioService()
 _schedule_service = CampaignStudioScheduleService()
 _team_service = CampaignStudioTeamService()
 _ai_draft_service = CampaignStudioAiDraftService()
+_gift_policy_service = CampaignGiftPolicyService()
 
 
 @campaign_ns.route("/<string:campaign_id>/studio")
@@ -109,6 +112,22 @@ class CommunicationTemplateDetailResource(Resource):
         with SessionLocal() as db:
             _studio_service.delete_template(db, campaign_id, template_id)
         return "", 204
+
+
+@campaign_ns.route("/<string:campaign_id>/communications/templates/<string:template_id>/test-email")
+class CommunicationTemplateTestEmailResource(Resource):
+    @require_campaign_capability("campaign.admin")
+    def post(self, campaign_id: str, template_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            result = _studio_service.send_template_test_email(
+                db,
+                campaign_id=campaign_id,
+                template_id=template_id,
+                user_id=str(getattr(g, "user_id")),
+                recipient_email=payload.get("recipient_email"),
+            )
+        return result, 200
 
 
 @campaign_ns.route("/<string:campaign_id>/communications/schedules")
@@ -210,6 +229,23 @@ class CampaignReadinessResource(Resource):
         with SessionLocal() as db:
             readiness = _studio_service.get_readiness(db, campaign_id)
         return serialize_readiness(readiness)
+
+
+@campaign_ns.route("/<string:campaign_id>/gift-policy")
+class CampaignGiftPolicyResource(Resource):
+    @require_campaign_capability("campaign.view")
+    def get(self, campaign_id: str):
+        with SessionLocal() as db:
+            policy = _gift_policy_service.get_policy(db, campaign_id)
+            db.commit()
+        return serialize_gift_policy(policy)
+
+    @require_campaign_capability("campaign.admin")
+    def patch(self, campaign_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            policy = _gift_policy_service.update_policy(db, campaign_id, payload)
+        return serialize_gift_policy(policy)
 
 
 @campaign_ns.route("/<string:campaign_id>/ai/draft")

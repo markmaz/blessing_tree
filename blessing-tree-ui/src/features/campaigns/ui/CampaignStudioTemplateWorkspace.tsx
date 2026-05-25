@@ -27,6 +27,7 @@ interface CampaignStudioTemplateWorkspaceProps {
     updater: (currentDraft: CommunicationTemplateDraft) => CommunicationTemplateDraft
   ) => void;
   onSave: () => void;
+  onSendTestEmail: (recipientEmail?: string) => Promise<unknown>;
   onInsertMergeField: (field: string) => void;
   onFocusTarget: (target: CommunicationTemplateFocusTarget) => void;
 }
@@ -40,12 +41,27 @@ export function CampaignStudioTemplateWorkspace({
   onChangeTab,
   onChangeDraft,
   onSave,
+  onSendTestEmail,
   onInsertMergeField,
   onFocusTarget,
 }: CampaignStudioTemplateWorkspaceProps) {
   const [isMergeDrawerOpen, setIsMergeDrawerOpen] = useState(false);
+  const [testEmail, setTestEmail] = useState('');
+  const [isSendingTest, setIsSendingTest] = useState(false);
   const resolvedAudienceCatalog = getCommunicationAudienceCatalog(audienceCatalog);
   const audienceOption = getCommunicationAudienceOption(draft.audience, resolvedAudienceCatalog);
+
+  const handleSendTestEmail = async () => {
+    if (!isExisting) {
+      return;
+    }
+    setIsSendingTest(true);
+    try {
+      await onSendTestEmail(testEmail);
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
 
   return (
     <section className="campaign-template-workspace" aria-label="Communication template builder">
@@ -65,15 +81,40 @@ export function CampaignStudioTemplateWorkspace({
             </span>
           </div>
         </div>
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          disabled={isSaving}
-          onClick={onSave}
-        >
-          <i className="bi bi-floppy" aria-hidden="true" />{' '}
-          {isExisting ? 'Save Template' : 'Create Template'}
-        </button>
+        <div className="campaign-template-workspace__header-actions">
+          {isExisting ? (
+            <label className="campaign-template-workspace__test-email">
+              <span className="visually-hidden">Test email address</span>
+              <input
+                className="form-control form-control-sm"
+                type="email"
+                value={testEmail}
+                onChange={(event) => setTestEmail(event.target.value)}
+                placeholder="Test email"
+              />
+            </label>
+          ) : null}
+          {isExisting ? (
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm"
+              disabled={isSaving || isSendingTest}
+              onClick={() => void handleSendTestEmail()}
+            >
+              <i className="bi bi-envelope-check" aria-hidden="true" />{' '}
+              Send Test
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            disabled={isSaving}
+            onClick={onSave}
+          >
+            <i className="bi bi-floppy" aria-hidden="true" />{' '}
+            {isExisting ? 'Save Template' : 'Create Template'}
+          </button>
+        </div>
       </div>
 
       <div className="campaign-template-workspace__tabs" role="tablist" aria-label="Template builder tabs">

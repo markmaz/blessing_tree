@@ -1,0 +1,16 @@
+[Unit]
+Description=Blessing Tree Celery Beat
+After=network.target
+
+[Service]
+Type=simple
+User=blessingtree
+Group=blessingtree
+WorkingDirectory=/opt/blessing-tree/current/blessing-tree-api
+EnvironmentFile=/opt/blessing-tree/shared/api.env
+ExecStart=/opt/blessing-tree/current/blessing-tree-api/.venv/bin/celery -A app.celery.celery beat --loglevel=INFO --schedule=/opt/blessing-tree/shared/celerybeat-schedule
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

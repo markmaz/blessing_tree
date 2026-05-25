@@ -12,7 +12,6 @@ from app.features.campaigns.studio_constants import (
     COMMUNICATION_AUDIENCES,
     COMMUNICATION_CHANNELS,
     COMMUNICATION_SCHEDULE_STATUSES,
-    MILESTONE_DEFINITIONS,
 )
 from app.features.rbac.constants import CAMPAIGN_ROLE_CAPABILITIES, normalize_campaign_role_key
 
@@ -133,13 +132,14 @@ def validate_event_type(value: object) -> str:
     return event_type
 
 
-def validate_milestone_key(value: object) -> str:
+def validate_milestone_key(value: object, allowed_keys: Iterable[str]) -> str:
     milestone_key = str(value or "").strip()
-    if milestone_key not in MILESTONE_DEFINITIONS:
+    allowed_values = set(allowed_keys)
+    if milestone_key not in allowed_values:
         raise ServiceError(
             "Milestone key is invalid",
             status_code=400,
-            details={"field": "milestone_key", "allowed_values": sorted(MILESTONE_DEFINITIONS.keys())},
+            details={"field": "milestone_key", "allowed_values": sorted(allowed_values)},
         )
     return milestone_key
 
@@ -153,24 +153,42 @@ def parse_required_date(value: object, field_name: str) -> date:
         raise ServiceError(f"Invalid date for {field_name}", status_code=400, details={"field": field_name})
 
 
-def validate_milestone_payload(payload: Mapping[str, object]) -> dict[str, object]:
-    milestone_key = validate_milestone_key(payload.get("milestone_key"))
+def validate_milestone_payload(
+    payload: Mapping[str, object],
+    milestone_definitions: Mapping[str, Mapping[str, object]],
+) -> dict[str, object]:
+    milestone_key = validate_milestone_key(
+        payload.get("milestone_key"),
+        milestone_definitions.keys(),
+    )
+    definition = milestone_definitions[milestone_key]
+    default_label = str(definition.get("label"))
+    default_sort_order = definition.get("sort_order") if definition is not None else None
     return {
         "milestone_key": milestone_key,
-        "label": require_short_text(payload.get("label") or MILESTONE_DEFINITIONS[milestone_key], "label"),
+        "label": require_short_text(payload.get("label") or default_label, "label"),
         "occurs_on": parse_required_date(payload.get("occurs_on"), "occurs_on"),
         "notes": _optional_text(payload.get("notes")),
-        "sort_order": _parse_sort_order(payload.get("sort_order")),
+        "sort_order": _parse_sort_order(
+            payload.get("sort_order") if payload.get("sort_order") not in (None, "") else default_sort_order
+        ),
     }
 
 
-def require_milestone_list(payload: object) -> list[dict[str, object]]:
+def require_milestone_list(
+    payload: object,
+    milestone_definitions: Mapping[str, Mapping[str, object]],
+) -> list[dict[str, object]]:
     raw_items: object = payload.get("milestones") if isinstance(payload, Mapping) else payload
     if not isinstance(raw_items, Iterable) or isinstance(raw_items, (str, bytes, dict)):
         raise ServiceError("Milestones payload must be a list", status_code=400, details={"field": "milestones"})
 
     raw_list = list(raw_items)
-    items = [validate_milestone_payload(item) for item in raw_list if isinstance(item, Mapping)]
+    items = [
+        validate_milestone_payload(item, milestone_definitions)
+        for item in raw_list
+        if isinstance(item, Mapping)
+    ]
     if len(items) != len(raw_list):
         raise ServiceError("Each milestone must be an object", status_code=400, details={"field": "milestones"})
 

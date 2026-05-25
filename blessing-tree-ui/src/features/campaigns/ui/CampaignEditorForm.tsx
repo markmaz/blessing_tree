@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
+import { buildCampaignSponsorFlyerPath, buildPublicCampaignSponsorPath } from '@/app/routes';
 import {
   buildCampaignEditorValues,
   campaignStatusOptions,
@@ -30,6 +31,7 @@ export function CampaignEditorForm({
   onSubmit,
 }: CampaignEditorFormProps) {
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -48,6 +50,15 @@ export function CampaignEditorForm({
       reset(buildCampaignEditorValues(null));
     }
   });
+
+  const watchedPublicSponsorSlug = useWatch({
+    control,
+    name: 'publicSponsorSlug',
+  }) ?? '';
+  const publicSponsorPreviewUrl =
+    watchedPublicSponsorSlug.trim().length > 0
+      ? `${window.location.origin}${buildPublicCampaignSponsorPath(watchedPublicSponsorSlug.trim().toLowerCase())}`
+      : null;
 
   return (
     <form className="campaign-editor-form" onSubmit={handleFormSubmit}>
@@ -110,23 +121,96 @@ export function CampaignEditorForm({
         </label>
 
         <label className="form-label campaign-studio__form-span-2">
-          Season Theme
+          Campaign Purpose
           <input
             className={`form-control ${errors.seasonTheme ? 'is-invalid' : ''}`}
-            placeholder="Grace & Renewal"
+            placeholder="Christmas giving, Easter baskets, winter coats"
             {...register('seasonTheme', {
               validate: (value) =>
-                value.trim().length <= 120 || 'Season theme must be 120 characters or fewer',
+                value.trim().length <= 120 || 'Campaign purpose must be 120 characters or fewer',
             })}
           />
           {errors.seasonTheme ? (
             <div className="invalid-feedback d-block">{errors.seasonTheme.message}</div>
           ) : (
             <div className="form-text">
-              Used in the app shell devotional modal and other campaign-specific seasonal touches.
+              Drives campaign-specific touches, including the gift tag image/icon treatment.
             </div>
           )}
         </label>
+
+        <label className="form-label campaign-studio__form-span-2">
+          Public Sponsor Slug
+          <input
+            className={`form-control ${errors.publicSponsorSlug ? 'is-invalid' : ''}`}
+            placeholder="blessing-tree-2026-sponsors"
+            {...register('publicSponsorSlug', {
+              validate: (value) => {
+                if (!value.trim()) {
+                  return true;
+                }
+                return (
+                  /^[a-z0-9-]+$/i.test(value.trim()) ||
+                  'Public sponsor slug may only contain letters, numbers, and hyphens'
+                );
+              },
+            })}
+          />
+          {errors.publicSponsorSlug ? (
+            <div className="invalid-feedback d-block">{errors.publicSponsorSlug.message}</div>
+          ) : (
+            <div className="form-text">
+              Used for the public sponsor signup link and QR flyer.
+            </div>
+          )}
+        </label>
+
+        <label className="form-label campaign-studio__form-span-2">
+          <span className="d-flex align-items-center gap-2">
+            <input type="checkbox" {...register('publicSponsorSignupEnabled')} />
+            <span>Enable Public Sponsor Signup</span>
+          </span>
+          <div className="form-text">
+            Requires sponsor registration start/end milestones and the gift deadline milestone to be set.
+          </div>
+        </label>
+
+        {publicSponsorPreviewUrl ? (
+          <div className="campaign-studio__form-span-2">
+            <div className="campaign-studio__inline-note">
+              <strong>Public Sponsor Link</strong>
+              <div className="text-muted small">{publicSponsorPreviewUrl}</div>
+              <div className="d-flex flex-wrap gap-2 mt-3">
+                <a
+                  href={publicSponsorPreviewUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-outline-secondary btn-sm"
+                >
+                  <i className="bi bi-box-arrow-up-right me-2" aria-hidden="true" />
+                  Open Public Page
+                </a>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {campaign ? (
+          <div className="campaign-studio__form-span-2">
+            <a
+              href={buildCampaignSponsorFlyerPath(campaign.id)}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-outline-secondary btn-sm"
+            >
+              <i className="bi bi-qr-code-scan me-2" aria-hidden="true" />
+              Open Sponsor Flyer
+            </a>
+            <div className="form-text mt-2">
+              The flyer uses this campaign setup and will show a warning until the public sponsor slug is set.
+            </div>
+          </div>
+        ) : null}
 
         <label className="form-label">
           Start Date

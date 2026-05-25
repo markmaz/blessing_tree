@@ -69,7 +69,20 @@ class WishlistItem(Base):
     recipient_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     status: Mapped[str] = mapped_column(
-        Enum("OPEN", "COMMITTED", "RECEIVED", "WRAPPED", "PICKED_UP", "CANCELLED", name="wishlist_item_status"),
+        Enum(
+            "OPEN",
+            "RESERVED",
+            "COMMITTED",
+            "RECEIVED",
+            "WRAPPED",
+            "TAGGED",
+            "READY_FOR_DISTRIBUTION",
+            "DISTRIBUTED",
+            "PICKED_UP",
+            "EXCEPTION",
+            "CANCELLED",
+            name="wishlist_item_status",
+        ),
         nullable=False,
         default="OPEN",
         index=True,

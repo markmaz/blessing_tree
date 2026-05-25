@@ -15,7 +15,7 @@ import type {
   RecipientUpsertInput,
   WishlistItemUpsertInput,
 } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
-import { canManageCampaign } from '@/features/campaigns/model/campaignPermissions';
+import { canManagePeople } from '@/features/campaigns/model/campaignPermissions';
 import { CampaignPeopleGroupTable } from '@/features/campaigns/ui/CampaignPeopleGroupTable';
 import { CampaignPeopleRecipientTable } from '@/features/campaigns/ui/CampaignPeopleRecipientTable';
 import { CampaignPeopleGroupDrawer } from '@/features/campaigns/ui/CampaignPeopleGroupDrawer';
@@ -79,7 +79,7 @@ export function CampaignPeopleWorkspace({
   showHero = true,
   showCreateActions = true,
 }: CampaignPeopleWorkspaceProps) {
-  const canEditPeople = canManageCampaign(access) || access?.capabilities.includes('campaign.recipients.edit') === true;
+  const canEditPeople = canManagePeople(access);
   const [groupSearch, setGroupSearch] = useState('');
   const [recipientSearch, setRecipientSearch] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);

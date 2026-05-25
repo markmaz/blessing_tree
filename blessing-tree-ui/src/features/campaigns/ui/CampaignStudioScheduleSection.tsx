@@ -5,6 +5,7 @@ import { canManageCampaign } from '@/features/campaigns/model/campaignPermission
 import type { CampaignAccess } from '@/features/campaigns/model/campaignTypes';
 import type {
   CampaignMilestone,
+  CampaignMilestoneDefinition,
   CampaignScheduleItem,
   CommunicationSchedule,
   CommunicationTemplate,
@@ -26,6 +27,7 @@ import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudi
 interface CampaignStudioScheduleSectionProps {
   access: CampaignAccess;
   items: CampaignScheduleItem[];
+  milestoneDefinitions: CampaignMilestoneDefinition[];
   milestones: CampaignMilestone[];
   schedules: CommunicationSchedule[];
   templates: CommunicationTemplate[];
@@ -59,6 +61,7 @@ const closedModalState: ScheduleModalState = {
 export function CampaignStudioScheduleSection({
   access,
   items,
+  milestoneDefinitions,
   milestones,
   schedules,
   templates,
@@ -176,6 +179,7 @@ export function CampaignStudioScheduleSection({
         isEditing={modalState.item !== null}
         item={modalState.item}
         selectedDate={modalState.selectedDate}
+        milestoneDefinitions={milestoneDefinitions}
         milestones={milestones}
         schedules={schedules}
         templates={templates}

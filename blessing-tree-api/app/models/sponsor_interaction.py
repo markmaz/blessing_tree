@@ -8,6 +8,7 @@ from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+from .sponsor_constants import SPONSOR_INTERACTION_ORIGINS
 from .uuid_bin import UUIDBin
 
 if TYPE_CHECKING:
@@ -45,6 +46,11 @@ class SponsorInteraction(Base):
     )
 
     subject: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    origin_type: Mapped[str] = mapped_column(
+        Enum(*SPONSOR_INTERACTION_ORIGINS, name="sponsor_interaction_origin_type"),
+        nullable=False,
+        default="MANUAL",
+    )
     outcome: Mapped[str] = mapped_column(
         Enum(
             "LEFT_VM",
@@ -78,6 +84,9 @@ class SponsorInteraction(Base):
         ForeignKey("sponsorship.id", ondelete="SET NULL", onupdate="CASCADE"),
         nullable=True,
     )
+    related_schedule_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUIDBin(), nullable=True, index=True)
+    related_delivery_attempt_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    external_message_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     campaign: Mapped["Campaign"] = relationship(back_populates="sponsor_interactions")
     sponsor: Mapped["Sponsor"] = relationship(back_populates="interactions")

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import {
+  buildCampaignGiftsReportsPath,
   buildCampaignPeopleDirectoryPath,
   buildCampaignPeopleIntakePath,
   routes,
@@ -62,7 +63,7 @@ export function ReportsPage() {
   const missingWishlists = workspace.recipients.filter((recipient) => !recipient.wishlist).length;
   const workflowCounts = workspace.counts;
   const openWishlistRecipients = workspace.recipients
-    .filter((recipient) => recipient.workflowSummary.openItemCount > 0)
+    .filter((recipient) => (recipient.workflowSummary.coverageRemainingCount ?? recipient.workflowSummary.openItemCount) > 0)
     .slice(0, 5);
   const groupsNeedingPickupSetup = workspace.groups
     .filter(
@@ -76,6 +77,10 @@ export function ReportsPage() {
     <section className="campaign-page-stack">
       <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
         <div>
+          <div className="campaign-chip-row mb-3">
+            <span className="campaign-chip campaign-chip-muted">{selectedCampaign.name}</span>
+            <span className="campaign-chip campaign-chip-muted">Reports</span>
+          </div>
           <h1 className="h3 mb-1">People Reports</h1>
           <p className="text-muted mb-0">
             Track intake coverage, wishlist readiness, and coordination health for the current campaign community.
@@ -153,6 +158,12 @@ export function ReportsPage() {
               <h2 className="h5 mb-0">Gift Workflow</h2>
             </div>
             <ReportMetricRow label="Sponsored items" value={workflowCounts.sponsoredItemCount} />
+            <ReportMetricRow label="Recipients covered" value={workflowCounts.recipientsCoveredCount ?? 0} tone="ok" />
+            <ReportMetricRow
+              label="Still needing gifts"
+              value={workflowCounts.recipientsNeedingGiftsCount ?? 0}
+              tone={(workflowCounts.recipientsNeedingGiftsCount ?? 0) > 0 ? 'warn' : 'ok'}
+            />
             <ReportMetricRow label="Fulfilled items" value={workflowCounts.fulfilledItemCount} tone="ok" />
             <ReportMetricRow
               label="Ready for pickup"
@@ -160,6 +171,10 @@ export function ReportsPage() {
               tone={workflowCounts.readyForPickupItemCount > 0 ? 'warn' : 'ok'}
             />
             <ReportMetricRow label="Picked up" value={workflowCounts.pickedUpItemCount} />
+            <Link to={buildCampaignGiftsReportsPath(selectedCampaignId)} className="btn btn-outline-secondary btn-sm mt-3">
+              <i className="bi bi-clipboard2-pulse me-2" aria-hidden="true" />
+              Open Gift Status Report
+            </Link>
           </div>
         </div>
 
@@ -217,7 +232,7 @@ export function ReportsPage() {
             {openWishlistRecipients.length > 0 ? (
               <div className="campaign-report-list">
                 {openWishlistRecipients.map((recipient) => {
-                  const outstandingCount = recipient.workflowSummary.openItemCount;
+                  const outstandingCount = recipient.workflowSummary.coverageRemainingCount ?? recipient.workflowSummary.openItemCount;
                   return (
                     <div key={recipient.id} className="campaign-report-list__row">
                       <div>
@@ -226,7 +241,9 @@ export function ReportsPage() {
                           {recipient.group?.groupName ?? 'No group'} · {recipient.programType}
                         </div>
                       </div>
-                      <div className="campaign-report-list__count">{outstandingCount} open</div>
+                      <div className="campaign-report-list__count">
+                        {outstandingCount} sponsor{outstandingCount === 1 ? '' : 's'} needed
+                      </div>
                     </div>
                   );
                 })}

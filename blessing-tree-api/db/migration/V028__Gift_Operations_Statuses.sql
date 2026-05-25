@@ -1,0 +1,14 @@
+ALTER TABLE wishlist_item
+  MODIFY COLUMN status ENUM(
+    'OPEN',
+    'RESERVED',
+    'COMMITTED',
+    'RECEIVED',
+    'WRAPPED',
+    'TAGGED',
+    'READY_FOR_DISTRIBUTION',
+    'DISTRIBUTED',
+    'PICKED_UP',
+    'EXCEPTION',
+    'CANCELLED'
+  ) NOT NULL DEFAULT 'OPEN';

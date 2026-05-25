@@ -1,0 +1,241 @@
+.gift-workflow-report {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.gift-workflow-report__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.gift-workflow-report__sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--blessing-text-light);
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.gift-workflow-report__sync.is-refreshing i {
+  animation: gift-workflow-report-spin 900ms linear infinite;
+}
+
+.gift-workflow-report__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(226, 218, 205, 0.9);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.gift-workflow-report__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.gift-workflow-report__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--blessing-text-light);
+  font-size: 0.78rem;
+}
+
+.gift-workflow-report__dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: var(--gift-status-color);
+  box-shadow: 0 0 0 1px rgba(31, 22, 16, 0.12);
+}
+
+.gift-workflow-report__recipient-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.gift-recipient-workflow {
+  overflow: hidden;
+  border: 1px solid rgba(226, 218, 205, 0.92);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 10px 24px rgba(35, 24, 17, 0.05);
+}
+
+.gift-recipient-workflow__header {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) auto;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  background: rgba(248, 245, 239, 0.98);
+  border-bottom: 1px solid rgba(226, 218, 205, 0.88);
+}
+
+.gift-recipient-workflow__name {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.gift-recipient-workflow__meta,
+.gift-recipient-workflow__summary {
+  color: var(--blessing-text-light);
+  font-size: 0.82rem;
+}
+
+.gift-recipient-workflow__summary {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.gift-recipient-workflow__summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(226, 218, 205, 0.88);
+  color: var(--blessing-text);
+}
+
+.gift-recipient-workflow__body {
+  display: grid;
+}
+
+.gift-workflow-gift-row {
+  display: grid;
+  grid-template-columns: minmax(15rem, 1.2fr) minmax(26rem, 2fr);
+  gap: 1rem;
+  width: 100%;
+  padding: 0.95rem 1.1rem;
+  border: 0;
+  border-bottom: 1px solid rgba(226, 218, 205, 0.7);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.gift-workflow-gift-row:hover,
+.gift-workflow-gift-row:focus-visible {
+  background: rgba(247, 241, 231, 0.72);
+}
+
+.gift-workflow-gift-row:focus-visible {
+  outline: 2px solid rgba(137, 98, 68, 0.42);
+  outline-offset: -2px;
+}
+
+.gift-workflow-gift-row:last-child {
+  border-bottom: 0;
+}
+
+.gift-workflow-gift-row__title {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.gift-workflow-gift-row__name {
+  color: var(--blessing-text);
+  font-weight: 700;
+}
+
+.gift-workflow-gift-row__meta {
+  color: var(--blessing-text-light);
+  font-size: 0.82rem;
+}
+
+.gift-workflow-gift-row__progress {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.4rem, 1fr));
+  gap: 0.35rem;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.gift-workflow-step {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.18rem;
+  min-height: 3.25rem;
+  padding: 0.4rem 0.35rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(226, 218, 205, 0.82);
+  background: rgba(248, 245, 239, 0.75);
+  color: var(--blessing-text-light);
+  text-align: center;
+}
+
+.gift-workflow-step.is-complete {
+  background: color-mix(in srgb, var(--gift-status-color) 18%, white);
+  border-color: color-mix(in srgb, var(--gift-status-color) 48%, white);
+  color: var(--blessing-text);
+}
+
+.gift-workflow-step.is-current {
+  background: var(--gift-status-color);
+  border-color: var(--gift-status-color);
+  color: white;
+  box-shadow: 0 8px 16px color-mix(in srgb, var(--gift-status-color) 22%, transparent);
+}
+
+.gift-workflow-step__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.gift-workflow-step__label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.gift-workflow-report__empty {
+  padding: 1.25rem;
+  border: 1px dashed rgba(160, 124, 90, 0.42);
+  border-radius: 0.8rem;
+  color: var(--blessing-text-light);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+@media (max-width: 1199.98px) {
+  .gift-workflow-gift-row {
+    grid-template-columns: 1fr;
+  }
+
+  .gift-workflow-gift-row__progress {
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
+  }
+}
+
+@keyframes gift-workflow-report-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .gift-recipient-workflow__header {
+    grid-template-columns: 1fr;
+  }
+
+  .gift-recipient-workflow__summary {
+    justify-content: flex-start;
+  }
+}

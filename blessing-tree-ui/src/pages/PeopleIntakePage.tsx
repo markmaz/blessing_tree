@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { canManageCampaign } from '@/features/campaigns/model/campaignPermissions';
+import { canManagePeople } from '@/features/campaigns/model/campaignPermissions';
 import type { RecipientGroupType } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 import { usePeopleWorkspaceContext } from '@/features/campaigns/model/peopleWorkspaceContext';
 import { CampaignPeopleGroupDrawer } from '@/features/campaigns/ui/CampaignPeopleGroupDrawer';
@@ -25,8 +25,7 @@ export function PeopleIntakePage() {
     onClearError,
   } = usePeopleWorkspaceContext();
 
-  const canEditPeople =
-    canManageCampaign(access) || access?.capabilities.includes('campaign.recipients.edit') === true;
+  const canEditPeople = canManagePeople(access);
   const [createGroupType, setCreateGroupType] = useState<RecipientGroupType | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);

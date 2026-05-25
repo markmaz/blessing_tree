@@ -26,6 +26,7 @@ Related designs:
 - `docs/engineering/campaign-studio-design.md`
 - `docs/engineering/campaign-schedule-design.md`
 - `docs/engineering/campaign-team-design.md`
+- `docs/engineering/admin-milestone-readiness-design.md`
 
 ## Goals
 

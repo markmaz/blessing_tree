@@ -11,6 +11,8 @@ from app.exceptions.service_error import ServiceError
 from app.features.campaigns.constants import CAMPAIGN_STATUS_ARCHIVED
 from app.features.campaigns.validation import (
     parse_optional_date,
+    parse_optional_bool,
+    parse_optional_public_sponsor_slug,
     parse_optional_season_theme,
     require_campaign_name,
     require_campaign_year,
@@ -165,10 +167,21 @@ class CampaignService:
                 if "season_theme" in payload
                 else parse_optional_season_theme(source_campaign.season_theme) if source_campaign is not None else None
             ),
+            public_sponsor_slug=(
+                parse_optional_public_sponsor_slug(payload.get("public_sponsor_slug"))
+                if "public_sponsor_slug" in payload
+                else parse_optional_public_sponsor_slug(source_campaign.public_sponsor_slug) if source_campaign is not None else None
+            ),
+            public_sponsor_signup_enabled=(
+                parse_optional_bool(payload.get("public_sponsor_signup_enabled"), "public_sponsor_signup_enabled")
+                if "public_sponsor_signup_enabled" in payload
+                else bool(source_campaign.public_sponsor_signup_enabled) if source_campaign is not None else False
+            ) or False,
             start_date=start_date,
             end_date=end_date,
             status=validate_create_status(payload.get("status")),
         )
+        self._validate_unique_public_sponsor_slug(db, campaign.public_sponsor_slug)
         db.add(campaign)
         db.flush()
 
@@ -213,6 +226,14 @@ class CampaignService:
             campaign.description = _optional_text(payload.get("description"))
         if "season_theme" in payload:
             campaign.season_theme = parse_optional_season_theme(payload.get("season_theme"))
+        if "public_sponsor_slug" in payload:
+            next_slug = parse_optional_public_sponsor_slug(payload.get("public_sponsor_slug"))
+            self._validate_unique_public_sponsor_slug(db, next_slug, exclude_campaign_id=str(campaign.id))
+            campaign.public_sponsor_slug = next_slug
+        if "public_sponsor_signup_enabled" in payload:
+            campaign.public_sponsor_signup_enabled = bool(
+                parse_optional_bool(payload.get("public_sponsor_signup_enabled"), "public_sponsor_signup_enabled")
+            )
 
         start_date = parse_optional_date(payload.get("start_date"), "start_date") if "start_date" in payload else campaign.start_date
         end_date = parse_optional_date(payload.get("end_date"), "end_date") if "end_date" in payload else campaign.end_date
@@ -266,6 +287,25 @@ class CampaignService:
         if source_campaign is None:
             raise ServiceError("Source campaign not found", status_code=404)
         return source_campaign
+
+    def _validate_unique_public_sponsor_slug(
+        self,
+        db: Session,
+        slug: str | None,
+        *,
+        exclude_campaign_id: str | None = None,
+    ) -> None:
+        if not slug:
+            return
+        query = db.query(Campaign).filter(Campaign.public_sponsor_slug == slug)
+        if exclude_campaign_id:
+            query = query.filter(Campaign.id != uuid.UUID(exclude_campaign_id))
+        if query.first() is not None:
+            raise ServiceError(
+                "Campaign public_sponsor_slug already exists",
+                status_code=409,
+                details={"field": "public_sponsor_slug"},
+            )
 
     def _clone_campaign_setup(
         self,

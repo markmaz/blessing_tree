@@ -39,38 +39,22 @@ class AuthorizationService:
         if user_uuid is None or campaign_uuid is None:
             return set()
 
-        member = (
-            db.query(CampaignMember.id)
+        member_rows = (
+            db.query(CampaignMemberAccessRole.role_key)
+            .join(
+                CampaignMember,
+                CampaignMember.id == CampaignMemberAccessRole.campaign_member_id,
+            )
             .filter(
                 CampaignMember.campaign_id == campaign_uuid,
                 CampaignMember.app_user_id == user_uuid,
+                CampaignMember.is_active == 1,
+                CampaignMember.app_access_status == APP_ACCESS_STATUS_ACTIVE,
+                CampaignMemberAccessRole.is_active == 1,
             )
-            .one_or_none()
+            .all()
         )
-
-        if member is not None:
-            rows = (
-                db.query(CampaignMemberAccessRole.role_key)
-                .join(
-                    CampaignMember,
-                    CampaignMember.id == CampaignMemberAccessRole.campaign_member_id,
-                )
-                .filter(
-                    CampaignMember.campaign_id == campaign_uuid,
-                    CampaignMember.app_user_id == user_uuid,
-                    CampaignMember.is_active == 1,
-                    CampaignMember.app_access_status == APP_ACCESS_STATUS_ACTIVE,
-                    CampaignMemberAccessRole.is_active == 1,
-                )
-                .all()
-            )
-            return {
-                normalize_campaign_role_key(role_key)
-                for (role_key,) in rows
-                if normalize_campaign_role_key(role_key)
-            }
-
-        rows = (
+        user_role_rows = (
             db.query(CampaignUserRole.role_key)
             .filter(
                 CampaignUserRole.user_id == user_uuid,
@@ -79,7 +63,11 @@ class AuthorizationService:
             )
             .all()
         )
-        return {normalize_campaign_role_key(role_key) for (role_key,) in rows if normalize_campaign_role_key(role_key)}
+        return {
+            normalize_campaign_role_key(role_key)
+            for (role_key,) in [*member_rows, *user_role_rows]
+            if normalize_campaign_role_key(role_key)
+        }
 
     def get_campaign_capabilities(
         self,

@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns.ai_llm_draft_service import CampaignStudioLlmDraftService
 from app.features.campaigns.service import CampaignService
-from app.features.campaigns.studio_constants import MILESTONE_DEFINITIONS
 from app.features.campaigns.studio_service import CampaignStudioService
 from app.features.campaigns.validation import validate_status_transition
 from app.features.campaigns.team_workspace_service import CampaignTeamWorkspaceService
@@ -137,7 +136,10 @@ class CampaignStudioAiDraftService:
     ) -> dict[str, Any]:
         milestones = self.studio.list_milestones(db, campaign_id)
         templates = self.studio.list_templates(db, campaign_id)
-        draft_kind = requested_action_type or _infer_schedule_action_type(prompt)
+        milestone_catalog = _milestone_catalog_from_definitions(
+            self.studio.milestone_definitions.list_active_definitions(db)
+        )
+        draft_kind = requested_action_type or _infer_schedule_action_type(prompt, milestone_catalog)
 
         assumptions: list[str] = []
         warnings: list[str] = []
@@ -151,6 +153,7 @@ class CampaignStudioAiDraftService:
                 prompt,
                 campaign_year=campaign_year,
                 milestones=milestones,
+                milestone_catalog=milestone_catalog,
             )
             actions = [action]
         else:
@@ -158,6 +161,7 @@ class CampaignStudioAiDraftService:
                 prompt,
                 campaign_year=campaign_year,
                 templates=templates,
+                milestone_catalog=milestone_catalog,
             )
             assumptions.extend(action_assumptions)
             warnings.extend(action_warnings)
@@ -193,6 +197,9 @@ class CampaignStudioAiDraftService:
         readiness = self.studio.get_readiness(db, campaign_id)
         milestones = self.studio.list_milestones(db, campaign_id)
         templates = self.studio.list_templates(db, campaign_id)
+        milestone_catalog = _milestone_catalog_from_definitions(
+            self.studio.milestone_definitions.list_active_definitions(db)
+        )
         selected_items = _select_readiness_items_for_prompt(prompt, readiness)
         readiness_context: dict[str, Any] = {
             "created_template_ref": None,
@@ -210,6 +217,7 @@ class CampaignStudioAiDraftService:
                 campaign=campaign,
                 milestones=milestones,
                 templates=templates,
+                milestone_catalog=milestone_catalog,
                 readiness_context=readiness_context,
             )
             actions.extend(item_actions)
@@ -514,6 +522,9 @@ class CampaignStudioAiDraftService:
         prompt: str,
     ) -> dict[str, Any]:
         templates = self.studio.list_templates(db, campaign_id)
+        milestone_catalog = _milestone_catalog_from_definitions(
+            self.studio.milestone_definitions.list_active_definitions(db)
+        )
         template_action, assumptions, warnings, template_ref = _build_template_creation_action(
             prompt,
             campaign_name=campaign_name,
@@ -521,13 +532,18 @@ class CampaignStudioAiDraftService:
         )
         actions: list[dict[str, Any]] = [template_action]
 
-        if _communications_request_includes_schedule(prompt, campaign_year=campaign_year):
+        if _communications_request_includes_schedule(
+            prompt,
+            campaign_year=campaign_year,
+            milestone_catalog=milestone_catalog,
+        ):
             schedule_action, schedule_assumptions, schedule_warnings = (
                 _build_communication_schedule_from_template_ref(
                     prompt,
                     campaign_year=campaign_year,
                     template_ref=template_ref,
                     template_name=str(template_action["payload"]["name"]),
+                    milestone_catalog=milestone_catalog,
                 )
             )
             actions.append(schedule_action)
@@ -650,6 +666,7 @@ def _build_milestone_action(
     *,
     campaign_year: int,
     milestones: list[Any],
+    milestone_catalog: list[dict[str, Any]],
 ) -> dict[str, Any]:
     timing = _extract_date_time(prompt, default_year=campaign_year)
     if timing["date_key"] is None:
@@ -659,7 +676,7 @@ def _build_milestone_action(
             details={"field": "prompt"},
         )
 
-    definition = _match_milestone_definition(prompt)
+    definition = _match_milestone_definition(prompt, milestone_catalog)
     if definition is None:
         raise ServiceError(
             "Mention which milestone to place, like registration open or pickup start.",
@@ -697,6 +714,7 @@ def _build_communication_action(
     *,
     campaign_year: int,
     templates: list[Any],
+    milestone_catalog: list[dict[str, Any]],
 ) -> tuple[dict[str, Any], list[str], list[str]]:
     template, template_assumption = _match_template(prompt, templates)
     if template is None:
@@ -706,7 +724,7 @@ def _build_communication_action(
             details={"field": "prompt"},
         )
 
-    milestone = _match_milestone_definition(prompt)
+    milestone = _match_milestone_definition(prompt, milestone_catalog)
     timing = _extract_date_time(prompt, default_year=campaign_year)
     if milestone is None and timing["date_key"] is None:
         raise ServiceError(
@@ -818,8 +836,9 @@ def _build_communication_schedule_from_template_ref(
     campaign_year: int,
     template_ref: str,
     template_name: str,
+    milestone_catalog: list[dict[str, Any]],
 ) -> tuple[dict[str, Any], list[str], list[str]]:
-    milestone = _match_milestone_definition(prompt)
+    milestone = _match_milestone_definition(prompt, milestone_catalog)
     timing = _extract_date_time(prompt, default_year=campaign_year)
     if milestone is None and timing["date_key"] is None:
         raise ServiceError(
@@ -873,6 +892,7 @@ def _build_actions_for_readiness_item(
     campaign,
     milestones: list[Any],
     templates: list[Any],
+    milestone_catalog: list[dict[str, Any]],
     readiness_context: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], list[str], list[str]]:
     code = str(item["code"])
@@ -961,18 +981,13 @@ def _build_actions_for_readiness_item(
             campaign.start_date,
             campaign.end_date,
             milestone_keys,
+            milestone_catalog,
         )
         existing_by_key = {milestone.milestone_key: milestone for milestone in milestones}
         for key in milestone_keys:
             if key not in inferred_dates:
                 continue
-            definition = _match_milestone_definition(key.replace("_", " ")) or {
-                "key": key,
-                "label": MILESTONE_DEFINITIONS.get(key, key.replace("_", " ").title()),
-                "sort_order": list(MILESTONE_DEFINITIONS.keys()).index(key) + 1
-                if key in MILESTONE_DEFINITIONS
-                else 0,
-            }
+            definition = _definition_for_milestone_key(key, milestone_catalog)
             existing_notes = existing_by_key.get(key).notes if key in existing_by_key else None
             actions.append(
                 {
@@ -996,6 +1011,63 @@ def _build_actions_for_readiness_item(
                     "apply_target": {"api": "campaign_milestone.replace", "method": "PUT"},
                 }
             )
+        return actions, assumptions, warnings
+
+    if item.get("details", {}).get("rule_type") == "MISSING_MILESTONE":
+        milestone_key = str(item.get("details", {}).get("milestone_key") or "")
+        if not milestone_key:
+            return (
+                [
+                    _build_blocked_readiness_action(
+                        item,
+                        summary="A configured milestone readiness rule is missing its milestone key.",
+                        warning="Review the readiness rule configuration before Campaign AI can draft a milestone fix.",
+                    )
+                ],
+                assumptions,
+                warnings,
+            )
+        if not campaign.start_date or not campaign.end_date:
+            return (
+                [
+                    _build_blocked_readiness_action(
+                        item,
+                        summary="A required milestone is missing, but the campaign date range is not available yet.",
+                        warning="Set the campaign start and end dates first so Campaign AI can infer milestone timing.",
+                    )
+                ],
+                assumptions,
+                warnings,
+            )
+        inferred_dates = _infer_required_milestone_dates(
+            campaign.start_date,
+            campaign.end_date,
+            [milestone_key],
+            milestone_catalog,
+        )
+        definition = _definition_for_milestone_key(milestone_key, milestone_catalog)
+        actions.append(
+            {
+                "id": f"draft-readiness-milestone-{uuid.uuid4()}",
+                "action_type": "create_milestone",
+                "section": "schedule",
+                "title": f"Place Milestone: {definition['label']}",
+                "summary": f"Places {definition['label']} on the calendar to satisfy readiness.",
+                "status": "needs_review",
+                "assumptions": [
+                    "Inferred this milestone date by using its configured position in the milestone catalog."
+                ],
+                "warnings": [],
+                "payload": {
+                    "milestone_key": definition["key"],
+                    "label": definition["label"],
+                    "occurs_on": inferred_dates.get(milestone_key, campaign.start_date.isoformat()),
+                    "notes": "Drafted from readiness fix plan.",
+                    "sort_order": definition["sort_order"],
+                },
+                "apply_target": {"api": "campaign_milestone.replace", "method": "PUT"},
+            }
+        )
         return actions, assumptions, warnings
 
     if code == "missing_manual_schedule":
@@ -1482,22 +1554,56 @@ def _validate_schedule_requested_action_type(value: object) -> str | None:
     return requested_type
 
 
-def _infer_schedule_action_type(prompt: str) -> str:
+def _infer_schedule_action_type(prompt: str, milestone_catalog: list[dict[str, Any]] | None = None) -> str:
     normalized = _normalize_text(prompt)
     if any(term in normalized for term in ("email", "template", "reminder", "communication")):
         return "communication"
-    if _match_milestone_definition(prompt) is not None:
+    if _match_milestone_definition(prompt, milestone_catalog) is not None:
         return "milestone"
     return "event"
 
 
-def _match_milestone_definition(prompt: str) -> dict[str, Any] | None:
+def _match_milestone_definition(
+    prompt: str,
+    milestone_catalog: list[dict[str, Any]] | None = None,
+) -> dict[str, Any] | None:
     normalized_prompt = _normalize_text(prompt)
-    for sort_order, (key, label) in enumerate(MILESTONE_DEFINITIONS.items(), start=1):
+    for definition in milestone_catalog or []:
+        key = str(definition["key"])
+        label = str(definition["label"])
         normalized_label = _normalize_text(label)
         if normalized_label in normalized_prompt or key.replace("_", " ") in normalized_prompt:
-            return {"key": key, "label": label, "sort_order": sort_order}
+            return {
+                "key": key,
+                "label": label,
+                "sort_order": int(definition.get("sort_order") or 0),
+            }
     return None
+
+
+def _definition_for_milestone_key(
+    milestone_key: str,
+    milestone_catalog: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    for definition in milestone_catalog or []:
+        if definition["key"] == milestone_key:
+            return dict(definition)
+    return {
+        "key": milestone_key,
+        "label": milestone_key.replace("_", " ").title(),
+        "sort_order": 0,
+    }
+
+
+def _milestone_catalog_from_definitions(definitions: list[Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            "key": definition.milestone_key,
+            "label": definition.label,
+            "sort_order": definition.default_sort_order,
+        }
+        for definition in definitions
+    ]
 
 
 def _match_template(prompt: str, templates: list[Any]) -> tuple[Any | None, str | None]:
@@ -1712,8 +1818,9 @@ def _infer_required_milestone_dates(
     start_date: date,
     end_date: date,
     milestone_keys: list[str],
+    milestone_catalog: list[dict[str, Any]] | None = None,
 ) -> dict[str, str]:
-    ordered_keys = list(MILESTONE_DEFINITIONS.keys())
+    ordered_keys = [str(definition["key"]) for definition in milestone_catalog or []]
     total_steps = max(len(ordered_keys) - 1, 1)
     total_days = max((end_date - start_date).days, 0)
     inferred: dict[str, str] = {}
@@ -1921,9 +2028,14 @@ def _read_value(value: Any, key: str, *, default: Any = None, fallback_key: str 
     return default
 
 
-def _communications_request_includes_schedule(prompt: str, *, campaign_year: int) -> bool:
+def _communications_request_includes_schedule(
+    prompt: str,
+    *,
+    campaign_year: int,
+    milestone_catalog: list[dict[str, Any]] | None = None,
+) -> bool:
     normalized = _normalize_text(prompt)
-    if _match_milestone_definition(prompt) is not None:
+    if _match_milestone_definition(prompt, milestone_catalog) is not None:
         return True
     if _extract_date_time(prompt, default_year=campaign_year)["date_key"] is not None:
         return True

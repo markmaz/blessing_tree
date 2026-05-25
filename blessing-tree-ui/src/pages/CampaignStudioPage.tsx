@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { routes } from '@/app/routes';
+import { buildCampaignSponsorFlyerPath, routes } from '@/app/routes';
 import { updateCampaign } from '@/features/campaigns/api/campaignApi';
 import {
   campaignStudioSections,
@@ -11,6 +11,7 @@ import { canManageCampaign } from '@/features/campaigns/model/campaignPermission
 import type { CampaignUpsertInput } from '@/features/campaigns/model/campaignTypes';
 import { CampaignStudioAiRail } from '@/features/campaigns/ui/CampaignStudioAiRail';
 import { CampaignStudioCommunicationsSection } from '@/features/campaigns/ui/CampaignStudioCommunicationsSection';
+import { CampaignStudioGiftRulesSection } from '@/features/campaigns/ui/CampaignStudioGiftRulesSection';
 import { CampaignStudioOverview } from '@/features/campaigns/ui/CampaignStudioOverview';
 import { CampaignStudioReadinessSection } from '@/features/campaigns/ui/CampaignStudioReadinessSection';
 import { CampaignStudioRail } from '@/features/campaigns/ui/CampaignStudioRail';
@@ -36,10 +37,12 @@ export function CampaignStudioPage() {
     addCommunicationTemplate,
     patchCommunicationTemplate,
     removeCommunicationTemplate,
+    sendTemplateTestEmail,
     addCommunicationSchedule,
     patchCommunicationSchedule,
     removeCommunicationSchedule,
     persistMilestones,
+    patchGiftPolicy,
     addScheduleEvent,
     updateScheduleEvent,
     removeScheduleEvent,
@@ -118,6 +121,13 @@ export function CampaignStudioPage() {
             <i className="bi bi-layout-text-window-reverse" aria-hidden="true" />
             <span>Open Detail View</span>
           </Link>
+          <Link
+            to={buildCampaignSponsorFlyerPath(studio.campaign.id)}
+            className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
+          >
+            <i className="bi bi-qr-code-scan" aria-hidden="true" />
+            <span>Sponsor Flyer</span>
+          </Link>
         </div>
       </div>
 
@@ -181,10 +191,12 @@ export function CampaignStudioPage() {
             addCommunicationTemplate,
             patchCommunicationTemplate,
             removeCommunicationTemplate,
+            sendTemplateTestEmail,
             addCommunicationSchedule,
             patchCommunicationSchedule,
             removeCommunicationSchedule,
             persistMilestones,
+            patchGiftPolicy,
             addScheduleEvent,
             updateScheduleEvent,
             removeScheduleEvent,
@@ -258,10 +270,12 @@ function renderStudioSection({
   addCommunicationTemplate,
   patchCommunicationTemplate,
   removeCommunicationTemplate,
+  sendTemplateTestEmail,
   addCommunicationSchedule,
   patchCommunicationSchedule,
   removeCommunicationSchedule,
   persistMilestones,
+  patchGiftPolicy,
   addScheduleEvent,
   updateScheduleEvent,
   removeScheduleEvent,
@@ -277,10 +291,12 @@ function renderStudioSection({
   addCommunicationTemplate: ReturnType<typeof useCampaignStudio>['addCommunicationTemplate'];
   patchCommunicationTemplate: ReturnType<typeof useCampaignStudio>['patchCommunicationTemplate'];
   removeCommunicationTemplate: ReturnType<typeof useCampaignStudio>['removeCommunicationTemplate'];
+  sendTemplateTestEmail: ReturnType<typeof useCampaignStudio>['sendTemplateTestEmail'];
   addCommunicationSchedule: ReturnType<typeof useCampaignStudio>['addCommunicationSchedule'];
   patchCommunicationSchedule: ReturnType<typeof useCampaignStudio>['patchCommunicationSchedule'];
   removeCommunicationSchedule: ReturnType<typeof useCampaignStudio>['removeCommunicationSchedule'];
   persistMilestones: ReturnType<typeof useCampaignStudio>['persistMilestones'];
+  patchGiftPolicy: ReturnType<typeof useCampaignStudio>['patchGiftPolicy'];
   addScheduleEvent: ReturnType<typeof useCampaignStudio>['addScheduleEvent'];
   updateScheduleEvent: ReturnType<typeof useCampaignStudio>['updateScheduleEvent'];
   removeScheduleEvent: ReturnType<typeof useCampaignStudio>['removeScheduleEvent'];
@@ -319,6 +335,7 @@ function renderStudioSection({
         onCreateTemplate={addCommunicationTemplate}
         onUpdateTemplate={patchCommunicationTemplate}
         onDeleteTemplate={removeCommunicationTemplate}
+        onSendTestEmail={sendTemplateTestEmail}
       />
     );
   }
@@ -328,6 +345,7 @@ function renderStudioSection({
       <CampaignStudioScheduleSection
         access={studio.access}
         items={studio.schedule.items}
+        milestoneDefinitions={studio.milestoneDefinitions}
         milestones={studio.milestones}
         schedules={studio.communications.schedules}
         templates={studio.communications.templates}
@@ -348,6 +366,17 @@ function renderStudioSection({
       <CampaignStudioReadinessSection
         readiness={studio.readiness}
         onSelectSection={setSelectedSection}
+      />
+    );
+  }
+
+  if (selectedSection === 'gift_rules') {
+    return (
+      <CampaignStudioGiftRulesSection
+        policy={studio.giftPolicy}
+        isSaving={isSaving}
+        canEdit={canManageCampaign(studio.access)}
+        onSavePolicy={patchGiftPolicy}
       />
     );
   }

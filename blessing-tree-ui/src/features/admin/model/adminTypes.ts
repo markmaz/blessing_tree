@@ -26,6 +26,26 @@ export interface AdminRoleCatalogItem {
   roleKey: string;
   label: string;
   description: string;
+  capabilities?: string[];
+}
+
+export interface AdminCampaignAccessCampaign {
+  id: string;
+  name: string;
+  year: number;
+  status: string;
+}
+
+export interface AdminCampaignAccessRow {
+  campaign: AdminCampaignAccessCampaign;
+  roleKeys: string[];
+  capabilities: string[];
+}
+
+export interface AdminUserCampaignAccessPayload {
+  userId: string;
+  campaigns: AdminCampaignAccessRow[];
+  roleCatalog: AdminRoleCatalogItem[];
 }
 
 export interface AdminLlmProviderCatalogItem {

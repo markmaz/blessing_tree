@@ -3,31 +3,53 @@
  * Main application router and provider setup.
  */
 
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { AppFeaturesProvider } from '@/features/admin/model/appFeaturesContext';
 import { AuthProvider } from '@/features/auth/model/authContext';
 import { InviteAcceptPage } from '@/features/auth/ui/InviteAcceptPage';
 import { LoginPage } from '@/features/auth/ui/LoginPage';
 import { OAuthCallbackPage } from '@/features/auth/ui/OAuthCallbackPage';
-import { CampaignProvider } from '@/features/campaigns/model/campaignContext';
+import { CampaignProvider, useCampaigns } from '@/features/campaigns/model/campaignContext';
+import {
+  campaignCapabilities,
+  giftOperationsCapabilities,
+  hasAnyCampaignCapability,
+  hasCampaignCapability,
+} from '@/features/campaigns/model/campaignPermissions';
+import { AccountProfilePage } from '@/pages/AccountProfilePage';
+import { AccountSettingsPage } from '@/pages/AccountSettingsPage';
 import { AdminCapabilitiesPage } from '@/pages/AdminCapabilitiesPage';
+import { AdminCampaignOperationsPage } from '@/pages/AdminCampaignOperationsPage';
 import { AdminHealthPage } from '@/pages/AdminHealthPage';
 import { AdminLlmPage } from '@/pages/AdminLlmPage';
 import { AdminPage } from '@/pages/AdminPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { CampaignDetailPage } from '@/pages/CampaignDetailPage';
 import { CampaignsPage } from '@/pages/CampaignsPage';
+import { CampaignSponsorFlyerPage } from '@/pages/CampaignSponsorFlyerPage';
 import { CampaignStudioPage } from '@/pages/CampaignStudioPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { DonationsPage } from '@/pages/DonationsPage';
+import { GiftOperationsPage } from '@/pages/GiftOperationsPage';
+import { GiftPoolPage } from '@/pages/GiftPoolPage';
+import { GiftSearchPage } from '@/pages/GiftSearchPage';
+import { GiftWorkflowReportPage } from '@/pages/GiftWorkflowReportPage';
 import { PeopleDirectoryPage } from '@/pages/PeopleDirectoryPage';
 import { PeopleIntakePage } from '@/pages/PeopleIntakePage';
 import { PeoplePage } from '@/pages/PeoplePage';
+import { PublicGiftScanPage } from '@/pages/PublicGiftScanPage';
+import { PublicSponsorSignupPage } from '@/pages/PublicSponsorSignupPage';
+import { PublicSponsorVerifyPage } from '@/pages/PublicSponsorVerifyPage';
 import { ReportsPage } from '@/pages/ReportsPage';
+import { SponsorsDirectoryPage } from '@/pages/SponsorsDirectoryPage';
+import { SponsorsIntakePage } from '@/pages/SponsorsIntakePage';
+import { SponsorsPage } from '@/pages/SponsorsPage';
+import { SponsorsReportsPage } from '@/pages/SponsorsReportsPage';
 import { FeatureGate } from '@/shared/ui/FeatureGate';
 import { ProtectedRoute } from '@/shared/ui/ProtectedRoute';
 import { AppLayout } from '@/shared/ui/layout/AppLayout';
-import { routes } from './routes';
+import { buildCampaignPeopleReportsPath, routes } from './routes';
 
 export function App() {
   return (
@@ -39,6 +61,10 @@ export function App() {
               <Route path={routes.LOGIN} element={<LoginPage />} />
               <Route path={routes.AUTH_REGISTER} element={<InviteAcceptPage />} />
               <Route path={routes.AUTH_CALLBACK} element={<OAuthCallbackPage />} />
+              <Route path={routes.PUBLIC_CAMPAIGN_SPONSOR} element={<PublicSponsorSignupPage />} />
+              <Route path={routes.PUBLIC_CAMPAIGN_SPONSOR_VERIFY} element={<PublicSponsorVerifyPage />} />
+              <Route path={routes.PUBLIC_GIFT_SCAN} element={<PublicGiftScanPage />} />
+              <Route path={routes.SCAN_GIFT} element={<PublicGiftScanPage />} />
 
               <Route
                 path={routes.HOME}
@@ -49,26 +75,126 @@ export function App() {
                 }
               >
                 <Route index element={<DashboardPage />} />
+                <Route path={routes.ACCOUNT_PROFILE.slice(1)} element={<AccountProfilePage />} />
+                <Route path={routes.ACCOUNT_SETTINGS.slice(1)} element={<AccountSettingsPage />} />
                 <Route path={routes.CAMPAIGNS.slice(1)} element={<CampaignsPage />} />
-                <Route path={routes.CAMPAIGN_DETAIL.slice(1)} element={<CampaignDetailPage />} />
-                <Route path={routes.CAMPAIGN_STUDIO.slice(1)} element={<CampaignStudioPage />} />
+                <Route
+                  path={routes.CAMPAIGN_DETAIL.slice(1)}
+                  element={
+                    <CampaignCapabilityGate capability={campaignCapabilities.view}>
+                      <CampaignDetailPage />
+                    </CampaignCapabilityGate>
+                  }
+                />
+                <Route
+                  path={routes.CAMPAIGN_STUDIO.slice(1)}
+                  element={
+                    <CampaignCapabilityGate capability={campaignCapabilities.view}>
+                      <CampaignStudioPage />
+                    </CampaignCapabilityGate>
+                  }
+                />
+                <Route
+                  path={routes.CAMPAIGN_SPONSOR_FLYER.slice(1)}
+                  element={
+                    <CampaignCapabilityGate capability={campaignCapabilities.view}>
+                      <CampaignSponsorFlyerPage />
+                    </CampaignCapabilityGate>
+                  }
+                />
                 <Route
                   path={routes.CAMPAIGN_PEOPLE.slice(1)}
                   element={
                     <FeatureGate featureKey="people">
-                      <PeoplePage />
+                      <CampaignCapabilityGate capability={campaignCapabilities.peopleView}>
+                        <PeoplePage />
+                      </CampaignCapabilityGate>
                     </FeatureGate>
                   }
                 >
                   <Route index element={<Navigate to="intake" replace />} />
                   <Route path="intake" element={<PeopleIntakePage />} />
                   <Route path="directory" element={<PeopleDirectoryPage />} />
+                  <Route
+                    path="reports"
+                    element={
+                      <FeatureGate featureKey="reports">
+                        <CampaignCapabilityGate capability={campaignCapabilities.reportsView}>
+                          <ReportsPage />
+                        </CampaignCapabilityGate>
+                      </FeatureGate>
+                    }
+                  />
                 </Route>
+                <Route
+                  path={routes.CAMPAIGN_SPONSORS.slice(1)}
+                  element={
+                    <FeatureGate featureKey="sponsors">
+                      <CampaignCapabilityGate capability={campaignCapabilities.sponsorsView}>
+                        <SponsorsPage />
+                      </CampaignCapabilityGate>
+                    </FeatureGate>
+                  }
+                >
+                  <Route index element={<Navigate to="intake" replace />} />
+                  <Route path="intake" element={<SponsorsIntakePage />} />
+                  <Route path="directory" element={<SponsorsDirectoryPage />} />
+                  <Route
+                    path="reports"
+                    element={
+                      <CampaignCapabilityGate capability={campaignCapabilities.reportsView}>
+                        <SponsorsReportsPage />
+                      </CampaignCapabilityGate>
+                    }
+                  />
+                </Route>
+                <Route
+                  path={routes.CAMPAIGN_GIFTS_SEARCH.slice(1)}
+                  element={
+                    <FeatureGate featureKey="sponsors">
+                      <CampaignCapabilityGate capability={campaignCapabilities.giftSearch}>
+                        <GiftSearchPage />
+                      </CampaignCapabilityGate>
+                    </FeatureGate>
+                  }
+                />
+                <Route
+                  path={routes.CAMPAIGN_GIFTS_OPERATIONS.slice(1)}
+                  element={
+                    <FeatureGate featureKey="sponsors">
+                      <CampaignCapabilityGate anyOf={giftOperationsCapabilities}>
+                        <GiftOperationsPage />
+                      </CampaignCapabilityGate>
+                    </FeatureGate>
+                  }
+                />
+                <Route
+                  path={routes.CAMPAIGN_GIFTS_POOL.slice(1)}
+                  element={
+                    <FeatureGate featureKey="donations">
+                      <CampaignCapabilityGate capability={campaignCapabilities.giftPoolManage}>
+                        <GiftPoolPage />
+                      </CampaignCapabilityGate>
+                    </FeatureGate>
+                  }
+                />
+                <Route
+                  path={routes.CAMPAIGN_GIFTS_REPORTS.slice(1)}
+                  element={
+                    <FeatureGate featureKey="reports">
+                      <CampaignCapabilityGate capability={campaignCapabilities.reportsView}>
+                        <GiftWorkflowReportPage />
+                      </CampaignCapabilityGate>
+                    </FeatureGate>
+                  }
+                />
                 <Route
                   path={routes.DONATIONS.slice(1)}
                   element={
                     <FeatureGate featureKey="donations">
-                      <DonationsPage />
+                      <CampaignCapabilityGate capability={campaignCapabilities.giftPoolManage}>
+                        <DonationsPage />
+                      </CampaignCapabilityGate>
                     </FeatureGate>
                   }
                 />
@@ -76,13 +202,14 @@ export function App() {
                   path={routes.REPORTS.slice(1)}
                   element={
                     <FeatureGate featureKey="reports">
-                      <ReportsPage />
+                      <LegacyReportsRoute />
                     </FeatureGate>
                   }
                 />
                 <Route path={routes.ADMIN.slice(1)} element={<AdminPage />}>
                   <Route index element={<Navigate to={routes.ADMIN_USERS} replace />} />
                   <Route path="users" element={<AdminUsersPage />} />
+                  <Route path="campaign-operations" element={<AdminCampaignOperationsPage />} />
                   <Route path="llm" element={<AdminLlmPage />} />
                   <Route path="health" element={<AdminHealthPage />} />
                   <Route path="capabilities" element={<AdminCapabilitiesPage />} />
@@ -96,4 +223,57 @@ export function App() {
       </CampaignProvider>
     </AuthProvider>
   );
+}
+
+function LegacyReportsRoute() {
+  const { selectedCampaignId } = useCampaigns();
+  if (selectedCampaignId) {
+    return <Navigate to={buildCampaignPeopleReportsPath(selectedCampaignId)} replace />;
+  }
+  return <ReportsPage />;
+}
+
+function CampaignCapabilityGate({
+  capability,
+  anyOf,
+  children,
+}: {
+  capability?: string;
+  anyOf?: readonly string[];
+  children: ReactNode;
+}) {
+  const { campaignId } = useParams();
+  const { campaigns, isLoading, selectedCampaign, selectedCampaignId } = useCampaigns();
+  const effectiveCampaignId = campaignId ?? selectedCampaignId;
+  const campaign =
+    campaigns.find((item) => item.id === effectiveCampaignId) ??
+    (selectedCampaign?.id === effectiveCampaignId ? selectedCampaign : null);
+
+  if (isLoading && !campaign) {
+    return (
+      <section className="content-card">
+        <p className="text-muted mb-0">Checking campaign access...</p>
+      </section>
+    );
+  }
+
+  const access = campaign?.userAccess ?? null;
+  const isAllowed = anyOf?.length
+    ? hasAnyCampaignCapability(access, anyOf)
+    : capability
+      ? hasCampaignCapability(access, capability)
+      : true;
+
+  if (!access || !isAllowed) {
+    return (
+      <section className="content-card">
+        <h1 className="h5 mb-2">Access Required</h1>
+        <p className="text-muted mb-0">
+          Your account does not have access to this campaign area.
+        </p>
+      </section>
+    );
+  }
+
+  return <>{children}</>;
 }
