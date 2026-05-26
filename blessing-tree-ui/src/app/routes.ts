@@ -6,7 +6,6 @@
 export const routes = {
   LOGIN: '/login',
   AUTH_REGISTER: '/auth/register',
-  AUTH_CALLBACK: '/auth/callback',
   PUBLIC_CAMPAIGN_SPONSOR: '/public/campaigns/:publicSlug/sponsor',
   PUBLIC_CAMPAIGN_SPONSOR_VERIFY: '/public/campaigns/:publicSlug/sponsor/verify',
   PUBLIC_GIFT_SCAN: '/public/gifts/scan/:labelCode',

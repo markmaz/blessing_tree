@@ -6,13 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import {
-  fetchOAuthProviders,
-  getOAuthLoginUrl,
-  login,
-  type OAuthProvider,
-  type OAuthProviderAvailability,
-} from '@/shared/api/authApi';
+import { login } from '@/shared/api/authApi';
 import { useAuth } from '@/features/auth/model/authContext';
 import { routes } from '@/app/routes';
 import './AuthPages.css';
@@ -28,10 +22,6 @@ export function LoginPage() {
   const { login: contextLogin } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [oauthProviders, setOAuthProviders] = useState<OAuthProviderAvailability>({
-    google: false,
-    yahoo: false,
-  });
 
   const {
     register,
@@ -48,30 +38,6 @@ export function LoginPage() {
       setApiError(error.trim());
     }
   }, [location.search]);
-
-  useEffect(() => {
-    let active = true;
-    void (async () => {
-      try {
-        const providers = await fetchOAuthProviders();
-        if (active) {
-          setOAuthProviders(providers);
-        }
-      } catch {
-        if (active) {
-          setOAuthProviders({ google: false, yahoo: false });
-        }
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const handleOAuthLogin = (provider: OAuthProvider) => {
-    setApiError(null);
-    window.location.assign(getOAuthLoginUrl(provider));
-  };
 
   const onSubmit = async (data: LoginFormInputs) => {
     setIsLoading(true);
@@ -114,43 +80,6 @@ export function LoginPage() {
                 <i className="bi bi-x-lg" aria-hidden="true" />
               </button>
             </div>
-          )}
-
-          {(oauthProviders.google || oauthProviders.yahoo) && (
-            <>
-              <div className="oauth-buttons">
-                {oauthProviders.google && (
-                  <button
-                    type="button"
-                    className="btn oauth-btn oauth-google-btn w-100"
-                    onClick={() => handleOAuthLogin('google')}
-                    disabled={isLoading}
-                  >
-                    <span className="oauth-logo-wrap" aria-hidden="true">
-                      <i className="bi bi-google oauth-google-icon" />
-                    </span>
-                    Continue with Google
-                  </button>
-                )}
-                {oauthProviders.yahoo && (
-                  <button
-                    type="button"
-                    className="btn oauth-btn oauth-yahoo-btn w-100"
-                    onClick={() => handleOAuthLogin('yahoo')}
-                    disabled={isLoading}
-                  >
-                    <span className="oauth-logo-wrap oauth-yahoo-logo" aria-hidden="true">
-                      Y!
-                    </span>
-                    Continue with Yahoo
-                  </button>
-                )}
-              </div>
-
-              <div className="auth-divider" role="separator" aria-label="or">
-                <span>or</span>
-              </div>
-            </>
           )}
 
           {/* Login Form */}

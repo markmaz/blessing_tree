@@ -30,7 +30,7 @@ export function HomePage() {
                     Secure Authentication
                   </h5>
                   <p className="card-text small">
-                    Login with local credentials or approved OAuth providers.
+                    Login with invitation-managed local credentials.
                   </p>
                 </div>
               </div>

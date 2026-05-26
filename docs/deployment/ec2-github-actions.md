@@ -82,7 +82,6 @@ Edit `/opt/blessing-tree/shared/api.env` for production values:
 - database connection
 - JWT/refresh-cookie secrets
 - `FRONTEND_BASE_URL`
-- OAuth redirect URLs
 - Valkey connection
 - SMTP settings
 - `CURRENT_ENVIRONMENT=production`

@@ -102,8 +102,6 @@ Important production values:
 - `FRONTEND_BASE_URL=https://your-domain`
 - `INVITE_URL=https://your-domain/auth/register`
 - `PASSWORD_RESET_URL=https://your-domain/auth/reset`
-- `GOOGLE_REDIRECT_URI=https://your-domain/api/v1/auth/google/callback`
-- `YAHOO_REDIRECT_URI=https://your-domain/api/v1/auth/yahoo/callback`
 - `REFRESH_COOKIE_SECURE=true`
 - `COOKIE_SECURE=true`
 - `VALKEY_ADDRESS=valkey`

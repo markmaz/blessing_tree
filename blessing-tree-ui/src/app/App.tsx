@@ -9,7 +9,6 @@ import { AppFeaturesProvider } from '@/features/admin/model/appFeaturesContext';
 import { AuthProvider } from '@/features/auth/model/authContext';
 import { InviteAcceptPage } from '@/features/auth/ui/InviteAcceptPage';
 import { LoginPage } from '@/features/auth/ui/LoginPage';
-import { OAuthCallbackPage } from '@/features/auth/ui/OAuthCallbackPage';
 import { CampaignProvider, useCampaigns } from '@/features/campaigns/model/campaignContext';
 import {
   campaignCapabilities,
@@ -60,7 +59,6 @@ export function App() {
             <Routes>
               <Route path={routes.LOGIN} element={<LoginPage />} />
               <Route path={routes.AUTH_REGISTER} element={<InviteAcceptPage />} />
-              <Route path={routes.AUTH_CALLBACK} element={<OAuthCallbackPage />} />
               <Route path={routes.PUBLIC_CAMPAIGN_SPONSOR} element={<PublicSponsorSignupPage />} />
               <Route path={routes.PUBLIC_CAMPAIGN_SPONSOR_VERIFY} element={<PublicSponsorVerifyPage />} />
               <Route path={routes.PUBLIC_GIFT_SCAN} element={<PublicGiftScanPage />} />

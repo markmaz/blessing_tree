@@ -31,7 +31,7 @@ from app.features.admin import admin_ns
 from app.features.campaigns import campaign_ns
 from app.features.meta import meta_ns
 from app.features.public import public_ns
-from app.routes.auth_routes import auth_ns, init_oauth
+from app.routes.auth_routes import auth_ns
 from app.services.auth import AuthService
 from app.utils import build_url
 from app.versioning import get_backend_version
@@ -152,12 +152,6 @@ def create_app():
     configure_logging()
     logger = logging.getLogger(__name__)
     logger.info("Starting the application...")
-
-    try:
-        init_oauth(app)
-    except Exception as exc:
-        logger.warning("OAuth initialization failed: %s", exc)
-
 
     valkey_client = valkey.StrictValkey(host=VALKEY_ADDRESS, port=VALKEY_PORT, decode_responses=True)
 

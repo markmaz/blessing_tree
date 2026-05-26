@@ -9,10 +9,6 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:500
 );
 const AUTH_BASE_PATH = '/api/v1/auth';
 
-export type OAuthProvider = 'google' | 'yahoo';
-
-export type OAuthProviderAvailability = Record<OAuthProvider, boolean>;
-
 export interface LoginResponse {
   userId: string;
   email: string;
@@ -37,11 +33,6 @@ export interface InviteValidationResponse {
   acceptedAt: string | null;
   onboardingComplete: boolean;
   hasLocalIdentity: boolean;
-  hasOauthIdentity: boolean;
-}
-
-interface OAuthProvidersApiResponse {
-  providers?: Partial<Record<OAuthProvider, boolean>>;
 }
 
 interface LocalLoginApiResponse {
@@ -58,30 +49,6 @@ interface TokenClaims {
 
 function authUrl(path: string): string {
   return `${API_BASE_URL}${AUTH_BASE_PATH}${path}`;
-}
-
-export function getOAuthLoginUrl(provider: OAuthProvider): string {
-  const redirectUri = `${API_BASE_URL}${AUTH_BASE_PATH}/${provider}/callback`;
-  const params = new URLSearchParams({ redirect_uri: redirectUri });
-  return `${API_BASE_URL}${AUTH_BASE_PATH}/${provider}/login?${params.toString()}`;
-}
-
-export function getInviteOAuthLoginUrl(provider: OAuthProvider, token: string): string {
-  const params = new URLSearchParams({ token });
-  return `${API_BASE_URL}${AUTH_BASE_PATH}/invite/${provider}/login?${params.toString()}`;
-}
-
-export async function fetchOAuthProviders(): Promise<OAuthProviderAvailability> {
-  const response = await fetch(authUrl('/oauth/providers'), {
-    method: 'GET',
-    credentials: 'include',
-  });
-  const payload = await parseJsonResponse<OAuthProvidersApiResponse>(response);
-
-  return {
-    google: Boolean(payload.providers?.google),
-    yahoo: Boolean(payload.providers?.yahoo),
-  };
 }
 
 function readErrorMessage(payload: unknown, fallback: string): string {
@@ -265,7 +232,6 @@ export async function validateInviteToken(token: string): Promise<InviteValidati
     accepted_at: string | null;
     onboarding_complete: boolean;
     has_local_identity: boolean;
-    has_oauth_identity: boolean;
   }>(response);
   return {
     invitationId: payload.invitation_id,
@@ -277,7 +243,6 @@ export async function validateInviteToken(token: string): Promise<InviteValidati
     acceptedAt: payload.accepted_at,
     onboardingComplete: payload.onboarding_complete,
     hasLocalIdentity: payload.has_local_identity,
-    hasOauthIdentity: payload.has_oauth_identity,
   };
 }
 

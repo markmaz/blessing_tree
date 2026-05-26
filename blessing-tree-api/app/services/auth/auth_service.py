@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.config import ACCESS_TOKEN_TTL_MINUTES, REFRESH_TOKEN_TTL_DAYS
 from app.models.app_user import AppUser
 from app.models.auth import AuthIdentity
-from app.services.auth.exceptions import AuthError, InactiveAccount, InvalidCredentials, NotApproved, OAuthError
+from app.services.auth.exceptions import AuthError, InactiveAccount, InvalidCredentials
 from app.services.auth.jwt_service import JwtService
 from app.services.auth.password_service import PasswordService
 from app.services.auth.refresh_token_service import RefreshTokenService
@@ -28,90 +28,6 @@ class AuthService:
         self.refresh_tokens = refresh_token_service or RefreshTokenService()
         self.access_ttl_minutes = ACCESS_TOKEN_TTL_MINUTES
         self.refresh_ttl_seconds = int(REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60)
-
-    def login_with_oauth(self, db: Session, provider: str, userinfo, ip: str | None, user_agent: str | None) -> tuple[dict, str]:
-        provider_key = (provider or "").strip().upper()
-        if not provider_key:
-            raise OAuthError("Missing provider")
-
-        sub = self._get_userinfo_field(userinfo, "sub")
-        if not sub:
-            raise OAuthError("User info missing subject")
-
-        identity = (
-            db.query(AuthIdentity)
-            .filter(AuthIdentity.provider == provider_key, AuthIdentity.provider_sub == sub)
-            .one_or_none()
-        )
-
-        if identity is not None:
-            if not identity.is_active:
-                raise InactiveAccount()
-            user = identity.user
-            if user is None or not user.is_active:
-                raise InactiveAccount()
-
-            identity.email = self._normalize_email(self._get_userinfo_field(userinfo, "email"))
-            user.last_login_at = datetime.utcnow()
-            db.commit()
-            return self._issue_tokens(user, provider_key, ip, user_agent)
-
-        email = self._normalize_email(self._get_userinfo_field(userinfo, "email"))
-        if not email:
-            raise NotApproved(
-                "Use your invitation link to finish setup",
-                details={"email": None, "provider": provider_key},
-            )
-
-        raise NotApproved(
-            "Use your invitation link to finish setup",
-            details={"email": email, "provider": provider_key},
-        )
-
-    def bind_oauth_identity(self, db: Session, user: AppUser, provider: str, userinfo) -> AuthIdentity:
-        provider_key = (provider or "").strip().upper()
-        if not provider_key:
-            raise OAuthError("Missing provider")
-
-        sub = self._get_userinfo_field(userinfo, "sub")
-        if not sub:
-            raise OAuthError("User info missing subject")
-
-        email = self._normalize_email(self._get_userinfo_field(userinfo, "email"))
-
-        existing_by_sub = (
-            db.query(AuthIdentity)
-            .filter(AuthIdentity.provider == provider_key, AuthIdentity.provider_sub == sub)
-            .one_or_none()
-        )
-        if existing_by_sub is not None:
-            if existing_by_sub.user_id != user.id:
-                raise OAuthError("OAuth identity already linked to another user")
-            existing_by_sub.email = email
-            return existing_by_sub
-
-        existing_by_user = (
-            db.query(AuthIdentity)
-            .filter(AuthIdentity.user_id == user.id, AuthIdentity.provider == provider_key)
-            .one_or_none()
-        )
-        if existing_by_user is not None:
-            existing_by_user.provider_sub = sub
-            existing_by_user.email = email
-            existing_by_user.is_active = True
-            return existing_by_user
-
-        identity = AuthIdentity(
-            id=uuid.uuid4(),
-            user_id=user.id,
-            provider=provider_key,
-            provider_sub=sub,
-            email=email,
-            password_hash=None,
-            is_active=True,
-        )
-        db.add(identity)
-        return identity
 
     def issue_user_session(
         self,
@@ -290,16 +206,6 @@ class AuthService:
             return None
         value = email.strip().lower()
         return value or None
-
-    @staticmethod
-    def _get_userinfo_field(userinfo, field: str) -> str | None:
-        if userinfo is None:
-            return None
-        if hasattr(userinfo, field):
-            return getattr(userinfo, field)
-        if isinstance(userinfo, dict):
-            return userinfo.get(field)
-        return None
 
     @staticmethod
     def _find_user_by_email(db: Session, email_norm: str) -> AppUser | None:

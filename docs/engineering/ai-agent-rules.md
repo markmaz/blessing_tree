@@ -27,4 +27,4 @@ Before doing substantive work, read:
 
 ## Current Project-Specific Caution
 
-- The frontend now completes local login, OAuth callback handoff, and reload-time session restoration against the real backend auth routes. The remaining auth hardening gap is active-session token refresh once more API traffic exists.
+- The frontend now completes local login and reload-time session restoration against the real backend auth routes. The remaining auth hardening gap is active-session token refresh once more API traffic exists.

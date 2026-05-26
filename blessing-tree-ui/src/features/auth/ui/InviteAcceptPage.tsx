@@ -2,12 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   acceptInvite,
-  fetchOAuthProviders,
-  getInviteOAuthLoginUrl,
   type InviteValidationResponse,
-  type OAuthProviderAvailability,
   validateInviteToken,
-  type OAuthProvider,
 } from '@/shared/api/authApi';
 import { routes } from '@/app/routes';
 import './AuthPages.css';
@@ -23,10 +19,6 @@ export function InviteAcceptPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(true);
   const [inviteStatus, setInviteStatus] = useState<InviteValidationResponse | null>(null);
-  const [oauthProviders, setOAuthProviders] = useState<OAuthProviderAvailability>({
-    google: false,
-    yahoo: false,
-  });
 
   const token = useMemo(() => {
     const value = new URLSearchParams(location.search).get('token');
@@ -39,25 +31,6 @@ export function InviteAcceptPage() {
       setError(errorValue.trim());
     }
   }, [location.search]);
-
-  useEffect(() => {
-    let active = true;
-    void (async () => {
-      try {
-        const providers = await fetchOAuthProviders();
-        if (active) {
-          setOAuthProviders(providers);
-        }
-      } catch {
-        if (active) {
-          setOAuthProviders({ google: false, yahoo: false });
-        }
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -97,19 +70,6 @@ export function InviteAcceptPage() {
       active = false;
     };
   }, [token]);
-
-  const handleOAuthSelection = (provider: OAuthProvider) => {
-    if (!token) {
-      setError('Invite link invalid or expired.');
-      return;
-    }
-    if (inviteStatus?.onboardingComplete) {
-      setMessage('This invitation has already been accepted. Sign in with your existing account.');
-      return;
-    }
-    setError(null);
-    window.location.assign(getInviteOAuthLoginUrl(provider, token));
-  };
 
   const submit = async () => {
     if (inviteStatus?.onboardingComplete) {
@@ -166,45 +126,6 @@ export function InviteAcceptPage() {
                 <div className="auth-invite-summary__name">{displayName}</div>
                 <div className="auth-invite-summary__email">{email}</div>
               </div>
-
-              {(oauthProviders.google || oauthProviders.yahoo) && (
-                <>
-                  <div className="oauth-buttons">
-                    {oauthProviders.google && (
-                      <button
-                        type="button"
-                        className="btn oauth-btn oauth-google-btn w-100"
-                        disabled={isLoading || !token}
-                        onClick={() => handleOAuthSelection('google')}
-                        data-auth-method="google"
-                      >
-                        <span className="oauth-logo-wrap" aria-hidden="true">
-                          <i className="bi bi-google oauth-google-icon" />
-                        </span>
-                        Continue with Google
-                      </button>
-                    )}
-                    {oauthProviders.yahoo && (
-                      <button
-                        type="button"
-                        className="btn oauth-btn oauth-yahoo-btn w-100"
-                        disabled={isLoading || !token}
-                        onClick={() => handleOAuthSelection('yahoo')}
-                        data-auth-method="yahoo"
-                      >
-                        <span className="oauth-logo-wrap oauth-yahoo-logo" aria-hidden="true">
-                          Y!
-                        </span>
-                        Continue with Yahoo
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="auth-divider" role="separator" aria-label="or">
-                    <span>or set a password</span>
-                  </div>
-                </>
-              )}
 
               <div className="mb-3">
                 <label className="form-label" htmlFor="invite-display-name">Display Name</label>

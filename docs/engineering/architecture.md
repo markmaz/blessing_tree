@@ -17,10 +17,9 @@
 
 ## Important Current Architectural Reality
 
-- Auth is only partially aligned end to end.
-- The backend exposes login, refresh, logout, and OAuth routes.
+- Auth is local-credential based.
+- The backend exposes login, refresh, logout, and invitation acceptance routes.
 - The frontend local login path now matches the backend contract.
-- OAuth callback completion is now wired through a frontend callback route that restores the access token from the refresh cookie.
 - Reload-time session bootstrap now uses the backend refresh route.
 
 ## Intended Near-Term Direction
