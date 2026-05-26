@@ -14,6 +14,7 @@ interface AdminUsersTableProps {
   onOpenDetails: (row: AdminUserWorkspaceRow) => void;
   onResendInvite: (invitationId: string) => void;
   onUpdateStatus: (userId: string, isActive: boolean) => void;
+  onRequestDelete: (row: AdminUserWorkspaceRow) => void;
 }
 
 function headerArrow(
@@ -42,6 +43,7 @@ export function AdminUsersTable({
   onOpenDetails,
   onResendInvite,
   onUpdateStatus,
+  onRequestDelete,
 }: AdminUsersTableProps) {
   return (
     <div className="table-responsive">
@@ -150,6 +152,7 @@ export function AdminUsersTable({
                     onOpenDetails={onOpenDetails}
                     onResendInvite={onResendInvite}
                     onUpdateStatus={onUpdateStatus}
+                    onRequestDelete={onRequestDelete}
                   />
                 </td>
               </tr>

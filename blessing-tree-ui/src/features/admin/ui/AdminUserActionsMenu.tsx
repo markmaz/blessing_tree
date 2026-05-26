@@ -8,6 +8,7 @@ interface AdminUserActionsMenuProps {
   onOpenDetails: (row: AdminUserWorkspaceRow) => void;
   onResendInvite: (invitationId: string) => void;
   onUpdateStatus: (userId: string, isActive: boolean) => void;
+  onRequestDelete: (row: AdminUserWorkspaceRow) => void;
 }
 
 export function AdminUserActionsMenu({
@@ -15,6 +16,7 @@ export function AdminUserActionsMenu({
   onOpenDetails,
   onResendInvite,
   onUpdateStatus,
+  onRequestDelete,
 }: AdminUserActionsMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -99,6 +101,19 @@ export function AdminUserActionsMenu({
         />
         {row.isActive ? 'Deactivate user' : 'Activate user'}
       </button>
+      {!row.isActive ? (
+        <button
+          type="button"
+          className="admin-users-actions-menu__item admin-users-actions-menu__item--danger"
+          onClick={() => {
+            setIsOpen(false);
+            onRequestDelete(row);
+          }}
+        >
+          <i className="bi bi-trash3 me-2" aria-hidden="true" />
+          Delete user
+        </button>
+      ) : null}
     </div>
   ) : null;
 

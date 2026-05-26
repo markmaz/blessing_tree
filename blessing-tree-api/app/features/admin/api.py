@@ -80,6 +80,20 @@ class AdminUserStatusResource(Resource):
             return {"user": serialize_admin_user(user)}, 200
 
 
+@admin_ns.route("/users/<string:user_id>")
+class AdminUserResource(Resource):
+    @token_required
+    @require_app_admin()
+    def delete(self, user_id: str):
+        with SessionLocal() as db:
+            _invitation_service.delete_user(
+                db,
+                user_id,
+                requested_by_user_id=getattr(g, "user_id", None),
+            )
+            return "", 204
+
+
 @admin_ns.route("/users/<string:user_id>/role")
 class AdminUserRoleResource(Resource):
     @token_required

@@ -15,6 +15,7 @@ import {
 } from '@/features/admin/model/adminUsersWorkspace';
 import {
   createAdminInvite,
+  deleteAdminUser,
   resendAdminInvite,
   updateAdminUserRole,
   updateAdminUserStatus,
@@ -22,6 +23,7 @@ import {
 import { AdminUserInviteDrawer } from '@/features/admin/ui/AdminUserInviteDrawer';
 import { AdminUserDetailDrawer } from '@/features/admin/ui/AdminUserDetailDrawer';
 import { AdminUsersTable } from '@/features/admin/ui/AdminUsersTable';
+import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 import '@/features/admin/ui/adminUsers.css';
 
 interface AdminUsersWorkspaceProps {
@@ -47,6 +49,7 @@ export function AdminUsersWorkspace({
   const [inviteDrawerInstance, setInviteDrawerInstance] = useState(0);
   const [selectedUser, setSelectedUser] = useState<AdminUserWorkspaceRow | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUserWorkspaceRow | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -167,6 +170,28 @@ export function AdminUsersWorkspace({
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await deleteAdminUser(deleteTarget.id);
+      await onDataChanged();
+      setSelectedUser((currentUser) => (currentUser?.id === deleteTarget.id ? null : currentUser));
+      setDeleteTarget(null);
+      setSuccessMessage('User deleted.');
+    } catch (deleteError) {
+      setErrorMessage(deleteError instanceof Error ? deleteError.message : 'Unable to delete user.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <>
       <div className="content-card admin-users-workspace">
@@ -253,6 +278,7 @@ export function AdminUsersWorkspace({
           onOpenDetails={setSelectedUser}
           onResendInvite={(invitationId) => void handleResendInvite(invitationId)}
           onUpdateStatus={(userId, isActive) => void handleUpdateUserStatus(userId, isActive)}
+          onRequestDelete={setDeleteTarget}
         />
       </div>
 
@@ -273,6 +299,29 @@ export function AdminUsersWorkspace({
         onClose={() => setSelectedUser(null)}
         onResendInvite={(invitationId) => void handleResendInvite(invitationId)}
         onUpdateRole={(userId, role) => void handleUpdateUserRole(userId, role)}
+        onRequestDelete={setDeleteTarget}
+      />
+
+      <ConfirmationModal
+        open={deleteTarget !== null}
+        title="Delete User"
+        message="This permanently removes the deactivated user account from Blessing Tree."
+        details={
+          deleteTarget
+            ? [
+                `${deleteTarget.displayName} <${deleteTarget.email}>`,
+                'Local sign-in credentials, invitations, and campaign access assignments',
+              ]
+            : []
+        }
+        confirmLabel={isSaving ? 'Deleting...' : 'Delete User'}
+        isSubmitting={isSaving}
+        onConfirm={() => void handleDeleteUser()}
+        onClose={() => {
+          if (!isSaving) {
+            setDeleteTarget(null);
+          }
+        }}
       />
     </>
   );

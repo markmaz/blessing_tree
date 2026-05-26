@@ -166,6 +166,15 @@
   background: #f7f2ea;
 }
 
+.admin-users-actions-menu__item--danger {
+  color: #b42318;
+}
+
+.admin-users-actions-menu__item--danger:hover {
+  background: #fff1f0;
+  color: #912018;
+}
+
 .admin-users-drawer-layer {
   position: fixed;
   inset: 0;

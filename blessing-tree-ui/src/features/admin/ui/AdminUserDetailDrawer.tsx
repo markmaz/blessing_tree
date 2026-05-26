@@ -15,6 +15,7 @@ interface AdminUserDetailDrawerProps {
   onClose: () => void;
   onResendInvite: (invitationId: string) => void;
   onUpdateRole: (userId: string, role: string) => void;
+  onRequestDelete: (user: AdminUserWorkspaceRow) => void;
 }
 
 function statusToneClass(status: AdminUserWorkspaceRow['status']) {
@@ -32,6 +33,7 @@ export function AdminUserDetailDrawer({
   onClose,
   onResendInvite,
   onUpdateRole,
+  onRequestDelete,
 }: AdminUserDetailDrawerProps) {
   const [selectedRole, setSelectedRole] = useState(user?.roleKey ?? '');
   const [campaignAccessRows, setCampaignAccessRows] = useState<
@@ -297,6 +299,17 @@ export function AdminUserDetailDrawer({
             >
               <i className="bi bi-send me-2" aria-hidden="true" />
               {isSaving ? 'Sending...' : 'Resend Invite'}
+            </button>
+          ) : null}
+          {!user.isActive ? (
+            <button
+              type="button"
+              className="btn btn-outline-danger"
+              disabled={isSaving}
+              onClick={() => onRequestDelete(user)}
+            >
+              <i className="bi bi-trash3 me-2" aria-hidden="true" />
+              Delete User
             </button>
           ) : null}
           <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
