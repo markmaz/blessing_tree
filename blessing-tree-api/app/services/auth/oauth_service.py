@@ -25,6 +25,7 @@ class OAuthService:
 
     def register_providers(self, app, oauth: OAuth) -> None:
         self._oauth = oauth
+        self._clients = {}
         for provider_key, config in PROVIDERS.items():
             client_id = app.config.get(config.client_id_env) or os.getenv(config.client_id_env)
             client_secret = app.config.get(config.client_secret_env) or os.getenv(config.client_secret_env)
@@ -40,6 +41,9 @@ class OAuthService:
                 client_kwargs={"scope": config.scopes},
             )
             self._clients[provider_key] = client
+
+    def configured_providers(self) -> dict[str, bool]:
+        return {provider_key.lower(): provider_key in self._clients for provider_key in PROVIDERS}
 
     def authorize_redirect(self, provider: str, redirect_uri: str):
         client = self._get_client(provider)

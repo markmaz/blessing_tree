@@ -86,6 +86,13 @@ def _frontend_auth_callback_url(*, flow: str | None = None, provider: str | None
     return f"{base}?{urlencode(params)}"
 
 
+@auth_ns.route("/oauth/providers")
+class OAuthProviders(Resource):
+    @auth_ns.doc(security=[])
+    def get(self):
+        return {"providers": _oauth_service.configured_providers()}
+
+
 def _frontend_login_url(error: str | None = None) -> str:
     base = f"{_frontend_base_url()}/login"
     if not error:

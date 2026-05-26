@@ -11,6 +11,8 @@ const AUTH_BASE_PATH = '/api/v1/auth';
 
 export type OAuthProvider = 'google' | 'yahoo';
 
+export type OAuthProviderAvailability = Record<OAuthProvider, boolean>;
+
 export interface LoginResponse {
   userId: string;
   email: string;
@@ -38,6 +40,10 @@ export interface InviteValidationResponse {
   hasOauthIdentity: boolean;
 }
 
+interface OAuthProvidersApiResponse {
+  providers?: Partial<Record<OAuthProvider, boolean>>;
+}
+
 interface LocalLoginApiResponse {
   access_token: string;
   token_type: string;
@@ -63,6 +69,19 @@ export function getOAuthLoginUrl(provider: OAuthProvider): string {
 export function getInviteOAuthLoginUrl(provider: OAuthProvider, token: string): string {
   const params = new URLSearchParams({ token });
   return `${API_BASE_URL}${AUTH_BASE_PATH}/invite/${provider}/login?${params.toString()}`;
+}
+
+export async function fetchOAuthProviders(): Promise<OAuthProviderAvailability> {
+  const response = await fetch(authUrl('/oauth/providers'), {
+    method: 'GET',
+    credentials: 'include',
+  });
+  const payload = await parseJsonResponse<OAuthProvidersApiResponse>(response);
+
+  return {
+    google: Boolean(payload.providers?.google),
+    yahoo: Boolean(payload.providers?.yahoo),
+  };
 }
 
 function readErrorMessage(payload: unknown, fallback: string): string {

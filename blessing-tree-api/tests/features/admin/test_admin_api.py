@@ -232,6 +232,21 @@ def test_invite_google_login_stashes_token_and_redirects(
         assert session["bt_invite_provider"] == "GOOGLE"
 
 
+def test_oauth_providers_reports_configured_providers(
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "app.routes.auth_routes._oauth_service.configured_providers",
+        lambda: {"google": True, "yahoo": False},
+    )
+
+    response = client.get("/api/v1/auth/oauth/providers")
+
+    assert response.status_code == 200
+    assert response.get_json() == {"providers": {"google": True, "yahoo": False}}
+
+
 def test_invite_google_callback_accepts_invitation_and_links_identity(
     app: Flask,
     client,

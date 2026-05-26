@@ -69,14 +69,12 @@ services:
       VALKEY_ADDRESS: ${VALKEY_ADDRESS:-valkey}
       VALKEY_PORT: ${VALKEY_PORT:-6379}
       BT_CELERY_WORKER_POOL: ${BT_CELERY_WORKER_POOL:-prefork}
-    command: ["celery", "-A", "app.celery.celery", "beat", "--loglevel=INFO", "--schedule=/var/lib/blessing-tree/celerybeat-schedule"]
+    command: ["celery", "-A", "app.celery.celery", "beat", "--loglevel=INFO", "--schedule=/tmp/celerybeat-schedule"]
     depends_on:
       api:
         condition: service_started
       valkey:
         condition: service_healthy
-    volumes:
-      - celery-beat:/var/lib/blessing-tree
     restart: unless-stopped
 
   valkey:
@@ -94,5 +92,4 @@ services:
 volumes:
   caddy-config:
   caddy-data:
-  celery-beat:
   valkey-data:
