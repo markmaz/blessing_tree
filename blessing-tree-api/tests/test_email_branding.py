@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.email import mailer
-from app.email.layout import LOGO_URL, email_button, render_branded_email
+from app.email.layout import COLOR_CARD, COLOR_PURPLE, COLOR_WARM_BACKGROUND, LOGO_URL, email_button, render_branded_email
 from app.features.campaigns.template_renderer import CampaignTemplateRenderer
 
 
@@ -21,20 +21,21 @@ class _FakeMessage:
         self.body = None
 
 
-def test_render_branded_email_includes_logo_and_dark_card() -> None:
+def test_render_branded_email_keeps_queryforge_layout_with_blessing_tree_colors() -> None:
     html = render_branded_email(title="Welcome", body_html="<p>Hello</p>", preheader="Preview")
 
     assert LOGO_URL in html
-    assert "background-color:#0b0f19" in html
-    assert "background-color:#111827" in html
+    assert f"background-color:{COLOR_WARM_BACKGROUND}" in html
+    assert f"background-color:{COLOR_CARD}" in html
+    assert f"background-color:{COLOR_PURPLE}" not in html.split("<body", 1)[1].split(">", 1)[0]
     assert "Preview" in html
 
 
-def test_email_button_uses_queryforge_style_cta() -> None:
+def test_email_button_uses_blessing_tree_primary_cta() -> None:
     html = email_button(href="https://example.com/path?token=abc", label="Open")
 
     assert "https://example.com/path?token=abc" in html
-    assert "background-color:#f97316" in html
+    assert f"background-color:{COLOR_PURPLE}" in html
     assert ">Open</a>" in html
 
 

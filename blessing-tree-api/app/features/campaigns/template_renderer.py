@@ -6,7 +6,7 @@ import re
 from typing import Any
 
 from app.config import ORGANIZATION_NAME
-from app.email.layout import render_branded_email
+from app.email.layout import COLOR_PURPLE, COLOR_TEXT_DARK, COLOR_TEXT_MUTED, render_branded_email
 
 _TEMPLATE_BLOCKS_PREFIX = "__bt_template_blocks_v1__::"
 _MERGE_FIELD_PATTERN = re.compile(r"{{\s*([A-Za-z0-9_.-]+)\s*}}")
@@ -49,7 +49,7 @@ def _render_body(body_template: str, context: dict[str, str]) -> tuple[str, str]
             if not content:
                 continue
             html_parts.append(
-                '<h2 style="color:#f97316;margin:0 0 12px;font-size:24px;line-height:1.25;">'
+                f'<h2 style="color:{COLOR_PURPLE};margin:0 0 12px;font-family:Georgia,serif;font-size:24px;line-height:1.25;">'
                 f"{escape(content)}</h2>"
             )
             text_parts.append(content)
@@ -65,7 +65,7 @@ def _render_body(body_template: str, context: dict[str, str]) -> tuple[str, str]
                             '<figure style="margin:0 0 16px 0;">',
                             f'<img src="{escape(src, quote=True)}" alt="{escape(alt_text, quote=True)}" style="max-width:100%;border-radius:12px;" />',
                             (
-                                '<figcaption style="margin-top:8px;color:#9ca3af;font-size:13px;">'
+                                f'<figcaption style="margin-top:8px;color:{COLOR_TEXT_MUTED};font-size:13px;">'
                                 f"{escape(caption)}</figcaption>"
                             )
                             if caption
@@ -124,7 +124,7 @@ def _wrap_email_html(inner_html: str) -> str:
     return render_branded_email(
         title=ORGANIZATION_NAME or "Blessing Tree",
         body_html=(
-            '<div style="font-family:Arial,sans-serif;color:#e5e7eb;line-height:1.6;">'
+            f'<div style="font-family:Arial,sans-serif;color:{COLOR_TEXT_DARK};line-height:1.6;">'
             f"{inner_html}</div>"
         ),
     )
