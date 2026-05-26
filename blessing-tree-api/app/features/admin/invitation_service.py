@@ -14,7 +14,7 @@ from app.features.admin.validation import require_email, require_text, validate_
 from app.models.admin_user_invitation import AdminUserInvitation
 from app.models.app_user import AppUser
 from app.models.auth import AuthIdentity
-from app.services.auth import AuthError, AuthService, OAuthUserInfo
+from app.services.auth import AuthError, AuthService
 
 
 class AdminInvitationService:
@@ -105,9 +105,6 @@ class AdminInvitationService:
         if user is None:
             raise ServiceError("Invitation is invalid", status_code=400)
         has_local_identity = any(identity.provider == "LOCAL" for identity in user.auth_identities)
-        has_oauth_identity = any(
-            identity.provider in {"GOOGLE", "YAHOO"} for identity in user.auth_identities
-        )
         return {
             "invitation_id": str(invitation.id),
             "user_id": str(user.id),
@@ -118,7 +115,6 @@ class AdminInvitationService:
             "accepted_at": invitation.accepted_at.isoformat() if invitation.accepted_at else None,
             "onboarding_complete": invitation.accepted_at is not None,
             "has_local_identity": has_local_identity,
-            "has_oauth_identity": has_oauth_identity,
         }
 
     def accept_invitation(self, db: Session, token: str, payload: dict[str, object]) -> AppUser:
@@ -155,43 +151,6 @@ class AdminInvitationService:
         db.commit()
         db.refresh(user)
         return user
-
-    def accept_invitation_with_oauth(
-        self,
-        db: Session,
-        token: str,
-        *,
-        provider: str,
-        userinfo: OAuthUserInfo,
-        ip: str | None,
-        user_agent: str | None,
-    ) -> tuple[AppUser, tuple[dict, str]]:
-        invitation = self._resolve_token(db, token)
-        user = invitation.user
-        if user is None:
-            raise ServiceError("Invitation is invalid", status_code=400)
-
-        email = require_email(userinfo.email or user.email)
-        if email.lower() != user.email.lower():
-            raise ServiceError("Email does not match invited account", status_code=403)
-
-        try:
-            self._auth_service.bind_oauth_identity(db, user, provider, userinfo)
-        except AuthError as exc:
-            raise ServiceError(str(exc), status_code=exc.status_code)
-
-        invitation.accepted_at = datetime.now(UTC).replace(tzinfo=None)
-        user.last_login_at = datetime.now(UTC).replace(tzinfo=None)
-        db.commit()
-        db.refresh(user)
-
-        access_payload, refresh_raw = self._auth_service.issue_user_session(
-            user,
-            provider,
-            ip,
-            user_agent,
-        )
-        return user, (access_payload, refresh_raw)
 
     def update_user_status(
         self,

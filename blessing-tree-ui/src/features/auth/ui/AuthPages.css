@@ -113,55 +113,6 @@
   margin-bottom: 1rem;
 }
 
-.oauth-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-
-.oauth-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  background-color: #fff;
-  border: 1px solid #d9d9d9;
-  color: #2d2d2d;
-  font-weight: 600;
-  padding: 0.65rem 1rem;
-  border-radius: 0.4rem;
-  transition: all 0.2s ease;
-}
-
-.oauth-btn:hover:not(:disabled) {
-  border-color: #b9b9b9;
-  background-color: #fcfcfc;
-}
-
-.oauth-btn:disabled {
-  opacity: 0.7;
-}
-
-.oauth-logo-wrap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-.oauth-google-icon {
-  color: #db4437;
-  font-size: 1rem;
-}
-
-.oauth-yahoo-logo {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #5f01d1;
-}
-
 .auth-divider {
   display: flex;
   align-items: center;

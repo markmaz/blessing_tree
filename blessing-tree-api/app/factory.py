@@ -14,7 +14,16 @@ from flask_restx import Api
 import app.models.models  # noqa: F401
 
 from app.celery import celery, init_celery
-from app.config import FRONTEND_BASE_URL, LOG_QUEUE, VALKEY_ADDRESS, VALKEY_CONFIG, VALKEY_PORT
+from app.config import (
+    FRONTEND_BASE_URL,
+    LOG_QUEUE,
+    SECRET_KEY,
+    SESSION_COOKIE_SAMESITE,
+    SESSION_COOKIE_SECURE,
+    VALKEY_ADDRESS,
+    VALKEY_CONFIG,
+    VALKEY_PORT,
+)
 from app.exceptions.service_error import ServiceError
 from app.extensions import mail
 from app.features.account import account_ns
@@ -22,7 +31,7 @@ from app.features.admin import admin_ns
 from app.features.campaigns import campaign_ns
 from app.features.meta import meta_ns
 from app.features.public import public_ns
-from app.routes.auth_routes import auth_ns, init_oauth
+from app.routes.auth_routes import auth_ns
 from app.services.auth import AuthService
 from app.utils import build_url
 from app.versioning import get_backend_version
@@ -51,6 +60,20 @@ def build_cors_origins(frontend_base_url: str | None) -> list[str]:
 
     return sorted(origin for origin in origins if origin)
 
+
+def configure_session_security(
+    app: Flask,
+    *,
+    secret_key: str | None,
+    cookie_secure: bool,
+    cookie_samesite: str | None,
+) -> None:
+    if secret_key:
+        app.secret_key = secret_key
+        app.config["SECRET_KEY"] = secret_key
+    app.config["SESSION_COOKIE_SECURE"] = cookie_secure
+    app.config["SESSION_COOKIE_SAMESITE"] = cookie_samesite or "Lax"
+
 def try_get_json_body(req):
     try:
         data = req.get_json()
@@ -78,6 +101,12 @@ def create_app():
     app.config["RESTX_MASK_SWAGGER"] = False
     app.url_map.strict_slashes = False
     app.config["FRONTEND_BASE_URL"] = FRONTEND_BASE_URL
+    configure_session_security(
+        app,
+        secret_key=SECRET_KEY,
+        cookie_secure=SESSION_COOKIE_SECURE,
+        cookie_samesite=SESSION_COOKIE_SAMESITE,
+    )
     authorizations = {"BearerAuth": {"type": "apiKey", "in": "header", "name": "Authorization"}}
 
     app.config.from_object(MailConfig)
@@ -123,12 +152,6 @@ def create_app():
     configure_logging()
     logger = logging.getLogger(__name__)
     logger.info("Starting the application...")
-
-    try:
-        init_oauth(app)
-    except Exception as exc:
-        logger.warning("OAuth initialization failed: %s", exc)
-
 
     valkey_client = valkey.StrictValkey(host=VALKEY_ADDRESS, port=VALKEY_PORT, decode_responses=True)
 

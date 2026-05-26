@@ -27,13 +27,6 @@ class InactiveAccount(AuthError):
         super().__init__(message)
 
 
-class OAuthError(AuthError):
-    status_code = 400
-
-    def __init__(self, message: str = "OAuth error"):
-        super().__init__(message)
-
-
 class NotApproved(AuthError):
     status_code = 403
 

@@ -94,12 +94,6 @@ The `.env.example` contract now follows the same broad setup conventions as Quer
 Current routes under `/api/v1/auth`:
 
 - `POST /local/login`
-- `GET /google/login`
-- `GET /invite/google/login`
-- `GET /google/callback`
-- `GET /yahoo/login`
-- `GET /invite/yahoo/login`
-- `GET /yahoo/callback`
 - `POST /refresh`
 - `POST /logout`
 - `GET /invite/validate/<token>`
@@ -109,11 +103,8 @@ Important current behavior:
 
 - local login returns an access token payload
 - refresh token handling is cookie-based
-- OAuth callbacks issue the refresh cookie and then redirect to the frontend callback route for session completion
-- generic Google/Yahoo login is now for already-linked returning users only
-- invite-based onboarding now supports Google, Yahoo, or local-password acceptance from the invitation funnel
+- invite-based onboarding supports local-password acceptance from the invitation funnel
 - invite validation now returns onboarding/completion state so the frontend can distinguish a pending invite from an already-accepted account
-- generic Google/Yahoo returning-login verification is implemented, but a true live provider smoke test still depends on local provider credentials being configured
 
 ## Data Model
 
@@ -289,7 +280,6 @@ Current configuration expects values for at least:
 - JWT/auth: `JWT_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`
 - refresh cookie/auth options
 - Valkey: `VALKEY_ADDRESS`, `VALKEY_PORT`, `LOG_QUEUE`
-- OAuth providers as needed
 - mail transport: `SMTP_SERVER`, `SMTP_PORT`, `SMTP_USE_TLS`, `SMTP_USE_SSL`, `DEFAULT_MAIL_SENDER`
 
 For local development without a real SMTP relay, start the sink and point `.env` at it:

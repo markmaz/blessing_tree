@@ -5,13 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InviteAcceptPage } from '@/features/auth/ui/InviteAcceptPage';
 import {
   acceptInvite,
-  getInviteOAuthLoginUrl,
   validateInviteToken,
 } from '@/shared/api/authApi';
 
 vi.mock('@/shared/api/authApi', () => ({
   acceptInvite: vi.fn(),
-  getInviteOAuthLoginUrl: vi.fn(),
   validateInviteToken: vi.fn(),
 }));
 
@@ -28,10 +26,8 @@ describe('InviteAcceptPage', () => {
       acceptedAt: null,
       onboardingComplete: false,
       hasLocalIdentity: false,
-      hasOauthIdentity: false,
     });
     vi.mocked(acceptInvite).mockResolvedValue();
-    vi.mocked(getInviteOAuthLoginUrl).mockReturnValue('http://localhost:5000/api/v1/auth/invite/google/login?token=invite-token-1');
   });
 
   it('validates the invite token and submits the accept flow', async () => {
@@ -48,8 +44,8 @@ describe('InviteAcceptPage', () => {
     expect(screen.getByDisplayValue('invitee@example.com')).toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/password/i), 'BlessingTree12345!');
-    expect(screen.getByRole('button', { name: /continue with google/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /continue with yahoo/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /continue with google/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /continue with yahoo/i })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /set password & continue/i }));
 
@@ -60,21 +56,6 @@ describe('InviteAcceptPage', () => {
         password: 'BlessingTree12345!',
       });
     });
-  });
-
-  it('redirects to the invite-scoped oauth onboarding route', async () => {
-    const user = userEvent.setup();
-
-    render(
-      <MemoryRouter initialEntries={['/auth/register?token=invite-token-1']}>
-        <InviteAcceptPage />
-      </MemoryRouter>
-    );
-
-    await screen.findByDisplayValue('Invited User');
-    await user.click(screen.getByRole('button', { name: /continue with google/i }));
-
-    expect(getInviteOAuthLoginUrl).toHaveBeenCalledWith('google', 'invite-token-1');
   });
 
   it('shows a sign-in call to action when the invitation is already accepted', async () => {
@@ -88,7 +69,6 @@ describe('InviteAcceptPage', () => {
       acceptedAt: '2026-05-21T12:00:00Z',
       onboardingComplete: true,
       hasLocalIdentity: true,
-      hasOauthIdentity: false,
     });
 
     render(

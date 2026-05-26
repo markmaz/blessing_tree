@@ -184,8 +184,8 @@ export function AccountSettingsPage() {
           <section className="content-card h-100">
             <h2 className="h5 mb-3">Sign-In</h2>
             <p className="text-muted">
-              Password and OAuth identity changes are still handled through the invitation
-              onboarding flow. This screen now owns durable user preferences.
+              Password changes are still handled through the invitation onboarding flow. This
+              screen now owns durable user preferences.
             </p>
             <div className="d-flex flex-wrap gap-2">
               <span className="badge text-bg-light">
