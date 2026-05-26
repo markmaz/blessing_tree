@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Generator
+from datetime import datetime
 
 import pytest
 import requests
@@ -584,6 +585,106 @@ def test_admin_can_deactivate_and_reactivate_user(
     )
     assert reactivate_response.status_code == 200
     assert reactivate_response.get_json()["user"]["is_active"] is True
+
+
+def test_admin_can_delete_deactivated_user(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    from app.features.admin import api as admin_api
+    from app.models.admin_user_invitation import AdminUserInvitation
+    from app.models.app_user import AppUser
+    from app.models.auth import AuthIdentity
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="delete-admin@blessingtree.test", role="ADMIN", name="Delete Admin")
+        member_user = seed_user(db, email="delete-member@blessingtree.test", role="COORDINATOR", name="Delete Member")
+        member_user.is_active = False
+        member_user_id = str(member_user.id)
+        admin_user_id = str(admin_user.id)
+        db.add(
+            AuthIdentity(
+                id=uuid.uuid4(),
+                user_id=member_user.id,
+                provider="LOCAL",
+                provider_sub=None,
+                email=member_user.email,
+                password_hash="hash",
+                is_active=True,
+            )
+        )
+        db.add(
+            AdminUserInvitation(
+                id=uuid.uuid4(),
+                user_id=member_user.id,
+                email=member_user.email,
+                invited_by_user_id=admin_user.id,
+                expires_at=datetime.utcnow(),
+            )
+        )
+        db.commit()
+
+    response = client.delete(
+        f"/api/v1/admin/users/{member_user_id}",
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+
+    assert response.status_code == 204
+    with admin_api.SessionLocal() as db:
+        assert db.get(AppUser, uuid.UUID(member_user_id)) is None
+        assert db.query(AuthIdentity).filter(AuthIdentity.user_id == uuid.UUID(member_user_id)).count() == 0
+        assert db.query(AdminUserInvitation).filter(AdminUserInvitation.user_id == uuid.UUID(member_user_id)).count() == 0
+
+
+def test_admin_cannot_delete_active_user(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    from app.features.admin import api as admin_api
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="active-delete-admin@blessingtree.test", role="ADMIN", name="Delete Admin")
+        member_user = seed_user(db, email="active-delete-member@blessingtree.test", role="COORDINATOR", name="Active Member")
+        member_user_id = str(member_user.id)
+        admin_user_id = str(admin_user.id)
+        db.commit()
+
+    response = client.delete(
+        f"/api/v1/admin/users/{member_user_id}",
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+
+    assert response.status_code == 409
+    assert response.get_json()["error"] == "Only deactivated users can be deleted"
+
+
+def test_admin_cannot_delete_own_user(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    from app.features.admin import api as admin_api
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="self-delete-admin@blessingtree.test", role="ADMIN", name="Delete Admin")
+        admin_user_id = str(admin_user.id)
+        db.commit()
+
+    response = client.delete(
+        f"/api/v1/admin/users/{admin_user_id}",
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+
+    assert response.status_code == 409
+    assert response.get_json()["error"] == "You cannot delete your own user account"
 
 
 def test_admin_can_update_user_global_app_role(

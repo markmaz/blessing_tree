@@ -190,6 +190,12 @@ export async function updateAdminUserStatus(
   }).users[0];
 }
 
+export async function deleteAdminUser(userId: string): Promise<void> {
+  await apiFetchJson<void>(`/api/v1/admin/users/${userId}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function updateAdminUserRole(
   userId: string,
   role: string

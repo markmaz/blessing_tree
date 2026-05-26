@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminUsersWorkspace } from '@/features/admin/ui/AdminUsersWorkspace';
 import {
   createAdminInvite,
+  deleteAdminUser,
   resendAdminInvite,
   updateAdminUserRole,
   updateAdminUserStatus,
@@ -11,6 +12,7 @@ import {
 
 vi.mock('@/features/admin/api/adminApi', () => ({
   createAdminInvite: vi.fn(),
+  deleteAdminUser: vi.fn(),
   resendAdminInvite: vi.fn(),
   updateAdminUserRole: vi.fn(),
   updateAdminUserStatus: vi.fn(),
@@ -93,6 +95,7 @@ describe('AdminUsersWorkspace', () => {
       ...users[1],
       role: 'ADMIN',
     });
+    vi.mocked(deleteAdminUser).mockResolvedValue();
   });
 
   it('filters, sorts, and opens the detail drawer', async () => {
@@ -183,6 +186,44 @@ describe('AdminUsersWorkspace', () => {
 
     await waitFor(() => {
       expect(updateAdminUserStatus).toHaveBeenCalledWith('user-2', false);
+      expect(onDataChanged).toHaveBeenCalled();
+    });
+  });
+
+  it('deletes a deactivated user from the row action menu', async () => {
+    const user = userEvent.setup();
+    const onDataChanged = vi.fn().mockResolvedValue(undefined);
+    const inactiveUsers = [
+      ...users,
+      {
+        id: 'user-3',
+        email: 'inactive@example.com',
+        displayName: 'Inactive User',
+        role: 'COORDINATOR',
+        isActive: false,
+        lastLoginAt: null,
+        createdAt: '2026-05-12T12:00:00Z',
+        updatedAt: '2026-05-19T12:00:00Z',
+      },
+    ];
+
+    render(
+      <AdminUsersWorkspace
+        users={inactiveUsers}
+        invitations={invitations}
+        roleCatalog={roleCatalog}
+        onDataChanged={onDataChanged}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /open actions for inactive user/i }));
+    await user.click(screen.getByRole('button', { name: /^delete user$/i }));
+    const dialog = await screen.findByRole('dialog', { name: /delete user/i });
+    expect(within(dialog).getByText(/inactive user <inactive@example.com>/i)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: /^delete user$/i }));
+
+    await waitFor(() => {
+      expect(deleteAdminUser).toHaveBeenCalledWith('user-3');
       expect(onDataChanged).toHaveBeenCalled();
     });
   });

@@ -13,7 +13,11 @@ from app.features.admin.invitation_tokens import issue_invitation_token, read_in
 from app.features.admin.validation import require_email, require_text, validate_global_role, validate_password
 from app.models.admin_user_invitation import AdminUserInvitation
 from app.models.app_user import AppUser
+from app.models.app_user_settings import AppUserSettings
 from app.models.auth import AuthIdentity
+from app.models.campaign_member import CampaignMember
+from app.models.campaign_member_constants import APP_ACCESS_STATUS_NONE
+from app.features.rbac.models.campaign_user_role import CampaignUserRole
 from app.services.auth import AuthError, AuthService
 
 
@@ -178,6 +182,45 @@ class AdminInvitationService:
         db.refresh(user)
         return user
 
+    def delete_user(self, db: Session, user_id: str, *, requested_by_user_id: str | None) -> None:
+        user_uuid = self._parse_user_id(user_id)
+        if requested_by_user_id:
+            requested_by_uuid = self._parse_user_id(requested_by_user_id)
+            if requested_by_uuid == user_uuid:
+                raise ServiceError(
+                    "You cannot delete your own user account",
+                    status_code=409,
+                    details={"user_id": user_id},
+                )
+
+        user = db.get(AppUser, user_uuid)
+        if user is None:
+            raise ServiceError("User not found", status_code=404, details={"user_id": user_id})
+        if user.is_active:
+            raise ServiceError(
+                "Only deactivated users can be deleted",
+                status_code=409,
+                details={"user_id": user_id},
+            )
+
+        db.query(CampaignMember).filter(CampaignMember.app_user_id == user.id).update(
+            {
+                CampaignMember.app_user_id: None,
+                CampaignMember.app_access_status: APP_ACCESS_STATUS_NONE,
+            },
+            synchronize_session=False,
+        )
+        db.query(AdminUserInvitation).filter(AdminUserInvitation.invited_by_user_id == user.id).update(
+            {AdminUserInvitation.invited_by_user_id: None},
+            synchronize_session=False,
+        )
+        db.query(AdminUserInvitation).filter(AdminUserInvitation.user_id == user.id).delete(synchronize_session=False)
+        db.query(CampaignUserRole).filter(CampaignUserRole.user_id == user.id).delete(synchronize_session=False)
+        db.query(AuthIdentity).filter(AuthIdentity.user_id == user.id).delete(synchronize_session=False)
+        db.query(AppUserSettings).filter(AppUserSettings.user_id == user.id).delete(synchronize_session=False)
+        db.delete(user)
+        db.commit()
+
     @staticmethod
     def list_global_role_catalog() -> list[dict[str, str]]:
         return [dict(item) for item in GLOBAL_APP_ROLE_CATALOG]
@@ -263,3 +306,10 @@ class AdminInvitationService:
         base = str(INVITE_URL or "http://localhost:5173/auth/register").rstrip("/")
         separator = "&" if "?" in base else "?"
         return f"{base}{separator}token={token}"
+
+    @staticmethod
+    def _parse_user_id(user_id: str) -> uuid.UUID:
+        try:
+            return uuid.UUID(str(user_id))
+        except (TypeError, ValueError, AttributeError) as exc:
+            raise ServiceError("user_id must be a valid UUID", status_code=400, details={"field": "user_id"}) from exc
