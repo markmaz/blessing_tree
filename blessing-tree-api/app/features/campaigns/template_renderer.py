@@ -6,6 +6,7 @@ import re
 from typing import Any
 
 from app.config import ORGANIZATION_NAME
+from app.email.layout import render_branded_email
 
 _TEMPLATE_BLOCKS_PREFIX = "__bt_template_blocks_v1__::"
 _MERGE_FIELD_PATTERN = re.compile(r"{{\s*([A-Za-z0-9_.-]+)\s*}}")
@@ -36,7 +37,7 @@ def _render_body(body_template: str, context: dict[str, str]) -> tuple[str, str]
     blocks = _parse_template_blocks(body_template)
     if not blocks:
         rendered_text = _render_text(body_template, context)
-        html = _wrap_email_html(f"<p>{_paragraph_html(rendered_text)}</p>")
+        html = _wrap_email_html(f'<p style="margin:0 0 16px;">{_paragraph_html(rendered_text)}</p>')
         return html, rendered_text
 
     html_parts: list[str] = []
@@ -47,7 +48,10 @@ def _render_body(body_template: str, context: dict[str, str]) -> tuple[str, str]
             content = _render_text(str(block.get("content") or ""), context)
             if not content:
                 continue
-            html_parts.append(f"<h2>{escape(content)}</h2>")
+            html_parts.append(
+                '<h2 style="color:#f97316;margin:0 0 12px;font-size:24px;line-height:1.25;">'
+                f"{escape(content)}</h2>"
+            )
             text_parts.append(content)
             continue
         if block_type == "image":
@@ -60,7 +64,12 @@ def _render_body(body_template: str, context: dict[str, str]) -> tuple[str, str]
                         [
                             '<figure style="margin:0 0 16px 0;">',
                             f'<img src="{escape(src, quote=True)}" alt="{escape(alt_text, quote=True)}" style="max-width:100%;border-radius:12px;" />',
-                            f"<figcaption>{escape(caption)}</figcaption>" if caption else "",
+                            (
+                                '<figcaption style="margin-top:8px;color:#9ca3af;font-size:13px;">'
+                                f"{escape(caption)}</figcaption>"
+                            )
+                            if caption
+                            else "",
                             "</figure>",
                         ]
                     )
@@ -72,7 +81,7 @@ def _render_body(body_template: str, context: dict[str, str]) -> tuple[str, str]
         content = _render_text(str(block.get("content") or ""), context)
         if not content:
             continue
-        html_parts.append(f"<p>{_paragraph_html(content)}</p>")
+        html_parts.append(f'<p style="margin:0 0 16px;">{_paragraph_html(content)}</p>')
         text_parts.append(content)
 
     html = _wrap_email_html("".join(html_parts))
@@ -112,8 +121,10 @@ def _paragraph_html(text: str) -> str:
 
 
 def _wrap_email_html(inner_html: str) -> str:
-    return (
-        '<div style="font-family:Georgia, serif; color:#2b241e; line-height:1.6;'
-        ' max-width:640px; margin:0 auto; padding:16px;">'
-        f"{inner_html}</div>"
+    return render_branded_email(
+        title=ORGANIZATION_NAME or "Blessing Tree",
+        body_html=(
+            '<div style="font-family:Arial,sans-serif;color:#e5e7eb;line-height:1.6;">'
+            f"{inner_html}</div>"
+        ),
     )
