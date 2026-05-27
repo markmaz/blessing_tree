@@ -24,6 +24,7 @@ import { AdminHealthPage } from '@/pages/AdminHealthPage';
 import { AdminLlmPage } from '@/pages/AdminLlmPage';
 import { AdminPage } from '@/pages/AdminPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
+import { AskBlessingTreePage } from '@/pages/AskBlessingTreePage';
 import { CampaignDetailPage } from '@/pages/CampaignDetailPage';
 import { CampaignsPage } from '@/pages/CampaignsPage';
 import { CampaignSponsorFlyerPage } from '@/pages/CampaignSponsorFlyerPage';
@@ -81,6 +82,14 @@ export function App() {
                   element={
                     <CampaignCapabilityGate capability={campaignCapabilities.view}>
                       <CampaignDetailPage />
+                    </CampaignCapabilityGate>
+                  }
+                />
+                <Route
+                  path={routes.CAMPAIGN_ASK.slice(1)}
+                  element={
+                    <CampaignCapabilityGate capability={campaignCapabilities.view}>
+                      <AskBlessingTreePage />
                     </CampaignCapabilityGate>
                   }
                 />

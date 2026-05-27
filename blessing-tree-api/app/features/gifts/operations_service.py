@@ -82,6 +82,7 @@ class GiftOperationsService:
         if item.status not in {"COMMITTED", "EXCEPTION"}:
             raise ServiceError("Gift must be committed before it can be received", status_code=409)
         item.status = "RECEIVED"
+        item.qty_fulfilled = max(item.qty_fulfilled or 0, item.qty_requested or 1)
         item.received_at = _now()
         item.received_by_user_id = actor_user_id
         if storage_location_id is not None:
@@ -154,6 +155,7 @@ class GiftOperationsService:
             raise ServiceError("Gift must be ready or distributed before it can be marked picked up", status_code=409)
         previous_status = item.status
         item.status = "PICKED_UP"
+        item.qty_fulfilled = max(item.qty_fulfilled or 0, item.qty_requested or 1)
         item.picked_up_at = _now()
         item.picked_up_verified_by_user_id = actor_user_id
         self._record_event(

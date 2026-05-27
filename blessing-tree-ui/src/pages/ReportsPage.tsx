@@ -8,6 +8,7 @@ import {
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import type { CampaignPeopleWorkspaceData } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 import { useCampaignPeopleWorkspace } from '@/features/campaigns/model/useCampaignPeopleWorkspace';
+import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
 import '@/features/campaigns/ui/campaignPeople.css';
 
 function countWishlistsByStatus(
@@ -63,15 +64,69 @@ export function ReportsPage() {
   const missingWishlists = workspace.recipients.filter((recipient) => !recipient.wishlist).length;
   const workflowCounts = workspace.counts;
   const openWishlistRecipients = workspace.recipients
-    .filter((recipient) => (recipient.workflowSummary.coverageRemainingCount ?? recipient.workflowSummary.openItemCount) > 0)
-    .slice(0, 5);
+    .filter((recipient) => (recipient.workflowSummary.coverageRemainingCount ?? recipient.workflowSummary.openItemCount) > 0);
   const groupsNeedingPickupSetup = workspace.groups
     .filter(
       (group) =>
         group.workflowSummary.readyForPickupItemCount > 0 &&
         group.authorizedPickupContacts.length === 0
-    )
-    .slice(0, 5);
+    );
+  const peopleReportExport = {
+    title: 'People Reports',
+    subtitle: selectedCampaign.name,
+    fileName: `${selectedCampaign.name}-people-reports`,
+    sheets: [
+      {
+        name: 'Summary',
+        columns: [
+          { key: 'metric', label: 'Metric' },
+          { key: 'value', label: 'Value' },
+        ],
+        rows: [
+          { metric: 'Total Groups', value: workspace.counts.groupCount },
+          { metric: 'Total People', value: workspace.counts.recipientCount },
+          { metric: 'Total Wishlists', value: workspace.counts.wishlistCount },
+          { metric: 'Open Gift Items', value: workspace.counts.openItemCount },
+          { metric: 'Recipients Covered', value: workflowCounts.recipientsCoveredCount ?? 0 },
+          { metric: 'Still Needing Gifts', value: workflowCounts.recipientsNeedingGiftsCount ?? 0 },
+          { metric: 'Ready for Pickup', value: workflowCounts.readyForPickupItemCount },
+          { metric: 'Picked Up', value: workflowCounts.pickedUpItemCount },
+        ],
+      },
+      {
+        name: 'People Still Needing Gifts',
+        columns: [
+          { key: 'recipient', label: 'Recipient' },
+          { key: 'group', label: 'Group' },
+          { key: 'programType', label: 'Program Type' },
+          { key: 'needed', label: 'Sponsors Needed' },
+          { key: 'openItems', label: 'Open Items' },
+        ],
+        rows: openWishlistRecipients.map((recipient) => ({
+          recipient: recipient.displayLabel,
+          group: recipient.group?.groupName ?? '',
+          programType: recipient.programType,
+          needed: recipient.workflowSummary.coverageRemainingCount ?? recipient.workflowSummary.openItemCount,
+          openItems: recipient.workflowSummary.openItemCount,
+        })),
+      },
+      {
+        name: 'Pickup Coordination',
+        columns: [
+          { key: 'group', label: 'Group' },
+          { key: 'recipientCount', label: 'People' },
+          { key: 'readyForPickup', label: 'Ready for Pickup' },
+          { key: 'issue', label: 'Issue' },
+        ],
+        rows: groupsNeedingPickupSetup.map((group) => ({
+          group: group.groupName,
+          recipientCount: group.recipientCount,
+          readyForPickup: group.workflowSummary.readyForPickupItemCount,
+          issue: 'No pickup contact set',
+        })),
+      },
+    ],
+  };
 
   return (
     <section className="campaign-page-stack">
@@ -87,6 +142,7 @@ export function ReportsPage() {
           </p>
         </div>
         <div className="d-flex flex-wrap gap-2">
+          <ReportExportActions payload={peopleReportExport} />
           <Link to={buildCampaignPeopleIntakePath(selectedCampaignId)} className="btn btn-outline-secondary btn-sm">
             <i className="bi bi-clipboard-plus me-2" aria-hidden="true" />
             Open Intake
@@ -186,7 +242,7 @@ export function ReportsPage() {
             </div>
             {groupsNeedingPickupSetup.length > 0 ? (
               <div className="campaign-report-list">
-                {groupsNeedingPickupSetup.map((group) => (
+                {groupsNeedingPickupSetup.slice(0, 5).map((group) => (
                   <div key={group.id} className="campaign-report-list__row">
                     <div>
                       <div className="campaign-report-list__title">{group.groupName}</div>
@@ -231,7 +287,7 @@ export function ReportsPage() {
             </div>
             {openWishlistRecipients.length > 0 ? (
               <div className="campaign-report-list">
-                {openWishlistRecipients.map((recipient) => {
+                {openWishlistRecipients.slice(0, 5).map((recipient) => {
                   const outstandingCount = recipient.workflowSummary.coverageRemainingCount ?? recipient.workflowSummary.openItemCount;
                   return (
                     <div key={recipient.id} className="campaign-report-list__row">

@@ -45,6 +45,7 @@ def app(monkeypatch: pytest.MonkeyPatch) -> Generator[Flask, None, None]:
     session_manager = _SessionManager(session_factory)
 
     monkeypatch.setattr("app.features.campaigns.api.SessionLocal", session_manager)
+    monkeypatch.setattr("app.features.ask.api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.campaigns.recipient_api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.campaigns.sponsor_api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.campaigns.studio_api.SessionLocal", session_manager)

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { CampaignSponsor } from '@/features/campaigns/model/campaignSponsorWorkspaceTypes';
 import {
   formatPhoneNumber,
@@ -9,7 +9,8 @@ import {
   toSponsorDropOffStatusLabel,
   toSponsorStatusLabel,
 } from '@/features/campaigns/model/campaignSponsorWorkspacePresentation';
-import { clampTablePage, TablePagination } from '@/shared/ui/TablePagination';
+import { TablePagination } from '@/shared/ui/TablePagination';
+import { clampTablePage } from '@/shared/ui/tablePaginationModel';
 
 type SponsorSortKey = 'sponsor' | 'contact' | 'gifts' | 'status' | 'lastContacted' | 'dropOff';
 
@@ -53,14 +54,11 @@ export function CampaignSponsorTable({
     return sorted;
   }, [sortDirection, sortKey, sponsors]);
 
-  useEffect(() => {
-    setPage((currentPage) => clampTablePage(currentPage, sortedSponsors.length, pageSize));
-  }, [pageSize, sortedSponsors.length]);
+  const safePage = clampTablePage(page, sortedSponsors.length, pageSize);
 
   const pagedSponsors = useMemo(() => {
-    const safePage = clampTablePage(page, sortedSponsors.length, pageSize);
     return sortedSponsors.slice((safePage - 1) * pageSize, safePage * pageSize);
-  }, [page, pageSize, sortedSponsors]);
+  }, [pageSize, safePage, sortedSponsors]);
 
   if (sortedSponsors.length === 0) {
     return <div className="campaign-studio__empty-note">No sponsors match the current search.</div>;
@@ -204,7 +202,7 @@ export function CampaignSponsorTable({
         </table>
       </div>
       <TablePagination
-        page={page}
+        page={safePage}
         pageSize={pageSize}
         totalItems={sortedSponsors.length}
         itemLabel="sponsors"
