@@ -16,6 +16,7 @@ export function GiftTagPreview({ item }: GiftTagPreviewProps) {
   const recipientDetails = [formatAge(label.recipient.age, label.recipient.age_unit), formatGender(label.recipient.gender)]
     .filter(Boolean)
     .join(' · ');
+  const isManualTag = label.label_type === 'MANUAL';
 
   return (
     <div className="gift-tag-preview">
@@ -28,8 +29,8 @@ export function GiftTagPreview({ item }: GiftTagPreviewProps) {
       <div className="gift-tag-preview__body">
         <div className="gift-tag-preview__recipient">
           <span className="gift-tag-preview__label">For</span>
-          <strong>{label.recipient.display_label ?? 'Recipient'}</strong>
-          <span>{label.recipient.group_label ?? theme.purpose ?? 'Blessing Tree'}</span>
+          <strong>{isManualTag ? 'Blank tag' : label.recipient.display_label ?? 'Recipient'}</strong>
+          <span>{isManualTag ? 'Fill in by hand' : label.recipient.group_label ?? theme.purpose ?? 'Blessing Tree'}</span>
           {recipientDetails ? <span>{recipientDetails}</span> : null}
         </div>
         <QRCodeSVG value={absoluteScanUrl(label.scan_path)} size={86} includeMargin />

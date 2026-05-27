@@ -17,6 +17,13 @@ NAVIGATION_TARGETS: tuple[NavigationTarget, ...] = (
     NavigationTarget("gift_pool", "Gift Pool", ("gift pool", "donated inventory", "inventory", "unmatched donations"), "campaign_gifts_pool", "campaign.gifts.pool.manage"),
     NavigationTarget("gift_status", "Gift Status", ("gift status", "gift status report", "visual gift report", "gift report"), "campaign_gifts_reports", "campaign.reports.view"),
     NavigationTarget(
+        "gift_tag_builder",
+        "Gift Tag Builder",
+        ("gift tag builder", "design gift tag", "edit gift tags", "gift tag template", "print blank tags"),
+        "campaign_gifts_tag_builder",
+        "campaign.admin",
+    ),
+    NavigationTarget(
         "sponsor_flyer",
         "Flyer Builder",
         ("sponsor flyer", "flyer", "print flyer", "flyer builder", "create flyer", "edit flyer"),
@@ -46,6 +53,7 @@ def build_route(route_name: str, campaign_id: str) -> str:
         "campaign_gifts_operations": f"/campaigns/{campaign_id}/gifts/operations",
         "campaign_gifts_pool": f"/campaigns/{campaign_id}/gifts/pool",
         "campaign_gifts_reports": f"/campaigns/{campaign_id}/gifts/reports",
+        "campaign_gifts_tag_builder": f"/campaigns/{campaign_id}/gifts/tag-builder",
     }
     static_routes = {
         "account_profile": "/account/profile",

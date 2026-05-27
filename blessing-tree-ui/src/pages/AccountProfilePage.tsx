@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  changeAccountPassword,
   fetchAccountProfile,
   updateAccountProfile,
 } from '@/features/account/api/accountApi';
@@ -11,8 +12,15 @@ export function AccountProfilePage() {
   const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPasswordSaving, setIsPasswordSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +62,33 @@ export function AccountProfilePage() {
       setError(saveError instanceof Error ? saveError.message : 'Unable to update profile.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    setError(null);
+    setSuccess(null);
+
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Password confirmation does not match.');
+      return;
+    }
+
+    setIsPasswordSaving(true);
+    try {
+      await changeAccountPassword({ currentPassword, newPassword, confirmPassword });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setSuccess('Password updated.');
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Unable to update password.');
+    } finally {
+      setIsPasswordSaving(false);
     }
   };
 
@@ -148,6 +183,105 @@ export function AccountProfilePage() {
                 {profile?.isActive ? 'Active' : 'Inactive'}
               </span>
             </div>
+
+            <hr className="my-4" />
+
+            <h3 className="h6 mb-3">Change Password</h3>
+            <form
+              className="vstack gap-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handlePasswordChange();
+              }}
+            >
+              <div>
+                <label className="form-label" htmlFor="account-current-password">
+                  Current Password
+                </label>
+                <div className="input-group">
+                  <input
+                    id="account-current-password"
+                    className="form-control"
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    value={currentPassword}
+                    onChange={(event) => setCurrentPassword(event.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                    onClick={() => setShowCurrentPassword((value) => !value)}
+                  >
+                    <i className={`bi ${showCurrentPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label" htmlFor="account-new-password">
+                  New Password
+                </label>
+                <div className="input-group">
+                  <input
+                    id="account-new-password"
+                    className="form-control"
+                    type={showNewPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    minLength={8}
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+                    onClick={() => setShowNewPassword((value) => !value)}
+                  >
+                    <i className={`bi ${showNewPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label" htmlFor="account-confirm-password">
+                  Confirm Password
+                </label>
+                <div className="input-group">
+                  <input
+                    id="account-confirm-password"
+                    className="form-control"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    minLength={8}
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                    onClick={() => setShowConfirmPassword((value) => !value)}
+                  >
+                    <i className={`bi ${showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="btn btn-outline-primary align-self-start"
+                disabled={
+                  isPasswordSaving ||
+                  !currentPassword ||
+                  !newPassword ||
+                  !confirmPassword
+                }
+              >
+                <i className="bi bi-key me-2" aria-hidden="true" />
+                {isPasswordSaving ? 'Updating...' : 'Update Password'}
+              </button>
+            </form>
           </section>
         </div>
       </div>

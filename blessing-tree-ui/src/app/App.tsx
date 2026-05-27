@@ -7,8 +7,10 @@ import { lazy, Suspense, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { AppFeaturesProvider } from '@/features/admin/model/appFeaturesContext';
 import { AuthProvider } from '@/features/auth/model/authContext';
+import { ForgotPasswordPage } from '@/features/auth/ui/ForgotPasswordPage';
 import { InviteAcceptPage } from '@/features/auth/ui/InviteAcceptPage';
 import { LoginPage } from '@/features/auth/ui/LoginPage';
+import { ResetPasswordPage } from '@/features/auth/ui/ResetPasswordPage';
 import { CampaignProvider, useCampaigns } from '@/features/campaigns/model/campaignContext';
 import {
   campaignCapabilities,
@@ -57,6 +59,12 @@ const CampaignSponsorFlyerPage = lazy(() =>
   }))
 );
 
+const GiftTagBuilderPage = lazy(() =>
+  import('@/pages/GiftTagBuilderPage').then((module) => ({
+    default: module.GiftTagBuilderPage,
+  }))
+);
+
 export function App() {
   return (
     <AuthProvider>
@@ -66,6 +74,8 @@ export function App() {
             <Routes>
               <Route path={routes.LOGIN} element={<LoginPage />} />
               <Route path={routes.AUTH_REGISTER} element={<InviteAcceptPage />} />
+              <Route path={routes.AUTH_FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+              <Route path={routes.AUTH_RESET_PASSWORD} element={<ResetPasswordPage />} />
               <Route path={routes.PUBLIC_CAMPAIGN_SPONSOR} element={<PublicSponsorSignupPage />} />
               <Route path={routes.PUBLIC_CAMPAIGN_SPONSOR_VERIFY} element={<PublicSponsorVerifyPage />} />
               <Route path={routes.PUBLIC_GIFT_SCAN} element={<PublicGiftScanPage />} />
@@ -199,6 +209,18 @@ export function App() {
                     <FeatureGate featureKey="reports">
                       <CampaignCapabilityGate capability={campaignCapabilities.reportsView}>
                         <GiftWorkflowReportPage />
+                      </CampaignCapabilityGate>
+                    </FeatureGate>
+                  }
+                />
+                <Route
+                  path={routes.CAMPAIGN_GIFTS_TAG_BUILDER.slice(1)}
+                  element={
+                    <FeatureGate featureKey="sponsors">
+                      <CampaignCapabilityGate capability={campaignCapabilities.admin}>
+                        <Suspense fallback={<section className="content-card"><p className="text-muted mb-0">Loading gift tag builder...</p></section>}>
+                          <GiftTagBuilderPage />
+                        </Suspense>
                       </CampaignCapabilityGate>
                     </FeatureGate>
                   }

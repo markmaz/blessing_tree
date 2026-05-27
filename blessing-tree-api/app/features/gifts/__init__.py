@@ -6,6 +6,7 @@ from .reminder_service import GiftReminderService
 from .report_service import GiftReportService
 from .reservation_service import GiftReservationService
 from .search_service import GiftSearchService
+from .tag_template_service import CampaignGiftTagTemplateService
 from .serializers import serialize_gift_search_response
 
 __all__ = [
@@ -17,6 +18,7 @@ __all__ = [
     "GiftReminderService",
     "GiftReportService",
     "GiftSearchService",
+    "CampaignGiftTagTemplateService",
     "parse_gift_search_text",
     "serialize_gift_search_response",
 ]

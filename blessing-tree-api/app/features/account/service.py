@@ -5,6 +5,7 @@ import uuid
 from sqlalchemy.orm import Session, joinedload
 
 from app.exceptions.service_error import ServiceError
+from app.features.admin.validation import validate_password
 from app.features.account.validation import (
     parse_bool,
     validate_date_format,
@@ -14,9 +15,14 @@ from app.features.account.validation import (
 )
 from app.models.app_user import AppUser
 from app.models.app_user_settings import AppUserSettings
+from app.models.auth import AuthIdentity
+from app.services.auth.password_service import PasswordService
 
 
 class AccountService:
+    def __init__(self, password_service: PasswordService | None = None):
+        self.passwords = password_service or PasswordService()
+
     def get_profile(self, db: Session, user_id: str) -> AppUser:
         return self._get_user(db, user_id)
 
@@ -51,6 +57,56 @@ class AccountService:
         db.commit()
         db.refresh(settings)
         return settings
+
+    def change_password(self, db: Session, user_id: str, payload: dict[str, object]) -> None:
+        user = self._get_user(db, user_id)
+        current_password = str(payload.get("current_password") or "")
+        new_password = validate_password(payload.get("new_password"))
+        confirm_password = str(payload.get("confirm_password") or "")
+
+        if not current_password:
+            raise ServiceError(
+                "Current password is required",
+                status_code=400,
+                details={"field": "current_password"},
+            )
+        if not confirm_password:
+            raise ServiceError(
+                "Password confirmation is required",
+                status_code=400,
+                details={"field": "confirm_password"},
+            )
+        if confirm_password != new_password:
+            raise ServiceError(
+                "Password confirmation does not match",
+                status_code=400,
+                details={"field": "confirm_password"},
+            )
+
+        identity = (
+            db.query(AuthIdentity)
+            .filter(
+                AuthIdentity.user_id == user.id,
+                AuthIdentity.provider == "LOCAL",
+                AuthIdentity.is_active == 1,
+            )
+            .one_or_none()
+        )
+        if identity is None or not identity.password_hash:
+            raise ServiceError(
+                "Password changes are only available for local accounts",
+                status_code=400,
+                details={"field": "password"},
+            )
+        if not self.passwords.verify_password(current_password, identity.password_hash):
+            raise ServiceError(
+                "Current password is incorrect",
+                status_code=400,
+                details={"field": "current_password"},
+            )
+
+        identity.password_hash = self.passwords.hash_password(new_password)
+        db.commit()
 
     def _get_user(self, db: Session, user_id: str) -> AppUser:
         try:

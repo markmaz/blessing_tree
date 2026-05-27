@@ -85,6 +85,12 @@ export function PublicGiftScanPage() {
             <span>{message}</span>
           </div>
         ) : null}
+        {lookup?.message ? (
+          <div className="public-gift-scan__notice" role="status">
+            <i className="bi bi-info-circle" aria-hidden="true" />
+            <span>{lookup.message}</span>
+          </div>
+        ) : null}
         {error ? (
           <div className="public-gift-scan__notice public-gift-scan__notice--danger" role="alert">
             <i className="bi bi-exclamation-triangle" aria-hidden="true" />
@@ -195,6 +201,7 @@ function actionIcon(action: GiftScanAction): string {
 
 function statusLabel(value: string): string {
   if (value === 'READY_FOR_DISTRIBUTION') return 'Ready';
+  if (value === 'UNASSIGNED') return 'Unassigned';
   return value
     .toLowerCase()
     .split('_')

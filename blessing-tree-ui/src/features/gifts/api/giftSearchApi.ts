@@ -79,10 +79,11 @@ interface GiftSearchItemResponse {
 interface GiftLabelPrintItemResponse {
   id: string;
   label_print_job_id: string;
-  wishlist_item_id: string;
+  wishlist_item_id: string | null;
+  manual_label_id: string | null;
   copies: number;
   label: GiftLabelPayload;
-  gift: GiftSearchItemResponse;
+  gift: GiftSearchItemResponse | null;
 }
 
 interface GiftLabelPrintJobResponse {
@@ -109,7 +110,7 @@ interface PublicGiftScanLookupResponse {
     year: number;
   };
   gift: {
-    wishlist_item_id: string;
+    wishlist_item_id: string | null;
     description: string;
     category: string | null;
     item_type: string;
@@ -125,6 +126,11 @@ interface PublicGiftScanLookupResponse {
     program_type: string;
     group_label: string | null;
   } | null;
+  manual_label?: {
+    id: string;
+    status: string;
+  } | null;
+  message?: string;
   scan_path: string;
   available_actions: GiftScanAction[];
 }
@@ -297,7 +303,7 @@ export async function updateCampaignGiftOperation(
 
 export async function createGiftLabelPrintJob(
   campaignId: string,
-  input: { wishlistItemIds: string[]; copies?: number; format?: string; notes?: string }
+  input: { wishlistItemIds: string[]; copies?: number; manualQuantity?: number; format?: string; notes?: string }
 ): Promise<GiftLabelPrintJob> {
   const response = await apiFetchJson<{ print_job: GiftLabelPrintJobResponse }>(
     `/api/v1/campaigns/${campaignId}/gift-labels/print-jobs`,
@@ -307,6 +313,7 @@ export async function createGiftLabelPrintJob(
       body: JSON.stringify({
         wishlist_item_ids: input.wishlistItemIds,
         copies: input.copies ?? 1,
+        manual_quantity: input.manualQuantity ?? 0,
         format: input.format ?? 'TAG',
         notes: input.notes?.trim() || null,
       }),
@@ -546,9 +553,10 @@ function mapGiftLabelPrintJob(job: GiftLabelPrintJobResponse): GiftLabelPrintJob
       id: item.id,
       labelPrintJobId: item.label_print_job_id,
       wishlistItemId: item.wishlist_item_id,
+      manualLabelId: item.manual_label_id,
       copies: item.copies,
       label: item.label,
-      gift: mapGiftOperationsItem(item.gift),
+      gift: item.gift ? mapGiftOperationsItem(item.gift) : null,
     })),
   };
 }
@@ -583,6 +591,8 @@ function mapPublicGiftScanLookup(response: PublicGiftScanLookupResponse): Public
           groupLabel: response.recipient.group_label,
         }
       : null,
+    manualLabel: response.manual_label ?? null,
+    message: response.message,
     scanPath: response.scan_path,
     availableActions: response.available_actions,
   };

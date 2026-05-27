@@ -77,6 +77,7 @@ export interface GiftOperationsResult {
 export type GiftOperationsAction = 'receive' | 'wrap' | 'ready' | 'pickup' | 'exception';
 
 export interface GiftLabelPayload {
+  label_type?: 'GIFT' | 'MANUAL';
   campaign: {
     name: string;
     year: number;
@@ -106,10 +107,11 @@ export interface GiftLabelPayload {
 export interface GiftLabelPrintItem {
   id: string;
   labelPrintJobId: string;
-  wishlistItemId: string;
+  wishlistItemId: string | null;
+  manualLabelId: string | null;
   copies: number;
   label: GiftLabelPayload;
-  gift: GiftOperationsItem;
+  gift: GiftOperationsItem | null;
 }
 
 export interface GiftLabelPrintJob {
@@ -138,7 +140,7 @@ export interface PublicGiftScanLookup {
     year: number;
   };
   gift: {
-    wishlistItemId: string;
+    wishlistItemId: string | null;
     description: string;
     category: string | null;
     itemType: string;
@@ -154,6 +156,11 @@ export interface PublicGiftScanLookup {
     programType: string;
     groupLabel: string | null;
   } | null;
+  manualLabel?: {
+    id: string;
+    status: string;
+  } | null;
+  message?: string;
   scanPath: string;
   availableActions: GiftScanAction[];
 }

@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import re
-
 from app.exceptions.service_error import ServiceError
 
-PASSWORD_REGEX = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{15,}$")
+MIN_PASSWORD_LENGTH = 8
 
 
 def require_text(value: object, field: str, *, max_length: int = 255) -> str:
@@ -36,9 +34,9 @@ def validate_global_role(value: object) -> str:
 
 def validate_password(value: object) -> str:
     normalized = str(value or "")
-    if not PASSWORD_REGEX.match(normalized):
+    if len(normalized) < MIN_PASSWORD_LENGTH:
         raise ServiceError(
-            "Password must be at least 15 characters and include uppercase, lowercase, number, and special character.",
+            f"Password must be at least {MIN_PASSWORD_LENGTH} characters.",
             status_code=400,
             details={"field": "password"},
         )

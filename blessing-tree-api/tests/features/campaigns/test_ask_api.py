@@ -114,6 +114,30 @@ def test_ask_flyer_prompt_opens_flyer_builder(app: Flask, monkeypatch: pytest.Mo
     assert payload["actions"][0]["route"] == f"/campaigns/{campaign_id}/studio/sponsor-flyer"
 
 
+def test_ask_gift_tag_builder_prompt_opens_builder(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "Where is the Gift Tag Builder?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "navigation_result"
+    assert payload["title"] == "Gift Tag Builder"
+    assert payload["actions"][0]["route"] == f"/campaigns/{campaign_id}/gifts/tag-builder"
+
+
 def test_flyer_builder_api_creates_default_and_updates(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
     install_auth(monkeypatch)
     session = campaign_api_module.SessionLocal()
@@ -150,6 +174,74 @@ def test_flyer_builder_api_creates_default_and_updates(app: Flask, monkeypatch: 
     assert payload["headline"] == "Sponsor Blessing Tree Gifts"
     assert payload["qr_target_type"] == "CUSTOM_URL"
     assert payload["qr_custom_url"] == "https://example.com/flyer"
+
+
+def test_gift_tag_template_api_creates_default_and_updates(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    get_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/gift-tag-template",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert get_response.status_code == 200
+    template = get_response.get_json()["template"]
+    assert template["template_key"] == "default_gift_tag"
+    assert template["tag_width_in"] == 3.0
+    assert template["tag_height_in"] == 2.0
+    assert any(element["type"] == "qr" for element in template["layout_json"]["design"]["elements"])
+    assert any(element.get("src") == "/blessing-tree-logo.png" for element in template["layout_json"]["design"]["elements"])
+
+    layout = {
+        "editor": "konva",
+        "design": {
+            "editor": "konva",
+            "version": 1,
+            "unit": "in",
+            "width": 2,
+            "height": 2,
+            "elements": [
+                {
+                    "id": "recipient-name",
+                    "type": "text",
+                    "text": "{{recipient_display_name}}",
+                    "x": 0.15,
+                    "y": 0.15,
+                    "width": 1.0,
+                    "height": 0.2,
+                    "fontSize": 10,
+                    "fontFamily": "Arial",
+                    "fill": "#2d1544",
+                },
+                {"id": "qr", "type": "qr", "x": 1.1, "y": 1.1, "width": 0.75, "height": 0.75, "required": True},
+            ],
+        },
+    }
+    update_response = client.put(
+        f"/api/v1/campaigns/{campaign_id}/gift-tag-template",
+        json={
+            "name": "Compact Gift Tag",
+            "tag_width_in": 2,
+            "tag_height_in": 2,
+            "include_cut_lines_default": False,
+            "layout_json": layout,
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert update_response.status_code == 200
+    updated = update_response.get_json()["template"]
+    assert updated["name"] == "Compact Gift Tag"
+    assert updated["tag_width_in"] == 2.0
+    assert updated["tag_height_in"] == 2.0
+    assert updated["include_cut_lines_default"] is False
 
 
 def test_ask_logs_prompt_and_accepts_feedback(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:

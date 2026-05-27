@@ -7,6 +7,7 @@ import {
   buildCampaignGiftsPoolPath,
   buildCampaignGiftsReportsPath,
   buildCampaignGiftsSearchPath,
+  buildCampaignGiftsTagBuilderPath,
   buildCampaignPeopleDirectoryPath,
   buildCampaignPeopleIntakePath,
   buildCampaignPeopleReportsPath,
@@ -24,6 +25,7 @@ import {
   canUseGiftOperations,
   canUseGiftPool,
   canUseGiftSearch,
+  canManageCampaign,
   hasCampaignCapability,
   canViewPeople,
   canViewReports,
@@ -161,6 +163,11 @@ const navItems: SidebarItem[] = [
         to: routes.CAMPAIGNS,
         icon: 'bi-clipboard2-pulse',
       },
+      {
+        label: 'Gift Tag Builder',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-tags',
+      },
     ],
   },
   {
@@ -279,6 +286,8 @@ export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNav
                         ? buildCampaignGiftsPoolPath(resolvedCampaignId)
                         : child.label === 'Gift Status'
                           ? buildCampaignGiftsReportsPath(resolvedCampaignId)
+                          : child.label === 'Gift Tag Builder'
+                            ? buildCampaignGiftsTagBuilderPath(resolvedCampaignId)
                       : buildCampaignGiftsSearchPath(resolvedCampaignId)
                     : routes.CAMPAIGNS,
                 })),
@@ -331,6 +340,9 @@ export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNav
         }
         if (child.label === 'Gift Status') {
           return isFeatureEnabled('reports') && canShowDuringCampaignLoad(canViewReports(campaignAccess));
+        }
+        if (child.label === 'Gift Tag Builder') {
+          return isFeatureEnabled('sponsors') && canShowDuringCampaignLoad(canManageCampaign(campaignAccess));
         }
       }
 

@@ -8,6 +8,7 @@ from app.features.campaigns.studio_service import CampaignStudioService
 from app.features.gifts.search_parser import parse_gift_search_text
 from app.models.campaign_gift_policy import CampaignGiftPolicy
 from app.models.campaign_gift_reminder_rule import CampaignGiftReminderRule
+from app.models.campaign_manual_gift_label import CampaignManualGiftLabel
 from app.models.campaign_milestone import CampaignMilestone
 from app.models.communication_template import CommunicationTemplate
 from app.models.donation_line import DonationLine
@@ -456,6 +457,48 @@ def test_gift_label_print_job_creates_label_rows_and_opaque_scan_path(app, monke
     assert session.query(LabelPrintJob).filter(LabelPrintJob.campaign_id == campaign.id).count() == 1
     assert session.query(LabelPrintItem).filter(LabelPrintItem.wishlist_item_id == gifts["sponsored_id"]).count() == 1
     assert session.query(ItemEvent).filter(ItemEvent.wishlist_item_id == gifts["sponsored_id"], ItemEvent.event_type == "LABEL_PRINTED").count() == 1
+
+
+def test_blank_gift_label_print_job_creates_unassigned_manual_labels(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manual Label Manager")
+    campaign = seed_campaign(session, name="Manual Label Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    session.commit()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign.id}/gift-labels/print-jobs",
+        json={
+            "wishlist_item_ids": [],
+            "manual_quantity": 3,
+            "format": "TAG",
+        },
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+
+    assert response.status_code == 201
+    payload = response.get_json()["print_job"]
+    assert payload["format"] == "TAG"
+    assert len(payload["items"]) == 3
+    first_item = payload["items"][0]
+    assert first_item["wishlist_item_id"] is None
+    assert first_item["manual_label_id"] is not None
+    assert first_item["gift"] is None
+    assert first_item["label"]["label_type"] == "MANUAL"
+    assert first_item["label"]["gift"]["label_code"].startswith("MAN-")
+
+    lookup_response = client.get(first_item["label"]["scan_path"].replace("/public", "/api/v1/public"))
+    assert lookup_response.status_code == 200
+    lookup_payload = lookup_response.get_json()
+    assert lookup_payload["gift"]["status"] == "UNASSIGNED"
+    assert lookup_payload["message"] == "This tag is not attached to a gift yet."
+    assert lookup_payload["available_actions"] == []
+
+    session.expire_all()
+    assert session.query(CampaignManualGiftLabel).filter(CampaignManualGiftLabel.campaign_id == campaign.id).count() == 3
+    assert session.query(LabelPrintItem).filter(LabelPrintItem.manual_label_id.isnot(None)).count() == 3
 
 
 def test_gift_scan_lookup_and_action_record_scan_events(app, monkeypatch) -> None:

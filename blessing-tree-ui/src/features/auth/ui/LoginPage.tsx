@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { login } from '@/shared/api/authApi';
 import { useAuth } from '@/features/auth/model/authContext';
@@ -14,6 +14,7 @@ import './AuthPages.css';
 interface LoginFormInputs {
   email: string;
   password: string;
+  keepSignedIn: boolean;
 }
 
 export function LoginPage() {
@@ -29,6 +30,9 @@ export function LoginPage() {
     formState: { errors },
   } = useForm<LoginFormInputs>({
     mode: 'onBlur',
+    defaultValues: {
+      keepSignedIn: true,
+    },
   });
 
   useEffect(() => {
@@ -44,7 +48,7 @@ export function LoginPage() {
     setApiError(null);
 
     try {
-      const response = await login(data.email, data.password);
+      const response = await login(data.email, data.password, data.keepSignedIn);
       contextLogin(response.userId, response.email, response.token, response.role);
       navigate(routes.HOME);
     } catch (error) {
@@ -116,14 +120,32 @@ export function LoginPage() {
                 {...register('password', {
                   required: 'Password is required',
                   minLength: {
-                    value: 6,
-                    message: 'Password must be at least 6 characters',
+                    value: 8,
+                    message: 'Password must be at least 8 characters',
                   },
                 })}
               />
               {errors.password && (
                 <div className="invalid-feedback d-block">{errors.password.message}</div>
               )}
+            </div>
+
+            <div className="d-flex align-items-center justify-content-between gap-3 mb-3">
+              <div className="form-check">
+                <input
+                  id="keep-signed-in"
+                  type="checkbox"
+                  className="form-check-input"
+                  disabled={isLoading}
+                  {...register('keepSignedIn')}
+                />
+                <label htmlFor="keep-signed-in" className="form-check-label">
+                  Keep me signed in
+                </label>
+              </div>
+              <Link to={routes.AUTH_FORGOT_PASSWORD} className="small">
+                Forgot password?
+              </Link>
             </div>
 
             <button

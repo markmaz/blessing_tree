@@ -154,6 +154,7 @@ export function InviteAcceptPage() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   type="password"
+                  minLength={8}
                 />
               </div>
               <button
