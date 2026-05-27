@@ -204,10 +204,10 @@ export function CampaignEditorForm({
               className="btn btn-outline-secondary btn-sm"
             >
               <i className="bi bi-qr-code-scan me-2" aria-hidden="true" />
-              Open Sponsor Flyer
+              Open Flyer Builder
             </a>
             <div className="form-text mt-2">
-              The flyer uses this campaign setup and will show a warning until the public sponsor slug is set.
+              Flyer QR codes can use this campaign setup and will show a warning until the public sponsor slug is set.
             </div>
           </div>
         ) : null}

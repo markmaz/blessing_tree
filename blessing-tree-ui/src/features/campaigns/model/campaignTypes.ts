@@ -19,9 +19,62 @@ export interface CampaignSummaryCounts {
   pickups: number;
 }
 
+export interface CampaignPopulationWidget {
+  children: number;
+  adults: number;
+  gifts: number;
+  unsponsoredGifts: number;
+}
+
+export interface PopularGiftByGenderWidget {
+  gender: string;
+  gift: string;
+  quantity: number;
+  requestCount: number;
+}
+
+export interface SponsorRecipientCountWidget {
+  sponsorId: string;
+  sponsorName: string;
+  email: string | null;
+  recipientCount: number;
+  giftCount: number;
+}
+
+export interface UnsponsoredGiftWidgetItem {
+  wishlistItemId: string;
+  gift: string;
+  category: string | null;
+  recipientName: string | null;
+  groupName: string | null;
+}
+
+export interface UnsponsoredGiftWidget {
+  count: number;
+  items: UnsponsoredGiftWidgetItem[];
+}
+
+export interface ContinueWhereLeftOffWidgetItem {
+  promptLogId: string;
+  prompt: string;
+  resultKind: string;
+  resultKey: string | null;
+  title: string | null;
+  createdAt: string | null;
+}
+
+export interface CampaignDashboardWidgets {
+  population: CampaignPopulationWidget;
+  popularGiftsByGender: PopularGiftByGenderWidget[];
+  sponsorRecipientCounts: SponsorRecipientCountWidget[];
+  unsponsoredGifts: UnsponsoredGiftWidget;
+  continueWhereLeftOff: ContinueWhereLeftOffWidgetItem[];
+}
+
 export interface CampaignSummary {
   campaignId: string;
   counts: CampaignSummaryCounts;
+  widgets: CampaignDashboardWidgets;
 }
 
 export interface Campaign {

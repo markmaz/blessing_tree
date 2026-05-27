@@ -1,17 +1,21 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Any, Callable
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
+from app.features.campaigns.service import CampaignService
 from app.features.campaigns.studio_service import CampaignStudioService
 from app.features.gifts.report_service import GiftReportService
 from app.models.donation_line import DonationLine
+from app.models.pending_sponsor_registration import PendingSponsorRegistration
 from app.models.recipient import Recipient
 from app.models.recipient_group import RecipientGroup
 from app.models.sponsor import Sponsor
+from app.models.sponsor_constants import PENDING_SPONSOR_REGISTRATION_STATUS_PENDING
 from app.models.sponsor_interaction import SponsorInteraction
 from app.models.sponsorship import Sponsorship
 from app.models.sponsorship_item import SponsorshipItem
@@ -25,9 +29,11 @@ class AskReportExecutor:
     def __init__(
         self,
         *,
+        campaign_service: CampaignService | None = None,
         gift_report_service: GiftReportService | None = None,
         studio_service: CampaignStudioService | None = None,
     ) -> None:
+        self.campaigns = campaign_service or CampaignService()
         self.gift_reports = gift_report_service or GiftReportService()
         self.studio = studio_service or CampaignStudioService()
 
@@ -40,10 +46,20 @@ class AskReportExecutor:
         filters: dict[str, Any] | None = None,
         intent: str = "list",
         limit: int = DEFAULT_LIMIT,
+        user_id: uuid.UUID | None = None,
     ) -> dict[str, Any]:
         executor = self._executor_map().get(metric_key)
         if executor is None:
             return _empty_report(metric_key, "Unsupported report", "I do not know how to run that report yet.")
+        if metric_key == "continue_where_left_off":
+            return executor(
+                db,
+                campaign_id=campaign_id,
+                filters=filters or {},
+                intent=intent,
+                limit=_bounded_limit(limit),
+                user_id=user_id,
+            )
         return executor(db, campaign_id=campaign_id, filters=filters or {}, intent=intent, limit=_bounded_limit(limit))
 
     def execute_recipients_needing_sponsors(
@@ -78,6 +94,55 @@ class AskReportExecutor:
         return _recipient_report(
             metric_key="recipients_needing_gifts",
             label="Recipients needing gifts",
+            rows=rows,
+            limit=limit,
+        )
+
+    def execute_recipients_not_fulfilled(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        report = self.gift_reports.get_workflow_report(db, campaign_id=campaign_id)
+        rows: list[dict[str, Any]] = []
+        for row in report["recipients"]:
+            recipient = row["recipient"]
+            if not _recipient_matches_filters(recipient, filters):
+                continue
+            counts = row["counts"]
+            total_count = counts["TOTAL"]
+            fulfilled_count = sum(counts[status] for status in ("READY_FOR_DISTRIBUTION", "DISTRIBUTED", "PICKED_UP"))
+            if total_count <= 0 or fulfilled_count >= total_count:
+                continue
+            group = row.get("group")
+            rows.append(
+                {
+                    "recipient_id": str(recipient.id),
+                    "recipient_name": recipient.display_label,
+                    "group_name": group.group_name if group is not None else None,
+                    "age": recipient.age,
+                    "gender": _gender_label(recipient.gender),
+                    "wishlist_count": total_count,
+                    "fulfilled_count": fulfilled_count,
+                    "remaining_count": total_count - fulfilled_count,
+                }
+            )
+        return _simple_table_report(
+            metric_key="recipients_not_fulfilled",
+            label="Recipients not fulfilled",
+            columns=[
+                {"key": "recipient_name", "label": "Recipient"},
+                {"key": "group_name", "label": "Group"},
+                {"key": "age", "label": "Age"},
+                {"key": "gender", "label": "Gender"},
+                {"key": "wishlist_count", "label": "Wishlist Items"},
+                {"key": "fulfilled_count", "label": "Ready/Done"},
+                {"key": "remaining_count", "label": "Remaining"},
+            ],
             rows=rows,
             limit=limit,
         )
@@ -151,6 +216,117 @@ class AskReportExecutor:
             filters={**filters, "status": "RECEIVED"},
             metric_key="received_gifts_not_wrapped",
             label="Received gifts not wrapped",
+            limit=limit,
+        )
+
+    def execute_overdue_sponsor_gifts(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        rows = self._sponsor_unreceived_gift_rows(
+            db,
+            campaign_id=campaign_id,
+            filters=filters,
+            overdue_only=True,
+        )
+        return _simple_table_report(
+            metric_key="overdue_sponsor_gifts",
+            label="Overdue sponsor gifts",
+            columns=_sponsor_unreceived_columns(),
+            rows=rows,
+            limit=limit,
+        )
+
+    def execute_sponsors_with_unreceived_gifts(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        rows = self._sponsor_unreceived_gift_rows(
+            db,
+            campaign_id=campaign_id,
+            filters=filters,
+            overdue_only=False,
+        )
+        return _simple_table_report(
+            metric_key="sponsors_with_unreceived_gifts",
+            label="Sponsors with unreceived gifts",
+            columns=_sponsor_unreceived_columns(),
+            rows=rows,
+            limit=limit,
+        )
+
+    def execute_exception_gifts(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        return self._gift_status_report(
+            db,
+            campaign_id=campaign_id,
+            filters={**filters, "status": "EXCEPTION"},
+            metric_key="exception_gifts",
+            label="Gift exceptions",
+            limit=limit,
+        )
+
+    def execute_pending_public_sponsor_registrations(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        registrations = (
+            db.query(PendingSponsorRegistration)
+            .filter(
+                PendingSponsorRegistration.campaign_id == campaign_id,
+                PendingSponsorRegistration.status == PENDING_SPONSOR_REGISTRATION_STATUS_PENDING,
+            )
+            .order_by(PendingSponsorRegistration.created_at.asc())
+            .all()
+        )
+        rows = [
+            {
+                "registration_id": str(registration.id),
+                "sponsor_name": registration.display_name or " ".join(
+                    value for value in (registration.first_name, registration.last_name) if value
+                ) or registration.email,
+                "email": registration.email,
+                "phone": registration.phone,
+                "created_at": registration.created_at.isoformat() if registration.created_at else None,
+                "expires_at": registration.expires_at.isoformat() if registration.expires_at else None,
+                "selected_gift_count": len(registration.selected_wishlist_item_ids_json or []),
+            }
+            for registration in registrations
+        ]
+        return _simple_table_report(
+            metric_key="pending_public_sponsor_registrations",
+            label="Pending public sponsor registrations",
+            columns=[
+                {"key": "sponsor_name", "label": "Sponsor"},
+                {"key": "email", "label": "Email"},
+                {"key": "phone", "label": "Phone"},
+                {"key": "selected_gift_count", "label": "Selected Gifts"},
+                {"key": "created_at", "label": "Submitted"},
+                {"key": "expires_at", "label": "Expires"},
+            ],
+            rows=rows,
             limit=limit,
         )
 
@@ -324,6 +500,145 @@ class AskReportExecutor:
             limit=limit,
         )
 
+    def execute_popular_gifts_by_gender(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        rows = self.campaigns.get_popular_gifts_by_gender(db, str(campaign_id))
+        return _simple_table_report(
+            metric_key="popular_gifts_by_gender",
+            label="Popular gifts by gender",
+            columns=[
+                {"key": "gender", "label": "Gender"},
+                {"key": "gift", "label": "Gift"},
+                {"key": "quantity", "label": "Requested"},
+                {"key": "request_count", "label": "Rows"},
+            ],
+            rows=rows,
+            limit=limit,
+        )
+
+    def execute_recipients_sponsored_by_sponsor(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        rows = self.campaigns.get_sponsor_recipient_counts(db, str(campaign_id), limit=limit)
+        return _simple_table_report(
+            metric_key="recipients_sponsored_by_sponsor",
+            label="Recipients sponsored by sponsor",
+            columns=[
+                {"key": "sponsor_name", "label": "Sponsor"},
+                {"key": "email", "label": "Email"},
+                {"key": "recipient_count", "label": "Recipients"},
+                {"key": "gift_count", "label": "Gifts"},
+            ],
+            rows=rows,
+            limit=limit,
+        )
+
+    def execute_unsponsored_gifts(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        summary = self.campaigns.get_unsponsored_gift_summary(db, str(campaign_id), limit=limit)
+        rows = list(summary.get("items") or [])
+        total = int(summary.get("count") or 0)
+        return {
+            "metric_key": "unsponsored_gifts",
+            "summary": {"label": "Unsponsored gifts", "value": total},
+            "columns": [
+                {"key": "recipient_name", "label": "Recipient"},
+                {"key": "group_name", "label": "Group"},
+                {"key": "gift", "label": "Gift"},
+                {"key": "category", "label": "Category"},
+            ],
+            "rows": rows,
+            "totals": {"row_count": total, "limited": total > len(rows)},
+        }
+
+    def execute_recipient_population_summary(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        population = self.campaigns.get_population_summary(db, str(campaign_id))
+        total = int(population["children"]) + int(population["adults"])
+        return {
+            "metric_key": "recipient_population_summary",
+            "summary": {"label": "Children and adults", "value": total},
+            "columns": [
+                {"key": "recipient_type", "label": "Recipient Type"},
+                {"key": "count", "label": "Count"},
+            ],
+            "rows": [
+                {"recipient_type": "Children", "count": population["children"]},
+                {"recipient_type": "Adults", "count": population["adults"]},
+                {"recipient_type": "Total", "count": total},
+            ],
+            "totals": {"row_count": 3, "limited": False},
+        }
+
+    def execute_gift_count_summary(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        total = self.campaigns.get_gift_count(db, str(campaign_id))
+        return {
+            "metric_key": "gift_count_summary",
+            "summary": {"label": "Gifts", "value": total},
+            "columns": [{"key": "metric", "label": "Metric"}, {"key": "count", "label": "Count"}],
+            "rows": [{"metric": "Gifts", "count": total}],
+            "totals": {"row_count": 1, "limited": False},
+        }
+
+    def execute_continue_where_left_off(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+        user_id: uuid.UUID | None,
+    ) -> dict[str, Any]:
+        rows = self.campaigns.get_user_continue_items(db, str(campaign_id), user_id=str(user_id) if user_id else None, limit=limit)
+        return _simple_table_report(
+            metric_key="continue_where_left_off",
+            label="Recent Ask activity",
+            columns=[
+                {"key": "prompt", "label": "Prompt"},
+                {"key": "title", "label": "Result"},
+                {"key": "result_kind", "label": "Type"},
+                {"key": "created_at", "label": "Asked"},
+            ],
+            rows=rows,
+            limit=limit,
+        )
+
     def _recipient_coverage_rows(
         self,
         db: Session,
@@ -402,12 +717,81 @@ class AskReportExecutor:
             limit=limit,
         )
 
+    def _sponsor_unreceived_gift_rows(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        overdue_only: bool,
+    ) -> list[dict[str, Any]]:
+        query = (
+            db.query(Sponsorship)
+            .options(
+                joinedload(Sponsorship.sponsor),
+                joinedload(Sponsorship.items)
+                .joinedload(SponsorshipItem.wishlist_item)
+                .joinedload(WishlistItem.wishlist)
+                .joinedload(Wishlist.recipient)
+                .joinedload(Recipient.recipient_group),
+            )
+            .join(Sponsor, Sponsor.id == Sponsorship.sponsor_id)
+            .filter(
+                Sponsorship.campaign_id == campaign_id,
+                Sponsorship.status != "CANCELLED",
+                Sponsor.is_active == 1,
+            )
+            .order_by(Sponsorship.drop_off_due_at.asc(), Sponsor.display_name.asc())
+        )
+        if overdue_only:
+            query = query.filter(
+                Sponsorship.drop_off_due_at.isnot(None),
+                Sponsorship.drop_off_due_at < datetime.utcnow(),
+                Sponsorship.drop_off_status != "RECEIVED",
+            )
+        rows: list[dict[str, Any]] = []
+        for sponsorship in query.all():
+            unreceived_items = [
+                item.wishlist_item
+                for item in list(sponsorship.items or [])
+                if item.wishlist_item is not None
+                and item.wishlist_item.status in {"COMMITTED", "EXCEPTION"}
+                and _recipient_matches_filters(item.wishlist_item.wishlist.recipient, filters)
+            ]
+            if not unreceived_items:
+                continue
+            rows.append(
+                {
+                    "sponsorship_id": str(sponsorship.id),
+                    "sponsor_id": str(sponsorship.sponsor.id),
+                    "sponsor_name": sponsorship.sponsor.display_name,
+                    "email": sponsorship.sponsor.email,
+                    "phone": sponsorship.sponsor.phone,
+                    "drop_off_due_at": sponsorship.drop_off_due_at.isoformat() if sponsorship.drop_off_due_at else None,
+                    "drop_off_status": sponsorship.drop_off_status,
+                    "unreceived_gift_count": len(unreceived_items),
+                    "gifts": ", ".join(item.description for item in unreceived_items[:5]),
+                }
+            )
+        return rows
+
     def _executor_map(self) -> dict[str, Callable[..., dict[str, Any]]]:
         return {
             "recipients_needing_sponsors": self.execute_recipients_needing_sponsors,
             "recipients_needing_gifts": self.execute_recipients_needing_gifts,
             "committed_gifts_not_received": self.execute_committed_gifts_not_received,
             "ready_gifts_not_distributed": self.execute_ready_gifts_not_distributed,
+            "recipients_not_fulfilled": self.execute_recipients_not_fulfilled,
+            "overdue_sponsor_gifts": self.execute_overdue_sponsor_gifts,
+            "sponsors_with_unreceived_gifts": self.execute_sponsors_with_unreceived_gifts,
+            "exception_gifts": self.execute_exception_gifts,
+            "pending_public_sponsor_registrations": self.execute_pending_public_sponsor_registrations,
+            "popular_gifts_by_gender": self.execute_popular_gifts_by_gender,
+            "recipients_sponsored_by_sponsor": self.execute_recipients_sponsored_by_sponsor,
+            "unsponsored_gifts": self.execute_unsponsored_gifts,
+            "recipient_population_summary": self.execute_recipient_population_summary,
+            "gift_count_summary": self.execute_gift_count_summary,
+            "continue_where_left_off": self.execute_continue_where_left_off,
             "open_wishlist_items": self.execute_open_wishlist_items,
             "received_gifts_not_wrapped": self.execute_received_gifts_not_wrapped,
             "sponsors_without_commitments": self.execute_sponsors_without_commitments,
@@ -451,6 +835,18 @@ def _simple_table_report(
         "rows": limited_rows,
         "totals": {"row_count": total, "limited": total > len(limited_rows)},
     }
+
+
+def _sponsor_unreceived_columns() -> list[dict[str, str]]:
+    return [
+        {"key": "sponsor_name", "label": "Sponsor"},
+        {"key": "email", "label": "Email"},
+        {"key": "phone", "label": "Phone"},
+        {"key": "drop_off_due_at", "label": "Due"},
+        {"key": "drop_off_status", "label": "Drop-Off"},
+        {"key": "unreceived_gift_count", "label": "Gifts"},
+        {"key": "gifts", "label": "Gift List"},
+    ]
 
 
 def _empty_report(metric_key: str, label: str, message: str) -> dict[str, Any]:

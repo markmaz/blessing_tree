@@ -72,7 +72,7 @@ export function CampaignStudioOverview({
               to={buildCampaignSponsorFlyerPath(campaign.id)}
             >
               <i className="bi bi-qr-code-scan me-2" aria-hidden="true" />
-              Sponsor Flyer
+              Flyer Builder
             </Link>
             <button
               type="button"

@@ -13,6 +13,7 @@ from .uuid_bin import UUIDBin
 if TYPE_CHECKING:
     from .campaign_automation_execution import CampaignAutomationExecution
     from .campaign_event import CampaignEvent
+    from .campaign_flyer import CampaignFlyer
     from .campaign_member import CampaignMember
     from .campaign_team import CampaignTeam
     from .campaign_communication_schedule import CampaignCommunicationSchedule
@@ -148,6 +149,11 @@ class Campaign(Base):
         passive_deletes=True,
     )
     events: Mapped[List["CampaignEvent"]] = relationship(
+        back_populates="campaign",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    flyers: Mapped[List["CampaignFlyer"]] = relationship(
         back_populates="campaign",
         cascade="all, delete-orphan",
         passive_deletes=True,

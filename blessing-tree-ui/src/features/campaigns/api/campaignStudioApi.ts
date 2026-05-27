@@ -495,6 +495,21 @@ function mapCampaignSummary(summary: CampaignSummaryResponse): CampaignSummary {
       fulfillments: summary.counts.fulfillments ?? 0,
       pickups: summary.counts.pickups ?? 0,
     },
+    widgets: {
+      population: {
+        children: 0,
+        adults: 0,
+        gifts: 0,
+        unsponsoredGifts: 0,
+      },
+      popularGiftsByGender: [],
+      sponsorRecipientCounts: [],
+      unsponsoredGifts: {
+        count: 0,
+        items: [],
+      },
+      continueWhereLeftOff: [],
+    },
   };
 }
 

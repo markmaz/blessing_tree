@@ -126,7 +126,7 @@ export function CampaignStudioPage() {
             className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
           >
             <i className="bi bi-qr-code-scan" aria-hidden="true" />
-            <span>Sponsor Flyer</span>
+            <span>Flyer Builder</span>
           </Link>
         </div>
       </div>

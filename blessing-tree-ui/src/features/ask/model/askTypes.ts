@@ -38,6 +38,7 @@ export interface AskReportResult {
 
 export interface AskResponse {
   kind: AskResultKind;
+  promptLogId: string | null;
   answer: string;
   confidence: number;
   title?: string;

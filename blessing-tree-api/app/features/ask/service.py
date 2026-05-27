@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -17,6 +18,7 @@ from app.features.ask.schemas import AskAction, Classification
 from app.features.ask.serializers import serialize_action, serialize_entities
 from app.features.campaigns.service import CampaignService
 from app.features.rbac.services.authorization_service import AuthorizationService
+from app.models.ask_prompt_log import AskPromptLog
 
 
 class AskBlessingTreeService:
@@ -56,18 +58,54 @@ class AskBlessingTreeService:
         )
 
         if classification.kind == "app_help" and classification.key:
-            return self._help_response(db, campaign_id=campaign_id, user_id=user_id, classification=classification)
-        if classification.kind == "navigation_result" and classification.key:
-            return self._navigation_response(db, campaign_id=campaign_id, user_id=user_id, classification=classification)
-        if classification.kind == "report_result" and classification.key:
-            return self._report_response(
+            response = self._help_response(db, campaign_id=campaign_id, user_id=user_id, classification=classification)
+        elif classification.kind == "navigation_result" and classification.key:
+            response = self._navigation_response(db, campaign_id=campaign_id, user_id=user_id, classification=classification)
+        elif classification.kind == "report_result" and classification.key:
+            response = self._report_response(
                 db,
                 campaign_id=campaign_id,
                 user_id=user_id,
                 classification=classification,
                 include_debug=include_debug,
             )
-        return self._clarification_response(classification)
+        else:
+            response = self._clarification_response(classification)
+        self._record_prompt_log(
+            db,
+            campaign_id=campaign_id,
+            user_id=user_id,
+            prompt=cleaned_prompt,
+            classification=classification,
+            response=response,
+        )
+        return response
+
+    def record_feedback(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        prompt_log_id: uuid.UUID,
+        rating: str,
+        comment: str | None = None,
+    ) -> AskPromptLog:
+        normalized_rating = str(rating or "").strip().upper()
+        if normalized_rating not in {"POSITIVE", "NEGATIVE"}:
+            raise ServiceError("rating must be POSITIVE or NEGATIVE", status_code=400, details={"field": "rating"})
+        log = (
+            db.query(AskPromptLog)
+            .filter(AskPromptLog.id == prompt_log_id, AskPromptLog.campaign_id == campaign_id)
+            .one_or_none()
+        )
+        if log is None:
+            raise ServiceError("Ask prompt log not found", status_code=404)
+        log.feedback_rating = normalized_rating
+        log.feedback_comment = (comment or "").strip()[:1000] or None
+        log.feedback_at = datetime.utcnow()
+        db.commit()
+        db.refresh(log)
+        return log
 
     def _merge_llm_classification(
         self,
@@ -181,6 +219,7 @@ class AskBlessingTreeService:
             campaign_id=campaign_id,
             filters=classification.entities.filters,
             intent=intent,
+            user_id=user_id,
         )
         summary = report.get("summary") or {}
         answer = f"{summary.get('value', 0)} {str(summary.get('label') or metric.title).lower()}."
@@ -188,18 +227,7 @@ class AskBlessingTreeService:
             db,
             campaign_id=campaign_id,
             user_id=user_id,
-            actions=[
-                AskAction(
-                    label="Open Gift Status",
-                    route_name="campaign_gifts_reports",
-                    required_capability="campaign.reports.view",
-                ),
-                AskAction(
-                    label="Open People Reports",
-                    route_name="campaign_people_reports",
-                    required_capability="campaign.reports.view",
-                ),
-            ],
+            actions=_report_actions(metric.metric_key, metric.subject),
         )
         response = {
             "kind": "report_result",
@@ -266,6 +294,32 @@ class AskBlessingTreeService:
                 details={"code": "missing_campaign_capability", "campaign_id": str(campaign_id), "capability": capability},
             )
 
+    @staticmethod
+    def _record_prompt_log(
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        user_id: uuid.UUID | None,
+        prompt: str,
+        classification: Classification,
+        response: dict[str, Any],
+    ) -> None:
+        summary = _response_log_summary(response)
+        log = AskPromptLog(
+            id=uuid.uuid4(),
+            campaign_id=campaign_id,
+            user_id=user_id,
+            prompt=prompt,
+            result_kind=response.get("kind") or classification.kind,
+            result_key=classification.key,
+            confidence=float(response.get("confidence") or classification.confidence or 0),
+            source=classification.source,
+            response_summary_json=summary,
+        )
+        db.add(log)
+        db.commit()
+        response["prompt_log_id"] = str(log.id)
+
 
 def _valid_kind(value: object) -> str | None:
     if value in {"app_help", "navigation_result", "report_result", "clarification"}:
@@ -291,3 +345,81 @@ def _valid_confidence(value: object) -> float:
         return max(0.0, min(float(value), 1.0))
     except (TypeError, ValueError):
         return 0.0
+
+
+def _response_log_summary(response: dict[str, Any]) -> dict[str, Any]:
+    report = response.get("report") if isinstance(response.get("report"), dict) else None
+    summary = report.get("summary") if isinstance(report, dict) and isinstance(report.get("summary"), dict) else None
+    return {
+        "title": response.get("title"),
+        "answer": response.get("answer"),
+        "kind": response.get("kind"),
+        "report_metric_key": report.get("metric_key") if isinstance(report, dict) else None,
+        "report_summary": summary,
+        "warnings": list(response.get("warnings") or []),
+        "actions": [
+            {"label": action.get("label"), "route": action.get("route"), "prompt": action.get("prompt")}
+            for action in response.get("actions") or []
+            if isinstance(action, dict)
+        ],
+    }
+
+
+def _report_actions(metric_key: str, subject: str) -> list[AskAction]:
+    if metric_key == "readiness_blockers":
+        return [
+            AskAction(
+                label="Open Campaign Studio",
+                route_name="campaign_studio",
+                required_capability="campaign.manage",
+            )
+        ]
+    if subject == "dashboard":
+        return [
+            AskAction(
+                label="Open Dashboard",
+                route_name="dashboard",
+                required_capability="campaign.view",
+            )
+        ]
+    if subject == "sponsors":
+        return [
+            AskAction(
+                label="Open Sponsor Reports",
+                route_name="campaign_sponsors_reports",
+                required_capability="campaign.reports.view",
+            ),
+            AskAction(
+                label="Open Sponsors",
+                route_name="campaign_sponsors_directory",
+                required_capability="campaign.sponsors.view",
+            ),
+        ]
+    if subject == "recipients":
+        return [
+            AskAction(
+                label="Open People Reports",
+                route_name="campaign_people_reports",
+                required_capability="campaign.reports.view",
+            ),
+            AskAction(
+                label="Open People",
+                route_name="campaign_people_directory",
+                required_capability="campaign.recipients.view",
+            ),
+        ]
+    if subject == "donations":
+        return [
+            AskAction(
+                label="Open Gift Pool",
+                route_name="campaign_gifts_pool",
+                required_capability="campaign.gifts.pool.manage",
+            )
+        ]
+    return [
+        AskAction(
+            label="Open Gift Status",
+            route_name="campaign_gifts_reports",
+            required_capability="campaign.reports.view",
+        )
+    ]

@@ -9,6 +9,7 @@ from app.features.campaigns.studio_serializers import (
     serialize_ai_draft,
     serialize_campaign_event,
     serialize_campaign_assignment,
+    serialize_campaign_flyer,
     serialize_communication_schedule,
     serialize_communication_template,
     serialize_directory_user,
@@ -20,6 +21,7 @@ from app.features.campaigns.studio_serializers import (
     serialize_team_snapshot,
 )
 from app.features.campaigns.ai_draft_service import CampaignStudioAiDraftService
+from app.features.campaigns.flyer_service import CampaignFlyerService
 from app.features.campaigns.gift_policy_service import CampaignGiftPolicyService
 from app.features.campaigns.studio_schedule_service import CampaignStudioScheduleService
 from app.features.campaigns.studio_service import CampaignStudioService
@@ -31,6 +33,7 @@ _schedule_service = CampaignStudioScheduleService()
 _team_service = CampaignStudioTeamService()
 _ai_draft_service = CampaignStudioAiDraftService()
 _gift_policy_service = CampaignGiftPolicyService()
+_flyer_service = CampaignFlyerService()
 
 
 @campaign_ns.route("/<string:campaign_id>/studio")
@@ -128,6 +131,38 @@ class CommunicationTemplateTestEmailResource(Resource):
                 recipient_email=payload.get("recipient_email"),
             )
         return result, 200
+
+
+@campaign_ns.route("/<string:campaign_id>/flyers")
+class CampaignFlyerListResource(Resource):
+    @require_campaign_capability("campaign.view")
+    def get(self, campaign_id: str):
+        with SessionLocal() as db:
+            flyers = _flyer_service.list_flyers(db, campaign_id)
+        return [serialize_campaign_flyer(flyer) for flyer in flyers]
+
+    @require_campaign_capability("campaign.admin")
+    def post(self, campaign_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            flyer = _flyer_service.create_flyer(db, getattr(g, "user_id"), campaign_id, payload)
+        return serialize_campaign_flyer(flyer), 201
+
+
+@campaign_ns.route("/<string:campaign_id>/flyers/<string:flyer_id>")
+class CampaignFlyerDetailResource(Resource):
+    @require_campaign_capability("campaign.admin")
+    def patch(self, campaign_id: str, flyer_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            flyer = _flyer_service.update_flyer(db, campaign_id, flyer_id, payload)
+        return serialize_campaign_flyer(flyer)
+
+    @require_campaign_capability("campaign.admin")
+    def delete(self, campaign_id: str, flyer_id: str):
+        with SessionLocal() as db:
+            _flyer_service.delete_flyer(db, campaign_id, flyer_id)
+        return "", 204
 
 
 @campaign_ns.route("/<string:campaign_id>/communications/schedules")

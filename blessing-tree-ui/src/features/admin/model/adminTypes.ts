@@ -121,6 +121,33 @@ export interface AdminFeaturesPayload {
   features: AdminFeatureFlag[];
 }
 
+export interface AdminAskReviewLog {
+  id: string;
+  campaignId: string;
+  campaignName: string | null;
+  userId: string | null;
+  userName: string | null;
+  prompt: string;
+  resultKind: string;
+  resultKey: string | null;
+  confidence: number | null;
+  source: string | null;
+  responseSummary: Record<string, unknown>;
+  feedbackRating: string | null;
+  feedbackComment: string | null;
+  feedbackAt: string | null;
+  reviewedAt: string | null;
+  reviewedByUserId: string | null;
+  reviewNote: string | null;
+  createdAt: string | null;
+}
+
+export interface AdminAskReviewPayload {
+  logs: AdminAskReviewLog[];
+  reviewOnly: boolean;
+  limit: number;
+}
+
 export interface InviteValidationPayload {
   invitationId: string;
   userId: string;
