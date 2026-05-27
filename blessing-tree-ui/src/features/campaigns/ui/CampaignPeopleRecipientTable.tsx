@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import {
   formatRecipientAge,
   formatShortDate,
@@ -8,7 +8,8 @@ import {
   toRecipientStatusLabel,
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
 import type { CampaignRecipient } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
-import { clampTablePage, TablePagination } from '@/shared/ui/TablePagination';
+import { TablePagination } from '@/shared/ui/TablePagination';
+import { clampTablePage } from '@/shared/ui/tablePaginationModel';
 
 interface CampaignPeopleRecipientTableProps {
   recipients: CampaignRecipient[];
@@ -50,14 +51,11 @@ export function CampaignPeopleRecipientTable({
     return sorted;
   }, [recipients, sortDirection, sortKey]);
 
-  useEffect(() => {
-    setPage((currentPage) => clampTablePage(currentPage, sortedRecipients.length, pageSize));
-  }, [pageSize, sortedRecipients.length]);
+  const safePage = clampTablePage(page, sortedRecipients.length, pageSize);
 
   const pagedRecipients = useMemo(() => {
-    const safePage = clampTablePage(page, sortedRecipients.length, pageSize);
     return sortedRecipients.slice((safePage - 1) * pageSize, safePage * pageSize);
-  }, [page, pageSize, sortedRecipients]);
+  }, [pageSize, safePage, sortedRecipients]);
 
   const handleSort = (nextKey: RecipientSortKey) => {
     if (sortKey === nextKey) {
@@ -257,7 +255,7 @@ export function CampaignPeopleRecipientTable({
         </table>
       </div>
       <TablePagination
-        page={page}
+        page={safePage}
         pageSize={pageSize}
         totalItems={sortedRecipients.length}
         itemLabel="people"

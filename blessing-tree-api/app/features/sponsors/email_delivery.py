@@ -17,11 +17,11 @@ class _PublicSponsorVerificationEmailTaskProxy:
         from app.tasks.campaign_tasks import send_public_sponsor_verification_email_task
 
         return send_public_sponsor_verification_email_task.delay(
-            email,
-            display_name,
-            campaign_name,
-            public_slug,
-            verification_token,
+            email=email,
+            display_name=display_name,
+            campaign_name=campaign_name,
+            public_slug=public_slug,
+            verification_token=verification_token,
         )
 
 
@@ -38,11 +38,11 @@ def send_public_sponsor_verification_email_with_fallback(
 ) -> bool:
     try:
         send_public_sponsor_verification_email_task.delay(
-            email,
-            display_name,
-            campaign_name,
-            public_slug,
-            verification_token,
+            email=email,
+            display_name=display_name,
+            campaign_name=campaign_name,
+            public_slug=public_slug,
+            verification_token=verification_token,
         )
         return True
     except Exception:

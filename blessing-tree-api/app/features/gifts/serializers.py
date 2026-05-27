@@ -13,6 +13,15 @@ from app.models.label_print_item import LabelPrintItem
 from app.models.label_print_job import LabelPrintJob
 from app.models.wishlist_item import WishlistItem
 
+WORKFLOW_FULFILLED_STATUSES = {
+    "RECEIVED",
+    "WRAPPED",
+    "TAGGED",
+    "READY_FOR_DISTRIBUTION",
+    "DISTRIBUTED",
+    "PICKED_UP",
+}
+
 
 def serialize_gift_search_response(
     *,
@@ -319,6 +328,7 @@ def serialize_gift_workflow_item(item: WishlistItem) -> dict[str, Any]:
     sponsorship_item = item.sponsorship_item
     sponsorship = sponsorship_item.sponsorship if sponsorship_item is not None else None
     sponsor = sponsorship.sponsor if sponsorship is not None else None
+    quantity_requested = item.qty_requested or 1
     return {
         "id": str(item.id),
         "description": item.description,
@@ -327,8 +337,8 @@ def serialize_gift_workflow_item(item: WishlistItem) -> dict[str, Any]:
         "size": item.size,
         "priority": item.priority,
         "status": item.status,
-        "quantity_requested": item.qty_requested,
-        "quantity_fulfilled": item.qty_fulfilled,
+        "quantity_requested": quantity_requested,
+        "quantity_fulfilled": _workflow_quantity_fulfilled(item, quantity_requested),
         "label_code": item.label_code,
         "received_at": _serialize_datetime(item.received_at),
         "wrapped_at": _serialize_datetime(item.wrapped_at),
@@ -339,6 +349,14 @@ def serialize_gift_workflow_item(item: WishlistItem) -> dict[str, Any]:
             "email": sponsor.email,
         } if sponsor is not None else None,
     }
+
+
+def _workflow_quantity_fulfilled(item: WishlistItem, quantity_requested: int) -> int:
+    fulfillment_rows = list(item.fulfillment_rows or [])
+    actual_quantity = max(item.qty_fulfilled or 0, sum(row.quantity_fulfilled or 0 for row in fulfillment_rows))
+    if item.status in WORKFLOW_FULFILLED_STATUSES:
+        return max(actual_quantity, quantity_requested)
+    return actual_quantity
 
 
 def serialize_label_print_job(job: LabelPrintJob) -> dict[str, Any]:

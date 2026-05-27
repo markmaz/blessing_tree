@@ -26,6 +26,7 @@ import type {
 } from '@/features/gifts/model/giftSearchTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { GiftTagPreview } from '@/features/gifts/ui/GiftTagPreview';
+import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
 import '@/features/gifts/ui/giftWorkflow.css';
 import '@/features/gifts/ui/giftWorkflowReport.css';
 
@@ -196,6 +197,86 @@ export function GiftWorkflowReportPage() {
       .filter((recipient) => recipient.gifts.length > 0 || (!statusFilter && !normalizedQuery));
   }, [query, report, statusFilter]);
 
+  const giftReportExport = useMemo(() => {
+    const flatGiftRows = recipients.flatMap((recipient) =>
+      recipient.gifts.map((gift) => ({
+        recipient: recipient.displayLabel,
+        group: recipient.group?.name ?? '',
+        age: recipient.age ?? '',
+        gender: recipient.gender ?? '',
+        gift: gift.description,
+        category: gift.category ?? gift.itemType,
+        size: gift.size ?? '',
+        status: statusLabel(gift.status),
+        sponsor: gift.sponsor?.displayName ?? '',
+        quantity: `${gift.quantityFulfilled}/${gift.quantityRequested}`,
+        label: gift.labelCode,
+      }))
+    );
+    return {
+      title: 'Recipient Gift Status Report',
+      subtitle: report?.campaign.name ?? 'Campaign',
+      fileName: `${report?.campaign.name ?? 'campaign'}-gift-status`,
+      sheets: [
+        {
+          name: 'Summary',
+          columns: [
+            { key: 'metric', label: 'Metric' },
+            { key: 'value', label: 'Value' },
+          ],
+          rows: [
+            { metric: 'Recipients', value: report?.counts.recipient_count ?? 0 },
+            { metric: 'Gifts', value: report?.counts.gift_count ?? 0 },
+            { metric: 'Covered', value: report?.counts.recipients_covered_count ?? 0 },
+            { metric: 'Need Sponsors', value: report?.counts.recipients_needing_gifts_count ?? 0 },
+            { metric: 'Open Work', value: report?.counts.recipients_with_open_work_count ?? 0 },
+            { metric: 'Complete', value: report?.counts.recipients_complete_count ?? 0 },
+          ],
+        },
+        {
+          name: 'Recipients',
+          columns: [
+            { key: 'recipient', label: 'Recipient' },
+            { key: 'group', label: 'Group' },
+            { key: 'age', label: 'Age' },
+            { key: 'gender', label: 'Gender' },
+            { key: 'wishlistStatus', label: 'Wishlist' },
+            { key: 'gifts', label: 'Gifts' },
+            { key: 'sponsored', label: 'Sponsored' },
+            { key: 'needed', label: 'Still Needed' },
+            { key: 'covered', label: 'Covered' },
+          ],
+          rows: recipients.map((recipient) => ({
+            recipient: recipient.displayLabel,
+            group: recipient.group?.name ?? '',
+            age: recipient.age ?? '',
+            gender: recipient.gender ?? '',
+            wishlistStatus: recipient.wishlist?.status ?? '',
+            gifts: recipient.gifts.length,
+            sponsored: recipient.coverage.sponsoredCount,
+            needed: recipient.coverage.remainingCount,
+            covered: recipient.coverage.isCovered,
+          })),
+        },
+        {
+          name: 'Gifts',
+          columns: [
+            { key: 'recipient', label: 'Recipient' },
+            { key: 'group', label: 'Group' },
+            { key: 'gift', label: 'Gift' },
+            { key: 'category', label: 'Category' },
+            { key: 'size', label: 'Size' },
+            { key: 'status', label: 'Status' },
+            { key: 'sponsor', label: 'Sponsor' },
+            { key: 'quantity', label: 'Quantity' },
+            { key: 'label', label: 'Label' },
+          ],
+          rows: flatGiftRows,
+        },
+      ],
+    };
+  }, [recipients, report]);
+
   if (!campaignId) {
     return null;
   }
@@ -298,6 +379,7 @@ export function GiftWorkflowReportPage() {
           </p>
         </div>
         <div className="gift-workflow-report__header-actions">
+          <ReportExportActions payload={giftReportExport} disabled={!report} />
           <div className={`gift-workflow-report__sync ${isAutoRefreshing ? 'is-refreshing' : ''}`} aria-live="polite">
             <i className="bi bi-arrow-repeat" aria-hidden="true" />
             <span>

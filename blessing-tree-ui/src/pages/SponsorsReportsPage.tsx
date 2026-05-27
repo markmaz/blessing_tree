@@ -6,6 +6,7 @@ import {
   toSponsorDropOffStatusLabel,
   toSponsorStatusLabel,
 } from '@/features/campaigns/model/campaignSponsorWorkspacePresentation';
+import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
 
 export function SponsorsReportsPage() {
   const { workspace, pendingRegistrations, isLoading } = useSponsorWorkspaceContext();
@@ -42,13 +43,80 @@ export function SponsorsReportsPage() {
     );
   }
 
+  const sponsorReportExport = {
+    title: 'Sponsor Reports',
+    subtitle: `Campaign ${workspace.campaignId}`,
+    fileName: `sponsor-reports-${workspace.campaignId}`,
+    sheets: [
+      {
+        name: 'Summary',
+        columns: [
+          { key: 'metric', label: 'Metric' },
+          { key: 'value', label: 'Value' },
+        ],
+        rows: [
+          { metric: 'Total Sponsors', value: workspace.counts.sponsorCount },
+          { metric: 'Contactable', value: workspace.counts.contactableSponsorCount },
+          { metric: 'Pending Public', value: workspace.counts.pendingRegistrationCount },
+          { metric: 'Self-Registered', value: workspace.counts.selfRegisteredCount },
+          { metric: 'Active Sponsorships', value: workspace.counts.activeSponsorshipCount },
+          { metric: 'Sponsored Items', value: workspace.counts.sponsoredItemCount },
+        ],
+      },
+      {
+        name: 'Drop-off Status',
+        columns: [
+          { key: 'status', label: 'Status' },
+          { key: 'count', label: 'Count' },
+        ],
+        rows: dropOffSummary.map((item) => ({
+          status: toSponsorDropOffStatusLabel(item.status as typeof workspace.sponsors[number]['participation']['dropOffStatus']),
+          count: item.count,
+        })),
+      },
+      {
+        name: 'Follow-up Queue',
+        columns: [
+          { key: 'sponsor', label: 'Sponsor' },
+          { key: 'status', label: 'Status' },
+          { key: 'followUp', label: 'Follow-Up' },
+          { key: 'sponsoredItems', label: 'Sponsored Items' },
+        ],
+        rows: followUpQueue.map((sponsor) => ({
+          sponsor: sponsor.displayName,
+          status: toSponsorStatusLabel(sponsor.participation.status),
+          followUp: summarizeFollowUp(sponsor.recentInteractions),
+          sponsoredItems: sponsor.sponsoredItemCount,
+        })),
+      },
+      {
+        name: 'Pending Public Registrations',
+        columns: [
+          { key: 'name', label: 'Name' },
+          { key: 'email', label: 'Email' },
+          { key: 'selectedGifts', label: 'Selected Gifts' },
+          { key: 'expires', label: 'Expires' },
+        ],
+        rows: pendingRegistrations.map((registration) => ({
+          name: registration.displayName ?? registration.email,
+          email: registration.email,
+          selectedGifts: registration.selectedWishlistItemIds.length,
+          expires: formatShortDate(registration.expiresAt),
+        })),
+      },
+    ],
+  };
+
   return (
     <section className="campaign-page-stack">
-      <div>
-        <h1 className="h3 mb-1">Sponsor Reports</h1>
-        <p className="text-muted mb-0">
-          Campaign-level visibility into sponsor coverage, public registration flow, and delivery follow-up.
-        </p>
+      <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
+        <div>
+          <h1 className="h3 mb-1">Sponsor Reports</h1>
+          <p className="text-muted mb-0">
+            Campaign-level visibility into sponsor coverage, public registration flow, and delivery follow-up.
+          </p>
+        </div>
+        <ReportExportActions payload={sponsorReportExport} />
       </div>
 
       <div className="campaign-studio__stat-grid campaign-sponsor-stats">

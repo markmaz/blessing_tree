@@ -184,10 +184,15 @@ def test_staff_commit_enforces_campaign_sponsor_gift_limit(app, monkeypatch) -> 
     assert "allows up to 1 gifts per sponsor" in response.get_json()["error"]
 
 
-def test_public_registration_reserves_selected_gifts(app, monkeypatch) -> None:
+def test_public_registration_reserves_selected_gifts_after_verification(app, monkeypatch) -> None:
+    captured_email: dict[str, str] = {}
+
+    def _capture_delay(**kwargs) -> None:
+        captured_email.update(kwargs)
+
     monkeypatch.setattr(
         "app.features.sponsors.email_delivery.send_public_sponsor_verification_email_task.delay",
-        lambda **_kwargs: None,
+        _capture_delay,
     )
     session = campaign_api_module.SessionLocal()
     campaign = seed_campaign(session, name="Public Reservation Campaign")
@@ -213,12 +218,35 @@ def test_public_registration_reserves_selected_gifts(app, monkeypatch) -> None:
     )
 
     assert submit_response.status_code == 202
+    assert captured_email["verification_token"]
     assert (
         session.query(GiftReservation)
         .filter(GiftReservation.wishlist_item_id == gifts["coat_id"], GiftReservation.active_wishlist_item_id == gifts["coat_id"])
         .count()
-        == 1
+        == 0
     )
+
+    available_response = client.get("/api/v1/public/campaigns/public-reservations/gifts/search?q=coat")
+    assert available_response.status_code == 200
+    assert available_response.get_json()["count"] == 1
+
+    verify_response = client.post(
+        "/api/v1/public/campaigns/public-reservations/sponsors/verify",
+        json={"token": captured_email["verification_token"]},
+    )
+    assert verify_response.status_code == 200
+
+    commit_response = client.post(
+        "/api/v1/public/campaigns/public-reservations/sponsors/verified-gifts",
+        json={
+            "token": captured_email["verification_token"],
+            "selected_wishlist_item_ids": [str(gifts["coat_id"])],
+        },
+    )
+    assert commit_response.status_code == 200
+    session.expire_all()
+    assert session.query(SponsorshipItem).filter(SponsorshipItem.wishlist_item_id == gifts["coat_id"]).count() == 1
+    assert session.query(WishlistItem).filter(WishlistItem.id == gifts["coat_id"]).one().status == "COMMITTED"
 
     search_response = client.get("/api/v1/public/campaigns/public-reservations/gifts/search?q=coat")
     assert search_response.status_code == 200
@@ -272,7 +300,9 @@ def test_gift_operations_receive_wrap_ready_and_update_sponsor_dropoff(app, monk
         headers=auth_header(str(manager.id), "ADMIN"),
     )
     assert pickup_response.status_code == 200
-    assert pickup_response.get_json()["gift"]["status"] == "PICKED_UP"
+    pickup_payload = pickup_response.get_json()
+    assert pickup_payload["gift"]["status"] == "PICKED_UP"
+    assert pickup_payload["gift"]["qty_fulfilled"] == 1
 
     session.expire_all()
     sponsorship = session.query(Sponsorship).filter(Sponsorship.campaign_id == campaign.id).one()
@@ -562,6 +592,31 @@ def test_gift_workflow_report_groups_recipients_and_gift_statuses(app, monkeypat
     }
     sponsored_gift = next(gift for gift in recipient["gifts"] if gift["description"] == "Building blocks")
     assert sponsored_gift["sponsor"]["display_name"] == "Sponsor One"
+
+
+def test_gift_workflow_report_counts_picked_up_gifts_as_fulfilled(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Gift Report Quantity Manager")
+    campaign = seed_campaign(session, name="Gift Report Quantity Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    gifts = _seed_gifts(session, campaign.id)
+    item = session.query(WishlistItem).filter(WishlistItem.id == gifts["sponsored_id"]).one()
+    item.status = "PICKED_UP"
+    item.qty_fulfilled = 0
+    session.commit()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/gifts/reports/workflow",
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+
+    assert response.status_code == 200
+    recipient = response.get_json()["recipients"][0]
+    sponsored_gift = next(gift for gift in recipient["gifts"] if gift["description"] == "Building blocks")
+    assert sponsored_gift["quantity_requested"] == 1
+    assert sponsored_gift["quantity_fulfilled"] == 1
 
 
 def test_gift_reminder_rules_preview_committed_unreceived_sponsors(app, monkeypatch) -> None:

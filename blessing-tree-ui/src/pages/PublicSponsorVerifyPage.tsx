@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { buildPublicCampaignSponsorPath } from '@/app/routes';
 import {
@@ -63,19 +63,7 @@ export function PublicSponsorVerifyPage() {
     };
   }, [publicSlug, token]);
 
-  useEffect(() => {
-    if (!result || giftSearchResult) {
-      return;
-    }
-    void runGiftSearch('');
-  }, [giftSearchResult, result]);
-
-  const sponsoredItemCount = result?.sponsor.sponsoredItems.length ?? 0;
-  const selectionLimit = result?.selectionLimit ?? 0;
-  const remainingSelectionCount = Math.max(selectionLimit - sponsoredItemCount, 0);
-  const visibleGiftItems = giftSearchResult?.items.map(mapGiftSearchItemToPublicSponsorItem) ?? [];
-
-  async function runGiftSearch(nextQuery = giftSearchQuery) {
+  const runGiftSearch = useCallback(async (nextQuery = giftSearchQuery) => {
     if (!publicSlug) {
       return;
     }
@@ -89,7 +77,19 @@ export function PublicSponsorVerifyPage() {
     } finally {
       setIsSearchingGifts(false);
     }
-  }
+  }, [giftSearchQuery, publicSlug]);
+
+  const sponsoredItemCount = result?.sponsor.sponsoredItems.length ?? 0;
+  const selectionLimit = result?.selectionLimit ?? 0;
+  const remainingSelectionCount = Math.max(selectionLimit - sponsoredItemCount, 0);
+  const visibleGiftItems = giftSearchResult?.items.map(mapGiftSearchItemToPublicSponsorItem) ?? [];
+
+  useEffect(() => {
+    if (!result || giftSearchResult) {
+      return;
+    }
+    void runGiftSearch('');
+  }, [giftSearchResult, result, runGiftSearch]);
 
   function toggleItem(itemId: string) {
     setSelectedWishlistItemIds((current) => {

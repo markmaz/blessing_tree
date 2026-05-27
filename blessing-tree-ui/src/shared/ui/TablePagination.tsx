@@ -1,3 +1,5 @@
+import { clampTablePage } from '@/shared/ui/tablePaginationModel';
+
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 interface TablePaginationProps {
@@ -18,7 +20,7 @@ export function TablePagination({
   onPageSizeChange,
 }: TablePaginationProps) {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const safePage = Math.min(Math.max(page, 1), totalPages);
+  const safePage = clampTablePage(page, totalItems, pageSize);
   const start = totalItems === 0 ? 0 : (safePage - 1) * pageSize + 1;
   const end = Math.min(totalItems, safePage * pageSize);
 
@@ -68,8 +70,4 @@ export function TablePagination({
       </div>
     </div>
   );
-}
-
-export function clampTablePage(page: number, totalItems: number, pageSize: number): number {
-  return Math.min(Math.max(page, 1), Math.max(1, Math.ceil(totalItems / pageSize)));
 }

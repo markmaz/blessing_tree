@@ -296,6 +296,7 @@ class GiftLabelService:
             raise ServiceError("Gift must be ready before it can be distributed", status_code=409)
         previous_status = item.status
         item.status = "DISTRIBUTED"
+        item.qty_fulfilled = max(item.qty_fulfilled or 0, item.qty_requested or 1)
         self._record_item_event(
             db,
             item,

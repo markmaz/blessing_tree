@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import {
+  buildCampaignAskPath,
+  buildCampaignDetailPath,
   buildCampaignGiftsOperationsPath,
   buildCampaignGiftsPoolPath,
   buildCampaignGiftsReportsPath,
@@ -11,6 +13,8 @@ import {
   buildCampaignSponsorsDirectoryPath,
   buildCampaignSponsorsIntakePath,
   buildCampaignSponsorsReportsPath,
+  buildCampaignSponsorFlyerPath,
+  buildCampaignStudioPath,
   routes,
 } from '@/app/routes';
 import { useAppFeatures } from '@/features/admin/model/appFeaturesContext';
@@ -20,6 +24,7 @@ import {
   canUseGiftOperations,
   canUseGiftPool,
   canUseGiftSearch,
+  hasCampaignCapability,
   canViewPeople,
   canViewReports,
   canViewSponsors,
@@ -58,6 +63,33 @@ const navItems: SidebarItem[] = [
     label: 'Campaigns',
     to: routes.CAMPAIGNS,
     icon: 'bi-stars',
+    children: [
+      {
+        label: 'Campaign Library',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-collection',
+      },
+      {
+        label: 'Overview',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-bullseye',
+      },
+      {
+        label: 'Studio',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-sliders',
+      },
+      {
+        label: 'Sponsor Flyer',
+        to: routes.CAMPAIGNS,
+        icon: 'bi-file-earmark-richtext',
+      },
+    ],
+  },
+  {
+    label: 'Ask Blessing Tree',
+    to: routes.CAMPAIGNS,
+    icon: 'bi-chat-square-text',
   },
   {
     label: 'People',
@@ -183,7 +215,23 @@ export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNav
   const resolvedNavItems = useMemo(
     () =>
       navItems.map((item) =>
-        item.label === 'People'
+        item.label === 'Campaigns'
+          ? {
+              ...item,
+              children: item.children?.map((child) => ({
+                ...child,
+                to: resolvedCampaignId
+                  ? child.label === 'Overview'
+                    ? buildCampaignDetailPath(resolvedCampaignId)
+                    : child.label === 'Studio'
+                      ? buildCampaignStudioPath(resolvedCampaignId)
+                      : child.label === 'Sponsor Flyer'
+                        ? buildCampaignSponsorFlyerPath(resolvedCampaignId)
+                        : routes.CAMPAIGNS
+                  : routes.CAMPAIGNS,
+              })),
+            }
+          : item.label === 'People'
           ? {
               ...item,
               to: resolvedCampaignId ? buildCampaignPeopleIntakePath(resolvedCampaignId) : routes.CAMPAIGNS,
@@ -230,6 +278,11 @@ export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNav
                     : routes.CAMPAIGNS,
                 })),
               }
+          : item.label === 'Ask Blessing Tree'
+            ? {
+                ...item,
+                to: resolvedCampaignId ? buildCampaignAskPath(resolvedCampaignId) : routes.CAMPAIGNS,
+              }
           : item
       ),
     [resolvedCampaignId]
@@ -238,6 +291,13 @@ export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNav
     const visibleChildren = item.children?.filter((child) => {
       if (child.featureKey && !isFeatureEnabled(child.featureKey)) {
         return false;
+      }
+
+      if (item.label === 'Campaigns') {
+        if (child.label === 'Campaign Library') {
+          return true;
+        }
+        return Boolean(resolvedCampaignId) && canShowDuringCampaignLoad(hasCampaignCapability(campaignAccess, 'campaign.view'));
       }
 
       if (item.label === 'People') {
@@ -282,6 +342,11 @@ export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNav
       return isFeatureEnabled('sponsors') && visibleItem.children?.length ? [visibleItem] : [];
     }
     if (visibleItem.label === 'Gifts') return visibleItem.children?.length ? [visibleItem] : [];
+    if (visibleItem.label === 'Ask Blessing Tree') {
+      return resolvedCampaignId && canShowDuringCampaignLoad(hasCampaignCapability(campaignAccess, 'campaign.view'))
+        ? [visibleItem]
+        : [];
+    }
     if (item.to === routes.ADMIN) return isAppAdminRole(role) ? [visibleItem] : [];
     return [visibleItem];
   });
@@ -425,7 +490,8 @@ function isSidebarItemActive(item: SidebarItem, pathname: string) {
       (/^\/campaigns\/[^/]+$/.test(pathname) &&
         !pathname.includes('/people') &&
         !pathname.includes('/sponsors') &&
-        !pathname.includes('/gifts')) ||
+        !pathname.includes('/gifts') &&
+        !pathname.includes('/ask')) ||
       /^\/campaigns\/[^/]+\/studio$/.test(pathname)
     );
   }

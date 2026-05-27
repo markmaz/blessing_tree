@@ -49,13 +49,14 @@ export function AdminUserDetailDrawer({
   const [isSavingAccess, setIsSavingAccess] = useState(false);
   const [accessError, setAccessError] = useState<string | null>(null);
   const [accessMessage, setAccessMessage] = useState<string | null>(null);
+  const selectedUserId = user?.id;
 
   useEffect(() => {
     setSelectedRole(user?.roleKey ?? '');
   }, [user?.roleKey]);
 
   useEffect(() => {
-    if (!isOpen || !user?.id) {
+    if (!isOpen || !selectedUserId) {
       setCampaignAccessRows([]);
       setCampaignRoleCatalog([]);
       setDraftCampaignRoles({});
@@ -64,13 +65,14 @@ export function AdminUserDetailDrawer({
       return;
     }
 
+    const userId = selectedUserId;
     let cancelled = false;
     async function loadCampaignAccess() {
       setIsLoadingAccess(true);
       setAccessError(null);
       setAccessMessage(null);
       try {
-        const payload = await fetchAdminUserCampaignAccess(user!.id);
+        const payload = await fetchAdminUserCampaignAccess(userId);
         if (cancelled) {
           return;
         }
@@ -96,7 +98,7 @@ export function AdminUserDetailDrawer({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, user?.id]);
+  }, [isOpen, selectedUserId]);
 
   if (!user) {
     return null;
