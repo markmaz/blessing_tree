@@ -117,7 +117,7 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
     HelpTopic(
         key="print_gift_tag",
         title="Print a gift tag",
-        phrases=("print tag", "gift tag", "print gift tag", "qr code", "scan tag"),
+        phrases=("print tag", "gift tag", "print gift tag", "qr code", "scan tag", "print gift tags", "batch print tags"),
         answer="Open Gift Status, select the gift row, then choose Print Gift Tag.",
         actions=(
             AskAction(
@@ -125,6 +125,56 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
                 route_name="campaign_gifts_reports",
                 required_capability="campaign.reports.view",
             ),
+        ),
+    ),
+    HelpTopic(
+        key="gift_tag_builder",
+        title="Design gift tags",
+        phrases=(
+            "gift tag builder",
+            "design gift tag",
+            "design gift tags",
+            "edit gift tag",
+            "edit gift tags",
+            "gift tag template",
+            "change gift tag",
+            "change gift tags",
+            "where do i edit gift tags",
+            "how do i create gift tags",
+        ),
+        answer=(
+            "Use Gift Tag Builder under Gifts to edit the campaign's gift tag template. "
+            "The template controls the tag size, text, images, merge fields, cut lines, and required QR code. "
+            "Use Gift Status or Gift Operations when you are ready to print tags for selected gifts."
+        ),
+        steps=(
+            "Open Gifts.",
+            "Choose Gift Tag Builder.",
+            "Edit the template and keep the QR code on the tag.",
+            "Save the template.",
+            "Print selected gift tags from Gift Status or Gift Operations.",
+        ),
+        actions=(
+            AskAction(
+                label="Open Gift Tag Builder",
+                route_name="campaign_gifts_tag_builder",
+                required_capability="campaign.admin",
+            ),
+            AskAction(
+                label="Open Gift Status",
+                route_name="campaign_gifts_reports",
+                required_capability="campaign.reports.view",
+            ),
+            AskAction(
+                label="Open Gift Operations",
+                route_name="campaign_gifts_operations",
+                required_capability="campaign.gifts.check_in",
+            ),
+        ),
+        related_prompts=(
+            "How do I print gift tags?",
+            "What has to be on a gift tag?",
+            "Where is Gift Status?",
         ),
     ),
     HelpTopic(

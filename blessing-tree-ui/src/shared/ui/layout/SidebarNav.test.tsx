@@ -149,9 +149,23 @@ describe('SidebarNav', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('link', { name: /campaigns/i })).not.toHaveClass('active');
+    expect(screen.getByRole('button', { name: /campaigns/i })).not.toHaveClass('active');
     expect(screen.getByRole('button', { name: /people/i })).toHaveClass('active');
     expect(screen.getByRole('link', { name: /directory/i })).toHaveClass('active');
+  });
+
+  it('renders the gift tag builder under gifts for campaign managers', () => {
+    render(
+      <MemoryRouter initialEntries={['/campaigns/campaign-123/gifts/tag-builder']}>
+        <SidebarNav isOpen onNavigate={() => {}} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('button', { name: /gifts/i })).toHaveClass('active');
+    expect(screen.getByRole('link', { name: /gift tag builder/i })).toHaveAttribute(
+      'href',
+      '/campaigns/campaign-123/gifts/tag-builder'
+    );
   });
 
   it('uses the campaign id from the current route when selectedCampaignId is not loaded yet', () => {

@@ -132,12 +132,14 @@ class RefreshTokenService:
         user_agent: str | None,
         ttl_seconds: int,
         rotated_from: str | None = None,
+        remember_me: bool = True,
     ) -> dict[str, Any]:
         now = int(time.time())
         payload = {
             "user_id": user_id,
             "issued_at": now,
             "expires_at": now + ttl_seconds,
+            "remember_me": bool(remember_me),
         }
         if provider:
             payload["provider"] = provider

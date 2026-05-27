@@ -27,6 +27,14 @@
   gap: 1rem;
 }
 
+.gift-workflow-page__blank-tags {
+  max-width: 14rem;
+}
+
+.gift-workflow-page__blank-tags .form-control {
+  min-width: 4.5rem;
+}
+
 .gift-workflow-page .campaign-team-drawer__stack {
   gap: 1.15rem;
 }

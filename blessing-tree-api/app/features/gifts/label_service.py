@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from sqlalchemy.orm import Session, joinedload
@@ -10,6 +10,7 @@ from app.exceptions.service_error import ServiceError
 from app.features.campaigns.service import CampaignService
 from app.features.gifts.operations_service import GiftOperationsService
 from app.models.campaign import Campaign
+from app.models.campaign_manual_gift_label import CampaignManualGiftLabel
 from app.models.item_event import ItemEvent
 from app.models.label_print_item import LabelPrintItem
 from app.models.label_print_job import LabelPrintJob
@@ -47,14 +48,16 @@ class GiftLabelService:
         wishlist_item_ids: list[uuid.UUID],
         actor_user_id: uuid.UUID | None,
         copies: int = 1,
+        manual_quantity: int = 0,
         label_format: str = "TAPE",
         printer_name: str | None = None,
         notes: str | None = None,
     ) -> LabelPrintJob:
         campaign = self.campaigns.get_campaign(db, str(campaign_id))
         unique_item_ids = list(dict.fromkeys(wishlist_item_ids))
-        if not unique_item_ids:
-            raise ServiceError("wishlist_item_ids is required", status_code=400, details={"field": "wishlist_item_ids"})
+        manual_quantity = max(int(manual_quantity or 0), 0)
+        if not unique_item_ids and manual_quantity == 0:
+            raise ServiceError("wishlist_item_ids or manual_quantity is required", status_code=400)
         copies = max(int(copies or 1), 1)
         items = self._load_items_by_ids(db, campaign_id, unique_item_ids)
         if len(items) != len(unique_item_ids):
@@ -90,6 +93,25 @@ class GiftLabelService:
                 actor_user_id,
                 detail={"label_print_job_id": str(job.id), "copies": copies},
             )
+        for _ in range(manual_quantity):
+            manual_label = CampaignManualGiftLabel(
+                id=uuid.uuid4(),
+                campaign_id=campaign_id,
+                label_code=self._generate_manual_label_code(db),
+                status="UNASSIGNED",
+                created_by_user_id=actor_user_id,
+            )
+            db.add(manual_label)
+            db.flush()
+            db.add(
+                LabelPrintItem(
+                    id=uuid.uuid4(),
+                    job=job,
+                    manual_label=manual_label,
+                    copies=1,
+                    rendered_payload_json=build_manual_label_payload(campaign, manual_label),
+                )
+            )
         db.commit()
         db.refresh(job)
         return job
@@ -103,6 +125,7 @@ class GiftLabelService:
                 .joinedload(LabelPrintItem.wishlist_item)
                 .joinedload(WishlistItem.wishlist)
                 .joinedload(Wishlist.recipient),
+                joinedload(LabelPrintJob.items).joinedload(LabelPrintItem.manual_label),
             )
             .filter(LabelPrintJob.id == job_id, LabelPrintJob.campaign_id == campaign_id)
             .one_or_none()
@@ -130,12 +153,30 @@ class GiftLabelService:
         db: Session,
         *,
         label_code: str,
-    ) -> WishlistItem:
-        item = self._load_item_by_label_without_campaign(db, label_code)
-        self._record_scan_event(db, item.wishlist.campaign_id, label_code, None, "LOOKUP", item=item)
+    ) -> WishlistItem | CampaignManualGiftLabel:
+        item = self._load_item_by_label_without_campaign(db, label_code, raise_if_missing=False)
+        if item is not None:
+            campaign = db.get(Campaign, item.wishlist.campaign_id)
+            if campaign is None:
+                raise ServiceError("Campaign not found for gift label", status_code=404)
+            _ensure_campaign_scan_open(campaign)
+            self._record_scan_event(db, item.wishlist.campaign_id, label_code, None, "LOOKUP", item=item)
+            db.commit()
+            db.refresh(item)
+            return item
+        manual_label = self._load_manual_label_by_code(db, label_code)
+        _ensure_campaign_scan_open(manual_label.campaign)
+        self._record_scan_event(
+            db,
+            manual_label.campaign_id,
+            label_code,
+            None,
+            "LOOKUP",
+            detail={"manual_label_id": str(manual_label.id), "status": manual_label.status},
+        )
         db.commit()
-        db.refresh(item)
-        return item
+        db.refresh(manual_label)
+        return manual_label
 
     def scan_action(
         self,
@@ -220,6 +261,10 @@ class GiftLabelService:
         notes: str | None = None,
     ) -> WishlistItem:
         item = self._load_item_by_label_without_campaign(db, label_code)
+        campaign = db.get(Campaign, item.wishlist.campaign_id)
+        if campaign is None:
+            raise ServiceError("Campaign not found for gift label", status_code=404)
+        _ensure_campaign_scan_open(campaign)
         return self.scan_action(
             db,
             campaign_id=item.wishlist.campaign_id,
@@ -264,7 +309,7 @@ class GiftLabelService:
             raise ServiceError("Gift label not found", status_code=404)
         return item
 
-    def _load_item_by_label_without_campaign(self, db: Session, label_code: str) -> WishlistItem:
+    def _load_item_by_label_without_campaign(self, db: Session, label_code: str, *, raise_if_missing: bool = True) -> WishlistItem | None:
         label = (label_code or "").strip()
         if not label:
             raise ServiceError("label_code is required", status_code=400)
@@ -279,9 +324,29 @@ class GiftLabelService:
             .filter(WishlistItem.label_code == label)
             .one_or_none()
         )
-        if item is None:
+        if item is None and raise_if_missing:
             raise ServiceError("Gift label not found", status_code=404)
         return item
+
+    def _load_manual_label_by_code(self, db: Session, label_code: str) -> CampaignManualGiftLabel:
+        manual_label = (
+            db.query(CampaignManualGiftLabel)
+            .options(joinedload(CampaignManualGiftLabel.campaign))
+            .filter(CampaignManualGiftLabel.label_code == (label_code or "").strip())
+            .one_or_none()
+        )
+        if manual_label is None:
+            raise ServiceError("Gift label not found", status_code=404)
+        return manual_label
+
+    def _generate_manual_label_code(self, db: Session) -> str:
+        for _ in range(12):
+            label_code = f"MAN-{uuid.uuid4().hex[:10].upper()}"
+            item_exists = db.query(WishlistItem.id).filter(WishlistItem.label_code == label_code).first() is not None
+            manual_exists = db.query(CampaignManualGiftLabel.id).filter(CampaignManualGiftLabel.label_code == label_code).first() is not None
+            if not item_exists and not manual_exists:
+                return label_code
+        raise ServiceError("Unable to generate a unique manual label code", status_code=500)
 
     def _mark_distributed(
         self,
@@ -396,8 +461,39 @@ def build_label_payload(campaign: Campaign, item: WishlistItem) -> dict[str, Any
     }
 
 
+def build_manual_label_payload(campaign: Campaign, manual_label: CampaignManualGiftLabel) -> dict[str, Any]:
+    return {
+        "label_type": "MANUAL",
+        "campaign": {
+            "name": campaign.name,
+            "year": campaign.year,
+        },
+        "recipient": {
+            "display_label": None,
+            "program_recipient_id": None,
+            "group_label": None,
+            "age": None,
+            "age_unit": None,
+            "gender": None,
+        },
+        "gift": {
+            "description": "Unassigned gift tag",
+            "category": None,
+            "size": None,
+            "label_code": manual_label.label_code,
+        },
+        "theme": _build_tag_theme(campaign),
+        "scan_path": f"/public/gifts/scan/{manual_label.label_code}",
+    }
+
+
 def _now() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
+
+
+def _ensure_campaign_scan_open(campaign: Campaign) -> None:
+    if campaign.end_date is not None and campaign.end_date < date.today():
+        raise ServiceError("Gift scan link is no longer available because the campaign has ended", status_code=410)
 
 
 def _build_tag_theme(campaign: Campaign) -> dict[str, str | None]:

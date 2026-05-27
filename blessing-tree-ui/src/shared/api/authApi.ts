@@ -136,7 +136,8 @@ function getTokenClaims(token: string): TokenClaims {
  */
 export async function login(
   email: string,
-  password: string
+  password: string,
+  keepSignedIn = true
 ): Promise<LoginResponse> {
   if (!email || !password) {
     throw new Error('Email and password are required');
@@ -148,7 +149,7 @@ export async function login(
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, remember_me: keepSignedIn }),
   });
 
   const payload = await parseJsonResponse<LocalLoginApiResponse>(response);
@@ -165,6 +166,43 @@ export async function login(
     token: payload.access_token,
     role: getRoleFromToken(payload.access_token),
   };
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  const response = await fetch(authUrl('/password/forgot'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  await parseJsonResponse(response);
+}
+
+export async function validatePasswordResetToken(token: string): Promise<{ email: string; expiresAt: string }> {
+  const response = await fetch(authUrl(`/password/reset/validate/${encodeURIComponent(token)}`), {
+    method: 'GET',
+  });
+  const payload = await parseJsonResponse<{ email: string; expires_at: string }>(response);
+  return {
+    email: payload.email,
+    expiresAt: payload.expires_at,
+  };
+}
+
+export async function resetPassword(input: {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<void> {
+  const response = await fetch(authUrl('/password/reset'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token: input.token,
+      new_password: input.newPassword,
+      confirm_password: input.confirmPassword,
+    }),
+  });
+  await parseJsonResponse(response);
 }
 
 /**

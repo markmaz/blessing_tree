@@ -6,9 +6,10 @@ from flask_restx import Resource
 from app.db import SessionLocal
 from app.exceptions.service_error import ServiceError
 from app.features.gifts import GiftLabelService, GiftSearchService, serialize_gift_search_response
-from app.features.gifts.serializers import serialize_public_scan_lookup
+from app.features.gifts.serializers import serialize_public_manual_scan_lookup, serialize_public_scan_lookup
 from app.features.public import public_ns
 from app.models.campaign import Campaign
+from app.models.campaign_manual_gift_label import CampaignManualGiftLabel
 
 _gift_search_service = GiftSearchService()
 _gift_label_service = GiftLabelService()
@@ -48,11 +49,14 @@ class PublicGiftScanResource(Resource):
     @public_ns.doc(security=[])
     def get(self, label_code: str):
         with SessionLocal() as db:
-            item = _gift_label_service.public_scan_lookup(db, label_code=label_code)
-            campaign = db.get(Campaign, item.wishlist.campaign_id)
-            if campaign is None:
-                raise ServiceError("Campaign not found for gift label", status_code=404)
-            response = serialize_public_scan_lookup(campaign, item)
+            lookup = _gift_label_service.public_scan_lookup(db, label_code=label_code)
+            if isinstance(lookup, CampaignManualGiftLabel):
+                response = serialize_public_manual_scan_lookup(lookup)
+            else:
+                campaign = db.get(Campaign, lookup.wishlist.campaign_id)
+                if campaign is None:
+                    raise ServiceError("Campaign not found for gift label", status_code=404)
+                response = serialize_public_scan_lookup(campaign, lookup)
         return response
 
 

@@ -16,6 +16,7 @@ from app.config import (
 from app.db import SessionLocal
 from app.exceptions.service_error import ServiceError
 from app.services.auth import AuthError, AuthService
+from app.services.auth.password_reset_service import PasswordResetService
 
 # Frontend must call fetch/axios with credentials: "include" to receive refresh cookie.
 
@@ -26,6 +27,23 @@ local_login_model = auth_ns.model(
     {
         "email": fields.String(required=True, description="Email address"),
         "password": fields.String(required=True, description="Password"),
+        "remember_me": fields.Boolean(required=False, description="Keep the browser signed in"),
+    },
+)
+
+forgot_password_model = auth_ns.model(
+    "ForgotPassword",
+    {
+        "email": fields.String(required=True, description="Email address"),
+    },
+)
+
+reset_password_model = auth_ns.model(
+    "ResetPassword",
+    {
+        "token": fields.String(required=True, description="Password reset token"),
+        "new_password": fields.String(required=True, description="New password"),
+        "confirm_password": fields.String(required=True, description="Password confirmation"),
     },
 )
 
@@ -39,6 +57,7 @@ invite_accept_model = auth_ns.model(
 )
 
 _invitation_service = AdminInvitationService()
+_password_reset_service = PasswordResetService()
 
 
 def _handle_auth_error(exc: AuthError):
@@ -52,7 +71,7 @@ def _cookie_secure() -> bool:
     return env in {"prod", "production"}
 
 
-def _set_refresh_cookie(response, raw_refresh: str, ttl_seconds: int) -> None:
+def _set_refresh_cookie(response, raw_refresh: str, ttl_seconds: int | None) -> None:
     response.set_cookie(
         REFRESH_COOKIE_NAME,
         raw_refresh,
@@ -96,6 +115,7 @@ class LocalLogin(Resource):
         payload = request.get_json(silent=True) or {}
         email = payload.get("email")
         password = payload.get("password")
+        remember_me = bool(payload.get("remember_me", True))
 
         if not email or not password:
             raise ServiceError("Missing email or password", status_code=400)
@@ -109,9 +129,10 @@ class LocalLogin(Resource):
                     password,
                     ip=_client_ip(),
                     user_agent=_user_agent(),
+                    remember_me=remember_me,
                 )
             response = make_response(jsonify(access_payload))
-            _set_refresh_cookie(response, refresh_raw, _refresh_ttl_seconds())
+            _set_refresh_cookie(response, refresh_raw, _refresh_ttl_seconds() if remember_me else None)
             return response
         except AuthError as exc:
             _handle_auth_error(exc)
@@ -130,19 +151,52 @@ class Refresh(Resource):
         try:
             auth_service = AuthService()
             with SessionLocal() as db:
-                access_payload, new_refresh = auth_service.refresh(
+                access_payload, new_refresh, remember_me = auth_service.refresh(
                     db,
                     raw_refresh,
                     ip=_client_ip(),
                     user_agent=_user_agent(),
                 )
             response = make_response(jsonify(access_payload))
-            _set_refresh_cookie(response, new_refresh, _refresh_ttl_seconds())
+            _set_refresh_cookie(response, new_refresh, _refresh_ttl_seconds() if remember_me else None)
             return response
         except AuthError as exc:
             response = make_response(jsonify({"error": str(exc)}), exc.status_code)
             _clear_refresh_cookie(response)
             return response
+
+
+@auth_ns.route("/password/forgot")
+class ForgotPassword(Resource):
+    @auth_ns.expect(forgot_password_model)
+    @auth_ns.doc(security=[])
+    def post(self):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            _password_reset_service.request_reset(db, payload.get("email"))
+        return {
+            "status": "ok",
+            "message": "If that email is active, password reset instructions will be sent.",
+        }, 200
+
+
+@auth_ns.route("/password/reset/validate/<string:token>")
+class ResetPasswordValidation(Resource):
+    @auth_ns.doc(security=[])
+    def get(self, token: str):
+        with SessionLocal() as db:
+            return _password_reset_service.validate_reset_token(db, token), 200
+
+
+@auth_ns.route("/password/reset")
+class ResetPassword(Resource):
+    @auth_ns.expect(reset_password_model)
+    @auth_ns.doc(security=[])
+    def post(self):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            _password_reset_service.reset_password(db, payload)
+        return {"status": "updated"}, 200
 
 
 @auth_ns.route("/logout")

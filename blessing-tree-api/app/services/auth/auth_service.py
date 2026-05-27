@@ -38,7 +38,16 @@ class AuthService:
     ) -> tuple[dict, str]:
         return self._issue_tokens(user, provider, ip, user_agent)
 
-    def login_local(self, db: Session, email: str, password: str, ip: str | None, user_agent: str | None) -> tuple[dict, str]:
+    def login_local(
+        self,
+        db: Session,
+        email: str,
+        password: str,
+        ip: str | None,
+        user_agent: str | None,
+        *,
+        remember_me: bool = True,
+    ) -> tuple[dict, str]:
         email_norm = self._normalize_email(email)
         if not email_norm:
             raise InvalidCredentials()
@@ -63,9 +72,9 @@ class AuthService:
         user.last_login_at = datetime.utcnow()
         db.commit()
 
-        return self._issue_tokens(user, "LOCAL", ip, user_agent)
+        return self._issue_tokens(user, "LOCAL", ip, user_agent, remember_me=remember_me)
 
-    def refresh(self, db: Session, raw_refresh_token: str, ip: str | None, user_agent: str | None) -> tuple[dict, str]:
+    def refresh(self, db: Session, raw_refresh_token: str, ip: str | None, user_agent: str | None) -> tuple[dict, str, bool]:
         if not raw_refresh_token:
             raise AuthError("Missing refresh token", status_code=401)
 
@@ -91,6 +100,7 @@ class AuthService:
             raise InactiveAccount()
 
         new_raw = self.refresh_tokens.generate_refresh_token_raw()
+        remember_me = bool(session.get("remember_me", True))
         new_payload = self.refresh_tokens.build_session_payload(
             user_id=user_id,
             provider=session.get("provider"),
@@ -98,6 +108,7 @@ class AuthService:
             user_agent=user_agent,
             ttl_seconds=self.refresh_ttl_seconds,
             rotated_from=old_hash,
+            remember_me=remember_me,
         )
 
         try:
@@ -118,7 +129,7 @@ class AuthService:
             role=user.role,
             ttl_minutes=self.access_ttl_minutes,
         )
-        return access_payload, new_raw
+        return access_payload, new_raw, remember_me
 
     def logout(self, db: Session, raw_refresh_token: str) -> None:
         if not raw_refresh_token:
@@ -177,7 +188,15 @@ class AuthService:
         except Exception:
             return None
 
-    def _issue_tokens(self, user: AppUser, provider: str, ip: str | None, user_agent: str | None) -> tuple[dict, str]:
+    def _issue_tokens(
+        self,
+        user: AppUser,
+        provider: str,
+        ip: str | None,
+        user_agent: str | None,
+        *,
+        remember_me: bool = True,
+    ) -> tuple[dict, str]:
         access_payload = self.jwt.issue_access_token(
             user_id=str(user.id),
             email=user.email,
@@ -194,6 +213,7 @@ class AuthService:
             ip=ip,
             user_agent=user_agent,
             ttl_seconds=self.refresh_ttl_seconds,
+            remember_me=remember_me,
         )
         self.refresh_tokens.store_session(hash_hex, payload, self.refresh_ttl_seconds)
         self.refresh_tokens.add_user_session(str(user.id), hash_hex, self.refresh_ttl_seconds)

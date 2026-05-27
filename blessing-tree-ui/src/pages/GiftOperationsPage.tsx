@@ -10,6 +10,7 @@ import {
   updateGiftReminderRule,
   updateCampaignGiftOperation,
 } from '@/features/gifts/api/giftSearchApi';
+import { getGiftTagTemplate } from '@/features/gifts/api/giftTagTemplateApi';
 import type {
   GiftLabelPrintJob,
   GiftOperationsAction,
@@ -23,6 +24,7 @@ import type {
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
 import { GiftTagPreview } from '@/features/gifts/ui/GiftTagPreview';
+import { exportGiftTagPrintJobPdf } from '@/features/gifts/ui/giftTagPdf';
 import '@/features/campaigns/ui/campaignStudioTeam.css';
 import '@/features/gifts/ui/giftWorkflow.css';
 
@@ -68,6 +70,8 @@ export function GiftOperationsPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [printJob, setPrintJob] = useState<GiftLabelPrintJob | null>(null);
+  const [blankTagQuantity, setBlankTagQuantity] = useState(10);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [remindersOpen, setRemindersOpen] = useState(false);
   const [reminderResult, setReminderResult] = useState<GiftReminderRulesResult | null>(null);
   const [reminderForm, setReminderForm] = useState(DEFAULT_REMINDER_FORM);
@@ -188,6 +192,44 @@ export function GiftOperationsPage() {
     }
   }
 
+  async function handleCreateBlankPrintJob() {
+    if (!campaignId) {
+      return;
+    }
+    const quantity = Math.max(Math.floor(blankTagQuantity || 0), 1);
+    setIsSaving(true);
+    setError(null);
+    try {
+      const job = await createGiftLabelPrintJob(campaignId, {
+        wishlistItemIds: [],
+        manualQuantity: quantity,
+        format: 'TAG',
+      });
+      setPrintJob(job);
+      setMessage(`${job.items.length} blank gift tag${job.items.length === 1 ? '' : 's'} queued for printing.`);
+    } catch (printError) {
+      setError(printError instanceof Error ? printError.message : 'Unable to create blank gift tags.');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleExportPrintJobPdf() {
+    if (!campaignId || !printJob) {
+      return;
+    }
+    setIsExportingPdf(true);
+    setError(null);
+    try {
+      const template = await getGiftTagTemplate(campaignId);
+      await exportGiftTagPrintJobPdf(printJob, template);
+    } catch (exportError) {
+      setError(exportError instanceof Error ? exportError.message : 'Unable to export gift tag PDF.');
+    } finally {
+      setIsExportingPdf(false);
+    }
+  }
+
   async function handleCreateReminder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!campaignId || !reminderForm.label.trim()) {
@@ -284,6 +326,21 @@ export function GiftOperationsPage() {
           </p>
         </div>
         <div className="d-flex flex-wrap gap-2">
+          <div className="input-group gift-workflow-page__blank-tags">
+            <span className="input-group-text">Blank</span>
+            <input
+              className="form-control"
+              type="number"
+              min={1}
+              max={200}
+              value={blankTagQuantity}
+              onChange={(event) => setBlankTagQuantity(Number(event.target.value) || 1)}
+            />
+            <button type="button" className="btn btn-outline-secondary" disabled={isSaving} onClick={() => void handleCreateBlankPrintJob()}>
+              <i className="bi bi-tags me-2" aria-hidden="true" />
+              Print
+            </button>
+          </div>
           <button
             type="button"
             className="btn btn-outline-secondary"
@@ -487,11 +544,11 @@ export function GiftOperationsPage() {
               <div className="campaign-team-drawer__section-header">
                 <div>
                   <h4 className="h6 mb-1">Print Job</h4>
-                  <p className="text-muted mb-0">Use the browser print command from this drawer for the current tag batch.</p>
+                  <p className="text-muted mb-0">Export a letter-size PDF for the current tag batch.</p>
                 </div>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => window.print()}>
+                <button type="button" className="btn btn-secondary btn-sm" disabled={isExportingPdf} onClick={() => void handleExportPrintJobPdf()}>
                   <i className="bi bi-printer me-2" aria-hidden="true" />
-                  Print
+                  {isExportingPdf ? 'Exporting...' : 'Export PDF'}
                 </button>
               </div>
               <div className="row g-3">

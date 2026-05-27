@@ -15,6 +15,7 @@ from app.features.gifts import (
     GiftReportService,
     GiftReservationService,
     GiftSearchService,
+    CampaignGiftTagTemplateService,
     serialize_gift_search_response,
 )
 from app.features.rbac.decorators import require_campaign_capability
@@ -28,6 +29,7 @@ from app.features.gifts.serializers import (
     serialize_gift_reminder_preview,
     serialize_gift_reminder_rule,
     serialize_gift_reminder_rules_response,
+    serialize_gift_tag_template,
     serialize_gift_workflow_report,
     serialize_gift_operations_item,
     serialize_gift_operations_response,
@@ -42,6 +44,7 @@ _gift_pool_service = GiftPoolService()
 _gift_label_service = GiftLabelService(operations_service=_gift_operations_service)
 _gift_reminder_service = GiftReminderService()
 _gift_report_service = GiftReportService()
+_gift_tag_template_service = CampaignGiftTagTemplateService()
 
 
 @campaign_ns.route("/<string:campaign_id>/gifts/search")
@@ -95,6 +98,29 @@ class CampaignGiftWorkflowReportResource(Resource):
             report = _gift_report_service.get_workflow_report(db, campaign_id=uuid.UUID(campaign_id))
             response = serialize_gift_workflow_report(report)
         return response
+
+
+@campaign_ns.route("/<string:campaign_id>/gift-tag-template")
+class CampaignGiftTagTemplateResource(Resource):
+    @require_campaign_capability("campaign.view")
+    def get(self, campaign_id: str):
+        with SessionLocal() as db:
+            template = _gift_tag_template_service.get_template(db, campaign_id)
+            response = serialize_gift_tag_template(template)
+        return {"template": response}
+
+    @require_campaign_capability("campaign.admin")
+    def put(self, campaign_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            template = _gift_tag_template_service.update_template(
+                db,
+                campaign_id=campaign_id,
+                user_id=str(getattr(g, "user_id")) if getattr(g, "user_id", None) else None,
+                payload=payload,
+            )
+            response = serialize_gift_tag_template(template)
+        return {"template": response}
 
 
 @campaign_ns.route("/<string:campaign_id>/gift-reminder-rules")
@@ -178,6 +204,7 @@ class CampaignGiftLabelPrintJobsResource(Resource):
                 wishlist_item_ids=[uuid.UUID(str(item_id)) for item_id in item_ids],
                 actor_user_id=_actor_user_id(),
                 copies=int(payload.get("copies") or 1),
+                manual_quantity=int(payload.get("manual_quantity") or 0),
                 label_format=str(payload.get("format") or "TAPE"),
                 printer_name=str(payload.get("printer_name") or "").strip() or None,
                 notes=str(payload.get("notes") or "").strip() or None,

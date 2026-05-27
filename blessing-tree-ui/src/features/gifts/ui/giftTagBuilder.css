@@ -1,0 +1,123 @@
+.gift-tag-builder {
+  display: grid;
+  gap: 1rem;
+}
+
+.gift-tag-builder__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.gift-tag-builder__shell {
+  display: grid;
+  grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.gift-tag-builder__panel,
+.gift-tag-builder__workspace {
+  border: 1px solid rgba(226, 218, 205, 0.85);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 24px rgba(35, 24, 17, 0.06);
+}
+
+.gift-tag-builder__panel {
+  display: grid;
+  align-self: start;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.gift-tag-builder__workspace {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.gift-tag-builder__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(226, 218, 205, 0.85);
+  background: #fffdf9;
+}
+
+.gift-tag-builder__tool-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gift-tag-builder__stage-wrap {
+  display: grid;
+  justify-items: center;
+  overflow: auto;
+  padding: 2rem;
+  background:
+    linear-gradient(45deg, rgba(45, 21, 68, 0.04) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(45, 21, 68, 0.04) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(45, 21, 68, 0.04) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(45, 21, 68, 0.04) 75%);
+  background-size: 1.5rem 1.5rem;
+  background-position: 0 0, 0 0.75rem, 0.75rem -0.75rem, -0.75rem 0;
+}
+
+.gift-tag-builder__stage-wrap .konvajs-content {
+  box-shadow: 0 18px 48px rgba(35, 24, 17, 0.16);
+  background: #fffdf9;
+}
+
+.gift-tag-builder__section {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.gift-tag-builder__section h2 {
+  margin: 0;
+  color: var(--blessing-purple-dark);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.gift-tag-builder__merge-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.gift-tag-builder__size-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.gift-tag-builder__number-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.gift-tag-builder__number-grid .form-label:last-child {
+  grid-column: 1 / -1;
+}
+
+.gift-tag-builder__locked-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--blessing-purple-dark);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+@media (max-width: 992px) {
+  .gift-tag-builder__shell {
+    grid-template-columns: 1fr;
+  }
+}

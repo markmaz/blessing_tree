@@ -28,6 +28,16 @@ class AccountProfileResource(Resource):
             return {"profile": serialize_account_profile(user)}, 200
 
 
+@account_ns.route("/profile/password")
+class AccountProfilePasswordResource(Resource):
+    @token_required
+    def put(self):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            _account_service.change_password(db, getattr(g, "user_id"), payload)
+            return {"status": "updated"}, 200
+
+
 @account_ns.route("/settings")
 class AccountSettingsResource(Resource):
     @token_required

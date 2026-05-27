@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  changeAccountPassword,
   fetchAccountProfile,
   fetchAccountSettings,
   updateAccountProfile,
@@ -11,6 +12,7 @@ import { AccountProfilePage } from '@/pages/AccountProfilePage';
 import { AccountSettingsPage } from '@/pages/AccountSettingsPage';
 
 vi.mock('@/features/account/api/accountApi', () => ({
+  changeAccountPassword: vi.fn(),
   fetchAccountProfile: vi.fn(),
   fetchAccountSettings: vi.fn(),
   updateAccountProfile: vi.fn(),
@@ -49,6 +51,7 @@ describe('Account pages', () => {
       updatedAt: '2026-05-01T00:00:00Z',
     });
     vi.mocked(updateAccountSettings).mockImplementation(async (input) => input);
+    vi.mocked(changeAccountPassword).mockResolvedValue(undefined);
   });
 
   it('loads and updates profile display name', async () => {
@@ -62,6 +65,32 @@ describe('Account pages', () => {
 
     await waitFor(() => {
       expect(updateAccountProfile).toHaveBeenCalledWith({ displayName: 'Updated User' });
+    });
+  });
+
+  it('updates profile password and can show typed password values', async () => {
+    const user = userEvent.setup();
+    render(<AccountProfilePage />);
+
+    const currentPassword = await screen.findByLabelText(/current password/i, { selector: 'input' });
+    const newPassword = screen.getByLabelText(/new password/i, { selector: 'input' });
+    const confirmPassword = screen.getByLabelText(/confirm password/i, { selector: 'input' });
+
+    await user.type(currentPassword, 'OldPass1');
+    await user.type(newPassword, 'NewPass1');
+    await user.type(confirmPassword, 'NewPass1');
+    await user.click(screen.getByRole('button', { name: /show new password/i }));
+
+    expect(newPassword).toHaveAttribute('type', 'text');
+
+    await user.click(screen.getByRole('button', { name: /update password/i }));
+
+    await waitFor(() => {
+      expect(changeAccountPassword).toHaveBeenCalledWith({
+        currentPassword: 'OldPass1',
+        newPassword: 'NewPass1',
+        confirmPassword: 'NewPass1',
+      });
     });
   });
 

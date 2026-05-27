@@ -6,6 +6,8 @@
 export const routes = {
   LOGIN: '/login',
   AUTH_REGISTER: '/auth/register',
+  AUTH_FORGOT_PASSWORD: '/auth/forgot-password',
+  AUTH_RESET_PASSWORD: '/auth/reset-password',
   PUBLIC_CAMPAIGN_SPONSOR: '/public/campaigns/:publicSlug/sponsor',
   PUBLIC_CAMPAIGN_SPONSOR_VERIFY: '/public/campaigns/:publicSlug/sponsor/verify',
   PUBLIC_GIFT_SCAN: '/public/gifts/scan/:labelCode',
@@ -28,6 +30,7 @@ export const routes = {
   CAMPAIGN_GIFTS_OPERATIONS: '/campaigns/:campaignId/gifts/operations',
   CAMPAIGN_GIFTS_POOL: '/campaigns/:campaignId/gifts/pool',
   CAMPAIGN_GIFTS_REPORTS: '/campaigns/:campaignId/gifts/reports',
+  CAMPAIGN_GIFTS_TAG_BUILDER: '/campaigns/:campaignId/gifts/tag-builder',
   SCAN_GIFT: '/scan/gifts/:labelCode',
   ACCOUNT_PROFILE: '/account/profile',
   ACCOUNT_SETTINGS: '/account/settings',
@@ -104,6 +107,10 @@ export function buildCampaignGiftsPoolPath(campaignId: string): string {
 
 export function buildCampaignGiftsReportsPath(campaignId: string): string {
   return `/campaigns/${campaignId}/gifts/reports`;
+}
+
+export function buildCampaignGiftsTagBuilderPath(campaignId: string): string {
+  return `/campaigns/${campaignId}/gifts/tag-builder`;
 }
 
 export function buildGiftScanPath(labelCode: string): string {

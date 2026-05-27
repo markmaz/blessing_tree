@@ -114,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         storeUserId(session.userId);
         storeEmail(session.email);
+        storeRole(session.role || null);
         storeToken(session.token);
       } catch {
         if (cancelled) {

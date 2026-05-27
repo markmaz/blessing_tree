@@ -54,6 +54,33 @@ def send_admin_invite_email(*, email: str, display_name: str, invite_url: str) -
     send_email_message(recipients=[email], subject=subject, html=html, text_body=text)
 
 
+def send_password_reset_email(*, email: str, display_name: str, reset_url: str) -> None:
+    greeting_name = display_name.strip() or email.strip()
+    subject = f"Reset your {ORGANIZATION_NAME} password"
+    body_html = (
+        email_heading("Reset your password")
+        + email_paragraph(f"Hello {greeting_name},")
+        + email_paragraph(
+            "We received a request to reset your password. "
+            "Use the secure link below to choose a new one."
+        )
+        + email_button(href=reset_url, label="Reset Password")
+        + email_paragraph("This link expires in 2 hours. If you did not request this, you can ignore this email.")
+    )
+    html = render_branded_email(
+        title="Reset your password",
+        preheader=f"Reset your {ORGANIZATION_NAME} password.",
+        body_html=body_html,
+    )
+    text = (
+        f"Hello {greeting_name},\n\n"
+        "We received a request to reset your password.\n"
+        f"Reset your password: {reset_url}\n\n"
+        "This link expires in 2 hours. If you did not request this, you can ignore this email."
+    )
+    send_email_message(recipients=[email], subject=subject, html=html, text_body=text)
+
+
 def build_public_sponsor_verification_url(*, public_slug: str, token: str) -> str:
     base = str(FRONTEND_BASE_URL or "http://localhost:5173").rstrip("/")
     return f"{base}/public/campaigns/{public_slug}/sponsor/verify?{urlencode({'token': token})}"

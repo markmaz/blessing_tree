@@ -46,6 +46,22 @@ export async function updateAccountProfile(input: { displayName: string }): Prom
   return normalizeProfile(payload.profile);
 }
 
+export async function changeAccountPassword(input: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<void> {
+  await apiFetchJson<{ status: string }>('/api/v1/account/profile/password', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      current_password: input.currentPassword,
+      new_password: input.newPassword,
+      confirm_password: input.confirmPassword,
+    }),
+  });
+}
+
 export async function fetchAccountSettings(): Promise<AccountSettings> {
   const payload = await apiFetchJson<{ settings: AccountSettings }>('/api/v1/account/settings');
   return normalizeSettings(payload.settings);

@@ -6,6 +6,8 @@ from app.models.donation import Donation
 from app.models.donation_line import DonationLine
 from app.models.fulfillment import Fulfillment
 from app.models.campaign_gift_reminder_rule import CampaignGiftReminderRule
+from app.models.campaign_gift_tag_template import CampaignGiftTagTemplate
+from app.models.campaign_manual_gift_label import CampaignManualGiftLabel
 from app.models.campaign_milestone import CampaignMilestone
 from app.models.campaign import Campaign
 from app.models.communication_template import CommunicationTemplate
@@ -277,6 +279,25 @@ def serialize_gift_reminder_preview(preview: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def serialize_gift_tag_template(template: CampaignGiftTagTemplate) -> dict[str, Any]:
+    return {
+        "id": str(template.id),
+        "campaign_id": str(template.campaign_id),
+        "template_key": template.template_key,
+        "name": template.name,
+        "tag_width_in": float(template.tag_width_in),
+        "tag_height_in": float(template.tag_height_in),
+        "orientation": template.orientation,
+        "layout_json": template.layout_json,
+        "gift_tag_message": template.gift_tag_message,
+        "include_cut_lines_default": bool(template.include_cut_lines_default),
+        "is_active": bool(template.is_active),
+        "created_by_user_id": str(template.created_by_user_id) if template.created_by_user_id else None,
+        "created_at": _serialize_datetime(template.created_at),
+        "updated_at": _serialize_datetime(template.updated_at),
+    }
+
+
 def serialize_gift_workflow_report(report: dict[str, Any]) -> dict[str, Any]:
     campaign = report["campaign"]
     policy = report["gift_policy"]
@@ -373,13 +394,15 @@ def serialize_label_print_job(job: LabelPrintJob) -> dict[str, Any]:
 
 
 def serialize_label_print_item(print_item: LabelPrintItem) -> dict[str, Any]:
+    wishlist_item = print_item.wishlist_item
     return {
         "id": str(print_item.id),
         "label_print_job_id": str(print_item.label_print_job_id),
-        "wishlist_item_id": str(print_item.wishlist_item_id),
+        "wishlist_item_id": str(print_item.wishlist_item_id) if print_item.wishlist_item_id else None,
+        "manual_label_id": str(print_item.manual_label_id) if print_item.manual_label_id else None,
         "copies": print_item.copies,
         "label": print_item.rendered_payload_json,
-        "gift": serialize_gift_operations_item(print_item.wishlist_item),
+        "gift": serialize_gift_operations_item(wishlist_item) if wishlist_item is not None else None,
     }
 
 
@@ -423,6 +446,34 @@ def serialize_public_scan_lookup(campaign: Campaign, item: WishlistItem) -> dict
         ),
         "scan_path": f"/public/gifts/scan/{item.label_code}",
         "available_actions": [action for action in _scan_actions_for_status(item.status) if action != "REPRINT"],
+    }
+
+
+def serialize_public_manual_scan_lookup(manual_label: CampaignManualGiftLabel) -> dict[str, Any]:
+    campaign = manual_label.campaign
+    return {
+        "campaign": {
+            "id": str(campaign.id),
+            "name": campaign.name,
+            "year": campaign.year,
+        },
+        "gift": {
+            "wishlist_item_id": None,
+            "description": "Unassigned gift tag",
+            "category": None,
+            "item_type": "MANUAL_TAG",
+            "size": None,
+            "status": manual_label.status,
+            "label_code": manual_label.label_code,
+        },
+        "recipient": None,
+        "manual_label": {
+            "id": str(manual_label.id),
+            "status": manual_label.status,
+        },
+        "scan_path": f"/public/gifts/scan/{manual_label.label_code}",
+        "available_actions": [],
+        "message": "This tag is not attached to a gift yet.",
     }
 
 
