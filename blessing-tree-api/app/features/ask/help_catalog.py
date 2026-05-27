@@ -181,6 +181,40 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
         ),
     ),
     HelpTopic(
+        key="flyer_builder",
+        title="Create and print flyers",
+        phrases=(
+            "create flyer",
+            "edit flyer",
+            "print flyer",
+            "sponsor flyer",
+            "flyer builder",
+            "how do i make a flyer",
+            "where do i print the sponsor flyer",
+        ),
+        answer=(
+            "Open Flyer Builder from the Campaigns navigation or Campaign Studio. "
+            "Create or edit a flyer, choose the QR target, review the live preview, and print it from that screen."
+        ),
+        steps=(
+            "Open Flyer Builder.",
+            "Choose an existing flyer or create a new one.",
+            "Edit the headline, body, QR target, and campaign-purpose theme.",
+            "Use Print Flyer to print or save as PDF.",
+        ),
+        actions=(
+            AskAction(
+                label="Open Flyer Builder",
+                route_name="campaign_sponsor_flyer",
+                required_capability="campaign.view",
+            ),
+        ),
+        related_prompts=(
+            "Where is the public sponsor signup link?",
+            "How do I create an email to sponsors?",
+        ),
+    ),
+    HelpTopic(
         key="campaign_schedule",
         title="Manage the campaign schedule",
         phrases=(

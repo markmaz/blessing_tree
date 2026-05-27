@@ -36,7 +36,7 @@ def classify_prompt(prompt: str) -> Classification:
     for item in NAVIGATION_TARGETS:
         scored.append(("navigation_result", item.key, _score(text, item.phrases)))
     for item in REPORT_METRICS:
-        scored.append(("report_result", item.metric_key, _score(text, item.phrases)))
+        scored.append(("report_result", item.metric_key, _report_score(text, item)))
 
     best_kind, best_key, best_score = max(scored, key=lambda item: item[2], default=("clarification", None, 0.0))
     if entities.intent in {"count", "list"}:
@@ -105,6 +105,21 @@ def _score(text: str, phrases: tuple[str, ...]) -> float:
         elif overlap >= 0.5:
             best = max(best, 0.58)
     return best
+
+
+def _report_score(text: str, item) -> float:
+    score = _score(text, item.phrases)
+    subject_words = {
+        "sponsors": ("sponsor", "sponsors"),
+        "recipients": ("recipient", "recipients", "child", "children", "people"),
+        "wishlist_items": ("gift", "gifts", "wishlist"),
+        "donations": ("donation", "donations", "inventory", "donated"),
+        "dashboard": ("dashboard", "recent", "left", "off", "continue"),
+    }.get(item.subject, ())
+    if score > 0 and any(re.search(rf"\b{re.escape(word)}\b", text) for word in subject_words):
+        boost = 0.12 if item.subject == "sponsors" else 0.06
+        return min(0.98, score + boost)
+    return score
 
 
 def _alternates(text: str, selected_key: str | None) -> list[str]:

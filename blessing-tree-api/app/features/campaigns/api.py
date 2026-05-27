@@ -88,8 +88,8 @@ class CampaignSummaryResource(Resource):
     @require_campaign_capability("campaign.view")
     def get(self, campaign_id: str):
         with SessionLocal() as db:
-            counts = _campaign_service.get_campaign_summary_counts(db, campaign_id)
-        return serialize_campaign_summary(campaign_id, counts)
+            summary = _campaign_service.get_campaign_summary(db, campaign_id, user_id=getattr(g, "user_id", None))
+        return serialize_campaign_summary(campaign_id, summary["counts"], summary["widgets"])
 
 
 @campaign_ns.route("/<string:campaign_id>/season-reflection")

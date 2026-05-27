@@ -15,6 +15,7 @@ from .admin_llm_configuration import AdminLlmConfiguration
 from .admin_user_invitation import AdminUserInvitation
 from .app_user import AppUser
 from .app_feature_flag import AppFeatureFlag
+from .ask_prompt_log import AskPromptLog
 from .auth import AuthIdentity
 from .app_user_settings import AppUserSettings
 from .base import Base
@@ -22,6 +23,7 @@ from .campaign import Campaign
 from .campaign_automation_execution import CampaignAutomationExecution
 from .campaign_communication_schedule import CampaignCommunicationSchedule
 from .campaign_event import CampaignEvent
+from .campaign_flyer import CampaignFlyer
 from .campaign_gift_policy import CampaignGiftPolicy
 from .campaign_gift_reminder_rule import CampaignGiftReminderRule
 from .campaign_member import CampaignMember
@@ -63,6 +65,7 @@ __all__ = [
     "AppUser",
     "AppFeatureFlag",
     "AppUserSettings",
+    "AskPromptLog",
     "AuthIdentity",
     "Base",
     "CampaignUserRole",
@@ -70,6 +73,7 @@ __all__ = [
     "CampaignAutomationExecution",
     "CampaignCommunicationSchedule",
     "CampaignEvent",
+    "CampaignFlyer",
     "CampaignGiftPolicy",
     "CampaignGiftReminderRule",
     "CampaignMember",

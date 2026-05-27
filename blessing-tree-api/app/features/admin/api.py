@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import uuid
+from datetime import datetime
+
 from flask import g, request
 from flask_restx import Namespace, Resource
+from sqlalchemy import or_
 
 from app.db import SessionLocal
 from app.decorators.security import token_required
@@ -24,6 +28,9 @@ from app.features.admin.serializers import (
 )
 from app.features.admin.user_access_service import AdminUserAccessService
 from app.features.rbac.decorators import require_app_admin
+from app.models.app_user import AppUser
+from app.models.ask_prompt_log import AskPromptLog
+from app.models.campaign import Campaign
 
 admin_ns = Namespace("admin", description="Application administration operations")
 
@@ -33,6 +40,30 @@ _feature_flag_service = FeatureFlagService()
 _health_service = AdminHealthService(llm_service=_llm_service)
 _campaign_operations_service = CampaignOperationsAdminService()
 _user_access_service = AdminUserAccessService()
+
+
+def _serialize_ask_prompt_log(row: tuple[AskPromptLog, Campaign | None, AppUser | None]) -> dict[str, object]:
+    log, campaign, user = row
+    return {
+        "id": str(log.id),
+        "campaign_id": str(log.campaign_id),
+        "campaign_name": campaign.name if campaign is not None else None,
+        "user_id": str(log.user_id) if log.user_id else None,
+        "user_name": user.display_name if user is not None else None,
+        "prompt": log.prompt,
+        "result_kind": log.result_kind,
+        "result_key": log.result_key,
+        "confidence": log.confidence,
+        "source": log.source,
+        "response_summary": log.response_summary_json or {},
+        "feedback_rating": log.feedback_rating,
+        "feedback_comment": log.feedback_comment,
+        "feedback_at": log.feedback_at.isoformat() if log.feedback_at else None,
+        "reviewed_at": log.reviewed_at.isoformat() if log.reviewed_at else None,
+        "reviewed_by_user_id": str(log.reviewed_by_user_id) if log.reviewed_by_user_id else None,
+        "review_note": log.review_note,
+        "created_at": log.created_at.isoformat() if log.created_at else None,
+    }
 
 
 @admin_ns.route("/users")
@@ -63,6 +94,64 @@ class AdminUsersResource(Resource):
                 "user": serialize_admin_user(user),
                 "invitation": serialize_invitation(invitation, invite_url=invite_url),
             }, 201
+
+
+@admin_ns.route("/ask/review")
+class AdminAskReviewResource(Resource):
+    @token_required
+    @require_app_admin()
+    def get(self):
+        review_only = str(request.args.get("review_only") or "true").lower() != "false"
+        try:
+            limit = min(max(int(request.args.get("limit") or 100), 1), 500)
+        except ValueError:
+            limit = 100
+        with SessionLocal() as db:
+            query = (
+                db.query(AskPromptLog, Campaign, AppUser)
+                .outerjoin(Campaign, Campaign.id == AskPromptLog.campaign_id)
+                .outerjoin(AppUser, AppUser.id == AskPromptLog.user_id)
+                .order_by(AskPromptLog.created_at.desc())
+            )
+            if review_only:
+                query = query.filter(
+                    AskPromptLog.reviewed_at.is_(None),
+                    or_(
+                        AskPromptLog.feedback_rating == "NEGATIVE",
+                        AskPromptLog.confidence < 0.55,
+                        AskPromptLog.result_kind == "clarification",
+                    )
+                )
+            rows = query.limit(limit).all()
+            return {
+                "logs": [_serialize_ask_prompt_log(row) for row in rows],
+                "review_only": review_only,
+                "limit": limit,
+            }, 200
+
+
+@admin_ns.route("/ask/review/<string:prompt_log_id>")
+class AdminAskReviewDetailResource(Resource):
+    @token_required
+    @require_app_admin()
+    def patch(self, prompt_log_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            log = db.get(AskPromptLog, uuid.UUID(prompt_log_id))
+            if log is None:
+                return {"error": "Ask prompt log not found"}, 404
+            log.reviewed_at = datetime.utcnow()
+            log.reviewed_by_user_id = uuid.UUID(str(g.user_id)) if getattr(g, "user_id", None) else None
+            log.review_note = str(payload.get("review_note") or "").strip()[:1000] or None
+            db.commit()
+            row = (
+                db.query(AskPromptLog, Campaign, AppUser)
+                .outerjoin(Campaign, Campaign.id == AskPromptLog.campaign_id)
+                .outerjoin(AppUser, AppUser.id == AskPromptLog.user_id)
+                .filter(AskPromptLog.id == log.id)
+                .one()
+            )
+            return {"log": _serialize_ask_prompt_log(row)}, 200
 
 
 @admin_ns.route("/users/<string:user_id>/status")

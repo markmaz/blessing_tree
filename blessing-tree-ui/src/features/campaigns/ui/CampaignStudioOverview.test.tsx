@@ -39,6 +39,21 @@ const studio: CampaignStudioData = {
       sponsorshipItems: 2,
       fulfillments: 1,
     },
+    widgets: {
+      population: {
+        children: 0,
+        adults: 0,
+        gifts: 0,
+        unsponsoredGifts: 0,
+      },
+      popularGiftsByGender: [],
+      sponsorRecipientCounts: [],
+      unsponsoredGifts: {
+        count: 0,
+        items: [],
+      },
+      continueWhereLeftOff: [],
+    },
   },
   team: {
     assignments: [],

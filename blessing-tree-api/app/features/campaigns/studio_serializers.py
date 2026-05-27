@@ -11,6 +11,7 @@ from app.features.campaigns.serializers import (
 from app.features.rbac.models.campaign_user_role import CampaignUserRole
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
 from app.models.campaign_event import CampaignEvent
+from app.models.campaign_flyer import CampaignFlyer
 from app.models.campaign_gift_policy import CampaignGiftPolicy
 from app.models.campaign_milestone import CampaignMilestone
 from app.models.campaign_milestone_definition import CampaignMilestoneDefinition
@@ -61,6 +62,30 @@ def serialize_communication_template(template: CommunicationTemplate) -> dict[st
         "created_by_user_id": str(template.created_by_user_id) if template.created_by_user_id else None,
         "created_at": _serialize_datetime(template.created_at),
         "updated_at": _serialize_datetime(template.updated_at),
+    }
+
+
+def serialize_campaign_flyer(flyer: CampaignFlyer) -> dict[str, Any]:
+    return {
+        "id": str(flyer.id),
+        "campaign_id": str(flyer.campaign_id),
+        "flyer_key": flyer.flyer_key,
+        "name": flyer.name,
+        "flyer_type": flyer.flyer_type,
+        "headline": flyer.headline,
+        "subheadline": flyer.subheadline,
+        "body_text": flyer.body_text,
+        "call_to_action": flyer.call_to_action,
+        "contact_info": flyer.contact_info,
+        "qr_target_type": flyer.qr_target_type,
+        "qr_custom_url": flyer.qr_custom_url,
+        "theme_mode": flyer.theme_mode,
+        "image_prompt": flyer.image_prompt,
+        "layout_json": flyer.layout_json or {},
+        "is_active": bool(flyer.is_active),
+        "created_by_user_id": str(flyer.created_by_user_id) if flyer.created_by_user_id else None,
+        "created_at": _serialize_datetime(flyer.created_at),
+        "updated_at": _serialize_datetime(flyer.updated_at),
     }
 
 

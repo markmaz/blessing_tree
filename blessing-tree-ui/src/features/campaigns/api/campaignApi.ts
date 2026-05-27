@@ -60,6 +60,45 @@ interface CampaignListItemResponse extends CampaignResponse {
 interface CampaignSummaryResponse {
   campaign_id: string;
   counts: Record<string, number>;
+  widgets?: {
+    population?: {
+      children?: number;
+      adults?: number;
+      gifts?: number;
+      unsponsored_gifts?: number;
+    };
+    popular_gifts_by_gender?: Array<{
+      gender?: string;
+      gift?: string;
+      quantity?: number;
+      request_count?: number;
+    }>;
+    sponsor_recipient_counts?: Array<{
+      sponsor_id?: string;
+      sponsor_name?: string;
+      email?: string | null;
+      recipient_count?: number;
+      gift_count?: number;
+    }>;
+    unsponsored_gifts?: {
+      count?: number;
+      items?: Array<{
+        wishlist_item_id?: string;
+        gift?: string;
+        category?: string | null;
+        recipient_name?: string | null;
+        group_name?: string | null;
+      }>;
+    };
+    continue_where_left_off?: Array<{
+      prompt_log_id?: string;
+      prompt?: string;
+      result_kind?: string;
+      result_key?: string | null;
+      title?: string | null;
+      created_at?: string | null;
+    }>;
+  };
 }
 
 export async function listCampaigns(): Promise<CampaignListItem[]> {
@@ -100,6 +139,53 @@ export async function getCampaignSummary(campaignId: string): Promise<CampaignSu
       fulfillments: response.counts.fulfillments ?? 0,
       pickups: response.counts.pickups ?? 0,
     },
+    widgets: mapCampaignDashboardWidgets(response.widgets),
+  };
+}
+
+function mapCampaignDashboardWidgets(
+  widgets: CampaignSummaryResponse['widgets'] = {}
+): CampaignSummary['widgets'] {
+  const population = widgets.population ?? {};
+  const unsponsoredGifts = widgets.unsponsored_gifts ?? {};
+  return {
+    population: {
+      children: Number(population.children ?? 0),
+      adults: Number(population.adults ?? 0),
+      gifts: Number(population.gifts ?? 0),
+      unsponsoredGifts: Number(population.unsponsored_gifts ?? 0),
+    },
+    popularGiftsByGender: (widgets.popular_gifts_by_gender ?? []).map((item) => ({
+      gender: item.gender ?? 'Unknown',
+      gift: item.gift ?? 'Unspecified',
+      quantity: Number(item.quantity ?? 0),
+      requestCount: Number(item.request_count ?? 0),
+    })),
+    sponsorRecipientCounts: (widgets.sponsor_recipient_counts ?? []).map((item) => ({
+      sponsorId: item.sponsor_id ?? '',
+      sponsorName: item.sponsor_name ?? 'Sponsor',
+      email: item.email ?? null,
+      recipientCount: Number(item.recipient_count ?? 0),
+      giftCount: Number(item.gift_count ?? 0),
+    })),
+    unsponsoredGifts: {
+      count: Number(unsponsoredGifts.count ?? 0),
+      items: (unsponsoredGifts.items ?? []).map((item) => ({
+        wishlistItemId: item.wishlist_item_id ?? '',
+        gift: item.gift ?? 'Gift',
+        category: item.category ?? null,
+        recipientName: item.recipient_name ?? null,
+        groupName: item.group_name ?? null,
+      })),
+    },
+    continueWhereLeftOff: (widgets.continue_where_left_off ?? []).map((item) => ({
+      promptLogId: item.prompt_log_id ?? '',
+      prompt: item.prompt ?? '',
+      resultKind: item.result_kind ?? '',
+      resultKey: item.result_key ?? null,
+      title: item.title ?? null,
+      createdAt: item.created_at ?? null,
+    })),
   };
 }
 

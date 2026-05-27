@@ -16,7 +16,13 @@ NAVIGATION_TARGETS: tuple[NavigationTarget, ...] = (
     NavigationTarget("gift_operations", "Gift Operations", ("gift operations", "receive gifts", "wrap gifts", "check in gifts"), "campaign_gifts_operations", "campaign.gifts.check_in"),
     NavigationTarget("gift_pool", "Gift Pool", ("gift pool", "donated inventory", "inventory", "unmatched donations"), "campaign_gifts_pool", "campaign.gifts.pool.manage"),
     NavigationTarget("gift_status", "Gift Status", ("gift status", "gift status report", "visual gift report", "gift report"), "campaign_gifts_reports", "campaign.reports.view"),
-    NavigationTarget("sponsor_flyer", "Sponsor Flyer", ("sponsor flyer", "flyer", "print flyer"), "campaign_sponsor_flyer", "campaign.view"),
+    NavigationTarget(
+        "sponsor_flyer",
+        "Flyer Builder",
+        ("sponsor flyer", "flyer", "print flyer", "flyer builder", "create flyer", "edit flyer"),
+        "campaign_sponsor_flyer",
+        "campaign.view",
+    ),
     NavigationTarget("account_profile", "Profile", ("profile", "my profile"), "account_profile"),
     NavigationTarget("account_settings", "Settings", ("settings", "my settings", "user settings"), "account_settings"),
     NavigationTarget("admin_users", "User Management", ("user management", "users", "invite user", "app access"), "admin_users"),
@@ -27,7 +33,7 @@ NAVIGATION_TARGETS: tuple[NavigationTarget, ...] = (
 
 def build_route(route_name: str, campaign_id: str) -> str:
     campaign_routes = {
-        "dashboard": f"/campaigns/{campaign_id}",
+        "dashboard": "/",
         "campaign_studio": f"/campaigns/{campaign_id}/studio",
         "campaign_sponsor_flyer": f"/campaigns/{campaign_id}/studio/sponsor-flyer",
         "campaign_people_intake": f"/campaigns/{campaign_id}/people/intake",

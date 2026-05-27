@@ -3,7 +3,7 @@
  * Main application router and provider setup.
  */
 
-import type { ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { AppFeaturesProvider } from '@/features/admin/model/appFeaturesContext';
 import { AuthProvider } from '@/features/auth/model/authContext';
@@ -19,6 +19,7 @@ import {
 import { AccountProfilePage } from '@/pages/AccountProfilePage';
 import { AccountSettingsPage } from '@/pages/AccountSettingsPage';
 import { AdminCapabilitiesPage } from '@/pages/AdminCapabilitiesPage';
+import { AdminAskReviewPage } from '@/pages/AdminAskReviewPage';
 import { AdminCampaignOperationsPage } from '@/pages/AdminCampaignOperationsPage';
 import { AdminHealthPage } from '@/pages/AdminHealthPage';
 import { AdminLlmPage } from '@/pages/AdminLlmPage';
@@ -27,7 +28,6 @@ import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { AskBlessingTreePage } from '@/pages/AskBlessingTreePage';
 import { CampaignDetailPage } from '@/pages/CampaignDetailPage';
 import { CampaignsPage } from '@/pages/CampaignsPage';
-import { CampaignSponsorFlyerPage } from '@/pages/CampaignSponsorFlyerPage';
 import { CampaignStudioPage } from '@/pages/CampaignStudioPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { DonationsPage } from '@/pages/DonationsPage';
@@ -50,6 +50,12 @@ import { FeatureGate } from '@/shared/ui/FeatureGate';
 import { ProtectedRoute } from '@/shared/ui/ProtectedRoute';
 import { AppLayout } from '@/shared/ui/layout/AppLayout';
 import { buildCampaignPeopleReportsPath, routes } from './routes';
+
+const CampaignSponsorFlyerPage = lazy(() =>
+  import('@/pages/CampaignSponsorFlyerPage').then((module) => ({
+    default: module.CampaignSponsorFlyerPage,
+  }))
+);
 
 export function App() {
   return (
@@ -105,7 +111,9 @@ export function App() {
                   path={routes.CAMPAIGN_SPONSOR_FLYER.slice(1)}
                   element={
                     <CampaignCapabilityGate capability={campaignCapabilities.view}>
-                      <CampaignSponsorFlyerPage />
+                      <Suspense fallback={<section className="content-card"><p className="text-muted mb-0">Loading flyer builder...</p></section>}>
+                        <CampaignSponsorFlyerPage />
+                      </Suspense>
                     </CampaignCapabilityGate>
                   }
                 />
@@ -216,6 +224,7 @@ export function App() {
                 <Route path={routes.ADMIN.slice(1)} element={<AdminPage />}>
                   <Route index element={<Navigate to={routes.ADMIN_USERS} replace />} />
                   <Route path="users" element={<AdminUsersPage />} />
+                  <Route path="ask-review" element={<AdminAskReviewPage />} />
                   <Route path="campaign-operations" element={<AdminCampaignOperationsPage />} />
                   <Route path="llm" element={<AdminLlmPage />} />
                   <Route path="health" element={<AdminHealthPage />} />

@@ -1,6 +1,8 @@
 import { apiFetchJson } from '@/shared/api/client';
 import type {
   AdminFeatureFlag,
+  AdminAskReviewLog,
+  AdminAskReviewPayload,
   AdminFeaturesPayload,
   AdminHealthPayload,
   AdminUserCampaignAccessPayload,
@@ -128,6 +130,57 @@ function normalizeFeature(feature: AdminFeatureFlag): AdminFeatureFlag {
     isEnabled: feature.isEnabled ?? Boolean((feature as unknown as { is_enabled?: boolean }).is_enabled),
     createdAt: feature.createdAt ?? (feature as unknown as { created_at?: string }).created_at ?? '',
     updatedAt: feature.updatedAt ?? (feature as unknown as { updated_at?: string }).updated_at ?? '',
+  };
+}
+
+function normalizeAskReviewPayload(payload: AdminAskReviewPayload): AdminAskReviewPayload {
+  return {
+    reviewOnly: payload.reviewOnly ?? (payload as unknown as { review_only?: boolean }).review_only ?? true,
+    limit: Number(payload.limit ?? 100),
+    logs: (payload.logs ?? []).map((log) => ({
+      id: log.id,
+      campaignId: log.campaignId ?? (log as unknown as { campaign_id?: string }).campaign_id ?? '',
+      campaignName:
+        log.campaignName ??
+        (log as unknown as { campaign_name?: string | null }).campaign_name ??
+        null,
+      userId: log.userId ?? (log as unknown as { user_id?: string | null }).user_id ?? null,
+      userName: log.userName ?? (log as unknown as { user_name?: string | null }).user_name ?? null,
+      prompt: log.prompt,
+      resultKind: log.resultKind ?? (log as unknown as { result_kind?: string }).result_kind ?? '',
+      resultKey: log.resultKey ?? (log as unknown as { result_key?: string | null }).result_key ?? null,
+      confidence: log.confidence == null ? null : Number(log.confidence),
+      source: log.source,
+      responseSummary:
+        log.responseSummary ??
+        (log as unknown as { response_summary?: Record<string, unknown> }).response_summary ??
+        {},
+      feedbackRating:
+        log.feedbackRating ??
+        (log as unknown as { feedback_rating?: string | null }).feedback_rating ??
+        null,
+      feedbackComment:
+        log.feedbackComment ??
+        (log as unknown as { feedback_comment?: string | null }).feedback_comment ??
+        null,
+      feedbackAt:
+        log.feedbackAt ??
+        (log as unknown as { feedback_at?: string | null }).feedback_at ??
+        null,
+      reviewedAt:
+        log.reviewedAt ??
+        (log as unknown as { reviewed_at?: string | null }).reviewed_at ??
+        null,
+      reviewedByUserId:
+        log.reviewedByUserId ??
+        (log as unknown as { reviewed_by_user_id?: string | null }).reviewed_by_user_id ??
+        null,
+      reviewNote:
+        log.reviewNote ??
+        (log as unknown as { review_note?: string | null }).review_note ??
+        null,
+      createdAt: log.createdAt ?? (log as unknown as { created_at?: string | null }).created_at ?? null,
+    })),
   };
 }
 
@@ -323,4 +376,18 @@ export async function updateFeatureFlag(
     }
   );
   return normalizeFeature(payload.feature);
+}
+
+export async function fetchAdminAskReview(reviewOnly = true): Promise<AdminAskReviewPayload> {
+  const params = new URLSearchParams({ review_only: reviewOnly ? 'true' : 'false' });
+  return normalizeAskReviewPayload(await apiFetchJson<AdminAskReviewPayload>(`/api/v1/admin/ask/review?${params}`));
+}
+
+export async function markAdminAskPromptReviewed(promptLogId: string, reviewNote = ''): Promise<AdminAskReviewLog> {
+  const payload = await apiFetchJson<{ log: AdminAskReviewLog }>(`/api/v1/admin/ask/review/${promptLogId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ review_note: reviewNote }),
+  });
+  return normalizeAskReviewPayload({ logs: [payload.log], reviewOnly: false, limit: 1 }).logs[0];
 }

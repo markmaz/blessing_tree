@@ -26,9 +26,96 @@
   gap: 0.5rem;
 }
 
+.ask-transcript {
+  display: grid;
+  gap: 1rem;
+}
+
+.ask-conversation-card {
+  display: grid;
+  gap: 1rem;
+  border-color: rgba(212, 175, 55, 0.26);
+  background:
+    linear-gradient(180deg, rgba(255, 250, 238, 0.94), rgba(246, 242, 233, 0.96));
+}
+
+.ask-conversation-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #e3ebe6;
+  padding-top: 1rem;
+}
+
+.ask-turn {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ask-message {
+  display: flex;
+}
+
+.ask-message--user {
+  justify-content: flex-end;
+}
+
+.ask-message--assistant {
+  justify-content: flex-start;
+}
+
+.ask-message__bubble {
+  max-width: min(100%, 58rem);
+  border: 1px solid rgba(226, 218, 205, 0.85);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 24px rgba(35, 24, 17, 0.06);
+}
+
+.ask-message--user .ask-message__bubble {
+  max-width: min(100%, 42rem);
+  border-color: rgba(45, 21, 68, 0.18);
+  border-bottom-right-radius: 0.25rem;
+  background: var(--blessing-purple);
+  color: #fff;
+}
+
+.ask-message--user .ask-message__bubble,
+.ask-message--user .ask-message__bubble p,
+.ask-message--user .ask-message__bubble a {
+  color: #fff;
+}
+
+.ask-message--assistant .ask-message__bubble {
+  border-bottom-left-radius: 0.25rem;
+}
+
+.ask-message__bubble--pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #647064;
+}
+
+.ask-message__bubble--error {
+  border-color: rgba(185, 28, 28, 0.24);
+  background: #fff5f5;
+  color: #9b1c1c;
+}
+
+.ask-thinking-dot {
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 999px;
+  background: var(--blessing-gold);
+  box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.5);
+  animation: ask-thinking-pulse 1.3s ease-in-out infinite;
+}
+
 .ask-result {
   display: grid;
   gap: 1rem;
+  width: min(100%, 58rem);
 }
 
 .ask-result__header {
@@ -60,6 +147,37 @@
   gap: 0.5rem;
 }
 
+.ask-prompt-group {
+  display: grid;
+  gap: 0;
+}
+
+.ask-prompt-group__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ask-related {
+  border-top: 1px solid #e3ebe6;
+  padding-top: 1rem;
+}
+
+.ask-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  border-top: 1px solid #e3ebe6;
+  padding-top: 1rem;
+}
+
+.ask-feedback__label {
+  color: #647064;
+  font-size: 0.86rem;
+}
+
 .ask-filter-chips {
   display: flex;
   flex-wrap: wrap;
@@ -83,6 +201,40 @@
   min-width: 720px;
 }
 
+.ask-report-table td {
+  vertical-align: middle;
+}
+
+.ask-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.ask-status--attention {
+  background: #fff4d6;
+  color: #6f4a00;
+}
+
+.ask-status--danger {
+  background: #fde8e8;
+  color: #9b1c1c;
+}
+
+.ask-status--success {
+  background: #dff4e7;
+  color: #0f5132;
+}
+
+.ask-status--neutral {
+  background: #eef2f4;
+  color: #334155;
+}
+
 .ask-empty {
   border: 1px dashed #cbd5d0;
   border-radius: 8px;
@@ -95,7 +247,25 @@
     grid-template-columns: 1fr;
   }
 
+  .ask-message__bubble,
+  .ask-message--user .ask-message__bubble {
+    max-width: 100%;
+  }
+
   .ask-result__header {
     flex-direction: column;
+  }
+}
+
+@keyframes ask-thinking-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.5);
+    opacity: 0.72;
+  }
+
+  50% {
+    box-shadow: 0 0 0 0.45rem rgba(212, 175, 55, 0);
+    opacity: 1;
   }
 }

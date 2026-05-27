@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import uuid
+from collections import defaultdict
 from collections.abc import Mapping
 from datetime import date, datetime
 
-from sqlalchemy import func, or_
+from sqlalchemy import distinct, func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.exceptions.service_error import ServiceError
@@ -24,6 +25,7 @@ from app.features.rbac.constants import CAMPAIGN_MANAGER_ROLE
 from app.features.rbac.models.campaign_user_role import CampaignUserRole
 from app.features.rbac.services.authorization_service import AuthorizationService
 from app.models.app_user import AppUser
+from app.models.ask_prompt_log import AskPromptLog
 from app.models.campaign import Campaign
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
 from app.models.campaign_event import CampaignEvent
@@ -39,7 +41,9 @@ from app.models.donation_line import DonationLine
 from app.models.fulfillment import Fulfillment
 from app.models.pickup import Pickup
 from app.models.recipient import Recipient
+from app.models.recipient_constants import RECIPIENT_KIND_ADULT, RECIPIENT_KIND_CHILD
 from app.models.recipient_group import RecipientGroup
+from app.models.sponsor import Sponsor
 from app.models.sponsorship import Sponsorship
 from app.models.sponsorship_item import SponsorshipItem
 from app.models.wishlist import Wishlist
@@ -143,6 +147,167 @@ class CampaignService:
             ),
             "pickups": self._count(db, db.query(Pickup.id).filter(Pickup.campaign_id == campaign_id)),
         }
+
+    def get_campaign_summary(self, db: Session, campaign_id: str, *, user_id: str | None = None) -> dict[str, object]:
+        return {
+            "counts": self.get_campaign_summary_counts(db, campaign_id),
+            "widgets": self.get_dashboard_widgets(db, campaign_id, user_id=user_id),
+        }
+
+    def get_dashboard_widgets(self, db: Session, campaign_id: str, *, user_id: str | None = None) -> dict[str, object]:
+        population = self.get_population_summary(db, campaign_id)
+        unsponsored = self.get_unsponsored_gift_summary(db, campaign_id)
+        return {
+            "population": {
+                **population,
+                "gifts": self.get_gift_count(db, campaign_id),
+                "unsponsored_gifts": unsponsored["count"],
+            },
+            "popular_gifts_by_gender": self.get_popular_gifts_by_gender(db, campaign_id),
+            "sponsor_recipient_counts": self.get_sponsor_recipient_counts(db, campaign_id),
+            "unsponsored_gifts": unsponsored,
+            "continue_where_left_off": self.get_user_continue_items(db, campaign_id, user_id=user_id),
+        }
+
+    def get_population_summary(self, db: Session, campaign_id: str) -> dict[str, int]:
+        rows = (
+            db.query(Recipient.recipient_kind, func.count(Recipient.id))
+            .filter(Recipient.campaign_id == campaign_id, Recipient.status == "ACTIVE")
+            .group_by(Recipient.recipient_kind)
+            .all()
+        )
+        counts = {str(kind): int(value or 0) for kind, value in rows}
+        return {
+            "children": counts.get(RECIPIENT_KIND_CHILD, 0),
+            "adults": counts.get(RECIPIENT_KIND_ADULT, 0),
+        }
+
+    def get_gift_count(self, db: Session, campaign_id: str) -> int:
+        return self._count(
+            db,
+            db.query(WishlistItem.id)
+            .join(Wishlist, WishlistItem.wishlist_id == Wishlist.id)
+            .filter(Wishlist.campaign_id == campaign_id, WishlistItem.status != "CANCELLED"),
+        )
+
+    def get_unsponsored_gift_summary(self, db: Session, campaign_id: str, *, limit: int = 5) -> dict[str, object]:
+        query = (
+            db.query(WishlistItem)
+            .join(Wishlist, WishlistItem.wishlist_id == Wishlist.id)
+            .join(Recipient, Recipient.id == Wishlist.recipient_id)
+            .join(RecipientGroup, RecipientGroup.id == Recipient.recipient_group_id)
+            .outerjoin(SponsorshipItem, SponsorshipItem.wishlist_item_id == WishlistItem.id)
+            .filter(
+                Wishlist.campaign_id == campaign_id,
+                WishlistItem.status == "OPEN",
+                SponsorshipItem.id.is_(None),
+            )
+            .order_by(RecipientGroup.group_name.asc(), Recipient.display_label.asc(), WishlistItem.description.asc())
+        )
+        items = query.limit(limit).all()
+        return {
+            "count": self._count(db, query.with_entities(WishlistItem.id).order_by(None)),
+            "items": [
+                {
+                    "wishlist_item_id": str(item.id),
+                    "gift": item.description,
+                    "category": item.category,
+                    "recipient_name": item.wishlist.recipient.display_label if item.wishlist and item.wishlist.recipient else None,
+                    "group_name": (
+                        item.wishlist.recipient.recipient_group.group_name
+                        if item.wishlist and item.wishlist.recipient and item.wishlist.recipient.recipient_group
+                        else None
+                    ),
+                }
+                for item in items
+            ],
+        }
+
+    def get_popular_gifts_by_gender(self, db: Session, campaign_id: str, *, per_gender: int = 5) -> list[dict[str, object]]:
+        gift_label = func.coalesce(func.nullif(WishlistItem.category, ""), WishlistItem.description).label("gift")
+        quantity = func.sum(WishlistItem.qty_requested).label("quantity")
+        rows = (
+            db.query(Recipient.gender, gift_label, quantity, func.count(WishlistItem.id).label("request_count"))
+            .join(Wishlist, WishlistItem.wishlist_id == Wishlist.id)
+            .join(Recipient, Recipient.id == Wishlist.recipient_id)
+            .filter(Wishlist.campaign_id == campaign_id, WishlistItem.status != "CANCELLED")
+            .group_by(Recipient.gender, gift_label)
+            .order_by(Recipient.gender.asc(), quantity.desc(), gift_label.asc())
+            .all()
+        )
+        grouped: dict[str, list[dict[str, object]]] = defaultdict(list)
+        for gender, gift, qty, request_count in rows:
+            label = _gender_label(gender)
+            if len(grouped[label]) >= per_gender:
+                continue
+            grouped[label].append(
+                {
+                    "gender": label,
+                    "gift": gift,
+                    "quantity": int(qty or 0),
+                    "request_count": int(request_count or 0),
+                }
+            )
+        ordered: list[dict[str, object]] = []
+        for gender in sorted(grouped.keys()):
+            ordered.extend(grouped[gender])
+        return ordered
+
+    def get_sponsor_recipient_counts(self, db: Session, campaign_id: str, *, limit: int = 10) -> list[dict[str, object]]:
+        recipient_count = func.count(distinct(Recipient.id)).label("recipient_count")
+        gift_count = func.count(WishlistItem.id).label("gift_count")
+        rows = (
+            db.query(Sponsor.id, Sponsor.display_name, Sponsor.email, recipient_count, gift_count)
+            .join(Sponsorship, Sponsorship.sponsor_id == Sponsor.id)
+            .join(SponsorshipItem, SponsorshipItem.sponsorship_id == Sponsorship.id)
+            .join(WishlistItem, WishlistItem.id == SponsorshipItem.wishlist_item_id)
+            .join(Wishlist, Wishlist.id == WishlistItem.wishlist_id)
+            .join(Recipient, Recipient.id == Wishlist.recipient_id)
+            .filter(Sponsorship.campaign_id == campaign_id, Sponsorship.status != "CANCELLED", Sponsor.is_active == 1)
+            .group_by(Sponsor.id, Sponsor.display_name, Sponsor.email)
+            .order_by(recipient_count.desc(), Sponsor.display_name.asc())
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "sponsor_id": str(sponsor_id),
+                "sponsor_name": sponsor_name,
+                "email": email,
+                "recipient_count": int(recipients or 0),
+                "gift_count": int(gifts or 0),
+            }
+            for sponsor_id, sponsor_name, email, recipients, gifts in rows
+        ]
+
+    def get_user_continue_items(
+        self,
+        db: Session,
+        campaign_id: str,
+        *,
+        user_id: str | None = None,
+        limit: int = 5,
+    ) -> list[dict[str, object]]:
+        if not user_id:
+            return []
+        logs = (
+            db.query(AskPromptLog)
+            .filter(AskPromptLog.campaign_id == campaign_id, AskPromptLog.user_id == user_id)
+            .order_by(AskPromptLog.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "prompt_log_id": str(log.id),
+                "prompt": log.prompt,
+                "result_kind": log.result_kind,
+                "result_key": log.result_key,
+                "title": (log.response_summary_json or {}).get("title") if isinstance(log.response_summary_json, dict) else None,
+                "created_at": log.created_at.isoformat() if log.created_at else None,
+            }
+            for log in logs
+        ]
 
     def create_campaign(self, db: Session, user_id: str, payload: Mapping[str, object]) -> Campaign:
         source_campaign = self._get_source_campaign(db, payload.get("source_campaign_id"))
@@ -581,6 +746,10 @@ class CampaignService:
 def _optional_text(value: object) -> str | None:
     text = str(value).strip() if value is not None else ""
     return text or None
+
+
+def _gender_label(value: str | None) -> str:
+    return {"F": "Female", "M": "Male", "X": "Nonbinary", "U": "Unknown"}.get(value or "", "Unknown")
 
 
 def _shift_date(value: date | None, year_delta: int) -> date | None:

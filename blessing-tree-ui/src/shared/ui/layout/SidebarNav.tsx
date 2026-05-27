@@ -60,6 +60,11 @@ const navItems: SidebarItem[] = [
     end: true,
   },
   {
+    label: 'Ask Blessing Tree',
+    to: routes.CAMPAIGNS,
+    icon: 'bi-chat-square-text',
+  },
+  {
     label: 'Campaigns',
     to: routes.CAMPAIGNS,
     icon: 'bi-stars',
@@ -80,16 +85,11 @@ const navItems: SidebarItem[] = [
         icon: 'bi-sliders',
       },
       {
-        label: 'Sponsor Flyer',
+        label: 'Flyer Builder',
         to: routes.CAMPAIGNS,
         icon: 'bi-file-earmark-richtext',
       },
     ],
-  },
-  {
-    label: 'Ask Blessing Tree',
-    to: routes.CAMPAIGNS,
-    icon: 'bi-chat-square-text',
   },
   {
     label: 'People',
@@ -174,6 +174,11 @@ const navItems: SidebarItem[] = [
         icon: 'bi-people-fill',
       },
       {
+        label: 'Ask Review',
+        to: routes.ADMIN_ASK_REVIEW,
+        icon: 'bi-chat-square-dots',
+      },
+      {
         label: 'Campaign Operations',
         to: routes.ADMIN_CAMPAIGN_OPERATIONS,
         icon: 'bi-signpost-split',
@@ -225,7 +230,7 @@ export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNav
                     ? buildCampaignDetailPath(resolvedCampaignId)
                     : child.label === 'Studio'
                       ? buildCampaignStudioPath(resolvedCampaignId)
-                      : child.label === 'Sponsor Flyer'
+                      : child.label === 'Flyer Builder'
                         ? buildCampaignSponsorFlyerPath(resolvedCampaignId)
                         : routes.CAMPAIGNS
                   : routes.CAMPAIGNS,

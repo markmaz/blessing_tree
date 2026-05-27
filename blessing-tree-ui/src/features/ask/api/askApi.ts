@@ -19,6 +19,7 @@ interface RawAskReport {
 
 interface RawAskResponse {
   kind?: AskResponse['kind'];
+  prompt_log_id?: string | null;
   answer?: string;
   confidence?: number;
   title?: string;
@@ -44,9 +45,23 @@ export async function askBlessingTree(campaignId: string, prompt: string): Promi
   return normalizeAskResponse(response);
 }
 
+export async function submitAskFeedback(
+  campaignId: string,
+  promptLogId: string,
+  rating: 'POSITIVE' | 'NEGATIVE',
+  comment = ''
+): Promise<void> {
+  await apiFetchJson(`/api/v1/campaigns/${campaignId}/ask/${promptLogId}/feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rating, comment }),
+  });
+}
+
 function normalizeAskResponse(response: RawAskResponse): AskResponse {
   return {
     kind: response.kind ?? 'error',
+    promptLogId: response.prompt_log_id ?? null,
     answer: response.answer ?? 'Unable to answer that request.',
     confidence: Number(response.confidence ?? 0),
     title: response.title,

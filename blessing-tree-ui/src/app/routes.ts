@@ -35,6 +35,7 @@ export const routes = {
   REPORTS: '/reports',
   ADMIN: '/admin',
   ADMIN_USERS: '/admin/users',
+  ADMIN_ASK_REVIEW: '/admin/ask-review',
   ADMIN_CAMPAIGN_OPERATIONS: '/admin/campaign-operations',
   ADMIN_LLM: '/admin/llm',
   ADMIN_HEALTH: '/admin/health',

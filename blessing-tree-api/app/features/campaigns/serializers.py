@@ -45,10 +45,15 @@ def serialize_campaign_access(
     }
 
 
-def serialize_campaign_summary(campaign_id: str, counts: dict[str, int]) -> dict[str, Any]:
+def serialize_campaign_summary(
+    campaign_id: str,
+    counts: dict[str, int],
+    widgets: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     return {
         "campaign_id": campaign_id,
         "counts": counts,
+        "widgets": widgets or {},
     }
 
 

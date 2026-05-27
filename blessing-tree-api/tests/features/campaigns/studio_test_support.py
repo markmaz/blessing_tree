@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 import app.models.models  # noqa: F401
 from app.exceptions.service_error import ServiceError
+from app.features.admin.api import admin_ns
 from app.features.campaigns import campaign_ns
 from app.features.public import public_ns
 
@@ -54,12 +55,14 @@ def app(monkeypatch: pytest.MonkeyPatch) -> Generator[Flask, None, None]:
     monkeypatch.setattr("app.features.gifts.public_api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.public.sponsor_public_api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.public.sponsor_public_api._enforce_rate_limit", lambda **_kwargs: None)
+    monkeypatch.setattr("app.features.admin.api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.rbac.decorators.SessionLocal", session_manager)
 
     app = Flask(__name__)
     api = Api(app)
     api.add_namespace(campaign_ns, path="/api/v1/campaigns")
     api.add_namespace(public_ns, path="/api/v1/public")
+    api.add_namespace(admin_ns, path="/api/v1/admin")
 
     @api.errorhandler(ServiceError)
     def handle_api_service_error(error: ServiceError):

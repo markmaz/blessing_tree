@@ -13,6 +13,9 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(packageJson.version),
   },
   plugins: [react()],
+  optimizeDeps: {
+    include: ['jspdf', 'konva', 'qrcode', 'react-konva'],
+  },
   test: {
     environment: 'jsdom',
     globals: true,
