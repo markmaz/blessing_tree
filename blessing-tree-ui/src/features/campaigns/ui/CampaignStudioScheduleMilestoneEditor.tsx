@@ -18,6 +18,7 @@ interface CampaignStudioScheduleMilestoneEditorProps {
   milestones: CampaignMilestone[];
   editingItem: CampaignScheduleItem | null;
   selectedDate: string | null;
+  initialMilestoneKey?: string | null;
   isSaving: boolean;
   onSaveMilestones: (milestones: SaveCampaignMilestoneInput[]) => Promise<boolean>;
   onClose: () => void;
@@ -28,6 +29,7 @@ export function CampaignStudioScheduleMilestoneEditor({
   milestones,
   editingItem,
   selectedDate,
+  initialMilestoneKey = null,
   isSaving,
   onSaveMilestones,
   onClose,
@@ -37,12 +39,12 @@ export function CampaignStudioScheduleMilestoneEditor({
       ? milestones.find((milestone) => milestone.id === editingItem.sourceId) ?? null
       : null;
   const [formState, setFormState] = useState<MilestoneFormState>(() =>
-    buildFormState(editingMilestone, selectedDate, milestoneDefinitions)
+    buildFormState(editingMilestone, selectedDate, milestoneDefinitions, initialMilestoneKey)
   );
 
   useEffect(() => {
-    setFormState(buildFormState(editingMilestone, selectedDate, milestoneDefinitions));
-  }, [editingMilestone, selectedDate, milestoneDefinitions]);
+    setFormState(buildFormState(editingMilestone, selectedDate, milestoneDefinitions, initialMilestoneKey));
+  }, [editingMilestone, selectedDate, milestoneDefinitions, initialMilestoneKey]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -159,11 +161,12 @@ export function CampaignStudioScheduleMilestoneEditor({
 function buildFormState(
   editingMilestone: CampaignMilestone | null,
   selectedDate: string | null,
-  milestoneDefinitions: CampaignMilestoneDefinition[]
+  milestoneDefinitions: CampaignMilestoneDefinition[],
+  initialMilestoneKey: string | null
 ): MilestoneFormState {
   if (!editingMilestone) {
     return {
-      milestoneKey: milestoneDefinitions[0]?.milestoneKey ?? '',
+      milestoneKey: initialMilestoneKey ?? milestoneDefinitions[0]?.milestoneKey ?? '',
       occursOn: selectedDate ?? '',
       notes: '',
     };

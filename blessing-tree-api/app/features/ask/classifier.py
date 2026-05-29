@@ -115,6 +115,24 @@ def _report_score(text: str, item) -> float:
         "wishlist_items": ("gift", "gifts", "wishlist"),
         "donations": ("donation", "donations", "inventory", "donated"),
         "dashboard": ("dashboard", "recent", "left", "off", "continue"),
+        "calendar": (
+            "calendar",
+            "date",
+            "dates",
+            "overdue",
+            "upcoming",
+            "missing",
+            "scheduled",
+            "schedule",
+            "timeline",
+            "gift",
+            "turn",
+            "pickup",
+            "follow",
+            "follow-up",
+            "recruitment",
+            "registration",
+        ),
     }.get(item.subject, ())
     if score > 0 and any(re.search(rf"\b{re.escape(word)}\b", text) for word in subject_words):
         boost = 0.12 if item.subject == "sponsors" else 0.06

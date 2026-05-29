@@ -351,6 +351,7 @@ function renderStudioSection({
   if (selectedSection === 'schedule') {
     return (
       <CampaignStudioScheduleSection
+        campaignId={studio.campaign.id}
         access={studio.access}
         items={studio.schedule.items}
         milestoneDefinitions={studio.milestoneDefinitions}

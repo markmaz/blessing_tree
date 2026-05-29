@@ -16,6 +16,7 @@ const DASHBOARD_PROMPTS = {
   unsponsoredGifts: 'How many gifts are unsponsored?',
   population: 'How many children and adults are in this campaign?',
   giftCount: 'How many gifts are in this campaign?',
+  calendarUpcoming: 'What is coming up on the campaign calendar?',
   continue: 'Pick up where I left off.',
 };
 
@@ -179,6 +180,36 @@ function CampaignDashboardWidgetsSection({
             Ask about unsponsored gifts
           </AskPromptLink>
         </div>
+      </div>
+
+      <div className="campaign-surface-card dashboard-widget-card">
+        <WidgetHeader
+          title="Upcoming Calendar"
+          prompt={DASHBOARD_PROMPTS.calendarUpcoming}
+          campaignId={campaignId}
+          badge={`${widgets.calendarUpcoming.totalCount}`}
+        />
+        {widgets.calendarUpcoming.items.length ? (
+          <div className="dashboard-mini-list">
+            {widgets.calendarUpcoming.items.map((item) => (
+              <Link
+                key={item.id}
+                to={buildCampaignStudioPath(campaignId)}
+                className="dashboard-mini-list__item dashboard-mini-list__item--action"
+              >
+                <div>
+                  <strong>{item.title}</strong>
+                  <span>{[formatShortDate(item.date), calendarUrgencyLabel(item.urgency)].filter(Boolean).join(' - ')}</span>
+                </div>
+                <span className={`dashboard-calendar-status dashboard-calendar-status--${calendarStatusTone(item.urgency)}`}>
+                  {calendarUrgencyLabel(item.urgency)}
+                </span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <EmptyWidget message="No upcoming calendar items have been scheduled." />
+        )}
       </div>
 
       <div className="campaign-surface-card dashboard-widget-card">
@@ -370,4 +401,38 @@ function formatDateTime(value: string | null): string | null {
     hour: 'numeric',
     minute: '2-digit',
   }).format(date);
+}
+
+function formatShortDate(value: string | null): string | null {
+  if (!value) {
+    return 'Missing';
+  }
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date);
+}
+
+function calendarUrgencyLabel(value: string): string {
+  return {
+    missing: 'Missing',
+    overdue: 'Overdue',
+    today: 'Today',
+    due_soon: 'Due soon',
+    upcoming: 'Upcoming',
+    future: 'Future',
+    complete: 'Done',
+    informational: 'Info',
+  }[value] ?? value;
+}
+
+function calendarStatusTone(value: string): 'danger' | 'warning' | 'default' {
+  if (value === 'missing' || value === 'overdue') {
+    return 'danger';
+  }
+  if (value === 'today' || value === 'due_soon') {
+    return 'warning';
+  }
+  return 'default';
 }

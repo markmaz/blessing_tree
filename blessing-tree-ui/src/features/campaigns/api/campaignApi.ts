@@ -98,6 +98,21 @@ interface CampaignSummaryResponse {
       title?: string | null;
       created_at?: string | null;
     }>;
+    calendar_upcoming?: {
+      total_count?: number;
+      due_soon_count?: number;
+      scheduled_communications_count?: number;
+      items?: Array<{
+        id?: string;
+        title?: string;
+        date?: string | null;
+        urgency?: string;
+        item_type?: string;
+        is_blocker?: boolean;
+        count?: number | null;
+        route_name?: string | null;
+      }>;
+    };
   };
 }
 
@@ -148,6 +163,7 @@ function mapCampaignDashboardWidgets(
 ): CampaignSummary['widgets'] {
   const population = widgets.population ?? {};
   const unsponsoredGifts = widgets.unsponsored_gifts ?? {};
+  const calendarUpcoming = widgets.calendar_upcoming ?? {};
   return {
     population: {
       children: Number(population.children ?? 0),
@@ -186,6 +202,21 @@ function mapCampaignDashboardWidgets(
       title: item.title ?? null,
       createdAt: item.created_at ?? null,
     })),
+    calendarUpcoming: {
+      totalCount: Number(calendarUpcoming.total_count ?? 0),
+      dueSoonCount: Number(calendarUpcoming.due_soon_count ?? 0),
+      scheduledCommunicationsCount: Number(calendarUpcoming.scheduled_communications_count ?? 0),
+      items: (calendarUpcoming.items ?? []).map((item) => ({
+        id: item.id ?? '',
+        title: item.title ?? 'Calendar item',
+        date: item.date ?? null,
+        urgency: item.urgency ?? 'informational',
+        itemType: item.item_type ?? 'manual_event',
+        isBlocker: Boolean(item.is_blocker),
+        count: typeof item.count === 'number' ? item.count : null,
+        routeName: item.route_name ?? null,
+      })),
+    },
   };
 }
 

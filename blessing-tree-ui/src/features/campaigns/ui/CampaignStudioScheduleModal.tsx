@@ -24,6 +24,7 @@ interface CampaignStudioScheduleModalProps {
   isEditing: boolean;
   item: CampaignScheduleItem | null;
   selectedDate: string | null;
+  initialMilestoneKey?: string | null;
   milestoneDefinitions: CampaignMilestoneDefinition[];
   milestones: CampaignMilestone[];
   schedules: CommunicationSchedule[];
@@ -51,6 +52,7 @@ export function CampaignStudioScheduleModal({
   isEditing,
   item,
   selectedDate,
+  initialMilestoneKey = null,
   milestoneDefinitions,
   milestones,
   schedules,
@@ -141,6 +143,7 @@ export function CampaignStudioScheduleModal({
             milestones={milestones}
             editingItem={item}
             selectedDate={selectedDate}
+            initialMilestoneKey={initialMilestoneKey}
             isSaving={isSaving}
             onSaveMilestones={onSaveMilestones}
             onClose={onClose}

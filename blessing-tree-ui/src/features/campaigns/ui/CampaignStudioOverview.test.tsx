@@ -53,6 +53,12 @@ const studio: CampaignStudioData = {
         items: [],
       },
       continueWhereLeftOff: [],
+      calendarUpcoming: {
+        totalCount: 0,
+        dueSoonCount: 0,
+        scheduledCommunicationsCount: 0,
+        items: [],
+      },
     },
   },
   team: {

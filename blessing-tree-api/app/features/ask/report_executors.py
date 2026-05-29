@@ -7,6 +7,7 @@ from typing import Any, Callable
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
+from app.features.campaigns.calendar_intelligence_service import CampaignCalendarIntelligenceService
 from app.features.campaigns.service import CampaignService
 from app.features.campaigns.studio_service import CampaignStudioService
 from app.features.gifts.report_service import GiftReportService
@@ -32,10 +33,12 @@ class AskReportExecutor:
         campaign_service: CampaignService | None = None,
         gift_report_service: GiftReportService | None = None,
         studio_service: CampaignStudioService | None = None,
+        calendar_intelligence_service: CampaignCalendarIntelligenceService | None = None,
     ) -> None:
         self.campaigns = campaign_service or CampaignService()
         self.gift_reports = gift_report_service or GiftReportService()
         self.studio = studio_service or CampaignStudioService()
+        self.calendar_intelligence = calendar_intelligence_service or CampaignCalendarIntelligenceService(campaign_service=self.campaigns)
 
     def execute(
         self,
@@ -77,6 +80,179 @@ class AskReportExecutor:
             metric_key="recipients_needing_sponsors",
             label="Recipients needing sponsors",
             rows=rows,
+            limit=limit,
+        )
+
+    def execute_calendar_attention(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        intelligence = self.calendar_intelligence.get_calendar_intelligence(db, str(campaign_id))
+        rows = _calendar_rows_for_metric(intelligence, "calendar_attention")
+        return _calendar_report(metric_key="calendar_attention", label="Calendar items needing attention", rows=rows, limit=limit)
+
+    def execute_calendar_overdue(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        intelligence = self.calendar_intelligence.get_calendar_intelligence(db, str(campaign_id))
+        return _calendar_report(
+            metric_key="calendar_overdue",
+            label="Overdue calendar items",
+            rows=_calendar_rows_for_metric(intelligence, "calendar_overdue"),
+            limit=limit,
+        )
+
+    def execute_calendar_upcoming(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        intelligence = self.calendar_intelligence.get_calendar_intelligence(db, str(campaign_id))
+        return _calendar_report(
+            metric_key="calendar_upcoming",
+            label="Upcoming calendar items",
+            rows=_calendar_rows_for_metric(intelligence, "calendar_upcoming"),
+            limit=limit,
+        )
+
+    def execute_calendar_missing_dates(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        intelligence = self.calendar_intelligence.get_calendar_intelligence(db, str(campaign_id))
+        return _calendar_report(
+            metric_key="calendar_missing_dates",
+            label="Missing important dates",
+            rows=_calendar_rows_for_metric(intelligence, "calendar_missing_dates"),
+            limit=limit,
+        )
+
+    def execute_calendar_scheduled_communications(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        intelligence = self.calendar_intelligence.get_calendar_intelligence(db, str(campaign_id))
+        return _calendar_report(
+            metric_key="calendar_scheduled_communications",
+            label="Scheduled communications",
+            rows=_calendar_rows_for_metric(intelligence, "calendar_scheduled_communications"),
+            limit=limit,
+        )
+
+    def execute_calendar_sponsor_recruitment_dates(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        intelligence = self.calendar_intelligence.get_calendar_intelligence(db, str(campaign_id))
+        return _calendar_critical_date_report(
+            metric_key="calendar_sponsor_recruitment_dates",
+            label="Sponsor recruitment dates",
+            intelligence=intelligence,
+            keys={"sponsor_registration_start", "sponsor_registration_end", "sponsor_outreach_start"},
+            limit=limit,
+        )
+
+    def execute_calendar_gift_turn_in_date(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        intelligence = self.calendar_intelligence.get_calendar_intelligence(db, str(campaign_id))
+        return _calendar_critical_date_report(
+            metric_key="calendar_gift_turn_in_date",
+            label="Gift turn-in date",
+            intelligence=intelligence,
+            keys={"gift_turn_in_due"},
+            limit=limit,
+        )
+
+    def execute_calendar_pickup_dates(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        intelligence = self.calendar_intelligence.get_calendar_intelligence(db, str(campaign_id))
+        return _calendar_critical_date_report(
+            metric_key="calendar_pickup_dates",
+            label="Pickup dates",
+            intelligence=intelligence,
+            keys={"pickup_start", "pickup_end"},
+            limit=limit,
+        )
+
+    def execute_calendar_followups_due(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        intelligence = self.calendar_intelligence.get_calendar_intelligence(db, str(campaign_id))
+        return _calendar_report(
+            metric_key="calendar_followups_due",
+            label="Sponsor follow-ups due",
+            rows=_calendar_rows_for_metric(intelligence, "calendar_followups_due"),
+            limit=limit,
+        )
+
+    def execute_calendar_outside_campaign_window(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        filters: dict[str, Any],
+        intent: str,
+        limit: int,
+    ) -> dict[str, Any]:
+        intelligence = self.calendar_intelligence.get_calendar_intelligence(db, str(campaign_id))
+        return _calendar_warning_report(
+            metric_key="calendar_outside_campaign_window",
+            label="Dates outside campaign window",
+            warnings=[
+                warning
+                for warning in intelligence.get("warnings", [])
+                if str(warning.get("code") or "").startswith("date_outside_campaign_window_")
+            ],
             limit=limit,
         )
 
@@ -798,6 +974,16 @@ class AskReportExecutor:
             "sponsors_needing_follow_up": self.execute_sponsors_needing_follow_up,
             "unmatched_donated_inventory": self.execute_unmatched_donated_inventory,
             "readiness_blockers": self.execute_readiness_blockers,
+            "calendar_overdue": self.execute_calendar_overdue,
+            "calendar_upcoming": self.execute_calendar_upcoming,
+            "calendar_missing_dates": self.execute_calendar_missing_dates,
+            "calendar_scheduled_communications": self.execute_calendar_scheduled_communications,
+            "calendar_sponsor_recruitment_dates": self.execute_calendar_sponsor_recruitment_dates,
+            "calendar_gift_turn_in_date": self.execute_calendar_gift_turn_in_date,
+            "calendar_pickup_dates": self.execute_calendar_pickup_dates,
+            "calendar_followups_due": self.execute_calendar_followups_due,
+            "calendar_outside_campaign_window": self.execute_calendar_outside_campaign_window,
+            "calendar_attention": self.execute_calendar_attention,
         }
 
 
@@ -835,6 +1021,113 @@ def _simple_table_report(
         "rows": limited_rows,
         "totals": {"row_count": total, "limited": total > len(limited_rows)},
     }
+
+
+def _calendar_report(*, metric_key: str, label: str, rows: list[dict[str, Any]], limit: int) -> dict[str, Any]:
+    return _simple_table_report(
+        metric_key=metric_key,
+        label=label,
+        columns=[
+            {"key": "date", "label": "Date"},
+            {"key": "title", "label": "Item"},
+            {"key": "urgency", "label": "Status"},
+            {"key": "item_type", "label": "Type"},
+            {"key": "description", "label": "Details"},
+        ],
+        rows=rows,
+        limit=limit,
+    )
+
+
+def _calendar_critical_date_report(
+    *,
+    metric_key: str,
+    label: str,
+    intelligence: dict[str, Any],
+    keys: set[str],
+    limit: int,
+) -> dict[str, Any]:
+    rows = []
+    for item in intelligence.get("critical_dates", []):
+        if str(item.get("key") or "") not in keys:
+            continue
+        date_value = item.get("date")
+        rows.append(
+            {
+                "key": item.get("key"),
+                "date": date_value.isoformat() if hasattr(date_value, "isoformat") else date_value,
+                "title": item.get("label"),
+                "status": str(item.get("status") or "").replace("_", " ").title(),
+                "is_blocker": bool(item.get("is_blocker")),
+            }
+        )
+    return _simple_table_report(
+        metric_key=metric_key,
+        label=label,
+        columns=[
+            {"key": "date", "label": "Date"},
+            {"key": "title", "label": "Item"},
+            {"key": "status", "label": "Status"},
+            {"key": "is_blocker", "label": "Blocker"},
+        ],
+        rows=rows,
+        limit=limit,
+    )
+
+
+def _calendar_warning_report(*, metric_key: str, label: str, warnings: list[dict[str, Any]], limit: int) -> dict[str, Any]:
+    return _simple_table_report(
+        metric_key=metric_key,
+        label=label,
+        columns=[
+            {"key": "message", "label": "Warning"},
+            {"key": "severity", "label": "Severity"},
+        ],
+        rows=[
+            {
+                "code": warning.get("code"),
+                "message": warning.get("message"),
+                "severity": str(warning.get("severity") or "").title(),
+            }
+            for warning in warnings
+        ],
+        limit=limit,
+    )
+
+
+def _calendar_rows_for_metric(intelligence: dict[str, Any], metric_key: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in intelligence.get("items", []):
+        urgency = str(item.get("urgency") or "")
+        item_type = str(item.get("item_type") or "")
+        if not _calendar_item_matches_metric(urgency, item_type, metric_key):
+            continue
+        rows.append(
+            {
+                "id": item.get("id"),
+                "date": item.get("date").isoformat() if hasattr(item.get("date"), "isoformat") else item.get("date"),
+                "title": item.get("title"),
+                "urgency": urgency.replace("_", " ").title(),
+                "item_type": item_type.replace("_", " ").title(),
+                "description": item.get("description"),
+                "is_blocker": bool(item.get("is_blocker")),
+            }
+        )
+    return rows
+
+
+def _calendar_item_matches_metric(urgency: str, item_type: str, metric_key: str) -> bool:
+    if metric_key == "calendar_overdue":
+        return urgency == "overdue"
+    if metric_key == "calendar_upcoming":
+        return urgency in {"today", "due_soon", "upcoming"}
+    if metric_key == "calendar_missing_dates":
+        return urgency == "missing" or item_type == "missing_date"
+    if metric_key == "calendar_scheduled_communications":
+        return item_type == "communication"
+    if metric_key == "calendar_followups_due":
+        return item_type == "sponsor_followup" and urgency in {"overdue", "today", "due_soon", "upcoming"}
+    return urgency in {"missing", "overdue", "today", "due_soon", "upcoming"} or item_type == "communication"
 
 
 def _sponsor_unreceived_columns() -> list[dict[str, str]]:

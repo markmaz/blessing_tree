@@ -537,6 +537,14 @@ def _report_actions(metric_key: str, subject: str) -> list[AskAction]:
                 required_capability="campaign.view",
             )
         ]
+    if subject == "calendar":
+        return [
+            AskAction(
+                label="Open Campaign Studio",
+                route_name="campaign_studio",
+                required_capability="campaign.view",
+            )
+        ]
     if subject == "sponsors":
         return [
             AskAction(

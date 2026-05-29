@@ -236,6 +236,85 @@ export interface CampaignScheduleItem {
   isEditable: boolean;
 }
 
+export type CampaignCalendarUrgency =
+  | 'missing'
+  | 'overdue'
+  | 'today'
+  | 'due_soon'
+  | 'upcoming'
+  | 'future'
+  | 'complete'
+  | 'informational';
+
+export type CampaignCalendarItemType =
+  | 'campaign_date'
+  | 'milestone'
+  | 'manual_event'
+  | 'communication'
+  | 'sponsor_dropoff'
+  | 'sponsor_followup'
+  | 'gift_workflow'
+  | 'readiness_blocker'
+  | 'missing_date';
+
+export interface CampaignCalendarIntelligenceItem {
+  id: string;
+  title: string;
+  description: string | null;
+  itemType: CampaignCalendarItemType;
+  urgency: CampaignCalendarUrgency;
+  date: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  allDay: boolean;
+  isBlocker: boolean;
+  isMissing: boolean;
+  isOverdue: boolean;
+  count: number | null;
+  sourceType: string;
+  sourceId: string | null;
+  routeName: string | null;
+  metadata: Record<string, unknown>;
+}
+
+export interface CampaignCalendarCriticalDate {
+  key: string;
+  label: string;
+  date: string | null;
+  status: CampaignCalendarUrgency;
+  isBlocker: boolean;
+  sourceType: string;
+  sourceId: string | null;
+  routeName: string | null;
+}
+
+export interface CampaignCalendarAgendaGroup {
+  key: string;
+  label: string;
+  items: CampaignCalendarIntelligenceItem[];
+}
+
+export interface CampaignCalendarIntelligence {
+  campaignId: string;
+  generatedAt: string | null;
+  summary: {
+    totalItems: number;
+    overdueCount: number;
+    dueSoonCount: number;
+    missingCriticalDatesCount: number;
+    scheduledCommunicationsCount: number;
+    blockerCount: number;
+  };
+  criticalDates: CampaignCalendarCriticalDate[];
+  agendaGroups: CampaignCalendarAgendaGroup[];
+  items: CampaignCalendarIntelligenceItem[];
+  warnings: Array<{
+    code: string;
+    message: string;
+    severity: string;
+  }>;
+}
+
 export interface CampaignReadinessItem {
   severity: 'error' | 'warning' | 'info';
   category: 'blockers' | 'launch_checks' | 'planning_gaps' | 'operational_health';

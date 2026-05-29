@@ -63,12 +63,31 @@ export interface ContinueWhereLeftOffWidgetItem {
   createdAt: string | null;
 }
 
+export interface CalendarUpcomingWidgetItem {
+  id: string;
+  title: string;
+  date: string | null;
+  urgency: string;
+  itemType: string;
+  isBlocker: boolean;
+  count: number | null;
+  routeName: string | null;
+}
+
+export interface CalendarUpcomingWidget {
+  totalCount: number;
+  dueSoonCount: number;
+  scheduledCommunicationsCount: number;
+  items: CalendarUpcomingWidgetItem[];
+}
+
 export interface CampaignDashboardWidgets {
   population: CampaignPopulationWidget;
   popularGiftsByGender: PopularGiftByGenderWidget[];
   sponsorRecipientCounts: SponsorRecipientCountWidget[];
   unsponsoredGifts: UnsponsoredGiftWidget;
   continueWhereLeftOff: ContinueWhereLeftOffWidgetItem[];
+  calendarUpcoming: CalendarUpcomingWidget;
 }
 
 export interface CampaignSummary {

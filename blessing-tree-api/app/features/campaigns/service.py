@@ -167,6 +167,37 @@ class CampaignService:
             "sponsor_recipient_counts": self.get_sponsor_recipient_counts(db, campaign_id),
             "unsponsored_gifts": unsponsored,
             "continue_where_left_off": self.get_user_continue_items(db, campaign_id, user_id=user_id),
+            "calendar_upcoming": self.get_calendar_upcoming_widget(db, campaign_id),
+        }
+
+    def get_calendar_upcoming_widget(self, db: Session, campaign_id: str, *, limit: int = 5) -> dict[str, object]:
+        from app.features.campaigns.calendar_intelligence_service import CampaignCalendarIntelligenceService
+
+        intelligence = CampaignCalendarIntelligenceService(campaign_service=self).get_calendar_intelligence(db, campaign_id)
+        upcoming_items = [
+            item
+            for item in intelligence.get("items", [])
+            if item.get("urgency") in {"today", "due_soon", "upcoming", "future"}
+        ]
+        return {
+            "total_count": len(upcoming_items),
+            "due_soon_count": int(intelligence.get("summary", {}).get("due_soon_count", 0)),
+            "scheduled_communications_count": int(intelligence.get("summary", {}).get("scheduled_communications_count", 0)),
+            "items": [self._serialize_calendar_widget_item(item) for item in upcoming_items[:limit]],
+        }
+
+    @staticmethod
+    def _serialize_calendar_widget_item(item: Mapping[str, object]) -> dict[str, object]:
+        date_value = item.get("date")
+        return {
+            "id": item.get("id"),
+            "title": item.get("title"),
+            "date": date_value.isoformat() if isinstance(date_value, date) else date_value,
+            "urgency": item.get("urgency"),
+            "item_type": item.get("item_type"),
+            "is_blocker": bool(item.get("is_blocker")),
+            "count": item.get("count"),
+            "route_name": item.get("route_name"),
         }
 
     def get_population_summary(self, db: Session, campaign_id: str) -> dict[str, int]:
