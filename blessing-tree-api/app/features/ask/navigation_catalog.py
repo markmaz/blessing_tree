@@ -6,8 +6,38 @@ from app.features.ask.schemas import NavigationTarget
 NAVIGATION_TARGETS: tuple[NavigationTarget, ...] = (
     NavigationTarget("dashboard", "Dashboard", ("dashboard", "home", "campaign snapshot"), "dashboard", "campaign.view"),
     NavigationTarget("campaign_studio", "Campaign Studio", ("campaign studio", "campaign setup", "studio"), "campaign_studio", "campaign.view"),
-    NavigationTarget("people_intake", "People Intake", ("people intake", "add recipient", "add person", "new child"), "campaign_people_intake", "campaign.recipients.edit"),
-    NavigationTarget("people_directory", "People Directory", ("people directory", "recipient directory", "find people", "find recipient"), "campaign_people_directory", "campaign.recipients.view"),
+    NavigationTarget(
+        "people_intake",
+        "People Intake",
+        (
+            "people intake",
+            "add recipient",
+            "add person",
+            "new child",
+            "add child",
+            "add adult",
+            "create family",
+            "create organization",
+            "link family to organization",
+        ),
+        "campaign_people_intake",
+        "campaign.recipients.edit",
+    ),
+    NavigationTarget(
+        "people_directory",
+        "People Directory",
+        (
+            "people directory",
+            "recipient directory",
+            "find people",
+            "find recipient",
+            "find family",
+            "find organization",
+            "linked families",
+        ),
+        "campaign_people_directory",
+        "campaign.recipients.view",
+    ),
     NavigationTarget("people_reports", "People Reports", ("people reports", "recipient reports", "people reporting"), "campaign_people_reports", "campaign.reports.view"),
     NavigationTarget("sponsor_intake", "Sponsor Intake", ("sponsor intake", "add sponsor", "new sponsor"), "campaign_sponsors_intake", "campaign.sponsors.manage"),
     NavigationTarget("sponsor_directory", "Sponsor Directory", ("sponsor directory", "find sponsor", "sponsor list"), "campaign_sponsors_directory", "campaign.sponsors.view"),
@@ -34,6 +64,23 @@ NAVIGATION_TARGETS: tuple[NavigationTarget, ...] = (
     NavigationTarget("account_settings", "Settings", ("settings", "my settings", "user settings"), "account_settings"),
     NavigationTarget("admin_users", "User Management", ("user management", "users", "invite user", "app access"), "admin_users"),
     NavigationTarget("admin_campaign_operations", "Campaign Operations", ("campaign operations", "milestones", "readiness rules", "rule builder"), "admin_campaign_operations"),
+    NavigationTarget(
+        "admin_organization_types",
+        "Organization Types",
+        (
+            "organization types",
+            "organization type",
+            "people served",
+            "child organization",
+            "adult organization",
+            "family organization",
+            "nursing home",
+            "foster care",
+            "mh clients",
+            "mental health clients",
+        ),
+        "admin_organization_types",
+    ),
     NavigationTarget("admin_llm", "LLM Configuration", ("llm settings", "ai settings", "llm configuration"), "admin_llm"),
 )
 
@@ -60,6 +107,7 @@ def build_route(route_name: str, campaign_id: str) -> str:
         "account_settings": "/account/settings",
         "admin_users": "/admin/users",
         "admin_campaign_operations": "/admin/campaign-operations",
+        "admin_organization_types": "/admin/organization-types",
         "admin_llm": "/admin/llm",
     }
     return campaign_routes.get(route_name) or static_routes.get(route_name) or "/"

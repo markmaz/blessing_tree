@@ -193,10 +193,10 @@ def test_access_role_endpoints_create_update_and_list_member_roles(
     )
 
     assert patch_response.status_code == 200
-    assert patch_response.get_json()["role_key"] == "VOLUNTEER_VIEWER"
+    assert patch_response.get_json()["role_key"] == "CAMPAIGN_VIEWER"
     assert patch_response.get_json()["is_active"] is False
     assert list_response.status_code == 200
-    assert list_response.get_json()[0]["role_key"] == "VOLUNTEER_VIEWER"
+    assert list_response.get_json()[0]["role_key"] == "CAMPAIGN_VIEWER"
 
 
 def test_team_endpoints_create_add_and_remove_member(

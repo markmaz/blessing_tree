@@ -288,6 +288,57 @@ def test_admin_can_manage_campaign_operation_definitions(
     assert deactivate_response.get_json()["milestone_definition"]["is_active"] is False
 
 
+def test_admin_can_manage_organization_types(
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    from app.features.admin import api as admin_api
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="org-types-admin@blessingtree.test", role="ADMIN", name="Org Type Admin")
+        admin_user_id = str(admin_user.id)
+        db.commit()
+
+    headers = auth_header(admin_user_id, "ADMIN")
+
+    list_response = client.get("/api/v1/admin/organization-types", headers=headers)
+    assert list_response.status_code == 200
+    seeded_codes = {row["code"] for row in list_response.get_json()["organization_types"]}
+    assert {"NURSING_HOME", "FOSTER_CARE", "MH_CLIENTS", "FAMILY_SERVICES"}.issubset(seeded_codes)
+
+    create_response = client.post(
+        "/api/v1/admin/organization-types",
+        json={
+            "label": "School Partners",
+            "recipient_category": "FAMILY",
+            "sort_order": 15,
+        },
+        headers=headers,
+    )
+    assert create_response.status_code == 201
+    created = create_response.get_json()["organization_type"]
+    assert created["code"] == "SCHOOL_PARTNERS"
+    assert created["recipient_category"] == "FAMILY"
+
+    patch_response = client.patch(
+        "/api/v1/admin/organization-types/SCHOOL_PARTNERS",
+        json={
+            "label": "School Partner Program",
+            "recipient_category": "FAMILY",
+            "is_active": False,
+            "sort_order": 16,
+        },
+        headers=headers,
+    )
+    assert patch_response.status_code == 200
+    patched = patch_response.get_json()["organization_type"]
+    assert patched["label"] == "School Partner Program"
+    assert patched["recipient_category"] == "FAMILY"
+    assert patched["is_active"] is False
+
+
 def test_campaign_operation_definition_mutation_requires_admin(
     app: Flask,
     client,

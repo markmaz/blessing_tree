@@ -85,6 +85,7 @@ export function CampaignPeopleWorkspace({
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
   const [createGroupType, setCreateGroupType] = useState<RecipientGroupType | null>(null);
+  const [createParentOrganizationGroupId, setCreateParentOrganizationGroupId] = useState<string | null>(null);
   const [isCreateRecipientOpen, setIsCreateRecipientOpen] = useState(false);
   const [createRecipientGroupId, setCreateRecipientGroupId] = useState<string | null>(null);
   const [pendingDeleteGroupId, setPendingDeleteGroupId] = useState<string | null>(null);
@@ -257,6 +258,7 @@ export function CampaignPeopleWorkspace({
                   className="btn btn-outline-secondary btn-sm campaign-team-workspace__section-action"
                   onClick={() => {
                     setSelectedGroupId(null);
+                    setCreateParentOrganizationGroupId(null);
                     setCreateGroupType('HOUSEHOLD');
                   }}
                 >
@@ -268,6 +270,7 @@ export function CampaignPeopleWorkspace({
                   className="btn btn-secondary btn-sm campaign-team-workspace__section-action"
                   onClick={() => {
                     setSelectedGroupId(null);
+                    setCreateParentOrganizationGroupId(null);
                     setCreateGroupType('ORGANIZATION');
                   }}
                 >
@@ -294,11 +297,13 @@ export function CampaignPeopleWorkspace({
             groups={filteredGroups}
             canEdit={canEditPeople}
             onSelectGroup={(groupId) => {
+              setCreateParentOrganizationGroupId(null);
               setCreateGroupType(null);
               setSelectedGroupId(groupId);
             }}
             onSelectRecipient={(recipientId) => {
               setCreateGroupType(null);
+              setCreateParentOrganizationGroupId(null);
               setSelectedGroupId(null);
               setIsCreateRecipientOpen(false);
               setCreateRecipientGroupId(null);
@@ -365,15 +370,19 @@ export function CampaignPeopleWorkspace({
         canEdit={canEditPeople}
         group={selectedGroup}
         groups={workspace.groups}
+        organizationTypes={workspace.organizationTypes ?? []}
         initialGroupType={createGroupType ?? 'HOUSEHOLD'}
+        initialParentOrganizationGroupId={createParentOrganizationGroupId}
         onClose={() => {
           setCreateGroupType(null);
+          setCreateParentOrganizationGroupId(null);
           setSelectedGroupId(null);
         }}
         onSaveGroup={async (input, groupId) => {
           const savedGroup = await onSaveGroup(input, groupId);
           if (savedGroup) {
             setCreateGroupType(null);
+            setCreateParentOrganizationGroupId(null);
             setSelectedGroupId(savedGroup.id);
           }
           return savedGroup;
@@ -384,17 +393,28 @@ export function CampaignPeopleWorkspace({
         onSearchAddresses={onSearchAddresses}
         onAddRecipientToGroup={(groupId) => {
           setCreateGroupType(null);
+          setCreateParentOrganizationGroupId(null);
           setSelectedGroupId(null);
           setIsCreateRecipientOpen(true);
           setSelectedRecipientId(null);
           setCreateRecipientGroupId(groupId);
         }}
+        onAddFamilyToOrganization={(organizationGroupId) => {
+          setSelectedGroupId(null);
+          setSelectedRecipientId(null);
+          setIsCreateRecipientOpen(false);
+          setCreateRecipientGroupId(null);
+          setCreateParentOrganizationGroupId(organizationGroupId);
+          setCreateGroupType('HOUSEHOLD');
+        }}
         onSelectGroup={(groupId) => {
           setCreateGroupType(null);
+          setCreateParentOrganizationGroupId(null);
           setSelectedGroupId(groupId);
         }}
         onSelectRecipient={(recipientId) => {
           setCreateGroupType(null);
+          setCreateParentOrganizationGroupId(null);
           setSelectedGroupId(null);
           setIsCreateRecipientOpen(false);
           setCreateRecipientGroupId(null);
@@ -412,6 +432,7 @@ export function CampaignPeopleWorkspace({
         lockedGroupId={createRecipientGroupId}
         groups={workspace.groups}
         recipients={workspace.recipients}
+        organizationTypes={workspace.organizationTypes ?? []}
         onClose={() => {
           setIsCreateRecipientOpen(false);
           setSelectedRecipientId(null);

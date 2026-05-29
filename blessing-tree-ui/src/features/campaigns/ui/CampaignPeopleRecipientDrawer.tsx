@@ -1,10 +1,11 @@
 import { createPortal } from 'react-dom';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
 import type {
   CampaignPeopleGroup,
   CampaignRecipient,
   CampaignWishlistItem,
+  OrganizationTypeOption,
   RecipientAgeUnit,
   RecipientPrivacyLevel,
   RecipientStatus,
@@ -30,12 +31,12 @@ interface CampaignPeopleRecipientDrawerProps {
   isOpen: boolean;
   isSaving: boolean;
   canEdit: boolean;
-  stayInCreateModeAfterSave?: boolean;
   recipient: CampaignRecipient | null;
   initialGroupId?: string | null;
   lockedGroupId?: string | null;
   groups: CampaignPeopleGroup[];
   recipients: CampaignRecipient[];
+  organizationTypes?: OrganizationTypeOption[];
   onClose: () => void;
   onSaveRecipient: (
     input: RecipientUpsertInput,
@@ -50,6 +51,8 @@ interface CampaignPeopleRecipientDrawerProps {
   onDeleteRecipient: (recipientId: string) => Promise<boolean>;
   onSelectExistingRecipient: (recipientId: string) => void;
   onStartAnotherRecipient?: (() => void) | null;
+  openGiftEditorOnMount?: boolean;
+  onGiftEditorAutoOpened?: (() => void) | null;
 }
 
 interface WishlistItemFormState {
@@ -125,12 +128,12 @@ export function CampaignPeopleRecipientDrawer({
   isOpen,
   isSaving,
   canEdit,
-  stayInCreateModeAfterSave = false,
   recipient,
   initialGroupId = null,
   lockedGroupId = null,
   groups,
   recipients,
+  organizationTypes = [],
   onClose,
   onSaveRecipient,
   onSaveWishlistItem,
@@ -138,6 +141,8 @@ export function CampaignPeopleRecipientDrawer({
   onDeleteRecipient,
   onSelectExistingRecipient,
   onStartAnotherRecipient = null,
+  openGiftEditorOnMount = false,
+  onGiftEditorAutoOpened = null,
 }: CampaignPeopleRecipientDrawerProps) {
   const [recipientDraft, setRecipientDraft] = useState<RecipientUpsertInput>(
     buildRecipientDraft(recipient, initialGroupId)
@@ -178,20 +183,17 @@ export function CampaignPeopleRecipientDrawer({
     const generated = buildDisplayLabel(recipientDraft.firstName, recipientDraft.lastName);
     return generated || recipientDraft.displayLabel || '';
   }, [recipientDraft.displayLabel, recipientDraft.firstName, recipientDraft.lastName]);
-  const isOrganizationChildGroup = selectedGroup?.groupType === 'ORGANIZATION'
-    && ['ORPHANAGE', 'CHILDRENS_HOME'].includes(selectedGroup.organizationType ?? '');
-
   const recipientProgram =
-    recipient?.programType === 'ORGANIZATION_CHILD'
-      ? { recipientKind: 'CHILD' as const, programType: 'ORGANIZATION_CHILD' as const }
-      : recipient?.programType === 'ORGANIZATION_ADULT'
-        ? { recipientKind: 'ADULT' as const, programType: 'ORGANIZATION_ADULT' as const }
-        : selectedGroup?.groupType === 'ORGANIZATION'
-          ? isOrganizationChildGroup
-            ? { recipientKind: 'CHILD' as const, programType: 'ORGANIZATION_CHILD' as const }
-            : { recipientKind: 'ADULT' as const, programType: 'ORGANIZATION_ADULT' as const }
-          : selectedGroup
-            ? { recipientKind: 'CHILD' as const, programType: 'CHILD_FAMILY' as const }
+    selectedGroup?.groupType === 'HOUSEHOLD'
+      ? { recipientKind: 'CHILD' as const, programType: 'CHILD_FAMILY' as const }
+      : selectedGroup?.groupType === 'ORGANIZATION'
+        ? getOrganizationRecipientCategory(selectedGroup.organizationType, organizationTypes) === 'CHILD'
+          ? { recipientKind: 'CHILD' as const, programType: 'ORGANIZATION_CHILD' as const }
+          : { recipientKind: 'ADULT' as const, programType: 'ORGANIZATION_ADULT' as const }
+        : recipient?.programType === 'ORGANIZATION_CHILD'
+          ? { recipientKind: 'CHILD' as const, programType: 'ORGANIZATION_CHILD' as const }
+          : recipient?.programType === 'ORGANIZATION_ADULT'
+            ? { recipientKind: 'ADULT' as const, programType: 'ORGANIZATION_ADULT' as const }
             : null;
 
   const visibleContacts = selectedGroup?.contacts ?? [];
@@ -203,6 +205,7 @@ export function CampaignPeopleRecipientDrawer({
   const isOrganizationIntake = selectedGroup?.groupType === 'ORGANIZATION';
   const isOrganizationChildIntake = recipientProgram?.programType === 'ORGANIZATION_CHILD';
   const isOrganizationAdultIntake = recipientProgram?.programType === 'ORGANIZATION_ADULT';
+  const isChildIntake = isHouseholdIntake || isOrganizationChildIntake;
   const showAdultDirectContact = isOrganizationAdultIntake;
   const nextRecipientButtonLabel = isHouseholdIntake
     ? 'Add Another Child'
@@ -211,6 +214,14 @@ export function CampaignPeopleRecipientDrawer({
       : isOrganizationChildIntake
         ? 'Add Another Child'
         : 'Add Another Person';
+  const recipientRecordLabel = isHouseholdIntake
+    ? 'Child'
+    : isOrganizationAdultIntake
+      ? 'Adult'
+      : isOrganizationChildIntake
+        ? 'Child'
+        : 'Person';
+  const addGiftButtonLabel = `Add Gift for ${recipientRecordLabel}`;
   const deleteRecipientButtonLabel = isHouseholdIntake
     ? 'Delete Child'
     : isOrganizationAdultIntake
@@ -313,7 +324,7 @@ export function CampaignPeopleRecipientDrawer({
       setRecipientError('Choose a household or organization first.');
       return;
     }
-    if (!computedDisplayLabel.trim()) {
+    if (!isChildIntake && !computedDisplayLabel.trim()) {
       setRecipientError('First or last name is required.');
       return;
     }
@@ -328,11 +339,11 @@ export function CampaignPeopleRecipientDrawer({
         {
           ...recipientDraft,
           recipientGroupId: lockedGroupId ?? recipientDraft.recipientGroupId,
-          displayLabel: computedDisplayLabel.trim(),
+          displayLabel: isChildIntake ? (recipient?.displayLabel ?? '') : computedDisplayLabel.trim(),
           recipientKind: recipientProgram.recipientKind,
           programType: recipientProgram.programType,
-          firstName: recipientDraft.firstName?.trim() || null,
-          lastName: recipientDraft.lastName?.trim() || null,
+          firstName: isChildIntake ? null : recipientDraft.firstName?.trim() || null,
+          lastName: isChildIntake ? null : recipientDraft.lastName?.trim() || null,
           birthYear: recipientDraft.birthYear ?? null,
           ageUnit: recipientDraft.age ? recipientDraft.ageUnit ?? 'YEARS' : null,
           gender: recipientDraft.gender?.trim() || null,
@@ -351,25 +362,10 @@ export function CampaignPeopleRecipientDrawer({
         recipient?.id
       );
       if (savedRecipient) {
-        const shouldStayInCreateMode = !recipient && stayInCreateModeAfterSave;
-        if (shouldStayInCreateMode) {
-          setRecipientDraft(buildRecipientDraft(null, lockedGroupId ?? savedRecipient.recipientGroupId));
-          setRecipientError(null);
-          setIsProfileSectionOpen(true);
-          resetItemDraft();
-        }
         setSuccessMessage(
-          shouldStayInCreateMode
-            ? isHouseholdIntake
-              ? 'Child added. Ready for the next child.'
-              : isOrganizationChildIntake
-                ? 'Child added. Ready for the next child.'
-                : isOrganizationAdultIntake
-                  ? 'Adult added. Ready for the next person.'
-                  : 'Person added. Ready for the next person.'
-            : recipient
-              ? 'Person updated.'
-              : 'Person added.'
+          recipient
+            ? `${recipientRecordLabel} updated.`
+            : `${recipientRecordLabel} added.`
         );
       }
     } catch (saveError) {
@@ -407,6 +403,18 @@ export function CampaignPeopleRecipientDrawer({
     resetItemDraft();
     setIsItemModalOpen(true);
   };
+
+  useEffect(() => {
+    if (!openGiftEditorOnMount || !recipient?.id) {
+      return;
+    }
+    setEditingItemId(null);
+    setItemDraft(emptyWishlistItemDraft);
+    setItemError(null);
+    setIsWishlistSectionOpen(true);
+    setIsItemModalOpen(true);
+    onGiftEditorAutoOpened?.();
+  }, [onGiftEditorAutoOpened, openGiftEditorOnMount, recipient?.id]);
 
   const handleCloseItemModal = () => {
     resetItemDraft();
@@ -474,20 +482,31 @@ export function CampaignPeopleRecipientDrawer({
           className="mb-3"
         />
       ) : null}
-      {recipient && onStartAnotherRecipient ? (
+      {recipient ? (
         <div className="campaign-team-drawer__actions mb-3">
           <button
             type="button"
-            className="btn btn-outline-secondary btn-sm"
-            onClick={() => {
-              setSuccessMessage(null);
-              onStartAnotherRecipient();
-            }}
+            className="btn btn-secondary btn-sm"
+            onClick={handleOpenNewItemModal}
             disabled={!canEdit || isSaving}
           >
-            <i className="bi bi-person-plus me-2" aria-hidden="true" />
-            {nextRecipientButtonLabel}
+            <i className="bi bi-plus-square me-2" aria-hidden="true" />
+            {addGiftButtonLabel}
           </button>
+          {onStartAnotherRecipient ? (
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm"
+              onClick={() => {
+                setSuccessMessage(null);
+                onStartAnotherRecipient();
+              }}
+              disabled={!canEdit || isSaving}
+            >
+              <i className="bi bi-person-plus me-2" aria-hidden="true" />
+              {nextRecipientButtonLabel}
+            </button>
+          ) : null}
         </div>
       ) : null}
       <div className="campaign-team-drawer__stack">
@@ -631,49 +650,55 @@ export function CampaignPeopleRecipientDrawer({
             </label>
 
             <label className="form-label campaign-team-form-grid__span-2">
-              {isHouseholdIntake
-                ? 'Child Display Name'
+              {isChildIntake
+                ? 'Child Label'
                 : isOrganizationAdultIntake
                   ? 'Adult Display Name'
-                  : isOrganizationChildIntake
-                    ? 'Child Display Name'
                   : 'Display Name'}
               <input
                 className="form-control mt-2"
-                value={computedDisplayLabel}
+                value={isChildIntake ? recipient?.displayLabel ?? 'Assigned after save' : computedDisplayLabel}
                 disabled
               />
             </label>
 
-            <label className="form-label">
-              First Name
-              <input
-                className="form-control mt-2"
-                value={recipientDraft.firstName ?? ''}
-                onChange={(event) =>
-                  setRecipientDraft((currentValue) => ({
-                    ...currentValue,
-                    firstName: event.target.value,
-                  }))
-                }
-                disabled={!canEdit}
-              />
-            </label>
+            {!isChildIntake ? (
+              <>
+                <label className="form-label">
+                  First Name
+                  <input
+                    className="form-control mt-2"
+                    value={recipientDraft.firstName ?? ''}
+                    onChange={(event) =>
+                      setRecipientDraft((currentValue) => ({
+                        ...currentValue,
+                        firstName: event.target.value,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                </label>
 
-            <label className="form-label">
-              Last Name
-              <input
-                className="form-control mt-2"
-                value={recipientDraft.lastName ?? ''}
-                onChange={(event) =>
-                  setRecipientDraft((currentValue) => ({
-                    ...currentValue,
-                    lastName: event.target.value,
-                  }))
-                }
-                disabled={!canEdit}
-              />
-            </label>
+                <label className="form-label">
+                  Last Name
+                  <input
+                    className="form-control mt-2"
+                    value={recipientDraft.lastName ?? ''}
+                    onChange={(event) =>
+                      setRecipientDraft((currentValue) => ({
+                        ...currentValue,
+                        lastName: event.target.value,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  />
+                </label>
+              </>
+            ) : (
+              <div className="campaign-studio__empty-note campaign-team-form-grid__span-2">
+                Child names are assigned automatically in family order, such as Child One and Child Two.
+              </div>
+            )}
 
             <label className="form-label">
               Age
@@ -989,7 +1014,7 @@ export function CampaignPeopleRecipientDrawer({
               disabled={!canEdit || isSaving}
             >
               <i className="bi bi-floppy me-2" aria-hidden="true" />
-              {recipient ? 'Save Person' : 'Create Person'}
+              {recipient ? `Save ${recipientRecordLabel}` : `Create ${recipientRecordLabel}`}
             </button>
           </div>
         </section>
@@ -1559,4 +1584,16 @@ function parseCostDollars(value: string): number | null {
   }
 
   return Math.round(parsed * 100);
+}
+
+function getOrganizationRecipientCategory(
+  organizationTypeCode: string | null | undefined,
+  organizationTypes: OrganizationTypeOption[]
+): OrganizationTypeOption['recipientCategory'] {
+  const organizationType = organizationTypes.find((type) => type.code === organizationTypeCode);
+  if (organizationType) {
+    return organizationType.recipientCategory;
+  }
+
+  return ['ORPHANAGE', 'CHILDRENS_HOME'].includes(organizationTypeCode ?? '') ? 'CHILD' : 'ADULT';
 }

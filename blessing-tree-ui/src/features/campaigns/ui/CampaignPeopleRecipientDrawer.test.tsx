@@ -70,6 +70,26 @@ const organizationGroup: CampaignPeopleGroup = {
   updatedAt: null,
 };
 
+const childOrganizationGroup: CampaignPeopleGroup = {
+  ...organizationGroup,
+  id: 'group-youth',
+  groupName: 'Youth Shelter',
+  organizationType: 'YOUTH_SHELTER',
+};
+
+const childOrganizationTypes = [
+  {
+    id: 'org-type-youth',
+    code: 'YOUTH_SHELTER',
+    label: 'Youth Shelter',
+    recipientCategory: 'CHILD' as const,
+    isActive: true,
+    sortOrder: 15,
+    createdAt: null,
+    updatedAt: null,
+  },
+];
+
 const existingAdultRecipient: CampaignRecipient = {
   id: 'recipient-1',
   campaignId: 'campaign-1',
@@ -177,11 +197,11 @@ const existingHouseholdChildWithWishlist: CampaignRecipient = {
   recipientGroupId: 'group-household',
   recipientKind: 'CHILD',
   programType: 'CHILD_FAMILY',
-  displayLabel: 'Ava Johnson',
+  displayLabel: 'Child One',
   programRecipientNumber: null,
   programRecipientId: null,
-  firstName: 'Ava',
-  lastName: 'Johnson',
+  firstName: 'Child',
+  lastName: 'One',
   birthYear: new Date().getFullYear() - 8,
   age: 8,
   group: {
@@ -229,7 +249,9 @@ describe('CampaignPeopleRecipientDrawer', () => {
 
     expect(screen.getByText('Child Details')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Johnson Household')).toBeInTheDocument();
-    expect(screen.getByLabelText('Child Display Name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Child Label')).toHaveValue('Assigned after save');
+    expect(screen.queryByLabelText('First Name')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Last Name')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Gender')).toHaveDisplayValue('Not set');
     expect(screen.queryByLabelText('Direct Email')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Direct Phone')).not.toBeInTheDocument();
@@ -266,6 +288,35 @@ describe('CampaignPeopleRecipientDrawer', () => {
     expect(screen.getByLabelText('Direct Phone')).toBeInTheDocument();
   });
 
+  it('uses the organization people-served category for child organization intake labels', () => {
+    render(
+      <CampaignPeopleRecipientDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        recipient={null}
+        initialGroupId="group-youth"
+        lockedGroupId="group-youth"
+        groups={[childOrganizationGroup]}
+        recipients={[]}
+        organizationTypes={childOrganizationTypes}
+        onClose={vi.fn()}
+        onSaveRecipient={vi.fn()}
+        onSaveWishlistItem={vi.fn()}
+        onDeleteWishlistItem={vi.fn()}
+        onDeleteRecipient={vi.fn()}
+        onSelectExistingRecipient={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: 'Add Child' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Add Adult' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Child Label')).toHaveValue('Assigned after save');
+    expect(screen.getByLabelText('Program')).toHaveValue('Organization Child');
+    expect(screen.queryByLabelText('Direct Email')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create Child' })).toBeInTheDocument();
+  });
+
   it('derives display name from first and last name and supports age units', async () => {
     const user = userEvent.setup();
 
@@ -275,9 +326,9 @@ describe('CampaignPeopleRecipientDrawer', () => {
         isSaving={false}
         canEdit
         recipient={null}
-        initialGroupId="group-household"
-        lockedGroupId="group-household"
-        groups={[householdGroup]}
+        initialGroupId="group-program"
+        lockedGroupId="group-program"
+        groups={[organizationGroup]}
         recipients={[]}
         onClose={vi.fn()}
         onSaveRecipient={vi.fn()}
@@ -293,7 +344,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
     await user.type(screen.getByLabelText('Age'), '8');
     await user.selectOptions(screen.getByLabelText('Age Unit'), 'MONTHS');
 
-    expect(screen.getByLabelText('Child Display Name')).toHaveValue('Ava Johnson');
+    expect(screen.getByLabelText('Adult Display Name')).toHaveValue('Ava Johnson');
     expect(screen.getByLabelText('Age Unit')).toHaveValue('MONTHS');
   });
 
@@ -353,6 +404,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
     expect(screen.getByLabelText('Intake Method')).not.toBeVisible();
     expect(screen.queryByLabelText('Wishlist Notes')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Wishlist Status')).not.toBeVisible();
+    expect(screen.getByRole('button', { name: 'Add Gift for Adult' })).toBeInTheDocument();
 
     await user.click(screen.getByLabelText('Expand person details'));
     expect(screen.getByLabelText('First Name')).toHaveValue('Mary');
@@ -392,7 +444,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
     expect(screen.getByText('Gift item: Warm blanket')).toBeInTheDocument();
   });
 
-  it('can stay in create mode after saving a household child so another child can be entered immediately', async () => {
+  it('keeps the saved child details available after saving instead of resetting to a blank child', async () => {
     const user = userEvent.setup();
     const onSaveRecipient = vi.fn().mockResolvedValue({
       ...existingAdultRecipient,
@@ -400,9 +452,9 @@ describe('CampaignPeopleRecipientDrawer', () => {
       recipientGroupId: 'group-household',
       recipientKind: 'CHILD',
       programType: 'CHILD_FAMILY',
-      displayLabel: 'Ava Johnson',
-      firstName: 'Ava',
-      lastName: 'Johnson',
+      displayLabel: 'Child One',
+      firstName: 'Child',
+      lastName: 'One',
       age: 8,
       birthYear: new Date().getFullYear() - 8,
       group: {
@@ -420,7 +472,6 @@ describe('CampaignPeopleRecipientDrawer', () => {
         isOpen
         isSaving={false}
         canEdit
-        stayInCreateModeAfterSave
         recipient={null}
         initialGroupId="group-household"
         lockedGroupId="group-household"
@@ -435,23 +486,78 @@ describe('CampaignPeopleRecipientDrawer', () => {
       />
     );
 
-    await user.type(screen.getByLabelText('First Name'), 'Ava');
-    await user.type(screen.getByLabelText('Last Name'), 'Johnson');
+    expect(screen.queryByLabelText('First Name')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Last Name')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Child Label')).toHaveValue('Assigned after save');
     await user.type(screen.getByLabelText('Age'), '8');
-    await user.click(screen.getByRole('button', { name: 'Create Person' }));
+    await user.click(screen.getByRole('button', { name: 'Create Child' }));
 
     await waitFor(() => {
       expect(onSaveRecipient).toHaveBeenCalled();
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Child added. Ready for the next child.')).toBeInTheDocument();
+      expect(screen.getByText('Child added.')).toBeInTheDocument();
     });
 
-    expect(screen.getByLabelText('First Name')).toHaveValue('');
-    expect(screen.getByLabelText('Last Name')).toHaveValue('');
-    expect(screen.getByLabelText('Age')).toHaveValue(null);
+    expect(screen.queryByLabelText('First Name')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Last Name')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Age')).toHaveValue(8);
     expect(screen.getByDisplayValue('Johnson Household')).toBeInTheDocument();
+  });
+
+  it('offers a direct add-gift action after saving a child in a family intake flow', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CampaignPeopleRecipientDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        recipient={existingHouseholdChildWithWishlist}
+        initialGroupId="group-household"
+        lockedGroupId="group-household"
+        groups={[householdGroup]}
+        recipients={[existingHouseholdChildWithWishlist]}
+        onClose={vi.fn()}
+        onSaveRecipient={vi.fn()}
+        onSaveWishlistItem={vi.fn()}
+        onDeleteWishlistItem={vi.fn()}
+        onDeleteRecipient={vi.fn()}
+        onSelectExistingRecipient={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Add Gift for Child' }));
+    expect(screen.getByRole('heading', { name: 'Add Gift Item' })).toBeInTheDocument();
+  });
+
+  it('can automatically open the gift editor when a newly saved child is reopened', async () => {
+    const onGiftEditorAutoOpened = vi.fn();
+
+    render(
+      <CampaignPeopleRecipientDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        recipient={existingHouseholdChildWithWishlist}
+        initialGroupId="group-household"
+        lockedGroupId="group-household"
+        groups={[householdGroup]}
+        recipients={[existingHouseholdChildWithWishlist]}
+        onClose={vi.fn()}
+        onSaveRecipient={vi.fn()}
+        onSaveWishlistItem={vi.fn()}
+        onDeleteWishlistItem={vi.fn()}
+        onDeleteRecipient={vi.fn()}
+        onSelectExistingRecipient={vi.fn()}
+        openGiftEditorOnMount
+        onGiftEditorAutoOpened={onGiftEditorAutoOpened}
+      />
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Add Gift Item' })).toBeInTheDocument();
+    expect(onGiftEditorAutoOpened).toHaveBeenCalledTimes(1);
   });
 
   it('offers a direct add-another-child action after saving a child in a family intake flow', async () => {

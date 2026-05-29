@@ -1,12 +1,6 @@
 export type RecipientGroupType = 'HOUSEHOLD' | 'ORGANIZATION';
 
-export type RecipientOrganizationType =
-  | 'NURSING_HOME'
-  | 'ORPHANAGE'
-  | 'SENIOR_PROGRAM'
-  | 'CHILDRENS_HOME'
-  | 'PARTNER_ORG'
-  | 'OTHER';
+export type RecipientOrganizationType = string;
 
 export type RecipientGroupStatus = 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
 
@@ -21,7 +15,19 @@ export type GroupContactRole =
 export type PreferredContact = 'EMAIL' | 'PHONE' | 'TEXT' | 'NONE';
 
 export type RecipientKind = 'CHILD' | 'ADULT';
+export type OrganizationRecipientCategory = RecipientKind | 'FAMILY';
 export type RecipientAgeUnit = 'MONTHS' | 'YEARS';
+
+export interface OrganizationTypeOption {
+  id: string;
+  code: string;
+  label: string;
+  recipientCategory: OrganizationRecipientCategory;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
 
 export type RecipientProgramType = 'CHILD_FAMILY' | 'ORGANIZATION_CHILD' | 'ORGANIZATION_ADULT';
 
@@ -128,6 +134,13 @@ export interface CampaignPeopleGroupSummary {
   status: RecipientGroupStatus;
 }
 
+export interface CampaignPeopleParentOrganizationSummary {
+  id: string;
+  groupName: string;
+  organizationType: RecipientOrganizationType | null;
+  status: RecipientGroupStatus;
+}
+
 export interface CampaignRecipient {
   id: string;
   campaignId: string;
@@ -166,6 +179,9 @@ export interface CampaignRecipient {
 export interface CampaignPeopleGroup {
   id: string;
   campaignId: string;
+  parentOrganizationGroupId?: string | null;
+  parentOrganization?: CampaignPeopleParentOrganizationSummary | null;
+  familyCount?: number;
   groupType: RecipientGroupType;
   groupName: string;
   organizationType: RecipientOrganizationType | null;
@@ -223,6 +239,7 @@ export interface CampaignPeopleWorkspaceData {
   counts: CampaignPeopleWorkspaceCounts;
   groups: CampaignPeopleGroup[];
   recipients: CampaignRecipient[];
+  organizationTypes?: OrganizationTypeOption[];
   filters: CampaignPeopleWorkspaceFilters;
 }
 
@@ -237,6 +254,7 @@ export interface CampaignAddressSuggestion {
 export interface RecipientGroupUpsertInput {
   groupType: RecipientGroupType;
   groupName: string;
+  parentOrganizationGroupId?: string | null;
   organizationType?: RecipientOrganizationType | null;
   programAbbreviation?: string | null;
   intakeSource?: string | null;

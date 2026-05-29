@@ -35,8 +35,176 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
     HelpTopic(
         key="add_recipient",
         title="Add a recipient",
-        phrases=("add recipient", "new recipient", "add person", "new child", "people intake"),
-        answer="Open People Intake to add a recipient, household, organization group, and wishlist details.",
+        phrases=("add recipient", "new recipient", "add person", "new child", "people intake", "add adult"),
+        answer=(
+            "Open People Intake to add a family, organization, child, adult, and wishlist details. "
+            "After saving a child or adult, open that person from the intake record to add gifts to the wishlist."
+        ),
+        steps=(
+            "Open People Intake.",
+            "Create or select the family or organization.",
+            "Add the child or adult.",
+            "Open the saved person and add wishlist gifts.",
+            "Add another child or adult from the same intake record when needed.",
+        ),
+        actions=(
+            AskAction(
+                label="Open People Intake",
+                route_name="campaign_people_intake",
+                required_capability="campaign.recipients.edit",
+            ),
+        ),
+    ),
+    HelpTopic(
+        key="manage_organization_types",
+        title="Manage organization types",
+        phrases=(
+            "organization types",
+            "organization type",
+            "add organization type",
+            "edit organization type",
+            "people served",
+            "nursing home",
+            "foster care",
+            "mh clients",
+            "mental health clients",
+            "child organization",
+            "adult organization",
+            "family organization",
+        ),
+        answer=(
+            "Use Admin Organization Types to manage the global list used by People Intake. "
+            "Each type has a People Served value: Children, Adults, or Families. That value controls whether an organization flow is built around children, adults, or linked families."
+        ),
+        steps=(
+            "Open Admin.",
+            "Choose Organization Types.",
+            "Create or select the type.",
+            "Set the label and People Served value.",
+            "Save the type, then use it when creating organizations in People Intake.",
+        ),
+        actions=(
+            AskAction(
+                label="Open Organization Types",
+                route_name="admin_organization_types",
+                required_capability=None,
+            ),
+            AskAction(
+                label="Open People Intake",
+                route_name="campaign_people_intake",
+                required_capability="campaign.recipients.edit",
+            ),
+        ),
+        related_prompts=(
+            "How do I add a family under an organization?",
+            "What does People Served mean?",
+            "How do I create an organization?",
+        ),
+    ),
+    HelpTopic(
+        key="family_under_organization",
+        title="Add a family under an organization",
+        phrases=(
+            "family under organization",
+            "family under an organization",
+            "add a family under an organization",
+            "family in organization",
+            "add family to organization",
+            "family belongs to organization",
+            "families belong to organization",
+            "link family to organization",
+            "associate family with organization",
+            "organization has families",
+            "families in orgs",
+            "family organization",
+            "referred by organization",
+        ),
+        answer=(
+            "Organizations can now hold linked families. Create or select the organization, then create or edit a family and choose the parent organization. "
+            "Children and wishlists stay on the family record, while the organization shows the linked families."
+        ),
+        steps=(
+            "Open People Intake or People Directory.",
+            "Create or select the organization.",
+            "Create or edit the family.",
+            "Set the parent organization on the family record.",
+            "Add children and wishlists on the family record.",
+        ),
+        actions=(
+            AskAction(
+                label="Open People Intake",
+                route_name="campaign_people_intake",
+                required_capability="campaign.recipients.edit",
+            ),
+            AskAction(
+                label="Open People Directory",
+                route_name="campaign_people_directory",
+                required_capability="campaign.recipients.view",
+            ),
+        ),
+        related_prompts=(
+            "How do I add children to a family?",
+            "How do I manage organization types?",
+            "Where is People Directory?",
+        ),
+    ),
+    HelpTopic(
+        key="child_cardinal_labels",
+        title="Child labels",
+        phrases=(
+            "child one",
+            "child two",
+            "children names",
+            "child names",
+            "do not collect names",
+            "anonymous children",
+            "cardinal child",
+            "renumber children",
+            "delete child renumber",
+            "c1 c2",
+        ),
+        answer=(
+            "Children in a family are labeled automatically as Child One, Child Two, and so on. "
+            "If a child is deleted, the remaining children are renumbered so the labels stay sequential. Real child names are not required."
+        ),
+        actions=(
+            AskAction(
+                label="Open People Intake",
+                route_name="campaign_people_intake",
+                required_capability="campaign.recipients.edit",
+            ),
+        ),
+        related_prompts=(
+            "How do I add a child?",
+            "How do I add gifts after adding a child?",
+        ),
+    ),
+    HelpTopic(
+        key="add_wishlist_after_person",
+        title="Add gifts after adding a person",
+        phrases=(
+            "add gifts after child",
+            "add gifts after adding child",
+            "add gifts after adult",
+            "add gifts after adding adult",
+            "add wishlist after child",
+            "add wishlist after adult",
+            "add another child",
+            "add another adult",
+            "create child then gifts",
+            "create adult then gifts",
+        ),
+        answer=(
+            "After saving a child or adult from People Intake, open that saved person and add wishlist gifts. "
+            "When the wishlist is done, return to the family or organization record to add another child or adult."
+        ),
+        steps=(
+            "Create the family or organization.",
+            "Add the child or adult.",
+            "Open the saved person from the intake record.",
+            "Add wishlist gifts.",
+            "Return to the group record to add another person.",
+        ),
         actions=(
             AskAction(
                 label="Open People Intake",
@@ -205,16 +373,22 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
             "schedule sponsor reminder",
             "schedule email to sponsors",
             "communication template",
+            "to field",
+            "email recipients",
+            "send to teams",
+            "send to families",
+            "send to organization contacts",
         ),
         answer=(
             "Open Campaign Studio and go to Communications. Create or edit a sponsor email template, "
-            "choose the sponsor audience, then schedule or send it from the campaign communications workflow."
+            "choose the audience or individual recipients in Send Now, then send it from the campaign communications workflow. "
+            "Templates support sponsors, teams, organization contacts, families, and individual recipients depending on the selected audience."
         ),
         steps=(
             "Open Campaign Studio.",
             "Go to Communications.",
             "Create or edit a sponsor email template.",
-            "Choose the sponsor audience.",
+            "Choose Audience to send to the template audience, or choose Individuals to pick specific recipients.",
             "Send a test email before scheduling or sending it.",
         ),
         actions=(
@@ -228,6 +402,57 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
             "How do I send a test email?",
             "Where do I edit email templates?",
             "How do I schedule sponsor reminders?",
+        ),
+    ),
+    HelpTopic(
+        key="send_sponsor_email_from_drawer",
+        title="Send a sponsor email from the sponsor drawer",
+        phrases=(
+            "send email from sponsor screen",
+            "send email from sponsor drawer",
+            "send template from sponsor screen",
+            "send template from sponsor drawer",
+            "send sponsor reminder from sponsor",
+            "send sponsor email from sponsor",
+            "email individual sponsor",
+            "email a sponsor",
+            "send a gift reminder email to an individual sponsor",
+            "gift reminder email to an individual sponsor",
+            "send gift reminder to sponsor",
+            "remind sponsor of gifts",
+            "remind sponsor about gifts",
+            "sponsor committed gifts email",
+            "sponsor gift reminder email",
+        ),
+        answer=(
+            "Open the sponsor from Sponsor Directory, expand Communication Log, then use Send Sponsor Email. "
+            "Choose an active sponsor email template, preview it, review any warnings, and then send. "
+            "Sponsor templates can include committed gift merge fields such as all gifts, gifts awaiting turn-in, gifts received or later, and the gift turn-in due date."
+        ),
+        steps=(
+            "Open Sponsors.",
+            "Choose Directory.",
+            "Select the sponsor row.",
+            "Expand Communication Log.",
+            "Choose an active sponsor email template.",
+            "Preview the email, review warnings, then send it.",
+        ),
+        actions=(
+            AskAction(
+                label="Open Sponsor Directory",
+                route_name="campaign_sponsors_directory",
+                required_capability="campaign.sponsors.manage",
+            ),
+            AskAction(
+                label="Open Campaign Communications",
+                route_name="campaign_studio",
+                required_capability="campaign.admin",
+            ),
+        ),
+        related_prompts=(
+            "Where do I create sponsor email templates?",
+            "What gift merge fields can I use?",
+            "How do I send a test email?",
         ),
     ),
     HelpTopic(

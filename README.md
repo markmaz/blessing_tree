@@ -101,4 +101,11 @@ scripts/coverage.sh
 ./.venv/bin/python scripts/dev_smtp_sink.py
 ```
 
+Celery processes from `blessing-tree-api/`:
+
+```bash
+./.venv/bin/python -m celery -A app.celery worker --loglevel=INFO
+./.venv/bin/python -m celery -A app.celery beat --loglevel=INFO --schedule=/tmp/blessing-tree-celerybeat-schedule
+```
+
 See the backend README for current env var requirements and auth route details.

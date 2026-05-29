@@ -124,11 +124,11 @@ const workspaceFixture: CampaignPeopleWorkspaceData = {
           recipientKind: 'CHILD',
           programType: 'CHILD_FAMILY',
           privacyLevel: 'FULL_NAME',
-          displayLabel: 'Ava Johnson',
+          displayLabel: 'Child One',
           programRecipientNumber: null,
           programRecipientId: null,
-          firstName: 'Ava',
-          lastName: 'Johnson',
+          firstName: 'Child',
+          lastName: 'One',
           birthYear: null,
           age: 8,
           gender: 'F',
@@ -255,11 +255,11 @@ const workspaceFixture: CampaignPeopleWorkspaceData = {
       recipientKind: 'CHILD',
       programType: 'CHILD_FAMILY',
       privacyLevel: 'FULL_NAME',
-      displayLabel: 'Ava Johnson',
+      displayLabel: 'Child One',
       programRecipientNumber: null,
       programRecipientId: null,
-      firstName: 'Ava',
-      lastName: 'Johnson',
+      firstName: 'Child',
+      lastName: 'One',
       birthYear: null,
       age: 8,
       gender: 'F',
@@ -465,14 +465,14 @@ describe('CampaignPeopleWorkspace', () => {
 
     const [groupTable, peopleTable] = screen.getAllByRole('table');
 
-    expect(within(groupTable).queryByText('Ava Johnson')).not.toBeInTheDocument();
+    expect(within(groupTable).queryByText('Child One')).not.toBeInTheDocument();
     expect(within(peopleTable).queryByText('Art kit')).not.toBeInTheDocument();
 
     await user.click(within(groupTable).getByRole('button', { name: 'Expand Johnson Household' }));
     await user.click(within(groupTable).getByRole('button', { name: 'Expand Maple Grove West Wing' }));
-    await user.click(within(peopleTable).getByRole('button', { name: 'Expand Ava Johnson' }));
+    await user.click(within(peopleTable).getByRole('button', { name: 'Expand Child One' }));
 
-    expect(within(groupTable).getByText('Ava Johnson')).toBeInTheDocument();
+    expect(within(groupTable).getByText('Child One')).toBeInTheDocument();
     expect(within(groupTable).getByText('Mary Smith')).toBeInTheDocument();
     expect(within(groupTable).getByText('8 years')).toBeInTheDocument();
     expect(within(groupTable).getByText('MGWW-001')).toBeInTheDocument();
@@ -509,13 +509,13 @@ describe('CampaignPeopleWorkspace', () => {
 
     const peopleTable = screen.getAllByRole('table')[1];
 
-    await user.click(within(peopleTable).getByRole('button', { name: /Ava Johnson.*Gender F/ }));
+    await user.click(within(peopleTable).getByRole('button', { name: /Child One.*Gender F/ }));
 
     const drawer = await screen.findByRole('dialog');
     expect(drawer).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Wishlist' })).toBeInTheDocument();
     await user.click(screen.getByLabelText('Expand person details'));
-    expect(screen.getByDisplayValue('Ava Johnson')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Child One')).toBeInTheDocument();
     expect(screen.getByText(/Authorized pickup contacts:/)).toBeInTheDocument();
     expect(within(drawer).getByRole('button', { name: /art kit/i })).toBeInTheDocument();
   });
@@ -547,11 +547,13 @@ describe('CampaignPeopleWorkspace', () => {
     );
 
     const peopleTable = screen.getAllByRole('table')[1];
-    await user.click(within(peopleTable).getByRole('button', { name: /Ava Johnson.*Gender F/ }));
+    await user.click(within(peopleTable).getByRole('button', { name: /Child One.*Gender F/ }));
     await user.click(screen.getAllByRole('button', { name: 'Add Another Child' })[0]);
 
     expect(await screen.findByRole('heading', { name: 'Add Child' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('Johnson Household')).toBeInTheDocument();
-    expect(screen.getByLabelText('First Name')).toHaveValue('');
+    expect(screen.getByLabelText('Child Label')).toHaveValue('Assigned after save');
+    expect(screen.queryByLabelText('First Name')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Last Name')).not.toBeInTheDocument();
   });
 });

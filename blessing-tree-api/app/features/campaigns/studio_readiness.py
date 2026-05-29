@@ -60,7 +60,7 @@ def build_campaign_readiness(
         *build_metadata_rules(campaign),
         *build_team_rules(assignments, role_counts),
         *schedule_items,
-        *build_communications_rules(templates, schedules),
+        *build_communications_rules(templates, schedules, milestones),
         *public_sponsor_items,
         *configured_items,
         *build_gift_reminder_rules(campaign, milestones, templates, gift_reminder_rules or []),

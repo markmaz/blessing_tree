@@ -4,6 +4,9 @@ import type {
   CampaignSponsorInteraction,
   CampaignSponsorWorkspaceData,
   PendingSponsorRegistration,
+  SponsorCommunicationPreview,
+  SponsorCommunicationSendResult,
+  SponsorCommunicationWarning,
   SponsorInteractionUpsertInput,
   SponsorUpsertInput,
   SponsorshipUpsertInput,
@@ -112,6 +115,32 @@ interface SponsorWorkspaceResponse {
     drop_off_statuses: CampaignSponsorWorkspaceData['filters']['dropOffStatuses'];
     preferred_contacts: CampaignSponsorWorkspaceData['filters']['preferredContacts'];
   };
+}
+
+interface SponsorCommunicationWarningResponse {
+  code: string;
+  message: string;
+}
+
+interface SponsorCommunicationPreviewResponse {
+  template_id: string;
+  sponsor_id: string;
+  recipient_email: string;
+  subject: string;
+  html: string;
+  text: string;
+  merge_fields: Record<string, string>;
+  warnings: SponsorCommunicationWarningResponse[];
+}
+
+interface SponsorCommunicationSendResponse {
+  send_id: string;
+  template_id: string;
+  sponsor_id: string;
+  recipient_email: string;
+  subject: string;
+  status: string;
+  warnings: SponsorCommunicationWarningResponse[];
 }
 
 interface PendingRegistrationResponse {
@@ -251,6 +280,30 @@ export async function deleteCampaignSponsorInteraction(
   await apiFetchJson(`/api/v1/campaigns/${campaignId}/sponsors/${sponsorId}/interactions/${interactionId}`, {
     method: 'DELETE',
   });
+}
+
+export async function previewSponsorCommunication(
+  campaignId: string,
+  sponsorId: string,
+  templateId: string
+): Promise<SponsorCommunicationPreview> {
+  const response = await apiFetchJson<SponsorCommunicationPreviewResponse>(
+    `/api/v1/campaigns/${campaignId}/sponsors/${sponsorId}/communications/preview`,
+    withJson('POST', { template_id: templateId })
+  );
+  return mapSponsorCommunicationPreview(response);
+}
+
+export async function sendSponsorCommunication(
+  campaignId: string,
+  sponsorId: string,
+  templateId: string
+): Promise<SponsorCommunicationSendResult> {
+  const response = await apiFetchJson<SponsorCommunicationSendResponse>(
+    `/api/v1/campaigns/${campaignId}/sponsors/${sponsorId}/communications/send`,
+    withJson('POST', { template_id: templateId })
+  );
+  return mapSponsorCommunicationSend(response);
 }
 
 export async function getPendingSponsorRegistrations(
@@ -413,6 +466,44 @@ function mapInteraction(response: SponsorInteractionResponse): CampaignSponsorIn
     relatedScheduleId: response.related_schedule_id,
     relatedDeliveryAttemptId: response.related_delivery_attempt_id,
     externalMessageId: response.external_message_id,
+  };
+}
+
+function mapSponsorCommunicationPreview(
+  response: SponsorCommunicationPreviewResponse
+): SponsorCommunicationPreview {
+  return {
+    templateId: response.template_id,
+    sponsorId: response.sponsor_id,
+    recipientEmail: response.recipient_email,
+    subject: response.subject,
+    html: response.html,
+    text: response.text,
+    mergeFields: response.merge_fields,
+    warnings: response.warnings.map(mapSponsorCommunicationWarning),
+  };
+}
+
+function mapSponsorCommunicationSend(
+  response: SponsorCommunicationSendResponse
+): SponsorCommunicationSendResult {
+  return {
+    sendId: response.send_id,
+    templateId: response.template_id,
+    sponsorId: response.sponsor_id,
+    recipientEmail: response.recipient_email,
+    subject: response.subject,
+    status: response.status,
+    warnings: response.warnings.map(mapSponsorCommunicationWarning),
+  };
+}
+
+function mapSponsorCommunicationWarning(
+  response: SponsorCommunicationWarningResponse
+): SponsorCommunicationWarning {
+  return {
+    code: response.code,
+    message: response.message,
   };
 }
 

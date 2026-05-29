@@ -75,6 +75,7 @@ const studio: CampaignStudioData = {
         description: 'Campaign roster members marked as volunteers.',
       },
     ],
+    audienceRecipientSummaries: [],
     templates: [
       {
         id: 'template-1',
@@ -92,6 +93,13 @@ const studio: CampaignStudioData = {
       },
     ],
     schedules: [],
+    sends: [],
+    recipientOptions: {
+      teams: [],
+      sponsors: [],
+      members: [],
+      contacts: [],
+    },
   },
   schedule: {
     items: [],

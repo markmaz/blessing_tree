@@ -281,4 +281,192 @@ describe('CampaignStudioCommunicationsSection', () => {
 
     expect(onDeleteTemplate).toHaveBeenCalledWith('template-1');
   });
+
+  it('sends a real communication to the selected template audience', async () => {
+    const user = userEvent.setup();
+    const onSendCommunication = vi.fn().mockResolvedValue(true);
+
+    render(
+      <CampaignStudioCommunicationsSection
+        audienceCatalog={audienceCatalog}
+        audienceRecipientSummaries={[
+          {
+            audience: 'VOLUNTEER',
+            count: 2,
+            sampleRecipients: [
+              { displayName: 'Chris Walker', email: 'chris@example.test' },
+              { displayName: 'Pat Helper', email: 'pat@example.test' },
+            ],
+            recipients: [
+              { displayName: 'Chris Walker', email: 'chris@example.test' },
+              { displayName: 'Pat Helper', email: 'pat@example.test' },
+            ],
+          },
+        ]}
+        templates={templates}
+        sends={[]}
+        isSaving={false}
+        onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onDeleteTemplate={vi.fn().mockResolvedValue(true)}
+        onSendCommunication={onSendCommunication}
+      />
+    );
+
+    expect(screen.getAllByText(/2 recipients/i).length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: /^send now$/i }));
+
+    expect(onSendCommunication).toHaveBeenCalledWith({
+      templateId: 'template-1',
+      targetMode: 'AUDIENCE',
+      manualRecipients: [],
+      teamIds: [],
+      sponsorIds: [],
+      memberIds: [],
+      contactIds: [],
+    });
+  });
+
+  it('opens the resolved audience recipients before sending', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CampaignStudioCommunicationsSection
+        audienceCatalog={audienceCatalog}
+        audienceRecipientSummaries={[
+          {
+            audience: 'VOLUNTEER',
+            count: 2,
+            sampleRecipients: [
+              { displayName: 'Chris Walker', email: 'chris@example.test' },
+              { displayName: 'Pat Helper', email: 'pat@example.test' },
+            ],
+            recipients: [
+              { displayName: 'Chris Walker', email: 'chris@example.test' },
+              { displayName: 'Pat Helper', email: 'pat@example.test' },
+            ],
+          },
+        ]}
+        templates={templates}
+        sends={[]}
+        isSaving={false}
+        onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onDeleteTemplate={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /view recipients/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /resolved recipients/i });
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveTextContent('Chris Walker');
+    expect(dialog).toHaveTextContent('pat@example.test');
+  });
+
+  it('sends a real communication to selected sponsors', async () => {
+    const user = userEvent.setup();
+    const onSendCommunication = vi.fn().mockResolvedValue(true);
+
+    render(
+      <CampaignStudioCommunicationsSection
+        audienceCatalog={audienceCatalog}
+        recipientOptions={{
+          teams: [],
+          sponsors: [
+            {
+              id: 'sponsor-1',
+              label: 'Taylor Sponsor',
+              email: 'taylor@example.test',
+              description: 'Acme Group',
+            },
+            {
+              id: 'sponsor-2',
+              label: 'Morgan Sponsor',
+              email: 'morgan@example.test',
+              description: null,
+            },
+          ],
+          members: [],
+          contacts: [],
+        }}
+        templates={templates}
+        sends={[]}
+        isSaving={false}
+        onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onDeleteTemplate={vi.fn().mockResolvedValue(true)}
+        onSendCommunication={onSendCommunication}
+      />
+    );
+
+    await user.selectOptions(screen.getByLabelText(/^to$/i), 'SELECTED_SPONSORS');
+    await user.click(screen.getByLabelText(/taylor sponsor/i));
+    await user.click(screen.getByRole('button', { name: /^send now$/i }));
+
+    expect(onSendCommunication).toHaveBeenCalledWith({
+      templateId: 'template-1',
+      targetMode: 'SELECTED_SPONSORS',
+      manualRecipients: [],
+      teamIds: [],
+      sponsorIds: ['sponsor-1'],
+      memberIds: [],
+      contactIds: [],
+    });
+  });
+
+  it('opens send history details with recipient delivery rows', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CampaignStudioCommunicationsSection
+        audienceCatalog={audienceCatalog}
+        templates={templates}
+        sends={[
+          {
+            id: 'send-1',
+            campaignId: 'campaign-123',
+            templateId: 'template-1',
+            templateName: 'Volunteer Reminder',
+            targetMode: 'SELECTED_MEMBERS',
+            status: 'SENT',
+            subject: 'Reminder',
+            recipientCount: 1,
+            deliveredCount: 1,
+            failedCount: 0,
+            errorMessage: null,
+            createdByUserId: 'user-1',
+            createdByDisplayName: 'Manager User',
+            createdAt: '2026-05-27T12:00:00',
+            updatedAt: '2026-05-27T12:00:00',
+            recipients: [
+              {
+                id: 'recipient-1',
+                sendId: 'send-1',
+                recipientType: 'MEMBER',
+                recipientRefId: 'member-1',
+                email: 'pat@example.test',
+                displayName: 'Pat Volunteer',
+                status: 'SENT',
+                errorMessage: null,
+                sentAt: '2026-05-27T12:00:00',
+                createdAt: '2026-05-27T12:00:00',
+              },
+            ],
+          },
+        ]}
+        isSaving={false}
+        onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onDeleteTemplate={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    await user.click(screen.getByText('Reminder'));
+
+    expect(screen.getByRole('dialog', { name: /communication send details/i })).toBeInTheDocument();
+    expect(screen.getByText('Pat Volunteer')).toBeInTheDocument();
+    expect(screen.getByText('pat@example.test')).toBeInTheDocument();
+    expect(screen.getByText(/1 recorded/i)).toBeInTheDocument();
+  });
 });

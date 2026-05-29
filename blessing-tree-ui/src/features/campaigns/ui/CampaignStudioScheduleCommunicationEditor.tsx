@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import type {
+  CommunicationAudienceOption,
   CampaignMilestoneDefinition,
+  CommunicationAudienceRecipientSummary,
   CommunicationSchedule,
   CommunicationTemplate,
   CreateCommunicationScheduleInput,
   UpdateCommunicationScheduleInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
+import {
+  CampaignAudienceRecipientDrawer,
+  audienceLabelForSummary,
+} from '@/features/campaigns/ui/CampaignAudienceRecipientDrawer';
 import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
 
 interface CommunicationFormState {
@@ -20,6 +26,8 @@ interface CampaignStudioScheduleCommunicationEditorProps {
   schedules: CommunicationSchedule[];
   milestoneDefinitions: CampaignMilestoneDefinition[];
   templates: CommunicationTemplate[];
+  audienceCatalog: CommunicationAudienceOption[];
+  audienceRecipientSummaries: CommunicationAudienceRecipientSummary[];
   editingScheduleId: string | null;
   selectedDate: string | null;
   isSaving: boolean;
@@ -36,6 +44,8 @@ export function CampaignStudioScheduleCommunicationEditor({
   schedules,
   milestoneDefinitions,
   templates,
+  audienceCatalog,
+  audienceRecipientSummaries,
   editingScheduleId,
   selectedDate,
   isSaving,
@@ -57,6 +67,11 @@ export function CampaignStudioScheduleCommunicationEditor({
   const [formState, setFormState] = useState<CommunicationFormState>(() =>
     buildFormState(editingSchedule, templateOptions, selectedDate)
   );
+  const selectedTemplate = templateOptions.find((template) => template.id === formState.templateId) ?? null;
+  const recipientSummary = selectedTemplate
+    ? audienceRecipientSummaries.find((summary) => summary.audience === selectedTemplate.audience)
+    : null;
+  const [isRecipientDrawerOpen, setIsRecipientDrawerOpen] = useState(false);
 
   useEffect(() => {
     setFormState(buildFormState(editingSchedule, templateOptions, selectedDate));
@@ -122,6 +137,51 @@ export function CampaignStudioScheduleCommunicationEditor({
           ))}
         </select>
       </label>
+
+      {selectedTemplate ? (
+        <div className="campaign-schedule-communication-recipient-preview campaign-studio__modal-form-span-2">
+          <div>
+            <div className="small text-uppercase text-muted fw-semibold">Resolved Recipients</div>
+            <div className="fw-semibold">
+              {recipientSummary ? recipientSummary.count : 0} recipient{recipientSummary?.count === 1 ? '' : 's'}
+            </div>
+            <div className="text-muted small">
+              Uses the template’s intended audience: {selectedTemplate.audience.replaceAll('_', ' ').toLowerCase()}.
+            </div>
+          </div>
+          {recipientSummary && recipientSummary.sampleRecipients.length > 0 ? (
+            <div className="campaign-schedule-communication-recipient-preview__samples">
+              {recipientSummary.sampleRecipients.slice(0, 4).map((recipient) => (
+                <span key={`${recipient.email}:${recipient.displayName}`} className="campaign-chip campaign-chip-muted">
+                  <i className="bi bi-person-lines-fill" aria-hidden="true" />
+                  <span>{recipient.displayName}</span>
+                </span>
+              ))}
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm"
+                onClick={() => setIsRecipientDrawerOpen(true)}
+              >
+                <i className="bi bi-people me-2" aria-hidden="true" />
+                View recipients
+              </button>
+            </div>
+          ) : (
+            <div className="text-muted small">No recipients currently resolve for this audience.</div>
+          )}
+          {isRecipientDrawerOpen ? (
+            <CampaignAudienceRecipientDrawer
+              audienceLabel={audienceLabelForSummary(
+                audienceCatalog,
+                recipientSummary ?? null,
+                selectedTemplate.audience
+              )}
+              summary={recipientSummary ?? null}
+              onClose={() => setIsRecipientDrawerOpen(false)}
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       <label className="form-label">
         Milestone

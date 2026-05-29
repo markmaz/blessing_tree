@@ -165,6 +165,7 @@ export function AdminUsersWorkspace({
       setErrorMessage(
         roleError instanceof Error ? roleError.message : 'Unable to update user app access.'
       );
+      throw roleError;
     } finally {
       setIsSaving(false);
     }
@@ -298,7 +299,7 @@ export function AdminUsersWorkspace({
         isSaving={isSaving}
         onClose={() => setSelectedUser(null)}
         onResendInvite={(invitationId) => void handleResendInvite(invitationId)}
-        onUpdateRole={(userId, role) => void handleUpdateUserRole(userId, role)}
+        onUpdateRole={handleUpdateUserRole}
         onRequestDelete={setDeleteTarget}
       />
 

@@ -166,7 +166,11 @@ export function CampaignPeopleGroupTable({
                       <div className="campaign-people-group-row__link">
                         <span className="campaign-people-group-row__name">{group.groupName}</span>
                         <span className="campaign-people-group-row__meta">
-                          {group.city && group.state ? `${group.city}, ${group.state}` : group.intakeSource ?? 'No source yet'}
+                          {group.parentOrganization?.groupName
+                            ? `Associated with ${group.parentOrganization.groupName}`
+                            : group.city && group.state
+                              ? `${group.city}, ${group.state}`
+                              : group.intakeSource ?? 'No source yet'}
                         </span>
                       </div>
                     </div>

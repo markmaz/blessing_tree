@@ -25,12 +25,6 @@ from app.models.recipient_constants import (
     RECIPIENT_GROUP_TYPE_ORGANIZATION,
     RECIPIENT_KIND_ADULT,
     RECIPIENT_KIND_CHILD,
-    RECIPIENT_ORGANIZATION_TYPE_CHILDRENS_HOME,
-    RECIPIENT_ORGANIZATION_TYPE_NURSING_HOME,
-    RECIPIENT_ORGANIZATION_TYPE_ORPHANAGE,
-    RECIPIENT_ORGANIZATION_TYPE_OTHER,
-    RECIPIENT_ORGANIZATION_TYPE_PARTNER_ORG,
-    RECIPIENT_ORGANIZATION_TYPE_SENIOR_PROGRAM,
     RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
     RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
     RECIPIENT_PRIVACY_LEVEL_INITIALS,
@@ -60,14 +54,6 @@ GROUP_TYPES = {
     RECIPIENT_GROUP_TYPE_ORGANIZATION,
 }
 GROUP_TYPE_ALIASES: dict[str, str] = {}
-ORGANIZATION_TYPES = {
-    RECIPIENT_ORGANIZATION_TYPE_NURSING_HOME,
-    RECIPIENT_ORGANIZATION_TYPE_ORPHANAGE,
-    RECIPIENT_ORGANIZATION_TYPE_SENIOR_PROGRAM,
-    RECIPIENT_ORGANIZATION_TYPE_CHILDRENS_HOME,
-    RECIPIENT_ORGANIZATION_TYPE_PARTNER_ORG,
-    RECIPIENT_ORGANIZATION_TYPE_OTHER,
-}
 GROUP_STATUSES = {
     RECIPIENT_GROUP_STATUS_ACTIVE,
     RECIPIENT_GROUP_STATUS_INACTIVE,
@@ -271,21 +257,6 @@ def validate_group_status(value: object, *, default: str = RECIPIENT_GROUP_STATU
     normalized = str(value or default).strip().upper()
     if normalized not in GROUP_STATUSES:
         raise ServiceError("Invalid status", status_code=400, details={"field": "status"})
-    return normalized
-
-
-def validate_organization_type(value: object, *, required: bool = False) -> str | None:
-    if value in (None, ""):
-        if required:
-            raise ServiceError(
-                "organization_type is required",
-                status_code=400,
-                details={"field": "organization_type"},
-            )
-        return None
-    normalized = str(value).strip().upper()
-    if normalized not in ORGANIZATION_TYPES:
-        raise ServiceError("Invalid organization_type", status_code=400, details={"field": "organization_type"})
     return normalized
 
 

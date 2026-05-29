@@ -58,6 +58,32 @@ export interface CampaignSponsorInteraction {
   externalMessageId: string | null;
 }
 
+export interface SponsorCommunicationWarning {
+  code: string;
+  message: string;
+}
+
+export interface SponsorCommunicationPreview {
+  templateId: string;
+  sponsorId: string;
+  recipientEmail: string;
+  subject: string;
+  html: string;
+  text: string;
+  mergeFields: Record<string, string>;
+  warnings: SponsorCommunicationWarning[];
+}
+
+export interface SponsorCommunicationSendResult {
+  sendId: string;
+  templateId: string;
+  sponsorId: string;
+  recipientEmail: string;
+  subject: string;
+  status: string;
+  warnings: SponsorCommunicationWarning[];
+}
+
 export interface CampaignSponsorParticipation {
   status: SponsorshipStatus;
   interestStatus: SponsorshipInterestStatus;

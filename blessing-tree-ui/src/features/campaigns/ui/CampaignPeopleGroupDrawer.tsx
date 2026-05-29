@@ -9,6 +9,7 @@ import type {
   PreferredContact,
   RecipientGroupType,
   RecipientGroupUpsertInput,
+  OrganizationTypeOption,
 } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 import {
   formatContactDisplayName,
@@ -28,7 +29,9 @@ interface CampaignPeopleGroupDrawerProps {
   canEdit: boolean;
   group: CampaignPeopleGroup | null;
   groups: CampaignPeopleGroup[];
+  organizationTypes?: OrganizationTypeOption[];
   initialGroupType?: RecipientGroupType;
+  initialParentOrganizationGroupId?: string | null;
   onClose: () => void;
   onSaveGroup: (input: RecipientGroupUpsertInput, groupId?: string) => Promise<CampaignPeopleGroup | null>;
   onSaveContact: (
@@ -40,13 +43,19 @@ interface CampaignPeopleGroupDrawerProps {
   onDeleteGroup: (groupId: string) => Promise<boolean>;
   onSearchAddresses: (query: string) => Promise<CampaignAddressSuggestion[]>;
   onAddRecipientToGroup: (groupId: string) => void;
+  onAddFamilyToOrganization?: (organizationGroupId: string) => void;
   onSelectGroup: (groupId: string) => void;
   onSelectRecipient: (recipientId: string) => void;
+  onAfterCreateGroup?: (group: CampaignPeopleGroup) => void;
 }
 
-const emptyGroupDraft = (groupType: RecipientGroupType = 'HOUSEHOLD'): RecipientGroupUpsertInput => ({
+const emptyGroupDraft = (
+  groupType: RecipientGroupType = 'HOUSEHOLD',
+  parentOrganizationGroupId: string | null = null
+): RecipientGroupUpsertInput => ({
   groupType,
   groupName: '',
+  parentOrganizationGroupId,
   organizationType: null,
   programAbbreviation: '',
   intakeSource: '',
@@ -116,13 +125,24 @@ function buildFamilyName(lastName: string | null | undefined): string {
   return normalizedLastName ? `${normalizedLastName} Family` : '';
 }
 
+const fallbackOrganizationTypes: OrganizationTypeOption[] = [
+  { id: 'NURSING_HOME', code: 'NURSING_HOME', label: 'Nursing Home', recipientCategory: 'ADULT', isActive: true, sortOrder: 10, createdAt: null, updatedAt: null },
+  { id: 'MH_CLIENTS', code: 'MH_CLIENTS', label: 'MH Clients', recipientCategory: 'ADULT', isActive: true, sortOrder: 20, createdAt: null, updatedAt: null },
+  { id: 'FOSTER_CARE', code: 'FOSTER_CARE', label: 'Foster Care', recipientCategory: 'FAMILY', isActive: true, sortOrder: 30, createdAt: null, updatedAt: null },
+  { id: 'FAMILY_SERVICES', code: 'FAMILY_SERVICES', label: 'Family Services', recipientCategory: 'FAMILY', isActive: true, sortOrder: 40, createdAt: null, updatedAt: null },
+  { id: 'CHILDRENS_HOME', code: 'CHILDRENS_HOME', label: "Children's Home", recipientCategory: 'CHILD', isActive: true, sortOrder: 50, createdAt: null, updatedAt: null },
+  { id: 'OTHER', code: 'OTHER', label: 'Other', recipientCategory: 'ADULT', isActive: true, sortOrder: 100, createdAt: null, updatedAt: null },
+];
+
 export function CampaignPeopleGroupDrawer({
   isOpen,
   isSaving,
   canEdit,
   group,
   groups,
+  organizationTypes = [],
   initialGroupType = 'HOUSEHOLD',
+  initialParentOrganizationGroupId = null,
   onClose,
   onSaveGroup,
   onSaveContact,
@@ -130,14 +150,17 @@ export function CampaignPeopleGroupDrawer({
   onDeleteGroup,
   onSearchAddresses,
   onAddRecipientToGroup,
+  onAddFamilyToOrganization,
   onSelectGroup,
   onSelectRecipient,
+  onAfterCreateGroup,
 }: CampaignPeopleGroupDrawerProps) {
   const [groupDraft, setGroupDraft] = useState<RecipientGroupUpsertInput>(() =>
     group
       ? {
           groupType: group.groupType,
           groupName: group.groupName,
+          parentOrganizationGroupId: group.parentOrganizationGroupId ?? null,
           organizationType: group.organizationType,
           programAbbreviation: group.programAbbreviation ?? '',
           intakeSource: group.intakeSource ?? '',
@@ -150,7 +173,7 @@ export function CampaignPeopleGroupDrawer({
           state: group.state ?? '',
           postalCode: group.postalCode ?? '',
         }
-      : emptyGroupDraft(initialGroupType)
+      : emptyGroupDraft(initialGroupType, initialParentOrganizationGroupId)
   );
   const [groupError, setGroupError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -182,6 +205,28 @@ export function CampaignPeopleGroupDrawer({
   );
   const groupNameLabel = isOrganizationGroup ? 'Organization Name' : 'Family Name';
   const programAbbreviationLabel = 'Program Abbreviation';
+  const groupRecordLabel = isOrganizationGroup ? 'Organization' : 'Family';
+  const organizationTypeOptions = organizationTypes.length ? organizationTypes : fallbackOrganizationTypes;
+  const organizationGroups = groups
+    .filter((candidate) => candidate.groupType === 'ORGANIZATION' && candidate.id !== group?.id)
+    .sort((left, right) => left.groupName.localeCompare(right.groupName));
+  const defaultOrganizationTypeCode =
+    organizationTypeOptions.find((type) => type.code === 'OTHER')?.code ?? organizationTypeOptions[0]?.code ?? '';
+  const selectedOrganizationType = organizationTypeOptions.find((type) => type.code === groupDraft.organizationType) ?? null;
+  const isOrganizationFamilyProgram = isOrganizationGroup && selectedOrganizationType?.recipientCategory === 'FAMILY';
+  const selectedParentOrganization = organizationGroups.find((candidate) => candidate.id === groupDraft.parentOrganizationGroupId) ?? null;
+  const isOrganizationChildProgram = isOrganizationGroup
+    && (selectedOrganizationType?.recipientCategory === 'CHILD'
+      || (!selectedOrganizationType && ['ORPHANAGE', 'CHILDRENS_HOME'].includes(groupDraft.organizationType ?? '')));
+  const groupRecipientLabel = !isOrganizationGroup || isOrganizationChildProgram ? 'Child' : 'Adult';
+  const groupRecipientLabelPlural = groupRecipientLabel === 'Child' ? 'Children' : 'Adults';
+  const canAddDirectRecipient = Boolean(group && (!isOrganizationFamilyProgram || group.recipients.length > 0));
+  const groupSaveButtonLabel = group ? `Save ${groupRecordLabel}` : `Create ${groupRecordLabel}`;
+  const linkedFamilyGroups = group?.groupType === 'ORGANIZATION'
+    ? groups
+        .filter((candidate) => candidate.groupType === 'HOUSEHOLD' && candidate.parentOrganizationGroupId === group.id)
+        .sort((left, right) => left.groupName.localeCompare(right.groupName))
+    : [];
   const drawerTitle = group
     ? group.groupName
     : isOrganizationGroup
@@ -333,7 +378,7 @@ export function CampaignPeopleGroupDrawer({
         {
           ...groupDraft,
           groupName: isOrganizationGroup ? groupDraft.groupName.trim() : derivedFamilyName,
-          organizationType: isOrganizationGroup ? (groupDraft.organizationType ?? 'OTHER') : null,
+          organizationType: isOrganizationGroup ? (groupDraft.organizationType || defaultOrganizationTypeCode) : null,
           programAbbreviation: isOrganizationGroup ? (groupDraft.programAbbreviation?.trim() || null) : null,
         },
         group?.id
@@ -377,8 +422,8 @@ export function CampaignPeopleGroupDrawer({
         setSuccessMessage(
           isOrganizationGroup
             ? group
-              ? 'Group updated.'
-              : 'Group added.'
+              ? 'Organization updated.'
+              : 'Organization added.'
             : group
               ? 'Family updated.'
               : 'Family added.'
@@ -392,12 +437,16 @@ export function CampaignPeopleGroupDrawer({
           externalReference: savedGroup.externalReference ?? '',
           notes: savedGroup.notes ?? '',
           status: savedGroup.status,
+          parentOrganizationGroupId: savedGroup.parentOrganizationGroupId ?? null,
           addressLine1: savedGroup.addressLine1 ?? '',
           addressLine2: savedGroup.addressLine2 ?? '',
           city: savedGroup.city ?? '',
           state: savedGroup.state ?? '',
           postalCode: savedGroup.postalCode ?? '',
         });
+        if (!group) {
+          onAfterCreateGroup?.(savedGroup);
+        }
       }
     } catch (saveError) {
       setGroupError(saveError instanceof Error ? saveError.message : 'Unable to save this intake record.');
@@ -500,6 +549,48 @@ export function CampaignPeopleGroupDrawer({
         />
       ) : null}
       <div className="campaign-team-drawer__stack">
+        {group && (canAddDirectRecipient || onAddFamilyToOrganization) ? (
+          <section className="campaign-team-drawer__section campaign-people-quick-actions">
+            <div>
+              <h4 className="h6 mb-1">Quick Actions</h4>
+              <p className="text-muted mb-0">
+                Add another person without leaving this {isOrganizationGroup ? 'organization' : 'family'} record.
+              </p>
+            </div>
+            <div className="campaign-people-quick-actions__buttons">
+              {canAddDirectRecipient ? (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => onAddRecipientToGroup(group.id)}
+                  disabled={!canEdit}
+                >
+                  <i
+                    className={`bi ${
+                      groupRecipientLabel === 'Child'
+                        ? 'bi-person-plus'
+                        : 'bi-people-fill'
+                    } me-2`}
+                    aria-hidden="true"
+                  />
+                  Add {groupRecipientLabel}
+                </button>
+              ) : null}
+              {group.groupType === 'ORGANIZATION' && onAddFamilyToOrganization ? (
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() => onAddFamilyToOrganization(group.id)}
+                  disabled={!canEdit}
+                >
+                  <i className="bi bi-house-heart me-2" aria-hidden="true" />
+                  Add Family
+                </button>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
             <div className="campaign-people-section-heading">
@@ -577,9 +668,13 @@ export function CampaignPeopleGroupDrawer({
                   setGroupDraft((currentValue) => ({
                     ...currentValue,
                     groupType: event.target.value as RecipientGroupType,
+                    parentOrganizationGroupId:
+                      event.target.value === 'HOUSEHOLD'
+                        ? currentValue.parentOrganizationGroupId ?? null
+                        : null,
                     organizationType:
                       event.target.value === 'ORGANIZATION'
-                        ? currentValue.organizationType ?? 'OTHER'
+                        ? currentValue.organizationType || defaultOrganizationTypeCode
                         : null,
                     programAbbreviation:
                       event.target.value === 'ORGANIZATION'
@@ -656,6 +751,33 @@ export function CampaignPeopleGroupDrawer({
                     value={derivedFamilyName || 'Enter guardian surname'}
                     disabled
                   />
+                </label>
+
+                <label className="form-label campaign-team-form-grid__span-2">
+                  Associated Organization
+                  <select
+                    className="form-select mt-2"
+                    value={groupDraft.parentOrganizationGroupId ?? ''}
+                    onChange={(event) =>
+                      setGroupDraft((currentValue) => ({
+                        ...currentValue,
+                        parentOrganizationGroupId: event.target.value || null,
+                      }))
+                    }
+                    disabled={!canEdit}
+                  >
+                    <option value="">No associated organization</option>
+                    {organizationGroups.map((organization) => (
+                      <option key={organization.id} value={organization.id}>
+                        {organization.groupName}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedParentOrganization ? (
+                    <span className="form-text">
+                      This family will appear under {selectedParentOrganization.groupName}.
+                    </span>
+                  ) : null}
                 </label>
 
                 <label className="form-label">
@@ -776,7 +898,7 @@ export function CampaignPeopleGroupDrawer({
                 Organization Type
                 <select
                   className="form-select mt-2"
-                  value={groupDraft.organizationType ?? 'OTHER'}
+                  value={groupDraft.organizationType ?? organizationTypeOptions[0]?.code ?? ''}
                   onChange={(event) =>
                     setGroupDraft((currentValue) => ({
                       ...currentValue,
@@ -785,13 +907,21 @@ export function CampaignPeopleGroupDrawer({
                   }
                   disabled={!canEdit}
                 >
-                  <option value="NURSING_HOME">Nursing Home</option>
-                  <option value="ORPHANAGE">Orphanage</option>
-                  <option value="SENIOR_PROGRAM">Senior Program</option>
-                  <option value="CHILDRENS_HOME">Children&apos;s Home</option>
-                  <option value="PARTNER_ORG">Partner Organization</option>
-                  <option value="OTHER">Other</option>
+                  {organizationTypeOptions.length === 0 ? (
+                    <option value="">No organization types configured</option>
+                  ) : null}
+                  {organizationTypeOptions.map((organizationType) => (
+                    <option key={organizationType.code} value={organizationType.code}>
+                      {organizationType.label}
+                    </option>
+                  ))}
+                  {groupDraft.organizationType && !organizationTypeOptions.some((type) => type.code === groupDraft.organizationType) ? (
+                    <option value={groupDraft.organizationType}>{groupDraft.organizationType}</option>
+                  ) : null}
                 </select>
+                <span className="form-text">
+                  People Served: {formatOrganizationRecipientCategory(selectedOrganizationType?.recipientCategory)}
+                </span>
               </label>
             ) : null}
 
@@ -1015,43 +1145,103 @@ export function CampaignPeopleGroupDrawer({
               disabled={!canEdit || isSaving}
             >
               <i className="bi bi-floppy me-2" aria-hidden="true" />
-              {group ? 'Save Group' : 'Create Group'}
+              {groupSaveButtonLabel}
             </button>
           </div>
         </section>
 
-        {group ? (
+        {group?.groupType === 'ORGANIZATION' ? (
+          <section className="campaign-team-drawer__section">
+            <div className="campaign-team-drawer__section-header">
+              <div>
+                <h4 className="h6 mb-1">Families</h4>
+                <p className="text-muted mb-0">
+                  Link families that were referred by or managed through this organization. Children still stay on the family record.
+                </p>
+              </div>
+              {onAddFamilyToOrganization ? (
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() => onAddFamilyToOrganization(group.id)}
+                  disabled={!canEdit}
+                >
+                  <i className="bi bi-house-heart me-2" aria-hidden="true" />
+                  Add Family
+                </button>
+              ) : null}
+            </div>
+
+            <div className="campaign-team-inline-list">
+              {linkedFamilyGroups.length === 0 ? (
+                <div className="campaign-studio__empty-note">
+                  No families are associated with this organization yet.
+                </div>
+              ) : (
+                linkedFamilyGroups.map((family) => (
+                  <div key={family.id} className="campaign-team-inline-item campaign-team-inline-item--stacked">
+                    <div className="campaign-team-inline-item__content">
+                      <strong>{family.groupName}</strong>
+                      <div className="campaign-team-inline-meta">
+                        <span className="campaign-chip campaign-chip-muted">
+                          <i className="bi bi-people me-1" aria-hidden="true" />
+                          {family.recipientCount} children
+                        </span>
+                        <span className="campaign-chip campaign-chip-muted">
+                          <i className="bi bi-tag me-1" aria-hidden="true" />
+                          {family.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="campaign-team-inline-item__actions">
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => onSelectGroup(family.id)}
+                      >
+                        <i className="bi bi-pencil-square me-2" aria-hidden="true" />
+                        Open Family
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        ) : null}
+
+        {group && canAddDirectRecipient ? (
           <section className="campaign-team-drawer__section">
             <div className="campaign-team-drawer__section-header">
               <div>
                 <h4 className="h6 mb-1">
                   {group.groupType === 'HOUSEHOLD'
                     ? 'Children'
-                    : 'Program Members'}
+                    : groupRecipientLabelPlural}
                 </h4>
                 <p className="text-muted mb-0">
                   {group.groupType === 'HOUSEHOLD'
                     ? 'Capture the children in this family, then open each child to add or refine their wishlist.'
-                    : 'Capture the adults in this program, then open each person to add or refine their wishlist and optional direct contact details.'}
+                    : groupRecipientLabel === 'Child'
+                      ? 'Capture the children in this program, then open each child to add or refine their wishlist.'
+                      : 'Capture the adults in this program, then open each person to add or refine their wishlist and optional direct contact details.'}
                 </p>
               </div>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
                 onClick={() => onAddRecipientToGroup(group.id)}
-                disabled={!canEdit}
+                disabled={!canEdit || isOrganizationFamilyProgram}
               >
                 <i
                   className={`bi ${
-                    group.groupType === 'HOUSEHOLD'
+                    groupRecipientLabel === 'Child'
                       ? 'bi-person-plus'
                       : 'bi-people-fill'
                   } me-2`}
                   aria-hidden="true"
                 />
-                {group.groupType === 'HOUSEHOLD'
-                  ? 'Add Child'
-                  : 'Add Adult'}
+                Add {groupRecipientLabel}
               </button>
             </div>
 
@@ -1099,7 +1289,7 @@ export function CampaignPeopleGroupDrawer({
                         <i className="bi bi-pencil-square me-2" aria-hidden="true" />
                         {group.groupType === 'HOUSEHOLD'
                           ? 'Open Child'
-                          : 'Open Adult'}
+                          : `Open ${groupRecipientLabel}`}
                       </button>
                     </div>
                   </div>
@@ -1463,4 +1653,16 @@ export function CampaignPeopleGroupDrawer({
       ) : null}
     </CampaignStudioDrawer>
   );
+}
+
+function formatOrganizationRecipientCategory(
+  value: OrganizationTypeOption['recipientCategory'] | null | undefined
+): string {
+  if (value === 'CHILD') {
+    return 'Children';
+  }
+  if (value === 'FAMILY') {
+    return 'Families';
+  }
+  return 'Adults';
 }

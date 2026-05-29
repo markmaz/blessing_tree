@@ -8,10 +8,13 @@ import type {
   CampaignSponsorInteraction,
   CampaignSponsorWorkspaceData,
   PendingSponsorRegistration,
+  SponsorCommunicationPreview,
+  SponsorCommunicationSendResult,
   SponsorInteractionUpsertInput,
   SponsorUpsertInput,
   SponsorshipUpsertInput,
 } from '@/features/campaigns/model/campaignSponsorWorkspaceTypes';
+import type { CommunicationTemplate } from '@/features/campaigns/model/campaignStudioTypes';
 import { canManageSponsors } from '@/features/campaigns/model/campaignPermissions';
 import {
   formatShortDate,
@@ -27,6 +30,8 @@ interface CampaignSponsorsWorkspaceProps {
   workspace: CampaignSponsorWorkspaceData | null;
   pendingRegistrations: PendingSponsorRegistration[];
   pendingRegistrationError: string | null;
+  communicationTemplates: CommunicationTemplate[];
+  communicationTemplateError: string | null;
   isLoading: boolean;
   isSaving: boolean;
   error: string | null;
@@ -40,6 +45,14 @@ interface CampaignSponsorsWorkspaceProps {
     }
   >;
   onLoadSponsorInteractions: (sponsorId: string) => Promise<CampaignSponsorInteraction[]>;
+  onPreviewCommunication: (
+    sponsorId: string,
+    templateId: string
+  ) => Promise<SponsorCommunicationPreview | null>;
+  onSendCommunication: (
+    sponsorId: string,
+    templateId: string
+  ) => Promise<SponsorCommunicationSendResult | null>;
   onSaveSponsor: (
     sponsor: SponsorUpsertInput,
     participation: SponsorshipUpsertInput,
@@ -64,11 +77,15 @@ export function CampaignSponsorsWorkspace({
   workspace,
   pendingRegistrations,
   pendingRegistrationError,
+  communicationTemplates,
+  communicationTemplateError,
   isLoading,
   isSaving,
   error,
   interactionsBySponsor,
   onLoadSponsorInteractions,
+  onPreviewCommunication,
+  onSendCommunication,
   onSaveSponsor,
   onDeleteSponsor,
   onSaveInteraction,
@@ -331,8 +348,12 @@ export function CampaignSponsorsWorkspace({
         canEdit={canEditSponsors}
         isSaving={isSaving}
         sponsor={selectedSponsor}
+        communicationTemplates={communicationTemplates}
+        communicationTemplateError={communicationTemplateError}
         interactionsState={selectedSponsor ? interactionsBySponsor[selectedSponsor.id] : undefined}
         onLoadInteractions={onLoadSponsorInteractions}
+        onPreviewCommunication={onPreviewCommunication}
+        onSendCommunication={onSendCommunication}
         onSaveSponsor={onSaveSponsor}
         onDeleteSponsor={onDeleteSponsor}
         onSaveInteraction={onSaveInteraction}

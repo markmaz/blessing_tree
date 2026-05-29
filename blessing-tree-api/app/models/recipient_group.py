@@ -14,12 +14,6 @@ from .recipient_constants import (
     RECIPIENT_GROUP_STATUS_INACTIVE,
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
     RECIPIENT_GROUP_TYPE_ORGANIZATION,
-    RECIPIENT_ORGANIZATION_TYPE_CHILDRENS_HOME,
-    RECIPIENT_ORGANIZATION_TYPE_NURSING_HOME,
-    RECIPIENT_ORGANIZATION_TYPE_ORPHANAGE,
-    RECIPIENT_ORGANIZATION_TYPE_OTHER,
-    RECIPIENT_ORGANIZATION_TYPE_PARTNER_ORG,
-    RECIPIENT_ORGANIZATION_TYPE_SENIOR_PROGRAM,
 )
 from .uuid_bin import UUIDBin
 
@@ -40,6 +34,12 @@ class RecipientGroup(Base):
         nullable=False,
         index=True,
     )
+    parent_organization_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUIDBin(),
+        ForeignKey("recipient_group.id", ondelete="SET NULL", onupdate="CASCADE"),
+        nullable=True,
+        index=True,
+    )
 
     group_type: Mapped[str] = mapped_column(
         Enum(
@@ -50,18 +50,7 @@ class RecipientGroup(Base):
         nullable=False,
     )
     group_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    organization_type: Mapped[Optional[str]] = mapped_column(
-        Enum(
-            RECIPIENT_ORGANIZATION_TYPE_NURSING_HOME,
-            RECIPIENT_ORGANIZATION_TYPE_ORPHANAGE,
-            RECIPIENT_ORGANIZATION_TYPE_SENIOR_PROGRAM,
-            RECIPIENT_ORGANIZATION_TYPE_CHILDRENS_HOME,
-            RECIPIENT_ORGANIZATION_TYPE_PARTNER_ORG,
-            RECIPIENT_ORGANIZATION_TYPE_OTHER,
-            name="recipient_organization_type",
-        ),
-        nullable=True,
-    )
+    organization_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     program_abbreviation: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
     intake_source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     external_reference: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -88,6 +77,20 @@ class RecipientGroup(Base):
 
     campaign: Mapped["Campaign"] = relationship(back_populates="recipient_groups")
 
+    parent_organization: Mapped[Optional["RecipientGroup"]] = relationship(
+        "RecipientGroup",
+        remote_side="RecipientGroup.id",
+        foreign_keys=[parent_organization_group_id],
+        back_populates="families",
+    )
+
+    families: Mapped[List["RecipientGroup"]] = relationship(
+        "RecipientGroup",
+        foreign_keys="RecipientGroup.parent_organization_group_id",
+        back_populates="parent_organization",
+        passive_deletes=True,
+    )
+
     contacts: Mapped[List["GroupContact"]] = relationship(
         back_populates="recipient_group",
         cascade="all, delete-orphan",
@@ -108,6 +111,7 @@ class RecipientGroup(Base):
 
     __table_args__ = (
         Index("idx_recipient_group_campaign", "campaign_id"),
+        Index("idx_recipient_group_parent_organization", "campaign_id", "parent_organization_group_id"),
         Index("idx_recipient_group_type", "campaign_id", "group_type"),
         Index("idx_recipient_group_organization_type", "campaign_id", "organization_type"),
         Index("idx_recipient_group_name", "campaign_id", "group_name"),

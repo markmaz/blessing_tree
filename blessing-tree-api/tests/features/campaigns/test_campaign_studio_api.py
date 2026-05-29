@@ -10,11 +10,15 @@ from app.features.campaigns import studio_api as campaign_studio_api_module
 from app.features.admin.llm_runtime_service import LlmRuntimeUnavailableError
 from app.models.admin_llm_configuration import AdminLlmConfiguration
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
+from app.models.campaign_communication_send import CampaignCommunicationSend
+from app.models.campaign_communication_send_recipient import CampaignCommunicationSendRecipient
 from app.models.campaign_event import CampaignEvent
 from app.models.campaign_gift_policy import CampaignGiftPolicy
 from app.models.campaign_milestone import CampaignMilestone
 from app.models.campaign_milestone_definition import CampaignMilestoneDefinition
 from app.models.communication_template import CommunicationTemplate
+from app.models.sponsor import Sponsor
+from app.models.sponsorship import Sponsorship
 from tests.features.campaigns.studio_test_support import (
     assign_role,
     auth_header,
@@ -81,6 +85,50 @@ def test_get_campaign_studio_returns_aggregate_payload(
             status="SCHEDULED",
         )
     )
+    sponsor = Sponsor(
+        id=uuid.uuid4(),
+        display_name="Taylor Sponsor",
+        email="taylor@example.test",
+        preferred_contact="EMAIL",
+        source="STAFF_ENTRY",
+        is_active=True,
+    )
+    session.add(sponsor)
+    session.add(
+        Sponsorship(
+            id=uuid.uuid4(),
+            campaign_id=campaign.id,
+            sponsor_id=sponsor.id,
+            status="ACTIVE",
+            interest_status="COMMITTED",
+            drop_off_status="NOT_STARTED",
+        )
+    )
+    send = CampaignCommunicationSend(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        template_id=template.id,
+        target_mode="CONTEXT_SPONSOR",
+        status="SENT",
+        subject="Reminder",
+        recipient_count=1,
+        delivered_count=1,
+        failed_count=0,
+        created_by_user_id=manager.id,
+    )
+    session.add(send)
+    session.flush()
+    session.add(
+        CampaignCommunicationSendRecipient(
+            id=uuid.uuid4(),
+            send_id=send.id,
+            recipient_type="SPONSOR",
+            recipient_ref_id=sponsor.id,
+            email="taylor@example.test",
+            display_name="Taylor Sponsor",
+            status="SENT",
+        )
+    )
     manager_id = str(manager.id)
     campaign_id = str(campaign.id)
     session.commit()
@@ -97,8 +145,21 @@ def test_get_campaign_studio_returns_aggregate_payload(
     assert payload["campaign"]["id"] == campaign_id
     assert payload["team"]["counts"]["manager_count"] == 1
     assert payload["communications"]["audience_catalog"][0]["key"] == "HOUSEHOLD_CONTACT"
+    sponsor_summary = next(
+        summary
+        for summary in payload["communications"]["audience_recipient_summaries"]
+        if summary["audience"] == "SPONSOR"
+    )
+    assert sponsor_summary["count"] == 1
+    assert sponsor_summary["sample_recipients"][0]["email"] == "taylor@example.test"
     assert payload["communications"]["templates"][0]["template_key"] == "sponsor_reminder"
     assert payload["communications"]["schedules"][0]["status"] == "SCHEDULED"
+    assert payload["communications"]["sends"][0]["target_mode"] == "CONTEXT_SPONSOR"
+    assert payload["communications"]["sends"][0]["delivered_count"] == 1
+    assert payload["communications"]["sends"][0]["recipients"][0]["email"] == "taylor@example.test"
+    assert payload["communications"]["sends"][0]["recipients"][0]["recipient_type"] == "SPONSOR"
+    assert payload["communications"]["recipient_options"]["sponsors"][0]["label"] == "Taylor Sponsor"
+    assert payload["communications"]["recipient_options"]["sponsors"][0]["email"] == "taylor@example.test"
     assert payload["milestone_definitions"][0]["milestone_key"] == "registration_open"
     assert payload["milestones"][0]["milestone_key"] == "registration_open"
     assert payload["gift_policy"]["max_gifts_per_sponsor"] == 3

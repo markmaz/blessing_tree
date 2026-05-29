@@ -63,6 +63,60 @@
   background: rgba(248, 245, 239, 0.48);
 }
 
+.campaign-sponsor-communication-send {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border: 1px solid rgba(125, 93, 48, 0.16);
+  border-radius: 1rem;
+  background: rgba(255, 250, 242, 0.72);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.campaign-sponsor-communication-send__header,
+.campaign-sponsor-communication-preview__meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.campaign-sponsor-communication-send__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.campaign-sponsor-communication-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  border-top: 1px solid rgba(125, 93, 48, 0.14);
+  padding-top: 1rem;
+}
+
+.campaign-sponsor-communication-preview__warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.campaign-sponsor-communication-preview__meta {
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.76);
+  padding: 0.85rem;
+}
+
+.campaign-sponsor-communication-preview__frame {
+  width: 100%;
+  min-height: 320px;
+  border: 1px solid rgba(125, 93, 48, 0.16);
+  border-radius: 0.85rem;
+  background: #fff;
+}
+
 .campaign-sponsor-list {
   display: flex;
   flex-direction: column;
@@ -142,6 +196,15 @@
   .campaign-sponsor-list__item {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .campaign-sponsor-communication-send__header,
+  .campaign-sponsor-communication-preview__meta {
+    flex-direction: column;
+  }
+
+  .campaign-sponsor-communication-send__actions {
+    justify-content: flex-start;
   }
 
   .campaign-sponsor-list__actions {

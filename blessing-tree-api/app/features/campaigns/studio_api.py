@@ -21,6 +21,7 @@ from app.features.campaigns.studio_serializers import (
     serialize_team_snapshot,
 )
 from app.features.campaigns.ai_draft_service import CampaignStudioAiDraftService
+from app.features.campaigns.communication_send_service import CampaignCommunicationSendService
 from app.features.campaigns.flyer_service import CampaignFlyerService
 from app.features.campaigns.gift_policy_service import CampaignGiftPolicyService
 from app.features.campaigns.studio_schedule_service import CampaignStudioScheduleService
@@ -34,6 +35,7 @@ _team_service = CampaignStudioTeamService()
 _ai_draft_service = CampaignStudioAiDraftService()
 _gift_policy_service = CampaignGiftPolicyService()
 _flyer_service = CampaignFlyerService()
+_communication_send_service = CampaignCommunicationSendService()
 
 
 @campaign_ns.route("/<string:campaign_id>/studio")
@@ -129,6 +131,27 @@ class CommunicationTemplateTestEmailResource(Resource):
                 template_id=template_id,
                 user_id=str(getattr(g, "user_id")),
                 recipient_email=payload.get("recipient_email"),
+            )
+        return result, 200
+
+
+@campaign_ns.route("/<string:campaign_id>/communications/send")
+class CommunicationSendResource(Resource):
+    @require_campaign_capability("campaign.admin")
+    def post(self, campaign_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            result = _communication_send_service.send_campaign_template(
+                db,
+                campaign_id=campaign_id,
+                template_id=str(payload.get("template_id") or ""),
+                target_mode=str(payload.get("target_mode") or "AUDIENCE"),
+                manual_recipients=payload.get("manual_recipients") or [],
+                team_ids=[str(value) for value in payload.get("team_ids") or []],
+                sponsor_ids=[str(value) for value in payload.get("sponsor_ids") or []],
+                member_ids=[str(value) for value in payload.get("member_ids") or []],
+                contact_ids=[str(value) for value in payload.get("contact_ids") or []],
+                created_by_user_id=getattr(g, "user_id", None),
             )
         return result, 200
 

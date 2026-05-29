@@ -10,11 +10,15 @@ export function SponsorsIntakePage() {
     access,
     workspace,
     pendingRegistrations,
+    communicationTemplates,
+    communicationTemplateError,
     isLoading,
     isSaving,
     error,
     interactionsBySponsor,
     onLoadSponsorInteractions,
+    onPreviewCommunication,
+    onSendCommunication,
     onSaveSponsor,
     onDeleteSponsor,
     onSaveInteraction,
@@ -193,8 +197,12 @@ export function SponsorsIntakePage() {
         canEdit={canEditSponsors}
         isSaving={isSaving}
         sponsor={selectedSponsor}
+        communicationTemplates={communicationTemplates}
+        communicationTemplateError={communicationTemplateError}
         interactionsState={selectedSponsor ? interactionsBySponsor[selectedSponsor.id] : undefined}
         onLoadInteractions={onLoadSponsorInteractions}
+        onPreviewCommunication={onPreviewCommunication}
+        onSendCommunication={onSendCommunication}
         onSaveSponsor={onSaveSponsor}
         onDeleteSponsor={onDeleteSponsor}
         onSaveInteraction={onSaveInteraction}

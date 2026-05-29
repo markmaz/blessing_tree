@@ -25,6 +25,7 @@ import { AdminAskReviewPage } from '@/pages/AdminAskReviewPage';
 import { AdminCampaignOperationsPage } from '@/pages/AdminCampaignOperationsPage';
 import { AdminHealthPage } from '@/pages/AdminHealthPage';
 import { AdminLlmPage } from '@/pages/AdminLlmPage';
+import { AdminOrganizationTypesPage } from '@/pages/AdminOrganizationTypesPage';
 import { AdminPage } from '@/pages/AdminPage';
 import { AdminUsersPage } from '@/pages/AdminUsersPage';
 import { AskBlessingTreePage } from '@/pages/AskBlessingTreePage';
@@ -248,6 +249,7 @@ export function App() {
                   <Route path="users" element={<AdminUsersPage />} />
                   <Route path="ask-review" element={<AdminAskReviewPage />} />
                   <Route path="campaign-operations" element={<AdminCampaignOperationsPage />} />
+                  <Route path="organization-types" element={<AdminOrganizationTypesPage />} />
                   <Route path="llm" element={<AdminLlmPage />} />
                   <Route path="health" element={<AdminHealthPage />} />
                   <Route path="capabilities" element={<AdminCapabilitiesPage />} />

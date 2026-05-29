@@ -10,6 +10,8 @@ from app.features.campaigns.serializers import (
 )
 from app.features.rbac.models.campaign_user_role import CampaignUserRole
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
+from app.models.campaign_communication_send import CampaignCommunicationSend
+from app.models.campaign_communication_send_recipient import CampaignCommunicationSendRecipient
 from app.models.campaign_event import CampaignEvent
 from app.models.campaign_flyer import CampaignFlyer
 from app.models.campaign_gift_policy import CampaignGiftPolicy
@@ -101,6 +103,83 @@ def serialize_communication_schedule(schedule: CampaignCommunicationSchedule) ->
         "notes": schedule.notes,
         "created_at": _serialize_datetime(schedule.created_at),
         "updated_at": _serialize_datetime(schedule.updated_at),
+    }
+
+def serialize_communication_send(send: CampaignCommunicationSend) -> dict[str, Any]:
+    return {
+        "id": str(send.id),
+        "campaign_id": str(send.campaign_id),
+        "template_id": str(send.template_id),
+        "template_name": send.template.name if send.template else "Deleted template",
+        "target_mode": send.target_mode,
+        "status": send.status,
+        "subject": send.subject,
+        "recipient_count": send.recipient_count,
+        "delivered_count": send.delivered_count,
+        "failed_count": send.failed_count,
+        "error_message": send.error_message,
+        "created_by_user_id": str(send.created_by_user_id) if send.created_by_user_id else None,
+        "created_by_display_name": send.created_by_user.display_name if send.created_by_user else None,
+        "created_at": _serialize_datetime(send.created_at),
+        "updated_at": _serialize_datetime(send.updated_at),
+        "recipients": [
+            serialize_communication_send_recipient(recipient)
+            for recipient in sorted(send.recipients or [], key=lambda item: item.created_at)
+        ],
+    }
+
+
+def serialize_communication_send_recipient(recipient: CampaignCommunicationSendRecipient) -> dict[str, Any]:
+    return {
+        "id": str(recipient.id),
+        "send_id": str(recipient.send_id),
+        "recipient_type": recipient.recipient_type,
+        "recipient_ref_id": str(recipient.recipient_ref_id) if recipient.recipient_ref_id else None,
+        "email": recipient.email,
+        "display_name": recipient.display_name,
+        "status": recipient.status,
+        "error_message": recipient.error_message,
+        "sent_at": _serialize_datetime(recipient.sent_at),
+        "created_at": _serialize_datetime(recipient.created_at),
+    }
+
+
+def serialize_audience_recipient_summary(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "audience": payload.get("audience"),
+        "count": int(payload.get("count") or 0),
+        "sample_recipients": [
+            {
+                "display_name": item.get("display_name"),
+                "email": item.get("email"),
+            }
+            for item in payload.get("sample_recipients", [])
+        ],
+        "recipients": [
+            {
+                "display_name": item.get("display_name"),
+                "email": item.get("email"),
+            }
+            for item in payload.get("recipients", payload.get("sample_recipients", []))
+        ],
+    }
+
+
+def serialize_communication_recipient_options(payload: dict[str, list[dict[str, Any]]]) -> dict[str, list[dict[str, Any]]]:
+    return {
+        "teams": [
+            {
+                "id": str(item.get("id")),
+                "label": item.get("label"),
+                "email": item.get("email"),
+                "description": item.get("description"),
+                "member_count": int(item.get("member_count") or 0),
+            }
+            for item in payload.get("teams", [])
+        ],
+        "sponsors": [_serialize_communication_recipient_option(item) for item in payload.get("sponsors", [])],
+        "members": [_serialize_communication_recipient_option(item) for item in payload.get("members", [])],
+        "contacts": [_serialize_communication_recipient_option(item) for item in payload.get("contacts", [])],
     }
 
 
@@ -198,6 +277,9 @@ def serialize_studio_payload(
     templates: list[CommunicationTemplate],
     schedules: list[CampaignCommunicationSchedule],
     audience_catalog: list[dict[str, str]],
+    audience_recipient_summaries: list[dict[str, Any]],
+    communication_sends: list[CampaignCommunicationSend],
+    communication_recipient_options: dict[str, list[dict[str, Any]]],
     milestones: list[CampaignMilestone],
     milestone_definitions: list[CampaignMilestoneDefinition],
     gift_policy: CampaignGiftPolicy,
@@ -211,8 +293,14 @@ def serialize_studio_payload(
         "team": serialize_team_snapshot(team["assignments"], team["counts"]),
         "communications": {
             "audience_catalog": audience_catalog,
+            "audience_recipient_summaries": [
+                serialize_audience_recipient_summary(summary)
+                for summary in audience_recipient_summaries
+            ],
             "templates": [serialize_communication_template(template) for template in templates],
             "schedules": [serialize_communication_schedule(schedule) for schedule in schedules],
+            "sends": [serialize_communication_send(send) for send in communication_sends],
+            "recipient_options": serialize_communication_recipient_options(communication_recipient_options),
         },
         "schedule": {
             "items": [serialize_schedule_item(item) for item in schedule_items],
@@ -233,3 +321,12 @@ def _serialize_date(value: date | None) -> str | None:
 
 def _serialize_datetime(value: datetime | None) -> str | None:
     return value.isoformat() if value else None
+
+
+def _serialize_communication_recipient_option(item: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": str(item.get("id")),
+        "label": item.get("label"),
+        "email": item.get("email"),
+        "description": item.get("description"),
+    }

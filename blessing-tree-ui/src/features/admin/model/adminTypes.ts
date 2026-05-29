@@ -121,6 +121,21 @@ export interface AdminFeaturesPayload {
   features: AdminFeatureFlag[];
 }
 
+export interface AdminOrganizationType {
+  id: string;
+  code: string;
+  label: string;
+  recipientCategory: 'CHILD' | 'ADULT' | 'FAMILY';
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface AdminOrganizationTypesPayload {
+  organizationTypes: AdminOrganizationType[];
+}
+
 export interface AdminAskReviewLog {
   id: string;
   campaignId: string;

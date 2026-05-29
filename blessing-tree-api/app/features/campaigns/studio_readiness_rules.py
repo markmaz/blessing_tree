@@ -10,6 +10,7 @@ from app.features.campaigns.readiness_constants import (
     SECTION_ACTION_LABELS,
 )
 from app.features.campaigns.studio_constants import (
+    COMMUNICATION_AUDIENCE_SPONSOR,
     PUBLIC_SPONSOR_REQUIRED_MILESTONE_KEYS,
     REQUIRED_MILESTONE_KEYS,
 )
@@ -141,10 +142,11 @@ def build_schedule_rules(milestones, schedules, manual_events) -> list[dict[str,
     return items
 
 
-def build_communications_rules(templates, schedules) -> list[dict[str, object]]:
+def build_communications_rules(templates, schedules, milestones) -> list[dict[str, object]]:
     items: list[dict[str, object]] = []
     active_templates = [template for template in templates if template.is_active]
     active_schedules = [schedule for schedule in schedules if schedule.status != "DISABLED"]
+    milestone_keys = {milestone.milestone_key for milestone in milestones}
 
     if not active_templates:
         items.append(
@@ -170,7 +172,35 @@ def build_communications_rules(templates, schedules) -> list[dict[str, object]]:
             )
         )
 
+    sponsor_due_templates = [
+        template
+        for template in active_templates
+        if template.audience == COMMUNICATION_AUDIENCE_SPONSOR
+        and _template_references_field(template, "gift.due_date")
+    ]
+    if sponsor_due_templates and "gift_turn_in_due" not in milestone_keys:
+        items.append(
+            readiness_item(
+                severity="error",
+                category=READINESS_CATEGORY_BLOCKERS,
+                code="missing_gift_turn_in_due_milestone",
+                section="schedule",
+                message="Sponsor gift due-date communications need a Gift Turn-In Due milestone.",
+                blocking_for=[READINESS_PHASE_ACTIVATE, READINESS_PHASE_OPERATIONS],
+                details={
+                    "missing_key": "gift_turn_in_due",
+                    "template_ids": [str(template.id) for template in sponsor_due_templates],
+                },
+            )
+        )
+
     return items
+
+
+def _template_references_field(template, field_name: str) -> bool:
+    marker = "{{"
+    values = [template.subject_template or "", template.body_template or ""]
+    return any(marker in value and field_name in value for value in values)
 
 
 def build_automation_rules(campaign, schedules, automation_snapshot: dict[str, object]) -> list[dict[str, object]]:

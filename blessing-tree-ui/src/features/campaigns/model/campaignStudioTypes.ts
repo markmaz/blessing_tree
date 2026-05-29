@@ -62,6 +62,19 @@ export interface CommunicationAudienceOption {
   description: string;
 }
 
+export interface CommunicationAudienceRecipientSummary {
+  audience: CommunicationAudienceKey;
+  count: number;
+  sampleRecipients: Array<{
+    displayName: string;
+    email: string;
+  }>;
+  recipients: Array<{
+    displayName: string;
+    email: string;
+  }>;
+}
+
 export interface CommunicationTemplate {
   id: string;
   campaignId: string;
@@ -88,6 +101,88 @@ export interface CommunicationSchedule {
   notes: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+}
+
+export interface CommunicationSendHistoryItem {
+  id: string;
+  campaignId: string;
+  templateId: string;
+  templateName: string;
+  targetMode: string;
+  status: string;
+  subject: string;
+  recipientCount: number;
+  deliveredCount: number;
+  failedCount: number;
+  errorMessage: string | null;
+  createdByUserId: string | null;
+  createdByDisplayName: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  recipients: CommunicationSendHistoryRecipient[];
+}
+
+export interface CommunicationSendHistoryRecipient {
+  id: string;
+  sendId: string;
+  recipientType: string;
+  recipientRefId: string | null;
+  email: string;
+  displayName: string | null;
+  status: string;
+  errorMessage: string | null;
+  sentAt: string | null;
+  createdAt: string | null;
+}
+
+export interface CommunicationRecipientOption {
+  id: string;
+  label: string;
+  email: string | null;
+  description: string | null;
+  memberCount?: number;
+}
+
+export interface CommunicationRecipientOptions {
+  teams: CommunicationRecipientOption[];
+  sponsors: CommunicationRecipientOption[];
+  members: CommunicationRecipientOption[];
+  contacts: CommunicationRecipientOption[];
+}
+
+export type CommunicationSendTargetMode =
+  | 'AUDIENCE'
+  | 'TEAM'
+  | 'SELECTED_SPONSORS'
+  | 'SELECTED_MEMBERS'
+  | 'SELECTED_CONTACTS'
+  | 'MANUAL_EMAIL';
+
+export interface CommunicationSendManualRecipientInput {
+  email: string;
+  displayName?: string | null;
+}
+
+export interface CreateCommunicationSendInput {
+  templateId: string;
+  targetMode: CommunicationSendTargetMode;
+  manualRecipients?: CommunicationSendManualRecipientInput[];
+  teamIds?: string[];
+  sponsorIds?: string[];
+  memberIds?: string[];
+  contactIds?: string[];
+}
+
+export interface CommunicationSendResult {
+  sendId: string;
+  templateId: string;
+  targetMode: string;
+  status: string;
+  subject: string;
+  recipientCount: number;
+  deliveredCount: number;
+  failedCount: number;
+  errorMessage: string | null;
 }
 
 export interface CampaignMilestone {
@@ -198,8 +293,11 @@ export interface CampaignStudioData {
   team: CampaignTeamSnapshot;
   communications: {
     audienceCatalog: CommunicationAudienceOption[];
+    audienceRecipientSummaries: CommunicationAudienceRecipientSummary[];
     templates: CommunicationTemplate[];
     schedules: CommunicationSchedule[];
+    sends: CommunicationSendHistoryItem[];
+    recipientOptions: CommunicationRecipientOptions;
   };
   schedule: {
     items: CampaignScheduleItem[];
