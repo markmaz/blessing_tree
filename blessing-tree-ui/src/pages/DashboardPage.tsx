@@ -373,7 +373,7 @@ function AskPromptLink({
 }) {
   return (
     <Link to={askPromptPath(campaignId, prompt)} className="btn btn-outline-secondary btn-sm">
-      <i className="bi bi-stars me-2" aria-hidden="true" />
+      <i className="bi bi-chat-square-text me-2" aria-hidden="true" />
       {children}
     </Link>
   );

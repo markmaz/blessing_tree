@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { askBlessingTree } from '@/features/ask/api/askApi';
+import type { AskResponse } from '@/features/ask/model/askTypes';
+import { AskResult } from '@/features/ask/ui/AskResult';
+import '@/features/ask/ui/ask.css';
 import { draftCampaignStudioAi } from '@/features/campaigns/api/campaignStudioAiApi';
 import { type CampaignStudioSectionId } from '@/features/campaigns/model/campaignStudio';
 import {
@@ -29,11 +33,16 @@ import type {
 } from '@/features/campaigns/model/campaignStudioTypes';
 import type { Campaign } from '@/features/campaigns/model/campaignTypes';
 import type { CampaignUpsertInput } from '@/features/campaigns/model/campaignTypes';
-import {
-  CampaignStudioAiThread,
-  type CampaignAiTurn,
-} from '@/features/campaigns/ui/CampaignStudioAiThread';
+import { CampaignStudioAiActionCard } from '@/features/campaigns/ui/CampaignStudioAiActionCard';
 import { CampaignStudioAiComposer } from '@/features/campaigns/ui/CampaignStudioAiComposer';
+
+interface CampaignAiTurn {
+  id: string;
+  prompt: string;
+  responseMessage?: string;
+  askResponse?: AskResponse;
+  error?: string;
+}
 
 interface CampaignStudioAiRailProps {
   open: boolean;
@@ -56,6 +65,32 @@ interface CampaignStudioAiRailProps {
   onTeamWorkspaceChanged: () => Promise<void>;
   onUpdateCampaignSettings: (input: CampaignUpsertInput) => Promise<boolean>;
 }
+
+const scheduleDraftTypeOptions: Array<{
+  id: ScheduleAiDraftType;
+  label: string;
+  description: string;
+  icon: string;
+}> = [
+  {
+    id: 'event',
+    label: 'Event',
+    description: 'Volunteer days, sorting blocks, pickup staffing, and other manual work.',
+    icon: 'bi-calendar-plus',
+  },
+  {
+    id: 'milestone',
+    label: 'Milestone',
+    description: 'Named checkpoints like registration opening or pickup weekend.',
+    icon: 'bi-signpost-2',
+  },
+  {
+    id: 'communication',
+    label: 'Communication',
+    description: 'Emails and reminders using one of the campaign templates.',
+    icon: 'bi-envelope-paper',
+  },
+];
 
 export function CampaignStudioAiRail({
   open,
@@ -81,7 +116,6 @@ export function CampaignStudioAiRail({
   const [draftResponse, setDraftResponse] = useState<CampaignStudioAiDraftResponse | null>(null);
   const [history, setHistory] = useState<CampaignAiTurn[]>([]);
   const [pendingPrompt, setPendingPrompt] = useState('');
-  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
   const promptRef = useRef<HTMLTextAreaElement | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
   const promptStarters = getAiPromptStarters(selectedSection, readiness, scheduleItems);
@@ -103,7 +137,6 @@ export function CampaignStudioAiRail({
     setDraftResponse(null);
     setHistory([]);
     setPendingPrompt('');
-    setCopiedPromptId(null);
   }, [selectedSection, campaign.id]);
 
   const pushAssistantTurn = (prompt: string, responseMessage: string) => {
@@ -113,6 +146,28 @@ export function CampaignStudioAiRail({
         id: `${Date.now()}-${currentHistory.length}`,
         prompt,
         responseMessage,
+      },
+    ]);
+  };
+
+  const pushAskTurn = (prompt: string, askResponse: AskResponse) => {
+    setHistory((currentHistory) => [
+      ...currentHistory,
+      {
+        id: `${Date.now()}-${currentHistory.length}`,
+        prompt,
+        askResponse,
+      },
+    ]);
+  };
+
+  const pushErrorTurn = (prompt: string, errorMessage: string) => {
+    setHistory((currentHistory) => [
+      ...currentHistory,
+      {
+        id: `${Date.now()}-${currentHistory.length}`,
+        prompt,
+        error: errorMessage,
       },
     ]);
   };
@@ -128,18 +183,29 @@ export function CampaignStudioAiRail({
     setDraftMessage(null);
 
     try {
-      const nextDraft = await draftCampaignStudioAi(campaign.id, {
-        section: selectedSection,
-        prompt: trimmedPrompt,
-        requestedActionType: selectedSection === 'schedule' ? draftType : null,
-      });
+      if (shouldUseStudioDraft(trimmedPrompt)) {
+        const nextDraft = await draftCampaignStudioAi(campaign.id, {
+          section: selectedSection,
+          prompt: trimmedPrompt,
+          requestedActionType: selectedSection === 'schedule' ? draftType : null,
+        });
 
-      setDraftResponse(nextDraft);
-      pushAssistantTurn(trimmedPrompt, nextDraft.message);
+        setDraftResponse(nextDraft);
+        pushAssistantTurn(trimmedPrompt, nextDraft.message);
+      } else {
+        const askResponse = await askBlessingTree(campaign.id, trimmedPrompt, {
+          screen: `Campaign Studio ${selectedSection}`,
+          route: 'campaign_studio',
+        });
+        setDraftResponse(null);
+        pushAskTurn(trimmedPrompt, askResponse);
+      }
       setDraftPrompt('');
     } catch (error) {
       setDraftResponse(null);
-      setDraftError(error instanceof Error ? error.message : 'Unable to process that AI prompt.');
+      const errorMessage = error instanceof Error ? error.message : 'Unable to process that AI prompt.';
+      setDraftError(errorMessage);
+      pushErrorTurn(trimmedPrompt, errorMessage);
     } finally {
       setPendingPrompt('');
     }
@@ -282,7 +348,6 @@ export function CampaignStudioAiRail({
 
   const clearHistory = () => {
     setHistory([]);
-    setCopiedPromptId(null);
     setDraftResponse(null);
     setDraftError(null);
   };
@@ -290,16 +355,6 @@ export function CampaignStudioAiRail({
   const startNewSession = () => {
     clearHistory();
     setDraftPrompt('');
-  };
-
-  const copyPrompt = async (value: string, turnId: string) => {
-    try {
-      await navigator.clipboard?.writeText(value);
-      setCopiedPromptId(turnId);
-      window.setTimeout(() => setCopiedPromptId(null), 1200);
-    } catch {
-      setCopiedPromptId(null);
-    }
   };
 
   return (
@@ -311,16 +366,10 @@ export function CampaignStudioAiRail({
       <div className="campaign-studio__ai-rail-header">
         <div className="campaign-studio__ai-brand">
           <h2 className="campaign-studio__ai-title">
-            <span>Campaign</span> <span className="campaign-studio__ai-title-accent">AI</span>
+            <span>Ask</span> <span className="campaign-studio__ai-title-accent">Blessing Tree</span>
           </h2>
           <p className="campaign-studio__ai-context mb-0">
-            {selectedSection === 'schedule'
-              ? 'Draft and apply campaign calendar updates from one prompt.'
-              : selectedSection === 'communications'
-                ? 'Draft templates and place them on the campaign calendar from one prompt.'
-                : selectedSection === 'settings'
-                  ? 'Draft campaign setting changes and lifecycle moves before you apply them.'
-                : `Focus the ${selectedSection} workspace with guided prompts and quick explanations.`}
+            Ask questions in this Studio context, or draft changes and review them before applying.
           </p>
         </div>
         <button
@@ -334,44 +383,147 @@ export function CampaignStudioAiRail({
       </div>
 
       <div className="campaign-studio__ai-panel-body">
-        <CampaignStudioAiThread
-          selectedSection={selectedSection}
-          templates={templates}
-          milestones={milestones}
-          promptStarters={promptStarters}
-          suggestionHeading={suggestionHeading}
-          readinessSignals={readinessSignals}
-          teamGlossary={teamGlossary}
-          history={history}
-          pendingPrompt={pendingPrompt}
-          copiedPromptId={copiedPromptId}
-          draftError={draftError}
-          draftMessage={draftMessage}
-          draftResponse={draftResponse}
-          isSaving={isSaving}
-          draftType={draftType}
-          onDraftTypeChange={setDraftType}
-          onSelectPromptStarter={(prompt) => {
-            setDraftPrompt(prompt);
-            promptRef.current?.focus();
-          }}
-          onCopyPrompt={(prompt, turnId) => {
-            void copyPrompt(prompt, turnId);
-          }}
-          onDismissDraftMessage={() => setDraftMessage(null)}
-          onApplyAction={(action) => {
-            void handleApplyAction(action);
-          }}
-          onActionChange={handleActionChange}
-          onApplyAll={() => {
-            void handleApplyAll();
-          }}
-          threadRef={threadRef}
-        />
+        <div className="campaign-studio__ai-thread ask-transcript" aria-live="polite" ref={threadRef}>
+          {!history.length && !pendingPrompt ? (
+            <CampaignStudioAskEmptyState
+              selectedSection={selectedSection}
+              templates={templates}
+              milestones={milestones}
+              promptStarters={promptStarters}
+              suggestionHeading={suggestionHeading}
+              readinessSignals={readinessSignals}
+              teamGlossary={teamGlossary}
+              draftType={draftType}
+              onDraftTypeChange={setDraftType}
+              onSelectPromptStarter={(prompt) => {
+                setDraftPrompt(prompt);
+                promptRef.current?.focus();
+              }}
+            />
+          ) : null}
+
+          {history.map((entry) => (
+            <article key={entry.id} className="ask-turn campaign-studio__ask-turn">
+              <div className="ask-message ask-message--user">
+                <div className="ask-message__bubble">
+                  <p className="mb-0">{entry.prompt}</p>
+                  <p className="ask-message__context mb-0">
+                    Campaign Studio · {selectedSection}
+                  </p>
+                </div>
+              </div>
+
+              <div className="ask-message ask-message--assistant">
+                {entry.askResponse ? (
+                  <AskResult campaignId={campaign.id} response={entry.askResponse} onPrompt={(prompt) => void handleDraft(prompt)} />
+                ) : entry.error ? (
+                  <div className="ask-message__bubble ask-message__bubble--error" role="alert">
+                    {entry.error}
+                  </div>
+                ) : entry.responseMessage ? (
+                  <div className="ask-message__bubble ask-result">
+                    <div className="ask-result__header">
+                      <div>
+                        <div className="campaign-chip-row mb-2">
+                          <span className="campaign-chip campaign-chip-muted">Studio Draft</span>
+                        </div>
+                        <h2 className="h5 mb-2">Review Draft</h2>
+                        <p className="mb-0">{entry.responseMessage}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </article>
+          ))}
+
+          {pendingPrompt ? (
+            <article className="ask-turn campaign-studio__ask-turn">
+              <div className="ask-message ask-message--user">
+                <div className="ask-message__bubble">
+                  <p className="mb-0">{pendingPrompt}</p>
+                </div>
+              </div>
+              <div className="ask-message ask-message--assistant">
+                <div className="ask-message__bubble ask-message__bubble--pending">
+                  <span className="ask-thinking-dot" aria-hidden="true" />
+                  <span>Checking Blessing Tree...</span>
+                </div>
+              </div>
+            </article>
+          ) : null}
+
+          {draftError ? (
+            <div className="alert alert-warning py-2 small" role="alert">
+              {draftError}
+            </div>
+          ) : null}
+
+          {draftMessage ? (
+            <div className="alert alert-success py-2 small" role="status">
+              {draftMessage}
+            </div>
+          ) : null}
+
+          {draftResponse ? (
+            <div className="campaign-studio__ai-draft-preview">
+              <div className="fw-semibold small mb-1">Draft Preview</div>
+              <div className="small text-muted mb-3">{draftResponse.message}</div>
+
+              {draftResponse.assumptions.length > 0 ? (
+                <div className="campaign-studio__ai-draft-meta">
+                  <div className="fw-semibold small mb-1">Assumptions</div>
+                  <ul className="campaign-studio__ai-draft-list">
+                    {draftResponse.assumptions.map((assumption) => (
+                      <li key={assumption}>{assumption}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {draftResponse.warnings.length > 0 ? (
+                <div className="campaign-studio__ai-draft-meta">
+                  <div className="fw-semibold small mb-1">Warnings</div>
+                  <ul className="campaign-studio__ai-draft-list">
+                    {draftResponse.warnings.map((warning) => (
+                      <li key={warning}>{warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {draftResponse.actions.length > 0 ? (
+                <div className="campaign-studio__ai-action-list">
+                  {draftResponse.actions.map((action) => (
+                    <CampaignStudioAiActionCard
+                      key={action.id}
+                      action={action}
+                      isSaving={isSaving}
+                      onApplyAction={(actionToApply) => void handleApplyAction(actionToApply)}
+                      onActionChange={handleActionChange}
+                    />
+                  ))}
+                </div>
+              ) : null}
+
+              {draftResponse.actions.length > 1 ? (
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm mt-3"
+                  disabled={isSaving}
+                  onClick={() => void handleApplyAll()}
+                >
+                  <i className="bi bi-check2-all" aria-hidden="true" />
+                  <span>Apply All</span>
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
 
         <CampaignStudioAiComposer
           prompt={draftPrompt}
-          placeholder={promptPlaceholder}
+          placeholder={promptPlaceholder.replace('Campaign AI', 'Ask Blessing Tree')}
           isSaving={isSaving}
           isPending={Boolean(pendingPrompt)}
           canClearHistory={history.length > 0}
@@ -385,5 +537,138 @@ export function CampaignStudioAiRail({
         />
       </div>
     </aside>
+  );
+}
+
+function CampaignStudioAskEmptyState({
+  selectedSection,
+  templates,
+  milestones,
+  promptStarters,
+  suggestionHeading,
+  readinessSignals,
+  teamGlossary,
+  draftType,
+  onDraftTypeChange,
+  onSelectPromptStarter,
+}: {
+  selectedSection: CampaignStudioSectionId;
+  templates: CommunicationTemplate[];
+  milestones: CampaignMilestone[];
+  promptStarters: string[];
+  suggestionHeading: string;
+  readinessSignals: CampaignReadiness['items'];
+  teamGlossary: ReturnType<typeof getAiTeamGlossary>;
+  draftType: ScheduleAiDraftType;
+  onDraftTypeChange: (draftType: ScheduleAiDraftType) => void;
+  onSelectPromptStarter: (prompt: string) => void;
+}) {
+  const hasTemplates = templates.length > 0;
+  const nextMilestone = milestones.find((milestone) => milestone.occursOn) ?? null;
+
+  return (
+    <>
+      {selectedSection === 'schedule' ? (
+        <div className="campaign-studio__ai-empty-state">
+          <div className="small text-muted">
+            {hasTemplates
+              ? `${templates.length} templates are available for scheduling.`
+              : 'No communication templates are ready for scheduling yet.'}{' '}
+            {nextMilestone
+              ? `Next milestone: ${nextMilestone.label} on ${nextMilestone.occursOn}.`
+              : 'No milestone dates have been placed yet.'}
+          </div>
+        </div>
+      ) : null}
+
+      {selectedSection === 'schedule' ? (
+        <>
+          <label className="form-label small fw-semibold mb-2">Draft Type</label>
+          <div className="campaign-studio__ai-draft-switch mb-2" role="tablist" aria-label="AI draft type">
+            {scheduleDraftTypeOptions.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={`campaign-studio__ai-draft-button ${draftType === option.id ? 'is-selected' : ''}`}
+                onClick={() => onDraftTypeChange(option.id)}
+                aria-pressed={draftType === option.id}
+                aria-label={option.label}
+                title={option.label}
+              >
+                <i className={`bi ${option.icon}`} aria-hidden="true" />
+                <span className="fw-semibold">{option.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="campaign-studio__ai-draft-description mb-3">
+            {scheduleDraftTypeOptions.find((option) => option.id === draftType)?.description}
+          </div>
+        </>
+      ) : null}
+
+      <section className="campaign-studio__ai-suggestions" aria-label="Ask Blessing Tree suggestions">
+        <div className="campaign-studio__ai-suggestions-header">
+          <div className="campaign-studio__ai-suggestions-title">{suggestionHeading}</div>
+        </div>
+        <div className="campaign-studio__ai-suggestion-list">
+          {promptStarters.map((prompt) => (
+            <button
+              key={prompt}
+              type="button"
+              className="campaign-studio__ai-suggestion-card"
+              onClick={() => onSelectPromptStarter(prompt)}
+            >
+              <i className="bi bi-chat-square-text" aria-hidden="true" />
+              <strong>{prompt}</strong>
+              <span>Use this as a starting point in the {selectedSection} workspace.</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {teamGlossary.length > 0 ? (
+        <section className="campaign-studio__ai-suggestions">
+          <div className="campaign-studio__ai-suggestions-header">
+            <div className="campaign-studio__ai-suggestions-title">Team Concepts</div>
+          </div>
+          <div className="campaign-studio__ai-suggestion-list">
+            {teamGlossary.map((entry) => (
+              <div key={entry.key} className="campaign-studio__inline-note">
+                <div className="fw-semibold small mb-1">{entry.label}</div>
+                <div className="small text-muted">{entry.description}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {readinessSignals.length > 0 ? (
+        <section className="campaign-studio__ai-suggestions">
+          <div className="campaign-studio__ai-suggestions-header">
+            <div className="campaign-studio__ai-suggestions-title">Current Signals</div>
+          </div>
+          <div className="campaign-studio__ai-suggestion-list">
+            {readinessSignals.map((item) => (
+              <div key={item.code} className="campaign-studio__inline-note">
+                <div className="fw-semibold small mb-1">{item.message}</div>
+                <div className="small text-muted">
+                  Ask Blessing Tree to explain this or draft a concrete next step.
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+    </>
+  );
+}
+
+function shouldUseStudioDraft(prompt: string): boolean {
+  const normalized = prompt.trim().toLowerCase();
+  if (/^(how|what|where|when|who|why|which|show|list|tell me|explain|summarize)\b/.test(normalized)) {
+    return false;
+  }
+  return /^(please\s+|can you\s+)?(draft|create|add|schedule|fix|unblock|apply|generate|write|build|set|make)\b/.test(
+    normalized
   );
 }
