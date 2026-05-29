@@ -71,6 +71,7 @@ class Recipient(Base):
     )
 
     display_label: Mapped[str] = mapped_column(String(255), nullable=False)
+    public_label: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     program_recipient_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     program_recipient_id: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
 

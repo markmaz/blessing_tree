@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Mapping
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.email import send_email_message
@@ -12,6 +13,7 @@ from app.features.campaigns.automation_readiness_service import (
 )
 from app.features.campaigns.gift_policy_service import CampaignGiftPolicyService
 from app.features.campaigns.milestone_definition_service import CampaignMilestoneDefinitionService
+from app.features.campaigns.recipient_resolver import CampaignRecipientResolver
 from app.features.campaigns.readiness_definition_service import CampaignReadinessDefinitionService
 from app.features.campaigns.service import CampaignService
 from app.features.campaigns.studio_readiness import build_campaign_readiness
@@ -30,11 +32,18 @@ from app.features.campaigns.studio_validation import (
     validate_template_key,
 )
 from app.features.campaigns.studio_constants import get_communication_audience_catalog
+from app.models.campaign_communication_send import CampaignCommunicationSend
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
+from app.models.campaign_member import CampaignMember
+from app.models.campaign_team import CampaignTeam
 from app.models.campaign_gift_reminder_rule import CampaignGiftReminderRule
 from app.models.campaign_milestone import CampaignMilestone
 from app.models.campaign_milestone_definition import CampaignMilestoneDefinition
 from app.models.communication_template import CommunicationTemplate
+from app.models.group_contact import GroupContact
+from app.models.recipient_group import RecipientGroup
+from app.models.sponsor import Sponsor
+from app.models.sponsorship import Sponsorship
 from app.models.app_user import AppUser
 
 
@@ -48,6 +57,7 @@ class CampaignStudioService:
         self.milestone_definitions = CampaignMilestoneDefinitionService()
         self.gift_policy = CampaignGiftPolicyService(self.campaigns)
         self.template_renderer = CampaignTemplateRenderer()
+        self.recipient_resolver = CampaignRecipientResolver()
 
     def get_studio_payload(self, db: Session, user_id: str, campaign_id: str) -> dict[str, object]:
         campaign = self.campaigns.get_campaign(db, campaign_id)
@@ -57,6 +67,13 @@ class CampaignStudioService:
         templates = self.list_templates(db, campaign_id)
         schedules = self.list_schedules(db, campaign_id)
         audience_catalog = get_communication_audience_catalog()
+        audience_recipient_summaries = self.build_audience_recipient_summaries(
+            db,
+            campaign_id=campaign_id,
+            audience_catalog=audience_catalog,
+        )
+        communication_sends = self.list_communication_sends(db, campaign_id)
+        communication_recipient_options = self.list_communication_recipient_options(db, campaign_id)
         milestone_definitions = self.milestone_definitions.list_active_definitions(db)
         milestones = self.list_milestones(db, campaign_id)
         gift_policy = self.gift_policy.get_policy(db, campaign_id)
@@ -70,6 +87,9 @@ class CampaignStudioService:
             "templates": templates,
             "schedules": schedules,
             "audience_catalog": audience_catalog,
+            "audience_recipient_summaries": audience_recipient_summaries,
+            "communication_sends": communication_sends,
+            "communication_recipient_options": communication_recipient_options,
             "milestone_definitions": milestone_definitions,
             "milestones": milestones,
             "gift_policy": gift_policy,
@@ -84,6 +104,143 @@ class CampaignStudioService:
             .order_by(CommunicationTemplate.name.asc())
             .all()
         )
+
+    def build_audience_recipient_summaries(
+        self,
+        db: Session,
+        *,
+        campaign_id: str,
+        audience_catalog: list[dict[str, str]] | None = None,
+    ) -> list[dict[str, object]]:
+        catalog = audience_catalog or get_communication_audience_catalog()
+        summaries: list[dict[str, object]] = []
+        for audience in catalog:
+            recipients = self.recipient_resolver.resolve_for_audience(
+                db,
+                campaign_id=campaign_id,
+                audience=audience["key"],
+            )
+            summaries.append(
+                {
+                    "audience": audience["key"],
+                    "count": len(recipients),
+                    "sample_recipients": [
+                        {
+                            "display_name": recipient.display_name,
+                            "email": recipient.email,
+                        }
+                        for recipient in recipients[:10]
+                    ],
+                    "recipients": [
+                        {
+                            "display_name": recipient.display_name,
+                            "email": recipient.email,
+                        }
+                        for recipient in recipients
+                    ],
+                }
+            )
+        return summaries
+
+    def list_communication_sends(
+        self,
+        db: Session,
+        campaign_id: str,
+        *,
+        limit: int = 12,
+    ) -> list[CampaignCommunicationSend]:
+        return (
+            db.query(CampaignCommunicationSend)
+            .options(
+                joinedload(CampaignCommunicationSend.template),
+                joinedload(CampaignCommunicationSend.created_by_user),
+                joinedload(CampaignCommunicationSend.recipients),
+            )
+            .filter(CampaignCommunicationSend.campaign_id == campaign_id)
+            .order_by(CampaignCommunicationSend.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+
+    def list_communication_recipient_options(self, db: Session, campaign_id: str) -> dict[str, list[dict[str, object]]]:
+        teams = (
+            db.query(CampaignTeam)
+            .filter(CampaignTeam.campaign_id == campaign_id, CampaignTeam.is_active == 1)
+            .order_by(CampaignTeam.name.asc())
+            .all()
+        )
+        sponsors = (
+            db.query(Sponsor)
+            .join(Sponsorship, Sponsorship.sponsor_id == Sponsor.id)
+            .filter(
+                Sponsorship.campaign_id == campaign_id,
+                Sponsor.is_active == 1,
+                Sponsor.email.isnot(None),
+                func.length(func.trim(Sponsor.email)) > 0,
+            )
+            .order_by(Sponsor.display_name.asc())
+            .distinct()
+            .all()
+        )
+        members = (
+            db.query(CampaignMember)
+            .filter(
+                CampaignMember.campaign_id == campaign_id,
+                CampaignMember.is_active == 1,
+            )
+            .order_by(CampaignMember.display_name.asc())
+            .all()
+        )
+        contacts = (
+            db.query(GroupContact)
+            .join(RecipientGroup, RecipientGroup.id == GroupContact.recipient_group_id)
+            .filter(
+                RecipientGroup.campaign_id == campaign_id,
+                GroupContact.email.isnot(None),
+                func.length(func.trim(GroupContact.email)) > 0,
+            )
+            .order_by(GroupContact.is_primary.desc(), GroupContact.created_at.asc())
+            .all()
+        )
+        return {
+            "teams": [
+                {
+                    "id": str(team.id),
+                    "label": team.name,
+                    "description": f"{len(team.memberships or [])} member{'s' if len(team.memberships or []) != 1 else ''}",
+                    "member_count": len(team.memberships or []),
+                }
+                for team in teams
+            ],
+            "sponsors": [
+                {
+                    "id": str(sponsor.id),
+                    "label": sponsor.display_name,
+                    "email": str(sponsor.email or "").strip().lower(),
+                    "description": str(sponsor.organization_name or ""),
+                }
+                for sponsor in sponsors
+            ],
+            "members": [
+                {
+                    "id": str(member.id),
+                    "label": member.display_name,
+                    "email": self._member_email(member),
+                    "description": member.member_type,
+                }
+                for member in members
+                if self._member_email(member)
+            ],
+            "contacts": [
+                {
+                    "id": str(contact.id),
+                    "label": _contact_name(contact),
+                    "email": str(contact.email or "").strip().lower(),
+                    "description": contact.recipient_group.group_name if contact.recipient_group else "",
+                }
+                for contact in contacts
+            ],
+        }
 
     def create_template(self, db: Session, user_id: str, campaign_id: str, payload: Mapping[str, object]) -> CommunicationTemplate:
         template_key = validate_template_key(payload.get("template_key"))
@@ -352,6 +509,14 @@ class CampaignStudioService:
         return require_short_text(value, "notes", max_length=5000) if value not in (None, "") else None
 
     @staticmethod
+    def _member_email(member: CampaignMember) -> str | None:
+        if member.email:
+            return member.email.strip().lower()
+        if member.app_user and member.app_user.email:
+            return member.app_user.email.strip().lower()
+        return None
+
+    @staticmethod
     def _get_template(db: Session, campaign_id: str, template_id: object) -> CommunicationTemplate:
         try:
             template_uuid = uuid.UUID(str(template_id))
@@ -423,3 +588,9 @@ def _sample_template_merge_fields(manager_name: str) -> dict[str, str]:
         "event.start_at": "November 3, 2026 at 6:00 PM",
         "location.map_url": "https://maps.example.com/pickup-warehouse",
     }
+
+
+def _contact_name(contact: GroupContact) -> str:
+    return " ".join(
+        part for part in [contact.first_name or "", contact.last_name or ""] if part
+    ).strip() or str(contact.email or "Contact")

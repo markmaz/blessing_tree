@@ -3,11 +3,14 @@ import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDraw
 import type {
   CampaignSponsor,
   CampaignSponsorInteraction,
+  SponsorCommunicationPreview,
+  SponsorCommunicationSendResult,
   SponsorInteractionUpsertInput,
   SponsorPreferredContact,
   SponsorUpsertInput,
   SponsorshipUpsertInput,
 } from '@/features/campaigns/model/campaignSponsorWorkspaceTypes';
+import type { CommunicationTemplate } from '@/features/campaigns/model/campaignStudioTypes';
 import {
   formatShortDate,
   getMostRecentSponsorInteraction,
@@ -24,6 +27,8 @@ interface CampaignSponsorDrawerProps {
   canEdit: boolean;
   isSaving: boolean;
   sponsor: CampaignSponsor | null;
+  communicationTemplates: CommunicationTemplate[];
+  communicationTemplateError: string | null;
   interactionsState?: {
     items: CampaignSponsorInteraction[];
     isLoading: boolean;
@@ -31,6 +36,14 @@ interface CampaignSponsorDrawerProps {
     loaded: boolean;
   };
   onLoadInteractions: (sponsorId: string) => Promise<CampaignSponsorInteraction[]>;
+  onPreviewCommunication: (
+    sponsorId: string,
+    templateId: string
+  ) => Promise<SponsorCommunicationPreview | null>;
+  onSendCommunication: (
+    sponsorId: string,
+    templateId: string
+  ) => Promise<SponsorCommunicationSendResult | null>;
   onSaveSponsor: (
     sponsor: SponsorUpsertInput,
     participation: SponsorshipUpsertInput,
@@ -52,8 +65,12 @@ export function CampaignSponsorDrawer({
   canEdit,
   isSaving,
   sponsor,
+  communicationTemplates,
+  communicationTemplateError,
   interactionsState,
   onLoadInteractions,
+  onPreviewCommunication,
+  onSendCommunication,
   onSaveSponsor,
   onDeleteSponsor,
   onSaveInteraction,
@@ -73,6 +90,11 @@ export function CampaignSponsorDrawer({
   const [isParticipationSectionOpen, setIsParticipationSectionOpen] = useState(true);
   const [isSponsoredGiftsSectionOpen, setIsSponsoredGiftsSectionOpen] = useState(true);
   const [isCommunicationSectionOpen, setIsCommunicationSectionOpen] = useState(true);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [communicationPreview, setCommunicationPreview] = useState<SponsorCommunicationPreview | null>(null);
+  const [communicationError, setCommunicationError] = useState<string | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [isSendingCommunication, setIsSendingCommunication] = useState(false);
 
   useEffect(() => {
     if (!sponsor) {
@@ -119,6 +141,9 @@ export function CampaignSponsorDrawer({
     }
     setLocalError(null);
     setLocalSuccess(null);
+    setCommunicationPreview(null);
+    setCommunicationError(null);
+    setSelectedTemplateId('');
   }, [sponsor]);
 
   useEffect(() => {
@@ -188,6 +213,46 @@ export function CampaignSponsorDrawer({
 
   const interactionItems = interactionsState?.items ?? sponsor?.recentInteractions ?? [];
   const latestInteraction = getMostRecentSponsorInteraction(interactionItems);
+  const sponsorEmailTemplates = useMemo(
+    () => communicationTemplates.filter((template) => template.audience === 'SPONSOR' && template.channel === 'EMAIL' && template.isActive),
+    [communicationTemplates]
+  );
+  const selectedTemplate = sponsorEmailTemplates.find((template) => template.id === selectedTemplateId) ?? null;
+  const hasCurrentPreview = communicationPreview?.templateId === selectedTemplateId;
+
+  const handlePreviewCommunication = async () => {
+    if (!sponsor || !selectedTemplateId) {
+      return;
+    }
+    setCommunicationError(null);
+    setCommunicationPreview(null);
+    setIsPreviewLoading(true);
+    try {
+      const preview = await onPreviewCommunication(sponsor.id, selectedTemplateId);
+      setCommunicationPreview(preview);
+    } catch (previewError) {
+      setCommunicationError(previewError instanceof Error ? previewError.message : 'Unable to preview sponsor email.');
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  const handleSendCommunication = async () => {
+    if (!sponsor || !selectedTemplateId) {
+      return;
+    }
+    setCommunicationError(null);
+    setIsSendingCommunication(true);
+    try {
+      await onSendCommunication(sponsor.id, selectedTemplateId);
+      setLocalSuccess('Sponsor email sent.');
+      setCommunicationPreview(null);
+    } catch (sendError) {
+      setCommunicationError(sendError instanceof Error ? sendError.message : 'Unable to send sponsor email.');
+    } finally {
+      setIsSendingCommunication(false);
+    }
+  };
 
   return (
     <>
@@ -638,6 +703,110 @@ export function CampaignSponsorDrawer({
               />
             }
           >
+
+            {sponsor && canEdit ? (
+              <div className="campaign-sponsor-communication-send">
+                <div className="campaign-sponsor-communication-send__header">
+                  <div>
+                    <h3 className="h6 mb-1">Send Sponsor Email</h3>
+                    <p className="text-muted mb-0">
+                      Send an active sponsor email template with this sponsor’s committed gift details merged in.
+                    </p>
+                  </div>
+                  <span className="campaign-chip campaign-chip-muted">
+                    <i className="bi bi-envelope-paper" aria-hidden="true" />
+                    <span>{sponsor.email ?? 'No email'}</span>
+                  </span>
+                </div>
+
+                {communicationTemplateError ? (
+                  <div className="alert alert-warning mb-0">{communicationTemplateError}</div>
+                ) : null}
+                {communicationError ? <div className="alert alert-danger mb-0">{communicationError}</div> : null}
+
+                <div className="row g-3 align-items-end">
+                  <div className="col-12 col-lg-7">
+                    <label className="form-label">Template</label>
+                    <select
+                      className="form-select"
+                      value={selectedTemplateId}
+                      onChange={(event) => {
+                        setSelectedTemplateId(event.target.value);
+                        setCommunicationPreview(null);
+                        setCommunicationError(null);
+                      }}
+                    >
+                      <option value="">Choose an active sponsor template</option>
+                      {sponsorEmailTemplates.map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-12 col-lg-5">
+                    <div className="campaign-sponsor-communication-send__actions">
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        disabled={!selectedTemplateId || isPreviewLoading || isSendingCommunication}
+                        onClick={() => void handlePreviewCommunication()}
+                      >
+                        <i className={`bi ${isPreviewLoading ? 'bi-arrow-repeat' : 'bi-eye'} me-2`} aria-hidden="true" />
+                        Preview
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        disabled={!hasCurrentPreview || isPreviewLoading || isSendingCommunication}
+                        onClick={() => void handleSendCommunication()}
+                      >
+                        <i className={`bi ${isSendingCommunication ? 'bi-arrow-repeat' : 'bi-send'} me-2`} aria-hidden="true" />
+                        Send Email
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {sponsorEmailTemplates.length === 0 ? (
+                  <div className="campaign-studio__empty-note mb-0">
+                    No active sponsor email templates are available. Create one in Campaign Studio Communications.
+                  </div>
+                ) : null}
+
+                {communicationPreview ? (
+                  <div className="campaign-sponsor-communication-preview">
+                    {communicationPreview.warnings.length > 0 ? (
+                      <div className="campaign-sponsor-communication-preview__warnings">
+                        {communicationPreview.warnings.map((warning) => (
+                          <div key={warning.code} className="alert alert-warning py-2 mb-0">
+                            <i className="bi bi-exclamation-triangle me-2" aria-hidden="true" />
+                            {warning.message}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    <div className="campaign-sponsor-communication-preview__meta">
+                      <div>
+                        <span className="small text-uppercase text-muted fw-semibold">To</span>
+                        <div>{communicationPreview.recipientEmail}</div>
+                      </div>
+                      <div>
+                        <span className="small text-uppercase text-muted fw-semibold">Subject</span>
+                        <div>{communicationPreview.subject}</div>
+                      </div>
+                    </div>
+
+                    <iframe
+                      className="campaign-sponsor-communication-preview__frame"
+                      title={selectedTemplate ? `${selectedTemplate.name} preview` : 'Sponsor email preview'}
+                      srcDoc={communicationPreview.html}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             {!sponsor ? (
               <div className="campaign-studio__empty-note">Save the sponsor first to manage the communication log.</div>

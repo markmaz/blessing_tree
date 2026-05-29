@@ -18,6 +18,8 @@ from app.features.rbac.constants import CAMPAIGN_MANAGER_ROLE
 from app.features.rbac.models.campaign_user_role import CampaignUserRole
 from app.models.campaign_member import CampaignMember
 from app.models.campaign_member_access_role import CampaignMemberAccessRole
+from app.models.campaign_team import CampaignTeam
+from app.models.campaign_team_member import CampaignTeamMember
 from app.models.group_contact import GroupContact
 from app.models.recipient import Recipient
 from app.models.recipient_constants import (
@@ -36,6 +38,8 @@ class ResolvedCampaignRecipient:
     display_name: str
     merge_fields: dict[str, str]
     sponsor_id: str | None = None
+    member_id: str | None = None
+    contact_id: str | None = None
 
 
 class CampaignRecipientResolver:
@@ -79,6 +83,100 @@ class CampaignRecipientResolver:
             )
         return self._resolve_campaign_members(db, campaign_id=campaign_id, member_type=None)
 
+    def resolve_for_team_ids(
+        self,
+        db: Session,
+        *,
+        campaign_id: str,
+        team_ids: list[str],
+    ) -> list[ResolvedCampaignRecipient]:
+        if not team_ids:
+            return []
+        member_rows = (
+            db.query(CampaignMember)
+            .join(CampaignTeamMember, CampaignTeamMember.campaign_member_id == CampaignMember.id)
+            .join(CampaignTeam, CampaignTeam.id == CampaignTeamMember.team_id)
+            .filter(
+                CampaignMember.campaign_id == campaign_id,
+                CampaignMember.is_active == 1,
+                CampaignTeam.campaign_id == campaign_id,
+                CampaignTeam.is_active == 1,
+                CampaignTeam.id.in_(team_ids),
+            )
+            .order_by(CampaignMember.display_name.asc())
+            .all()
+        )
+        return self._member_rows_to_recipients(member_rows)
+
+    def resolve_for_sponsor_ids(
+        self,
+        db: Session,
+        *,
+        campaign_id: str,
+        sponsor_ids: list[str],
+    ) -> list[ResolvedCampaignRecipient]:
+        if not sponsor_ids:
+            return []
+        sponsor_rows = (
+            db.query(Sponsor)
+            .join(Sponsorship, Sponsorship.sponsor_id == Sponsor.id)
+            .filter(
+                Sponsorship.campaign_id == campaign_id,
+                Sponsor.id.in_(sponsor_ids),
+                Sponsor.is_active == 1,
+                Sponsor.email.isnot(None),
+                func.length(func.trim(Sponsor.email)) > 0,
+            )
+            .order_by(Sponsor.display_name.asc())
+            .distinct()
+            .all()
+        )
+        return self._sponsor_rows_to_recipients(sponsor_rows)
+
+    def resolve_for_member_ids(
+        self,
+        db: Session,
+        *,
+        campaign_id: str,
+        member_ids: list[str],
+    ) -> list[ResolvedCampaignRecipient]:
+        if not member_ids:
+            return []
+        member_rows = (
+            db.query(CampaignMember)
+            .filter(
+                CampaignMember.campaign_id == campaign_id,
+                CampaignMember.id.in_(member_ids),
+                CampaignMember.is_active == 1,
+            )
+            .order_by(CampaignMember.display_name.asc())
+            .all()
+        )
+        return self._member_rows_to_recipients(member_rows)
+
+    def resolve_for_contact_ids(
+        self,
+        db: Session,
+        *,
+        campaign_id: str,
+        contact_ids: list[str],
+    ) -> list[ResolvedCampaignRecipient]:
+        if not contact_ids:
+            return []
+        contact_rows = (
+            db.query(GroupContact)
+            .join(RecipientGroup, RecipientGroup.id == GroupContact.recipient_group_id)
+            .filter(
+                RecipientGroup.campaign_id == campaign_id,
+                GroupContact.id.in_(contact_ids),
+                GroupContact.email.isnot(None),
+                func.length(func.trim(GroupContact.email)) > 0,
+            )
+            .order_by(GroupContact.is_primary.desc(), GroupContact.created_at.asc())
+            .all()
+        )
+        return self._contact_rows_to_recipients(contact_rows)
+
     def _resolve_campaign_members(
         self,
         db: Session,
@@ -95,23 +193,7 @@ class CampaignRecipientResolver:
             query = query.filter(CampaignMember.member_type == member_type)
         members = query.all()
 
-        recipients: list[ResolvedCampaignRecipient] = []
-        for member in members:
-            email = self._resolve_member_email(member)
-            if not email:
-                continue
-            recipients.append(
-                ResolvedCampaignRecipient(
-                    email=email,
-                    display_name=member.display_name,
-                    merge_fields={
-                        "volunteer.first_name": _first_name(member.display_name),
-                        "volunteer.full_name": member.display_name,
-                        "manager.name": member.display_name,
-                    },
-                )
-            )
-        return _dedupe_recipients(recipients)
+        return self._member_rows_to_recipients(members)
 
     def _resolve_managers(self, db: Session, *, campaign_id: str) -> list[ResolvedCampaignRecipient]:
         recipients: list[ResolvedCampaignRecipient] = []
@@ -142,6 +224,7 @@ class CampaignRecipientResolver:
                     merge_fields={
                         "manager.name": member.display_name,
                     },
+                    member_id=str(member.id),
                 )
             )
 
@@ -185,20 +268,7 @@ class CampaignRecipientResolver:
             .all()
         )
 
-        recipients = [
-            ResolvedCampaignRecipient(
-                email=str(sponsor.email).strip().lower(),
-                display_name=sponsor.display_name,
-                merge_fields={
-                    "sponsor.first_name": _first_name(sponsor.display_name),
-                    "sponsor.full_name": sponsor.display_name,
-                },
-                sponsor_id=str(sponsor.id),
-            )
-            for sponsor in sponsor_rows
-            if sponsor.email
-        ]
-        return _dedupe_recipients(recipients)
+        return self._sponsor_rows_to_recipients(sponsor_rows)
 
     def _resolve_group_contacts(
         self,
@@ -224,25 +294,7 @@ class CampaignRecipientResolver:
             contact_rows = contact_rows.filter(GroupContact.is_primary == 1)
         contact_rows = contact_rows.all()
 
-        recipients = []
-        for contact in contact_rows:
-            full_name = " ".join(
-                part for part in [contact.first_name or "", contact.last_name or ""] if part
-            ).strip() or "Family Contact"
-            recipients.append(
-                ResolvedCampaignRecipient(
-                    email=str(contact.email).strip().lower(),
-                    display_name=full_name,
-                    merge_fields={
-                        "contact.first_name": contact.first_name or full_name,
-                        "contact.full_name": full_name,
-                        "group.name": contact.recipient_group.group_name if contact.recipient_group else "",
-                        "recipient.first_name": contact.first_name or full_name,
-                        "recipient.full_name": full_name,
-                    },
-                )
-            )
-        return _dedupe_recipients(recipients)
+        return self._contact_rows_to_recipients(contact_rows)
 
     def _resolve_direct_recipient_contacts(
         self,
@@ -275,6 +327,7 @@ class CampaignRecipientResolver:
                     "recipient.first_name": _first_name(recipient.display_label),
                     "recipient.full_name": recipient.display_label,
                 },
+                contact_id=str(recipient.id),
             )
             for recipient in recipient_rows
             if recipient.direct_email
@@ -288,6 +341,66 @@ class CampaignRecipientResolver:
         if member.app_user and member.app_user.email:
             return member.app_user.email.strip().lower()
         return None
+
+    def _member_rows_to_recipients(self, members: list[CampaignMember]) -> list[ResolvedCampaignRecipient]:
+        recipients: list[ResolvedCampaignRecipient] = []
+        for member in members:
+            email = self._resolve_member_email(member)
+            if not email:
+                continue
+            recipients.append(
+                ResolvedCampaignRecipient(
+                    email=email,
+                    display_name=member.display_name,
+                    merge_fields={
+                        "volunteer.first_name": _first_name(member.display_name),
+                        "volunteer.full_name": member.display_name,
+                        "manager.name": member.display_name,
+                    },
+                    member_id=str(member.id),
+                )
+            )
+        return _dedupe_recipients(recipients)
+
+    @staticmethod
+    def _sponsor_rows_to_recipients(sponsor_rows: list[Sponsor]) -> list[ResolvedCampaignRecipient]:
+        recipients = [
+            ResolvedCampaignRecipient(
+                email=str(sponsor.email).strip().lower(),
+                display_name=sponsor.display_name,
+                merge_fields={
+                    "sponsor.first_name": _first_name(sponsor.display_name),
+                    "sponsor.full_name": sponsor.display_name,
+                },
+                sponsor_id=str(sponsor.id),
+            )
+            for sponsor in sponsor_rows
+            if sponsor.email
+        ]
+        return _dedupe_recipients(recipients)
+
+    @staticmethod
+    def _contact_rows_to_recipients(contact_rows: list[GroupContact]) -> list[ResolvedCampaignRecipient]:
+        recipients = []
+        for contact in contact_rows:
+            full_name = " ".join(
+                part for part in [contact.first_name or "", contact.last_name or ""] if part
+            ).strip() or "Family Contact"
+            recipients.append(
+                ResolvedCampaignRecipient(
+                    email=str(contact.email).strip().lower(),
+                    display_name=full_name,
+                    merge_fields={
+                        "contact.first_name": contact.first_name or full_name,
+                        "contact.full_name": full_name,
+                        "group.name": contact.recipient_group.group_name if contact.recipient_group else "",
+                        "recipient.first_name": contact.first_name or full_name,
+                        "recipient.full_name": full_name,
+                    },
+                    contact_id=str(contact.id),
+                )
+            )
+        return _dedupe_recipients(recipients)
 
 
 def _dedupe_recipients(recipients: list[ResolvedCampaignRecipient]) -> list[ResolvedCampaignRecipient]:

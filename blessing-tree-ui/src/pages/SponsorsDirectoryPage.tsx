@@ -7,11 +7,15 @@ export function SponsorsDirectoryPage() {
     workspace,
     pendingRegistrations,
     pendingRegistrationError,
+    communicationTemplates,
+    communicationTemplateError,
     isLoading,
     isSaving,
     error,
     interactionsBySponsor,
     onLoadSponsorInteractions,
+    onPreviewCommunication,
+    onSendCommunication,
     onSaveSponsor,
     onDeleteSponsor,
     onSaveInteraction,
@@ -36,11 +40,15 @@ export function SponsorsDirectoryPage() {
         workspace={workspace}
         pendingRegistrations={pendingRegistrations}
         pendingRegistrationError={pendingRegistrationError}
+        communicationTemplates={communicationTemplates}
+        communicationTemplateError={communicationTemplateError}
         isLoading={isLoading}
         isSaving={isSaving}
         error={error}
         interactionsBySponsor={interactionsBySponsor}
         onLoadSponsorInteractions={onLoadSponsorInteractions}
+        onPreviewCommunication={onPreviewCommunication}
+        onSendCommunication={onSendCommunication}
         onSaveSponsor={onSaveSponsor}
         onDeleteSponsor={onDeleteSponsor}
         onSaveInteraction={onSaveInteraction}

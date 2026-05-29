@@ -4,6 +4,21 @@ APP_ADMIN_ROLE = "APP_ADMIN"
 APP_USER_ROLE = "APP_USER"
 
 CAMPAIGN_MANAGER_ROLE = "CAMPAIGN_MANAGER"
+CAMPAIGN_OVERVIEW_ROLE = "CAMPAIGN_OVERVIEW"
+CAMPAIGN_STUDIO_ROLE = "CAMPAIGN_STUDIO"
+CAMPAIGN_FLYER_BUILDER_ROLE = "CAMPAIGN_FLYER_BUILDER"
+ASK_BLESSING_TREE_ROLE = "ASK_BLESSING_TREE"
+PEOPLE_INTAKE_ROLE = "PEOPLE_INTAKE"
+PEOPLE_DIRECTORY_ROLE = "PEOPLE_DIRECTORY"
+PEOPLE_REPORTS_ROLE = "PEOPLE_REPORTS"
+SPONSORS_INTAKE_ROLE = "SPONSORS_INTAKE"
+SPONSORS_DIRECTORY_ROLE = "SPONSORS_DIRECTORY"
+SPONSORS_REPORTS_ROLE = "SPONSORS_REPORTS"
+GIFTS_SEARCH_ROLE = "GIFTS_SEARCH"
+GIFTS_OPERATIONS_SCREEN_ROLE = "GIFTS_OPERATIONS"
+GIFTS_POOL_ROLE = "GIFTS_POOL"
+GIFTS_STATUS_ROLE = "GIFTS_STATUS"
+GIFTS_TAG_BUILDER_ROLE = "GIFTS_TAG_BUILDER"
 PEOPLE_MANAGER_ROLE = "PEOPLE_MANAGER"
 RECIPIENT_COORDINATOR_ROLE = PEOPLE_MANAGER_ROLE
 DONATION_ENTRY_ROLE = "DONATION_ENTRY"
@@ -63,6 +78,48 @@ ALL_CAMPAIGN_CAPABILITIES = frozenset(
 
 CAMPAIGN_ROLE_CAPABILITIES = {
     CAMPAIGN_MANAGER_ROLE: ALL_CAMPAIGN_CAPABILITIES,
+    CAMPAIGN_OVERVIEW_ROLE: frozenset({CAMPAIGN_VIEW_CAPABILITY}),
+    CAMPAIGN_STUDIO_ROLE: frozenset({CAMPAIGN_VIEW_CAPABILITY, CAMPAIGN_ADMIN_CAPABILITY}),
+    CAMPAIGN_FLYER_BUILDER_ROLE: frozenset({CAMPAIGN_VIEW_CAPABILITY, CAMPAIGN_ADMIN_CAPABILITY}),
+    ASK_BLESSING_TREE_ROLE: frozenset({CAMPAIGN_VIEW_CAPABILITY}),
+    PEOPLE_INTAKE_ROLE: frozenset(
+        {
+            CAMPAIGN_VIEW_CAPABILITY,
+            CAMPAIGN_RECIPIENTS_VIEW_CAPABILITY,
+            CAMPAIGN_RECIPIENTS_EDIT_CAPABILITY,
+            CAMPAIGN_PICKUPS_MANAGE_CAPABILITY,
+        }
+    ),
+    PEOPLE_DIRECTORY_ROLE: frozenset({CAMPAIGN_VIEW_CAPABILITY, CAMPAIGN_RECIPIENTS_VIEW_CAPABILITY}),
+    PEOPLE_REPORTS_ROLE: frozenset({CAMPAIGN_VIEW_CAPABILITY, CAMPAIGN_REPORTS_VIEW_CAPABILITY}),
+    SPONSORS_INTAKE_ROLE: frozenset(
+        {CAMPAIGN_VIEW_CAPABILITY, CAMPAIGN_SPONSORS_VIEW_CAPABILITY, CAMPAIGN_SPONSORS_MANAGE_CAPABILITY}
+    ),
+    SPONSORS_DIRECTORY_ROLE: frozenset({CAMPAIGN_VIEW_CAPABILITY, CAMPAIGN_SPONSORS_VIEW_CAPABILITY}),
+    SPONSORS_REPORTS_ROLE: frozenset({CAMPAIGN_VIEW_CAPABILITY, CAMPAIGN_REPORTS_VIEW_CAPABILITY}),
+    GIFTS_SEARCH_ROLE: frozenset(
+        {CAMPAIGN_VIEW_CAPABILITY, CAMPAIGN_GIFTS_SEARCH_CAPABILITY, CAMPAIGN_GIFTS_COMMIT_CAPABILITY}
+    ),
+    GIFTS_OPERATIONS_SCREEN_ROLE: frozenset(
+        {
+            CAMPAIGN_VIEW_CAPABILITY,
+            CAMPAIGN_GIFTS_SEARCH_CAPABILITY,
+            CAMPAIGN_GIFTS_COMMIT_CAPABILITY,
+            CAMPAIGN_GIFTS_CHECK_IN_CAPABILITY,
+            CAMPAIGN_GIFTS_WRAP_CAPABILITY,
+            CAMPAIGN_GIFTS_DISTRIBUTE_CAPABILITY,
+        }
+    ),
+    GIFTS_POOL_ROLE: frozenset(
+        {
+            CAMPAIGN_VIEW_CAPABILITY,
+            CAMPAIGN_DONATIONS_VIEW_CAPABILITY,
+            CAMPAIGN_DONATIONS_EDIT_CAPABILITY,
+            CAMPAIGN_GIFTS_POOL_MANAGE_CAPABILITY,
+        }
+    ),
+    GIFTS_STATUS_ROLE: frozenset({CAMPAIGN_VIEW_CAPABILITY, CAMPAIGN_REPORTS_VIEW_CAPABILITY}),
+    GIFTS_TAG_BUILDER_ROLE: frozenset({CAMPAIGN_VIEW_CAPABILITY, CAMPAIGN_ADMIN_CAPABILITY}),
     PEOPLE_MANAGER_ROLE: frozenset(
         {
             CAMPAIGN_VIEW_CAPABILITY,
@@ -121,6 +178,81 @@ CAMPAIGN_ROLE_CATALOG = (
         "role_key": CAMPAIGN_MANAGER_ROLE,
         "label": "Campaign Manager",
         "description": "Full campaign setup, staffing, and operations access.",
+    },
+    {
+        "role_key": CAMPAIGN_OVERVIEW_ROLE,
+        "label": "Campaign Overview",
+        "description": "View the selected campaign overview screen.",
+    },
+    {
+        "role_key": CAMPAIGN_STUDIO_ROLE,
+        "label": "Campaign Studio",
+        "description": "Open and manage the campaign studio.",
+    },
+    {
+        "role_key": CAMPAIGN_FLYER_BUILDER_ROLE,
+        "label": "Flyer Builder",
+        "description": "Open and manage campaign sponsor flyers.",
+    },
+    {
+        "role_key": ASK_BLESSING_TREE_ROLE,
+        "label": "Ask Blessing Tree",
+        "description": "Use the Ask Blessing Tree help and reporting screen.",
+    },
+    {
+        "role_key": PEOPLE_INTAKE_ROLE,
+        "label": "People Intake",
+        "description": "Create and update family, organization, person, and wishlist intake records.",
+    },
+    {
+        "role_key": PEOPLE_DIRECTORY_ROLE,
+        "label": "People Directory",
+        "description": "View and search people, families, organizations, and wishlists.",
+    },
+    {
+        "role_key": PEOPLE_REPORTS_ROLE,
+        "label": "People Reports",
+        "description": "View people-focused campaign reports.",
+    },
+    {
+        "role_key": SPONSORS_INTAKE_ROLE,
+        "label": "Sponsor Intake",
+        "description": "Create and update sponsor intake records.",
+    },
+    {
+        "role_key": SPONSORS_DIRECTORY_ROLE,
+        "label": "Sponsor Directory",
+        "description": "View and search sponsors.",
+    },
+    {
+        "role_key": SPONSORS_REPORTS_ROLE,
+        "label": "Sponsor Reports",
+        "description": "View sponsor-focused campaign reports.",
+    },
+    {
+        "role_key": GIFTS_SEARCH_ROLE,
+        "label": "Gift Search",
+        "description": "Search and commit gifts.",
+    },
+    {
+        "role_key": GIFTS_OPERATIONS_SCREEN_ROLE,
+        "label": "Gift Operations",
+        "description": "Receive, wrap, tag, and distribute gifts.",
+    },
+    {
+        "role_key": GIFTS_POOL_ROLE,
+        "label": "Gift Pool",
+        "description": "Manage donated gifts and matching pool items.",
+    },
+    {
+        "role_key": GIFTS_STATUS_ROLE,
+        "label": "Gift Status",
+        "description": "View the gift status report.",
+    },
+    {
+        "role_key": GIFTS_TAG_BUILDER_ROLE,
+        "label": "Gift Tag Builder",
+        "description": "Design and manage campaign gift tag templates.",
     },
     {
         "role_key": PEOPLE_MANAGER_ROLE,

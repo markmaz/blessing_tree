@@ -7,6 +7,8 @@ import type {
   CampaignMilestone,
   CampaignMilestoneDefinition,
   CampaignScheduleItem,
+  CommunicationAudienceOption,
+  CommunicationAudienceRecipientSummary,
   CommunicationSchedule,
   CommunicationTemplate,
   CreateCampaignEventInput,
@@ -31,6 +33,8 @@ interface CampaignStudioScheduleSectionProps {
   milestones: CampaignMilestone[];
   schedules: CommunicationSchedule[];
   templates: CommunicationTemplate[];
+  audienceCatalog?: CommunicationAudienceOption[];
+  audienceRecipientSummaries?: CommunicationAudienceRecipientSummary[];
   isSaving: boolean;
   onSaveMilestones: (milestones: SaveCampaignMilestoneInput[]) => Promise<boolean>;
   onCreateEvent: (input: CreateCampaignEventInput) => Promise<boolean>;
@@ -65,6 +69,8 @@ export function CampaignStudioScheduleSection({
   milestones,
   schedules,
   templates,
+  audienceCatalog = [],
+  audienceRecipientSummaries = [],
   isSaving,
   onSaveMilestones,
   onCreateEvent,
@@ -183,6 +189,8 @@ export function CampaignStudioScheduleSection({
         milestones={milestones}
         schedules={schedules}
         templates={templates}
+        audienceCatalog={audienceCatalog}
+        audienceRecipientSummaries={audienceRecipientSummaries}
         isSaving={isSaving}
         onSelectType={(editorType) =>
           setModalState((currentState) => ({

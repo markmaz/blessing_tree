@@ -5,6 +5,7 @@ from flask_restx import Resource
 
 from app.db import SessionLocal
 from app.features.campaigns import campaign_ns
+from app.features.campaigns.communication_send_service import CampaignCommunicationSendService
 from app.features.rbac.decorators import require_campaign_capability
 from app.features.sponsors import (
     CampaignSponsorService,
@@ -17,6 +18,7 @@ from app.features.sponsors import (
 from app.features.sponsors.email_delivery import send_public_sponsor_verification_email_with_fallback
 
 _sponsor_service = CampaignSponsorService()
+_communication_send_service = CampaignCommunicationSendService()
 
 
 @campaign_ns.route("/<string:campaign_id>/sponsor-workspace")
@@ -109,6 +111,35 @@ class CampaignSponsorInteractionDetailResource(Resource):
         with SessionLocal() as db:
             _sponsor_service.delete_interaction(db, campaign_id, sponsor_id, interaction_id)
         return "", 204
+
+
+@campaign_ns.route("/<string:campaign_id>/sponsors/<string:sponsor_id>/communications/preview")
+class CampaignSponsorCommunicationPreviewResource(Resource):
+    @require_campaign_capability("campaign.sponsors.manage")
+    def post(self, campaign_id: str, sponsor_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            return _communication_send_service.preview_sponsor_send(
+                db,
+                campaign_id=campaign_id,
+                sponsor_id=sponsor_id,
+                template_id=str(payload.get("template_id") or ""),
+            ), 200
+
+
+@campaign_ns.route("/<string:campaign_id>/sponsors/<string:sponsor_id>/communications/send")
+class CampaignSponsorCommunicationSendResource(Resource):
+    @require_campaign_capability("campaign.sponsors.manage")
+    def post(self, campaign_id: str, sponsor_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            return _communication_send_service.send_sponsor_template(
+                db,
+                campaign_id=campaign_id,
+                sponsor_id=sponsor_id,
+                template_id=str(payload.get("template_id") or ""),
+                created_by_user_id=getattr(g, "user_id", None),
+            ), 200
 
 
 @campaign_ns.route("/<string:campaign_id>/pending-sponsor-registrations")

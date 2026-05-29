@@ -12,6 +12,7 @@ import type {
   RecipientUpsertInput,
   WishlistItemUpsertInput,
   WishlistUpsertInput,
+  OrganizationTypeOption,
 } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 
 interface GroupContactResponse {
@@ -141,6 +142,14 @@ interface RecipientResponse {
 interface GroupResponse {
   id: string;
   campaign_id: string;
+  parent_organization_group_id?: string | null;
+  parent_organization?: {
+    id: string;
+    group_name: string;
+    organization_type: CampaignPeopleGroup['organizationType'];
+    status: CampaignPeopleGroup['status'];
+  } | null;
+  family_count?: number;
   group_type: CampaignPeopleGroup['groupType'];
   group_name: string;
   organization_type: CampaignPeopleGroup['organizationType'];
@@ -188,6 +197,7 @@ interface PeopleWorkspaceResponse {
   };
   groups: GroupResponse[];
   recipients: RecipientResponse[];
+  organization_types?: OrganizationTypeResponse[];
   filters: {
     group_types: CampaignPeopleWorkspaceData['filters']['groupTypes'];
     group_statuses: CampaignPeopleWorkspaceData['filters']['groupStatuses'];
@@ -195,6 +205,17 @@ interface PeopleWorkspaceResponse {
     recipient_kinds: CampaignPeopleWorkspaceData['filters']['recipientKinds'];
     recipient_statuses: CampaignPeopleWorkspaceData['filters']['recipientStatuses'];
   };
+}
+
+interface OrganizationTypeResponse {
+  id: string;
+  code: string;
+  label: string;
+  recipient_category: OrganizationTypeOption['recipientCategory'];
+  is_active: boolean;
+  sort_order: number;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 interface AddressSearchResponse {
@@ -238,6 +259,7 @@ export async function getCampaignPeopleWorkspace(
     },
     groups: response.groups.map(mapGroup),
     recipients: response.recipients.map(mapRecipient),
+    organizationTypes: (response.organization_types ?? []).map(mapOrganizationType),
     filters: {
       groupTypes: response.filters.group_types,
       groupStatuses: response.filters.group_statuses,
@@ -245,6 +267,19 @@ export async function getCampaignPeopleWorkspace(
       recipientKinds: response.filters.recipient_kinds,
       recipientStatuses: response.filters.recipient_statuses,
     },
+  };
+}
+
+function mapOrganizationType(response: OrganizationTypeResponse): OrganizationTypeOption {
+  return {
+    id: response.id,
+    code: response.code,
+    label: response.label,
+    recipientCategory: response.recipient_category,
+    isActive: response.is_active,
+    sortOrder: response.sort_order,
+    createdAt: response.created_at,
+    updatedAt: response.updated_at,
   };
 }
 
@@ -275,6 +310,7 @@ export async function createRecipientGroup(
     withJson('POST', {
       group_type: input.groupType,
       group_name: input.groupName,
+      parent_organization_group_id: input.parentOrganizationGroupId ?? null,
       organization_type: input.organizationType ?? null,
       program_abbreviation: input.programAbbreviation ?? null,
       intake_source: input.intakeSource ?? null,
@@ -300,6 +336,7 @@ export async function updateRecipientGroup(
   const payload: Record<string, unknown> = {};
   if ('groupType' in input) payload.group_type = input.groupType;
   if ('groupName' in input) payload.group_name = input.groupName;
+  if ('parentOrganizationGroupId' in input) payload.parent_organization_group_id = input.parentOrganizationGroupId ?? null;
   if ('organizationType' in input) payload.organization_type = input.organizationType ?? null;
   if ('programAbbreviation' in input) payload.program_abbreviation = input.programAbbreviation ?? null;
   if ('intakeSource' in input) payload.intake_source = input.intakeSource ?? null;
@@ -464,6 +501,16 @@ function mapGroup(response: GroupResponse): CampaignPeopleGroup {
   return {
     id: response.id,
     campaignId: response.campaign_id,
+    parentOrganizationGroupId: response.parent_organization_group_id ?? null,
+    parentOrganization: response.parent_organization
+      ? {
+          id: response.parent_organization.id,
+          groupName: response.parent_organization.group_name,
+          organizationType: response.parent_organization.organization_type,
+          status: response.parent_organization.status,
+        }
+      : null,
+    familyCount: response.family_count ?? 0,
     groupType: response.group_type,
     groupName: response.group_name,
     organizationType: response.organization_type,

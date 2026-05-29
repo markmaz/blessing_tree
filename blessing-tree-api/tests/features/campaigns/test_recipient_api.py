@@ -285,6 +285,9 @@ def test_group_recipient_and_wishlist_crud_flow(app, monkeypatch: pytest.MonkeyP
     )
     assert create_recipient_response.status_code == 201
     assert create_recipient_response.get_json()["age_unit"] == "MONTHS"
+    assert create_recipient_response.get_json()["display_label"] == "Child One"
+    assert create_recipient_response.get_json()["first_name"] == "Child"
+    assert create_recipient_response.get_json()["last_name"] == "One"
     recipient_id = create_recipient_response.get_json()["id"]
 
     upsert_wishlist_response = client.put(
@@ -456,6 +459,66 @@ def test_group_and_recipient_delete_flow(app, monkeypatch: pytest.MonkeyPatch) -
         assert verify_session.query(RecipientGroup).filter(RecipientGroup.id == uuid.UUID(group_id)).one_or_none() is None
 
 
+def test_household_children_are_cardinally_named_and_renumbered_after_delete(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    household = _seed_household_group(session, campaign.id)
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    group_id = str(household.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    child_ids: list[str] = []
+    for age in [8, 6, 4]:
+        response = client.post(
+            f"/api/v1/campaigns/{campaign_id}/recipients",
+            json={
+                "recipient_group_id": group_id,
+                "recipient_kind": "CHILD",
+                "program_type": "CHILD_FAMILY",
+                "privacy_level": "FULL_NAME",
+                "age": age,
+                "age_unit": "YEARS",
+            },
+            headers=auth_header(manager_id, "VOLUNTEER"),
+        )
+        assert response.status_code == 201
+        child_ids.append(response.get_json()["id"])
+
+    with campaign_api_module.SessionLocal() as verify_session:
+        labels = [
+            row.display_label
+            for row in (
+                verify_session.query(Recipient)
+                .filter(Recipient.recipient_group_id == uuid.UUID(group_id))
+                .order_by(Recipient.created_at.asc())
+                .all()
+            )
+        ]
+        assert labels == ["Child One", "Child Two", "Child Three"]
+
+    delete_response = client.delete(
+        f"/api/v1/campaigns/{campaign_id}/recipients/{child_ids[1]}",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert delete_response.status_code == 204
+
+    with campaign_api_module.SessionLocal() as verify_session:
+        children = (
+            verify_session.query(Recipient)
+            .filter(Recipient.recipient_group_id == uuid.UUID(group_id))
+            .order_by(Recipient.created_at.asc())
+            .all()
+        )
+        assert [child.display_label for child in children] == ["Child One", "Child Two"]
+        assert [(child.first_name, child.last_name) for child in children] == [("Child", "One"), ("Child", "Two")]
+
+
 def test_recipient_address_search_returns_suggestions(app, monkeypatch: pytest.MonkeyPatch) -> None:
     install_auth(monkeypatch)
     session = campaign_api_module.SessionLocal()
@@ -596,6 +659,76 @@ def test_organization_group_requires_organization_type(app, monkeypatch: pytest.
     assert response.get_json()["error"] == "organization_type is required"
 
 
+def test_family_can_be_associated_with_an_organization(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    organization = _seed_organization_group(session, campaign.id)
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    organization_id = str(organization.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/recipient-groups",
+        json={
+            "group_type": "HOUSEHOLD",
+            "parent_organization_group_id": organization_id,
+            "group_name": "Baker Family",
+            "status": "ACTIVE",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 201
+    family_payload = response.get_json()
+    assert family_payload["parent_organization_group_id"] == organization_id
+    assert family_payload["parent_organization"]["group_name"] == "Senior At Home"
+
+    workspace_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/people-workspace",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    payload = workspace_response.get_json()
+    organization_payload = next(group for group in payload["groups"] if group["id"] == organization_id)
+    assert organization_payload["family_count"] == 1
+
+
+def test_only_households_can_be_associated_with_organizations(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    parent = _seed_organization_group(session, campaign.id)
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    parent_id = str(parent.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/recipient-groups",
+        json={
+            "group_type": "ORGANIZATION",
+            "parent_organization_group_id": parent_id,
+            "organization_type": "SENIOR_PROGRAM",
+            "group_name": "Another Organization",
+            "program_abbreviation": "AO",
+            "status": "ACTIVE",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Only families can be associated with an organization"
+
+
 def test_household_child_rejects_direct_contact_fields(app, monkeypatch: pytest.MonkeyPatch) -> None:
     install_auth(monkeypatch)
     session = campaign_api_module.SessionLocal()
@@ -634,24 +767,24 @@ def test_duplicate_recipient_in_same_group_returns_conflict(app, monkeypatch: py
     manager = seed_user(session, name="Manager User")
     campaign = seed_campaign(session)
     assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
-    household = _seed_household_group(session, campaign.id)
+    organization = _seed_organization_group(session, campaign.id)
     session.add(
         Recipient(
             id=uuid.uuid4(),
             campaign_id=campaign.id,
-            recipient_group_id=household.id,
-            recipient_kind=RECIPIENT_KIND_CHILD,
-            program_type=RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+            recipient_group_id=organization.id,
+            recipient_kind=RECIPIENT_KIND_ADULT,
+            program_type=RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
             privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
-            display_label="Ava Jones",
-            first_name="Ava",
-            last_name="Jones",
+            display_label="Mary Carter",
+            first_name="Mary",
+            last_name="Carter",
             status=RECIPIENT_STATUS_ACTIVE,
         )
     )
     manager_id = str(manager.id)
     campaign_id = str(campaign.id)
-    group_id = str(household.id)
+    group_id = str(organization.id)
     session.commit()
     session.close()
 
@@ -660,10 +793,10 @@ def test_duplicate_recipient_in_same_group_returns_conflict(app, monkeypatch: py
         f"/api/v1/campaigns/{campaign_id}/recipients",
         json={
             "recipient_group_id": group_id,
-            "recipient_kind": "CHILD",
-            "program_type": "CHILD_FAMILY",
+            "recipient_kind": "ADULT",
+            "program_type": "ORGANIZATION_ADULT",
             "privacy_level": "FULL_NAME",
-            "display_label": "Ava Jones",
+            "display_label": "Mary Carter",
         },
         headers=auth_header(manager_id, "VOLUNTEER"),
     )

@@ -29,8 +29,10 @@ export function PeopleIntakePage() {
   const [createGroupType, setCreateGroupType] = useState<RecipientGroupType | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
+  const [createParentOrganizationGroupId, setCreateParentOrganizationGroupId] = useState<string | null>(null);
   const [createRecipientGroupId, setCreateRecipientGroupId] = useState<string | null>(null);
   const [isCreateRecipientOpen, setIsCreateRecipientOpen] = useState(false);
+  const [autoOpenGiftEditorRecipientId, setAutoOpenGiftEditorRecipientId] = useState<string | null>(null);
 
   const selectedGroup =
     workspace?.groups.find((group) => group.id === selectedGroupId) ?? null;
@@ -94,6 +96,7 @@ export function PeopleIntakePage() {
           className="campaign-people-intake-card"
           onClick={() => {
             setCreateGroupType('HOUSEHOLD');
+            setCreateParentOrganizationGroupId(null);
             setSelectedGroupId(null);
           }}
           disabled={!canEditPeople}
@@ -112,6 +115,7 @@ export function PeopleIntakePage() {
           className="campaign-people-intake-card"
           onClick={() => {
             setCreateGroupType('ORGANIZATION');
+            setCreateParentOrganizationGroupId(null);
             setSelectedGroupId(null);
           }}
           disabled={!canEditPeople}
@@ -172,6 +176,7 @@ export function PeopleIntakePage() {
                     className="btn btn-outline-secondary btn-sm"
                     onClick={() => {
                       setCreateGroupType(null);
+                      setCreateParentOrganizationGroupId(null);
                       setSelectedGroupId(group.id);
                     }}
                   >
@@ -192,15 +197,19 @@ export function PeopleIntakePage() {
         canEdit={canEditPeople}
         group={selectedGroup}
         groups={workspace.groups}
+        organizationTypes={workspace.organizationTypes ?? []}
         initialGroupType={createGroupType ?? 'HOUSEHOLD'}
+        initialParentOrganizationGroupId={createParentOrganizationGroupId}
         onClose={() => {
           setCreateGroupType(null);
+          setCreateParentOrganizationGroupId(null);
           setSelectedGroupId(null);
         }}
         onSaveGroup={async (input, groupId) => {
           const savedGroup = await onSaveGroup(input, groupId);
           if (savedGroup) {
             setCreateGroupType(null);
+            setCreateParentOrganizationGroupId(null);
             setSelectedGroupId(savedGroup.id);
           }
           return savedGroup;
@@ -209,19 +218,41 @@ export function PeopleIntakePage() {
         onDeleteContact={onDeleteContact}
         onDeleteGroup={onDeleteGroup}
         onSearchAddresses={onSearchAddresses}
+        onAfterCreateGroup={(savedGroup) => {
+          if (savedGroup.groupType !== 'HOUSEHOLD') {
+            return;
+          }
+          setCreateGroupType(null);
+          setCreateParentOrganizationGroupId(null);
+          setSelectedGroupId(null);
+          setSelectedRecipientId(null);
+          setCreateRecipientGroupId(savedGroup.id);
+          setIsCreateRecipientOpen(true);
+        }}
         onAddRecipientToGroup={(groupId) => {
           setCreateGroupType(null);
+          setCreateParentOrganizationGroupId(null);
           setSelectedGroupId(null);
           setIsCreateRecipientOpen(true);
           setSelectedRecipientId(null);
           setCreateRecipientGroupId(groupId);
         }}
+        onAddFamilyToOrganization={(organizationGroupId) => {
+          setCreateGroupType('HOUSEHOLD');
+          setCreateParentOrganizationGroupId(organizationGroupId);
+          setSelectedGroupId(null);
+          setSelectedRecipientId(null);
+          setCreateRecipientGroupId(null);
+          setIsCreateRecipientOpen(false);
+        }}
         onSelectGroup={(groupId) => {
           setCreateGroupType(null);
+          setCreateParentOrganizationGroupId(null);
           setSelectedGroupId(groupId);
         }}
         onSelectRecipient={(recipientId) => {
           setCreateGroupType(null);
+          setCreateParentOrganizationGroupId(null);
           setSelectedGroupId(null);
           setIsCreateRecipientOpen(false);
           setCreateRecipientGroupId(selectedGroup?.id ?? null);
@@ -234,12 +265,12 @@ export function PeopleIntakePage() {
         isOpen={selectedRecipient !== null || isCreateRecipientOpen}
         isSaving={isSaving}
         canEdit={canEditPeople}
-        stayInCreateModeAfterSave={isCreateRecipientOpen && selectedRecipient === null && createRecipientGroupId !== null}
         recipient={selectedRecipient}
         initialGroupId={createRecipientGroupId}
         lockedGroupId={createRecipientGroupId}
         groups={workspace.groups}
         recipients={workspace.recipients}
+        organizationTypes={workspace.organizationTypes ?? []}
         onClose={() => {
           setIsCreateRecipientOpen(false);
           setSelectedRecipientId(null);
@@ -248,14 +279,11 @@ export function PeopleIntakePage() {
         onSaveRecipient={async (input, recipientId) => {
           const savedRecipient = await onSaveRecipient(input, recipientId);
           if (savedRecipient) {
-            if (!recipientId && createRecipientGroupId) {
-              setIsCreateRecipientOpen(true);
-              setCreateRecipientGroupId(savedRecipient.recipientGroupId);
-              setSelectedRecipientId(null);
-            } else {
-              setIsCreateRecipientOpen(false);
-              setCreateRecipientGroupId(savedRecipient.recipientGroupId);
-              setSelectedRecipientId(savedRecipient.id);
+            setIsCreateRecipientOpen(false);
+            setCreateRecipientGroupId(savedRecipient.recipientGroupId);
+            setSelectedRecipientId(savedRecipient.id);
+            if (!recipientId) {
+              setAutoOpenGiftEditorRecipientId(savedRecipient.id);
             }
           }
           return savedRecipient;
@@ -272,9 +300,12 @@ export function PeopleIntakePage() {
           if (!createRecipientGroupId) {
             return;
           }
+          setAutoOpenGiftEditorRecipientId(null);
           setSelectedRecipientId(null);
           setIsCreateRecipientOpen(true);
         }}
+        openGiftEditorOnMount={selectedRecipient?.id === autoOpenGiftEditorRecipientId}
+        onGiftEditorAutoOpened={() => setAutoOpenGiftEditorRecipientId(null)}
       />
     </section>
   );

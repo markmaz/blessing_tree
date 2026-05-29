@@ -8,20 +8,26 @@ import {
   getCampaignSponsorInteractions,
   getCampaignSponsorWorkspace,
   getPendingSponsorRegistrations,
+  previewSponsorCommunication,
   resendPendingSponsorRegistration,
+  sendSponsorCommunication,
   updateCampaignSponsor,
   updateCampaignSponsorInteraction,
   verifyPendingSponsorRegistration,
 } from '@/features/campaigns/api/campaignSponsorWorkspaceApi';
+import { listCommunicationTemplates } from '@/features/campaigns/api/campaignStudioApi';
 import type {
   CampaignSponsor,
   CampaignSponsorInteraction,
   CampaignSponsorWorkspaceData,
   PendingSponsorRegistration,
+  SponsorCommunicationPreview,
+  SponsorCommunicationSendResult,
   SponsorInteractionUpsertInput,
   SponsorUpsertInput,
   SponsorshipUpsertInput,
 } from '@/features/campaigns/model/campaignSponsorWorkspaceTypes';
+import type { CommunicationTemplate } from '@/features/campaigns/model/campaignStudioTypes';
 
 interface InteractionState {
   items: CampaignSponsorInteraction[];
@@ -34,6 +40,8 @@ interface CampaignSponsorWorkspaceState {
   workspace: CampaignSponsorWorkspaceData | null;
   pendingRegistrations: PendingSponsorRegistration[];
   pendingRegistrationError: string | null;
+  communicationTemplates: CommunicationTemplate[];
+  communicationTemplateError: string | null;
   isLoading: boolean;
   isSaving: boolean;
   error: string | null;
@@ -45,6 +53,8 @@ const emptyState: CampaignSponsorWorkspaceState = {
   workspace: null,
   pendingRegistrations: [],
   pendingRegistrationError: null,
+  communicationTemplates: [],
+  communicationTemplateError: null,
   isLoading: false,
   isSaving: false,
   error: null,
@@ -68,7 +78,10 @@ export function useCampaignSponsorWorkspace(campaignId: string | null) {
     }));
 
     try {
-      const workspace = await getCampaignSponsorWorkspace(campaignId);
+      const [workspace, communicationTemplates] = await Promise.all([
+        getCampaignSponsorWorkspace(campaignId),
+        listCommunicationTemplates(campaignId),
+      ]);
       let pendingRegistrations: PendingSponsorRegistration[] = [];
       let pendingRegistrationError: string | null = null;
       try {
@@ -81,6 +94,8 @@ export function useCampaignSponsorWorkspace(campaignId: string | null) {
         workspace,
         pendingRegistrations,
         pendingRegistrationError,
+        communicationTemplates,
+        communicationTemplateError: null,
         isLoading: false,
       }));
       return workspace;
@@ -90,6 +105,8 @@ export function useCampaignSponsorWorkspace(campaignId: string | null) {
         workspace: null,
         pendingRegistrations: [],
         pendingRegistrationError: null,
+        communicationTemplates: [],
+        communicationTemplateError: null,
         isLoading: false,
         error: toErrorMessage(loadError, 'Unable to load Sponsors workspace'),
       }));
@@ -200,6 +217,31 @@ export function useCampaignSponsorWorkspace(campaignId: string | null) {
       }
     },
     [campaignId]
+  );
+
+  const previewCommunication = useCallback(
+    async (sponsorId: string, templateId: string): Promise<SponsorCommunicationPreview | null> => {
+      if (!campaignId) {
+        return null;
+      }
+      return previewSponsorCommunication(campaignId, sponsorId, templateId);
+    },
+    [campaignId]
+  );
+
+  const sendCommunication = useCallback(
+    async (sponsorId: string, templateId: string): Promise<SponsorCommunicationSendResult | null> => {
+      if (!campaignId) {
+        return null;
+      }
+      const result = await performMutation(
+        () => sendSponsorCommunication(campaignId, sponsorId, templateId),
+        'Sponsor communication sent.'
+      );
+      await refreshSponsorInteractions(sponsorId);
+      return result;
+    },
+    [campaignId, performMutation, refreshSponsorInteractions]
   );
 
   const saveSponsor = useCallback(
@@ -337,6 +379,8 @@ export function useCampaignSponsorWorkspace(campaignId: string | null) {
     workspace: state.workspace,
     pendingRegistrations: state.pendingRegistrations,
     pendingRegistrationError: state.pendingRegistrationError,
+    communicationTemplates: state.communicationTemplates,
+    communicationTemplateError: state.communicationTemplateError,
     isLoading: state.isLoading,
     isSaving: state.isSaving,
     error: state.error,
@@ -344,6 +388,8 @@ export function useCampaignSponsorWorkspace(campaignId: string | null) {
     interactionsBySponsor: state.interactionsBySponsor,
     reload: loadWorkspace,
     loadSponsorInteractions: refreshSponsorInteractions,
+    previewCommunication,
+    sendCommunication,
     saveSponsor,
     removeSponsor,
     saveInteraction,

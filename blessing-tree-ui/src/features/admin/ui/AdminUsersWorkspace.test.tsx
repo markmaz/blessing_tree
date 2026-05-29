@@ -5,7 +5,9 @@ import { AdminUsersWorkspace } from '@/features/admin/ui/AdminUsersWorkspace';
 import {
   createAdminInvite,
   deleteAdminUser,
+  fetchAdminUserCampaignAccess,
   resendAdminInvite,
+  updateAdminUserCampaignAccess,
   updateAdminUserRole,
   updateAdminUserStatus,
 } from '@/features/admin/api/adminApi';
@@ -13,7 +15,9 @@ import {
 vi.mock('@/features/admin/api/adminApi', () => ({
   createAdminInvite: vi.fn(),
   deleteAdminUser: vi.fn(),
+  fetchAdminUserCampaignAccess: vi.fn(),
   resendAdminInvite: vi.fn(),
+  updateAdminUserCampaignAccess: vi.fn(),
   updateAdminUserRole: vi.fn(),
   updateAdminUserStatus: vi.fn(),
 }));
@@ -30,6 +34,78 @@ const roleCatalog = [
     description: 'Standard coordinating access.',
   },
 ];
+
+const campaignRoleCatalog = [
+  {
+    roleKey: 'PEOPLE_INTAKE',
+    label: 'People Intake',
+    description: 'Create and update families, organizations, people, and wishlists.',
+    capabilities: [],
+  },
+  {
+    roleKey: 'PEOPLE_DIRECTORY',
+    label: 'People Directory',
+    description: 'View and search people, families, organizations, and wishlists.',
+    capabilities: [],
+  },
+  {
+    roleKey: 'PEOPLE_REPORTS',
+    label: 'People Reports',
+    description: 'People-focused campaign reports.',
+    capabilities: [],
+  },
+  {
+    roleKey: 'SPONSORS_INTAKE',
+    label: 'Sponsor Intake',
+    description: 'Create and update sponsor intake records.',
+    capabilities: [],
+  },
+  {
+    roleKey: 'SPONSORS_DIRECTORY',
+    label: 'Sponsor Directory',
+    description: 'View and search sponsors.',
+    capabilities: [],
+  },
+  {
+    roleKey: 'SPONSORS_REPORTS',
+    label: 'Sponsor Reports',
+    description: 'Sponsor-focused campaign reports.',
+    capabilities: [],
+  },
+  {
+    roleKey: 'GIFTS_STATUS',
+    label: 'Gift Status',
+    description: 'Gift status reporting.',
+    capabilities: [],
+  },
+];
+
+const campaignAccessPayload = {
+  userId: 'user-2',
+  campaigns: [
+    {
+      campaign: {
+        id: 'campaign-1',
+        name: 'Blessing Tree 2026',
+        year: 2026,
+        status: 'ACTIVE',
+      },
+      roleKeys: ['PEOPLE_INTAKE'],
+      capabilities: [],
+    },
+    {
+      campaign: {
+        id: 'campaign-2',
+        name: 'Blessing Tree 2025',
+        year: 2025,
+        status: 'CLOSED',
+      },
+      roleKeys: [],
+      capabilities: [],
+    },
+  ],
+  roleCatalog: campaignRoleCatalog,
+};
 
 const users = [
   {
@@ -96,6 +172,16 @@ describe('AdminUsersWorkspace', () => {
       role: 'ADMIN',
     });
     vi.mocked(deleteAdminUser).mockResolvedValue();
+    vi.mocked(fetchAdminUserCampaignAccess).mockResolvedValue(campaignAccessPayload);
+    vi.mocked(updateAdminUserCampaignAccess).mockResolvedValue({
+      ...campaignAccessPayload,
+      campaigns: [
+        {
+          ...campaignAccessPayload.campaigns[0],
+          roleKeys: ['GIFTS_STATUS', 'PEOPLE_INTAKE', 'SPONSORS_DIRECTORY', 'SPONSORS_INTAKE', 'SPONSORS_REPORTS'],
+        },
+      ],
+    });
   });
 
   it('filters, sorts, and opens the detail drawer', async () => {
@@ -139,11 +225,47 @@ describe('AdminUsersWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Bob Smith' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Alice Doe' })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Bob Smith' }));
+    await user.click(screen.getByText('bob@example.com'));
     const dialog = await screen.findByRole('dialog');
+    const campaignToggles = within(dialog).getAllByRole('button', { name: /blessing tree/i });
+    expect(campaignToggles[0]).toHaveTextContent('Blessing Tree 2026');
+    expect(campaignToggles[0]).toHaveAttribute('aria-expanded', 'true');
+    expect(campaignToggles[1]).toHaveTextContent('Blessing Tree 2025');
+    expect(campaignToggles[1]).toHaveAttribute('aria-expanded', 'false');
+    expect(within(campaignToggles[0]).getByText('ACTIVE')).toBeInTheDocument();
     expect(within(dialog).getByText(/latest invitation status/i)).toBeInTheDocument();
     expect(within(dialog).getByLabelText(/global app access/i)).toHaveValue('COORDINATOR');
+    expect(await within(dialog).findByLabelText(/people intake/i)).toBeChecked();
     expect(within(dialog).getByRole('button', { name: /resend invite/i })).toBeInTheDocument();
+  });
+
+  it('updates campaign screen access from the toggle grid', async () => {
+    const user = userEvent.setup();
+    const onDataChanged = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <AdminUsersWorkspace
+        users={users}
+        invitations={invitations}
+        roleCatalog={roleCatalog}
+        onDataChanged={onDataChanged}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Bob Smith' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click((await within(dialog).findAllByLabelText(/sponsors/i))[0]);
+    await user.click(within(dialog).getByLabelText(/gift status/i));
+    await user.click(within(dialog).getByRole('button', { name: /save user/i }));
+
+    await waitFor(() => {
+      expect(updateAdminUserCampaignAccess).toHaveBeenCalledWith('user-2', [
+        {
+          campaignId: 'campaign-1',
+          roleKeys: ['GIFTS_STATUS', 'PEOPLE_INTAKE', 'SPONSORS_DIRECTORY', 'SPONSORS_INTAKE', 'SPONSORS_REPORTS'],
+        },
+      ]);
+    });
   });
 
   it('supports row action menu resend for invited users', async () => {
@@ -244,7 +366,7 @@ describe('AdminUsersWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Bob Smith' }));
     const dialog = await screen.findByRole('dialog');
     await user.selectOptions(within(dialog).getByLabelText(/global app access/i), 'ADMIN');
-    await user.click(within(dialog).getByRole('button', { name: /save app access/i }));
+    await user.click(within(dialog).getByRole('button', { name: /save user/i }));
 
     await waitFor(() => {
       expect(updateAdminUserRole).toHaveBeenCalledWith('user-2', 'ADMIN');

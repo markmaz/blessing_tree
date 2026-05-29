@@ -40,6 +40,7 @@ export const routes = {
   ADMIN_USERS: '/admin/users',
   ADMIN_ASK_REVIEW: '/admin/ask-review',
   ADMIN_CAMPAIGN_OPERATIONS: '/admin/campaign-operations',
+  ADMIN_ORGANIZATION_TYPES: '/admin/organization-types',
   ADMIN_LLM: '/admin/llm',
   ADMIN_HEALTH: '/admin/health',
   ADMIN_CAPABILITIES: '/admin/capabilities',

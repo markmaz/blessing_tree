@@ -11,6 +11,7 @@ import {
 import type {
   CommunicationAudienceKey,
   CommunicationAudienceOption,
+  CommunicationAudienceRecipientSummary,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import { CampaignStudioTemplateBlockEditor } from '@/features/campaigns/ui/CampaignStudioTemplateBlockEditor';
 import { CampaignStudioTemplateMergeFieldDrawer } from '@/features/campaigns/ui/CampaignStudioTemplateMergeFieldDrawer';
@@ -19,6 +20,7 @@ import { CampaignStudioTemplatePreviewPanel } from '@/features/campaigns/ui/Camp
 interface CampaignStudioTemplateWorkspaceProps {
   draft: CommunicationTemplateDraft;
   audienceCatalog: CommunicationAudienceOption[];
+  audienceRecipientSummaries?: CommunicationAudienceRecipientSummary[];
   activeTab: 'metadata' | 'content';
   isSaving: boolean;
   isExisting: boolean;
@@ -35,6 +37,7 @@ interface CampaignStudioTemplateWorkspaceProps {
 export function CampaignStudioTemplateWorkspace({
   draft,
   audienceCatalog,
+  audienceRecipientSummaries = [],
   activeTab,
   isSaving,
   isExisting,
@@ -50,6 +53,7 @@ export function CampaignStudioTemplateWorkspace({
   const [isSendingTest, setIsSendingTest] = useState(false);
   const resolvedAudienceCatalog = getCommunicationAudienceCatalog(audienceCatalog);
   const audienceOption = getCommunicationAudienceOption(draft.audience, resolvedAudienceCatalog);
+  const recipientSummary = audienceRecipientSummaries.find((summary) => summary.audience === draft.audience);
 
   const handleSendTestEmail = async () => {
     if (!isExisting) {
@@ -165,7 +169,7 @@ export function CampaignStudioTemplateWorkspace({
             />
           </label>
           <label className="form-label campaign-studio__form-span-2">
-            Audience
+            Intended Audience
             <select
               className="form-select"
               value={draft.audience}
@@ -183,9 +187,29 @@ export function CampaignStudioTemplateWorkspace({
               ))}
             </select>
             <span className="campaign-template-workspace__field-help">
-              {audienceOption.description}
+              {audienceOption.description} Exact recipients are resolved when this template is scheduled or sent.
             </span>
           </label>
+          <div className="campaign-template-audience-summary campaign-studio__form-span-2">
+            <div>
+              <div className="small text-uppercase text-muted fw-semibold">Current Recipient Preview</div>
+              <div className="campaign-template-audience-summary__count">
+                {recipientSummary ? recipientSummary.count : 0} recipient{recipientSummary?.count === 1 ? '' : 's'}
+              </div>
+            </div>
+            {recipientSummary && recipientSummary.sampleRecipients.length > 0 ? (
+              <div className="campaign-template-audience-summary__samples">
+                {recipientSummary.sampleRecipients.slice(0, 5).map((recipient) => (
+                  <span key={`${recipient.email}:${recipient.displayName}`} className="campaign-chip campaign-chip-muted">
+                    <i className="bi bi-person-lines-fill" aria-hidden="true" />
+                    <span>{recipient.displayName}</span>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span className="text-muted small">No matching recipients are available for this audience yet.</span>
+            )}
+          </div>
           <label className="campaign-template-workspace__toggle">
             <input
               type="checkbox"

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
 
 from app.models.group_contact import GroupContact
+from app.models.organization_type import OrganizationType
 from app.models.recipient import Recipient
 from app.models.recipient_group import RecipientGroup
 from app.models.wishlist import Wishlist
@@ -223,6 +225,22 @@ def serialize_recipient_group(group: RecipientGroup, gift_policy: Any | None = N
     return {
         "id": str(group.id),
         "campaign_id": str(group.campaign_id),
+        "parent_organization_group_id": (
+            str(group.parent_organization_group_id)
+            if group.parent_organization_group_id
+            else None
+        ),
+        "parent_organization": (
+            {
+                "id": str(group.parent_organization.id),
+                "group_name": group.parent_organization.group_name,
+                "organization_type": group.parent_organization.organization_type,
+                "status": group.parent_organization.status,
+            }
+            if group.parent_organization is not None
+            else None
+        ),
+        "family_count": len(group.families or []),
         "group_type": group.group_type,
         "group_name": group.group_name,
         "organization_type": group.organization_type,
@@ -251,6 +269,19 @@ def serialize_recipient_group(group: RecipientGroup, gift_policy: Any | None = N
     }
 
 
+def serialize_organization_type(organization_type: OrganizationType) -> dict[str, Any]:
+    return {
+        "id": str(organization_type.id),
+        "code": organization_type.code,
+        "label": organization_type.label,
+        "recipient_category": organization_type.recipient_category,
+        "is_active": bool(organization_type.is_active),
+        "sort_order": organization_type.sort_order,
+        "created_at": _serialize_datetime(organization_type.created_at),
+        "updated_at": _serialize_datetime(organization_type.updated_at),
+    }
+
+
 def serialize_people_workspace(
     *,
     campaign_id: str,
@@ -258,6 +289,7 @@ def serialize_people_workspace(
     gift_policy: Any | None = None,
     groups: list[RecipientGroup],
     recipients: list[Recipient],
+    organization_types: list[OrganizationType],
 ) -> dict[str, Any]:
     group_rows = [serialize_recipient_group(group, gift_policy) for group in groups]
     recipient_rows = [serialize_recipient(recipient, gift_policy) for recipient in recipients]
@@ -266,6 +298,7 @@ def serialize_people_workspace(
         "counts": counts,
         "groups": group_rows,
         "recipients": recipient_rows,
+        "organization_types": [serialize_organization_type(organization_type) for organization_type in organization_types],
         "filters": {
             "group_types": sorted({group["group_type"] for group in group_rows}),
             "group_statuses": sorted({group["status"] for group in group_rows}),
@@ -281,14 +314,19 @@ def _recipient_coverage_summary(
     items: list[WishlistItem],
     sponsored_count: int,
 ) -> dict[str, Any]:
-    rule = getattr(gift_policy, "recipient_coverage_rule", "ALL_GIFTS_SPONSORED")
+    if isinstance(gift_policy, Mapping):
+        rule = str(gift_policy.get("recipient_coverage_rule") or "ALL_GIFTS_SPONSORED")
+        configured_required_count = int(gift_policy.get("recipient_coverage_required_count") or 1)
+    else:
+        rule = getattr(gift_policy, "recipient_coverage_rule", "ALL_GIFTS_SPONSORED")
+        configured_required_count = int(getattr(gift_policy, "recipient_coverage_required_count", 1) or 1)
     total_count = len(items)
     if total_count <= 0:
         required_count = 0
     elif rule == "ONE_GIFT_SPONSORED":
         required_count = 1
     elif rule == "MIN_GIFTS_SPONSORED":
-        required_count = min(int(getattr(gift_policy, "recipient_coverage_required_count", 1) or 1), total_count)
+        required_count = min(configured_required_count, total_count)
     else:
         required_count = total_count
     return {

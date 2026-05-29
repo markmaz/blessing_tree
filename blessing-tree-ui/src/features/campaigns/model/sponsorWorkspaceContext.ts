@@ -5,10 +5,13 @@ import type {
   CampaignSponsorInteraction,
   CampaignSponsorWorkspaceData,
   PendingSponsorRegistration,
+  SponsorCommunicationPreview,
+  SponsorCommunicationSendResult,
   SponsorInteractionUpsertInput,
   SponsorUpsertInput,
   SponsorshipUpsertInput,
 } from '@/features/campaigns/model/campaignSponsorWorkspaceTypes';
+import type { CommunicationTemplate } from '@/features/campaigns/model/campaignStudioTypes';
 
 export interface SponsorWorkspaceOutletContext {
   campaignId: string;
@@ -17,6 +20,8 @@ export interface SponsorWorkspaceOutletContext {
   workspace: CampaignSponsorWorkspaceData | null;
   pendingRegistrations: PendingSponsorRegistration[];
   pendingRegistrationError: string | null;
+  communicationTemplates: CommunicationTemplate[];
+  communicationTemplateError: string | null;
   isLoading: boolean;
   isSaving: boolean;
   error: string | null;
@@ -31,6 +36,14 @@ export interface SponsorWorkspaceOutletContext {
     }
   >;
   onLoadSponsorInteractions: (sponsorId: string) => Promise<CampaignSponsorInteraction[]>;
+  onPreviewCommunication: (
+    sponsorId: string,
+    templateId: string
+  ) => Promise<SponsorCommunicationPreview | null>;
+  onSendCommunication: (
+    sponsorId: string,
+    templateId: string
+  ) => Promise<SponsorCommunicationSendResult | null>;
   onSaveSponsor: (
     sponsor: SponsorUpsertInput,
     participation: SponsorshipUpsertInput,

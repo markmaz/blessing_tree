@@ -37,6 +37,39 @@ const organizationGroup: CampaignPeopleGroup = {
   updatedAt: null,
 };
 
+const childOrganizationGroup: CampaignPeopleGroup = {
+  ...organizationGroup,
+  id: 'group-youth',
+  groupName: 'Youth Shelter',
+  organizationType: 'YOUTH_SHELTER',
+};
+
+const childOrganizationTypes = [
+  {
+    id: 'org-type-youth',
+    code: 'YOUTH_SHELTER',
+    label: 'Youth Shelter',
+    recipientCategory: 'CHILD' as const,
+    isActive: true,
+    sortOrder: 15,
+    createdAt: null,
+    updatedAt: null,
+  },
+];
+
+const familyOrganizationTypes = [
+  {
+    id: 'org-type-family',
+    code: 'FAMILY_SERVICES',
+    label: 'Family Services',
+    recipientCategory: 'FAMILY' as const,
+    isActive: true,
+    sortOrder: 25,
+    createdAt: null,
+    updatedAt: null,
+  },
+];
+
 const householdGroup: CampaignPeopleGroup = {
   id: 'group-household',
   campaignId: 'campaign-1',
@@ -275,6 +308,133 @@ describe('CampaignPeopleGroupDrawer', () => {
     expect(onSearchAddresses).not.toHaveBeenCalled();
   });
 
+  it('uses the organization people-served category for child organization member labels', () => {
+    render(
+      <CampaignPeopleGroupDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        group={childOrganizationGroup}
+        groups={[childOrganizationGroup]}
+        organizationTypes={childOrganizationTypes}
+        onClose={vi.fn()}
+        onSaveGroup={vi.fn()}
+        onSaveContact={vi.fn()}
+        onDeleteContact={vi.fn()}
+        onDeleteGroup={vi.fn()}
+        onSearchAddresses={vi.fn().mockResolvedValue([])}
+        onAddRecipientToGroup={vi.fn()}
+        onSelectGroup={vi.fn()}
+        onSelectRecipient={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: 'Children' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add Child' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add Adult' })).not.toBeInTheDocument();
+  });
+
+  it('shows families associated with an organization and can start a family from the organization', async () => {
+    const user = userEvent.setup();
+    const onAddFamilyToOrganization = vi.fn();
+    const linkedFamily = {
+      ...householdGroup,
+      parentOrganizationGroupId: organizationGroup.id,
+      parentOrganization: {
+        id: organizationGroup.id,
+        groupName: organizationGroup.groupName,
+        organizationType: organizationGroup.organizationType,
+        status: organizationGroup.status,
+      },
+      recipientCount: 2,
+    };
+
+    render(
+      <CampaignPeopleGroupDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        group={organizationGroup}
+        groups={[organizationGroup, linkedFamily]}
+        onClose={vi.fn()}
+        onSaveGroup={vi.fn()}
+        onSaveContact={vi.fn()}
+        onDeleteContact={vi.fn()}
+        onDeleteGroup={vi.fn()}
+        onSearchAddresses={vi.fn().mockResolvedValue([])}
+        onAddRecipientToGroup={vi.fn()}
+        onAddFamilyToOrganization={onAddFamilyToOrganization}
+        onSelectGroup={vi.fn()}
+        onSelectRecipient={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: 'Families' })).toBeInTheDocument();
+    expect(screen.getByText('Johnson Family')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Add Family' }));
+    expect(onAddFamilyToOrganization).toHaveBeenCalledWith(organizationGroup.id);
+  });
+
+  it('does not show a direct adult or child add action for family-serving organizations', () => {
+    const familyOrganization = {
+      ...organizationGroup,
+      organizationType: 'FAMILY_SERVICES',
+    };
+
+    render(
+      <CampaignPeopleGroupDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        group={familyOrganization}
+        groups={[familyOrganization]}
+        organizationTypes={familyOrganizationTypes}
+        onClose={vi.fn()}
+        onSaveGroup={vi.fn()}
+        onSaveContact={vi.fn()}
+        onDeleteContact={vi.fn()}
+        onDeleteGroup={vi.fn()}
+        onSearchAddresses={vi.fn().mockResolvedValue([])}
+        onAddRecipientToGroup={vi.fn()}
+        onAddFamilyToOrganization={vi.fn()}
+        onSelectGroup={vi.fn()}
+        onSelectRecipient={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: 'Families' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add Family' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add Adult' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add Child' })).not.toBeInTheDocument();
+  });
+
+  it('can associate a family with an organization', () => {
+    render(
+      <CampaignPeopleGroupDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        group={null}
+        groups={[organizationGroup]}
+        initialGroupType="HOUSEHOLD"
+        initialParentOrganizationGroupId={organizationGroup.id}
+        onClose={vi.fn()}
+        onSaveGroup={vi.fn()}
+        onSaveContact={vi.fn()}
+        onDeleteContact={vi.fn()}
+        onDeleteGroup={vi.fn()}
+        onSearchAddresses={vi.fn().mockResolvedValue([])}
+        onAddRecipientToGroup={vi.fn()}
+        onSelectGroup={vi.fn()}
+        onSelectRecipient={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('combobox', { name: /Associated Organization/ })).toHaveValue(organizationGroup.id);
+    expect(screen.getByText(`This family will appear under ${organizationGroup.groupName}.`)).toBeInTheDocument();
+  });
+
   it('shows possible duplicate groups while creating a new organization', async () => {
     const user = userEvent.setup();
     const onSelectGroup = vi.fn();
@@ -362,7 +522,7 @@ describe('CampaignPeopleGroupDrawer', () => {
 
     expect(screen.getByLabelText('Family Name')).toHaveDisplayValue('Johnson Family');
 
-    await user.click(screen.getByRole('button', { name: 'Create Group' }));
+    await user.click(screen.getByRole('button', { name: 'Create Family' }));
 
     await waitFor(() => {
       expect(onSaveGroup).toHaveBeenCalledWith(
@@ -388,6 +548,68 @@ describe('CampaignPeopleGroupDrawer', () => {
         undefined
       );
     });
+  });
+
+  it('signals that a new family can continue directly into child intake after the guardian is saved', async () => {
+    const user = userEvent.setup();
+    const onAfterCreateGroup = vi.fn();
+    const savedHousehold = {
+      ...householdGroup,
+      id: 'group-new-household',
+      groupName: 'Rivera Family',
+      contacts: [],
+      primaryContact: null,
+      authorizedPickupContacts: [],
+    };
+    const onSaveGroup = vi.fn().mockResolvedValue(savedHousehold);
+    const onSaveContact = vi.fn().mockResolvedValue({
+      id: 'contact-rivera',
+      recipientGroupId: 'group-new-household',
+      displayName: 'Ana Rivera',
+      contactRole: 'PARENT',
+      relationshipLabel: null,
+      firstName: 'Ana',
+      lastName: 'Rivera',
+      email: null,
+      phone: null,
+      preferredContact: 'NONE',
+      isPrimary: true,
+      canPickUp: true,
+      isEmergencyContact: false,
+      notes: null,
+      createdAt: null,
+      updatedAt: null,
+    });
+
+    render(
+      <CampaignPeopleGroupDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        group={null}
+        groups={[]}
+        initialGroupType="HOUSEHOLD"
+        onClose={vi.fn()}
+        onSaveGroup={onSaveGroup}
+        onSaveContact={onSaveContact}
+        onDeleteContact={vi.fn()}
+        onDeleteGroup={vi.fn()}
+        onSearchAddresses={vi.fn().mockResolvedValue([])}
+        onAddRecipientToGroup={vi.fn()}
+        onSelectGroup={vi.fn()}
+        onSelectRecipient={vi.fn()}
+        onAfterCreateGroup={onAfterCreateGroup}
+      />
+    );
+
+    await user.type(screen.getByLabelText('Guardian First Name'), 'Ana');
+    await user.type(screen.getByLabelText('Guardian Last Name'), 'Rivera');
+    await user.click(screen.getByRole('button', { name: 'Create Family' }));
+
+    await waitFor(() => {
+      expect(onSaveContact).toHaveBeenCalled();
+    });
+    expect(onAfterCreateGroup).toHaveBeenCalledWith(savedHousehold);
   });
 
   it('starts family details and additional contacts collapsed when editing an existing household', async () => {

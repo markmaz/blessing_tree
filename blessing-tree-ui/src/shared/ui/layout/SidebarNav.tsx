@@ -21,17 +21,7 @@ import {
 import { useAppFeatures } from '@/features/admin/model/appFeaturesContext';
 import { useAuth } from '@/features/auth/model/authContext';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
-import {
-  canUseGiftOperations,
-  canUseGiftPool,
-  canUseGiftSearch,
-  canManageCampaign,
-  hasCampaignCapability,
-  canViewPeople,
-  canViewReports,
-  canViewSponsors,
-  isAppAdminRole,
-} from '@/features/campaigns/model/campaignPermissions';
+import { isAppAdminRole } from '@/features/campaigns/model/campaignPermissions';
 
 interface SidebarNavProps {
   isOpen: boolean;
@@ -191,6 +181,11 @@ const navItems: SidebarItem[] = [
         icon: 'bi-signpost-split',
       },
       {
+        label: 'Organization Types',
+        to: routes.ADMIN_ORGANIZATION_TYPES,
+        icon: 'bi-diagram-3',
+      },
+      {
         label: 'LLM Configuration',
         to: routes.ADMIN_LLM,
         icon: 'bi-cpu',
@@ -223,7 +218,14 @@ export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNav
     campaigns.find((campaign) => campaign.id === resolvedCampaignId)?.userAccess ??
     (selectedCampaign?.id === resolvedCampaignId ? selectedCampaign.userAccess : null);
   const campaignAccessIsPending = Boolean(resolvedCampaignId && !campaignAccess);
-  const canShowDuringCampaignLoad = (allowed: boolean) => campaignAccessIsPending || allowed;
+  const isAppAdmin = isAppAdminRole(role);
+  const hasCampaignRole = (...roleKeys: string[]) => {
+    if (campaignAccessIsPending || isAppAdmin) {
+      return true;
+    }
+    const assignedRoleKeys = new Set(campaignAccess?.roleKeys ?? []);
+    return roleKeys.some((roleKey) => assignedRoleKeys.has(roleKey));
+  };
   const resolvedNavItems = useMemo(
     () =>
       navItems.map((item) =>
@@ -311,38 +313,59 @@ export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNav
         if (child.label === 'Campaign Library') {
           return true;
         }
-        return Boolean(resolvedCampaignId) && canShowDuringCampaignLoad(hasCampaignCapability(campaignAccess, 'campaign.view'));
+        if (child.label === 'Overview') {
+          return Boolean(resolvedCampaignId) && hasCampaignRole('CAMPAIGN_MANAGER', 'CAMPAIGN_VIEWER', 'CAMPAIGN_OVERVIEW');
+        }
+        if (child.label === 'Studio') {
+          return Boolean(resolvedCampaignId) && hasCampaignRole('CAMPAIGN_MANAGER', 'CAMPAIGN_STUDIO');
+        }
+        if (child.label === 'Flyer Builder') {
+          return Boolean(resolvedCampaignId) && hasCampaignRole('CAMPAIGN_MANAGER', 'CAMPAIGN_FLYER_BUILDER');
+        }
+        return Boolean(resolvedCampaignId) && hasCampaignRole('CAMPAIGN_MANAGER');
       }
 
       if (item.label === 'People') {
-        if (child.label === 'Reports') {
-          return canShowDuringCampaignLoad(canViewReports(campaignAccess));
+        if (child.label === 'Intake') {
+          return hasCampaignRole('CAMPAIGN_MANAGER', 'PEOPLE_MANAGER', 'PEOPLE_INTAKE');
         }
-        return canShowDuringCampaignLoad(canViewPeople(campaignAccess));
+        if (child.label === 'Directory') {
+          return hasCampaignRole('CAMPAIGN_MANAGER', 'PEOPLE_MANAGER', 'PEOPLE_DIRECTORY');
+        }
+        if (child.label === 'Reports') {
+          return hasCampaignRole('CAMPAIGN_MANAGER', 'PEOPLE_MANAGER', 'REPORTS_VIEWER', 'PEOPLE_REPORTS');
+        }
+        return false;
       }
 
       if (item.label === 'Sponsors') {
-        if (child.label === 'Reports') {
-          return canShowDuringCampaignLoad(canViewReports(campaignAccess));
+        if (child.label === 'Intake') {
+          return hasCampaignRole('CAMPAIGN_MANAGER', 'SPONSOR_MANAGER', 'SPONSORS_INTAKE');
         }
-        return canShowDuringCampaignLoad(canViewSponsors(campaignAccess));
+        if (child.label === 'Directory') {
+          return hasCampaignRole('CAMPAIGN_MANAGER', 'SPONSOR_MANAGER', 'SPONSORS_DIRECTORY');
+        }
+        if (child.label === 'Reports') {
+          return hasCampaignRole('CAMPAIGN_MANAGER', 'SPONSOR_MANAGER', 'REPORTS_VIEWER', 'SPONSORS_REPORTS');
+        }
+        return false;
       }
 
       if (item.label === 'Gifts') {
         if (child.label === 'Search') {
-          return isFeatureEnabled('sponsors') && canShowDuringCampaignLoad(canUseGiftSearch(campaignAccess));
+          return isFeatureEnabled('sponsors') && hasCampaignRole('CAMPAIGN_MANAGER', 'GIFT_OPERATIONS', 'GIFT_SEARCH_USER', 'GIFTS_SEARCH');
         }
         if (child.label === 'Operations') {
-          return isFeatureEnabled('sponsors') && canShowDuringCampaignLoad(canUseGiftOperations(campaignAccess));
+          return isFeatureEnabled('sponsors') && hasCampaignRole('CAMPAIGN_MANAGER', 'GIFT_OPERATIONS', 'GIFTS_OPERATIONS');
         }
         if (child.label === 'Gift Pool') {
-          return isFeatureEnabled('donations') && canShowDuringCampaignLoad(canUseGiftPool(campaignAccess));
+          return isFeatureEnabled('donations') && hasCampaignRole('CAMPAIGN_MANAGER', 'GIFT_OPERATIONS', 'GIFTS_POOL');
         }
         if (child.label === 'Gift Status') {
-          return isFeatureEnabled('reports') && canShowDuringCampaignLoad(canViewReports(campaignAccess));
+          return isFeatureEnabled('reports') && hasCampaignRole('CAMPAIGN_MANAGER', 'GIFT_OPERATIONS', 'REPORTS_VIEWER', 'GIFTS_STATUS');
         }
         if (child.label === 'Gift Tag Builder') {
-          return isFeatureEnabled('sponsors') && canShowDuringCampaignLoad(canManageCampaign(campaignAccess));
+          return isFeatureEnabled('sponsors') && hasCampaignRole('CAMPAIGN_MANAGER', 'GIFT_OPERATIONS', 'GIFTS_TAG_BUILDER');
         }
       }
 
@@ -360,11 +383,11 @@ export function SidebarNav({ isOpen, onNavigate, onOpenSeasonTheme }: SidebarNav
     }
     if (visibleItem.label === 'Gifts') return visibleItem.children?.length ? [visibleItem] : [];
     if (visibleItem.label === 'Ask Blessing Tree') {
-      return resolvedCampaignId && canShowDuringCampaignLoad(hasCampaignCapability(campaignAccess, 'campaign.view'))
+      return resolvedCampaignId && hasCampaignRole('CAMPAIGN_MANAGER', 'CAMPAIGN_VIEWER', 'ASK_BLESSING_TREE')
         ? [visibleItem]
         : [];
     }
-    if (item.to === routes.ADMIN) return isAppAdminRole(role) ? [visibleItem] : [];
+    if (item.to === routes.ADMIN) return isAppAdmin ? [visibleItem] : [];
     return [visibleItem];
   });
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});

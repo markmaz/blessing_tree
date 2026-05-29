@@ -214,6 +214,7 @@ describe('SidebarNav', () => {
   });
 
   it('hides campaign areas that are not allowed by the selected campaign access', () => {
+    mockUseAuth.mockReturnValue({ role: 'APP_USER' });
     mockUseCampaigns.mockReturnValue({
       campaigns: [
         {
@@ -230,7 +231,7 @@ describe('SidebarNav', () => {
           userAccess: {
             campaignId: 'campaign-123',
             globalAppRole: 'APP_USER',
-            roleKeys: ['PEOPLE_MANAGER'],
+            roleKeys: ['PEOPLE_INTAKE', 'PEOPLE_DIRECTORY'],
             capabilities: [
               'campaign.view',
               'campaign.recipients.view',
@@ -251,6 +252,7 @@ describe('SidebarNav', () => {
     );
 
     expect(screen.getByRole('button', { name: /people/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /reports/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /sponsors/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /gifts/i })).not.toBeInTheDocument();
   });

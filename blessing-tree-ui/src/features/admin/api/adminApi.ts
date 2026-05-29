@@ -9,6 +9,8 @@ import type {
   AdminInvitation,
   AdminLlmModelsPayload,
   AdminLlmPayload,
+  AdminOrganizationType,
+  AdminOrganizationTypesPayload,
   AdminUsersPayload,
 } from '@/features/admin/model/adminTypes';
 
@@ -130,6 +132,32 @@ function normalizeFeature(feature: AdminFeatureFlag): AdminFeatureFlag {
     isEnabled: feature.isEnabled ?? Boolean((feature as unknown as { is_enabled?: boolean }).is_enabled),
     createdAt: feature.createdAt ?? (feature as unknown as { created_at?: string }).created_at ?? '',
     updatedAt: feature.updatedAt ?? (feature as unknown as { updated_at?: string }).updated_at ?? '',
+  };
+}
+
+function normalizeOrganizationType(type: AdminOrganizationType): AdminOrganizationType {
+  return {
+    id: type.id,
+    code: type.code,
+    label: type.label,
+    recipientCategory:
+      type.recipientCategory ??
+      (type as unknown as { recipient_category?: AdminOrganizationType['recipientCategory'] }).recipient_category ??
+      'ADULT',
+    isActive: type.isActive ?? Boolean((type as unknown as { is_active?: boolean }).is_active),
+    sortOrder: type.sortOrder ?? (type as unknown as { sort_order?: number }).sort_order ?? 100,
+    createdAt: type.createdAt ?? (type as unknown as { created_at?: string | null }).created_at ?? null,
+    updatedAt: type.updatedAt ?? (type as unknown as { updated_at?: string | null }).updated_at ?? null,
+  };
+}
+
+function normalizeOrganizationTypesPayload(payload: AdminOrganizationTypesPayload): AdminOrganizationTypesPayload {
+  return {
+    organizationTypes: (
+      payload.organizationTypes ??
+      (payload as unknown as { organization_types?: AdminOrganizationType[] }).organization_types ??
+      []
+    ).map(normalizeOrganizationType),
   };
 }
 
@@ -376,6 +404,67 @@ export async function updateFeatureFlag(
     }
   );
   return normalizeFeature(payload.feature);
+}
+
+export async function fetchOrganizationTypes(): Promise<AdminOrganizationTypesPayload> {
+  return normalizeOrganizationTypesPayload(
+    await apiFetchJson<AdminOrganizationTypesPayload>('/api/v1/admin/organization-types')
+  );
+}
+
+export async function createOrganizationType(input: {
+  code?: string;
+  label: string;
+  recipientCategory: AdminOrganizationType['recipientCategory'];
+  isActive: boolean;
+  sortOrder: number;
+}): Promise<AdminOrganizationType> {
+  const payload = await apiFetchJson<{ organization_type: AdminOrganizationType }>(
+    '/api/v1/admin/organization-types',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: input.code,
+        label: input.label,
+        recipient_category: input.recipientCategory,
+        is_active: input.isActive,
+        sort_order: input.sortOrder,
+      }),
+    }
+  );
+  return normalizeOrganizationType(payload.organization_type);
+}
+
+export async function updateOrganizationType(
+  code: string,
+  input: {
+    label: string;
+    recipientCategory: AdminOrganizationType['recipientCategory'];
+    isActive: boolean;
+    sortOrder: number;
+  }
+): Promise<AdminOrganizationType> {
+  const payload = await apiFetchJson<{ organization_type: AdminOrganizationType }>(
+    `/api/v1/admin/organization-types/${encodeURIComponent(code)}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        label: input.label,
+        recipient_category: input.recipientCategory,
+        is_active: input.isActive,
+        sort_order: input.sortOrder,
+      }),
+    }
+  );
+  return normalizeOrganizationType(payload.organization_type);
+}
+
+export async function deleteOrganizationType(code: string): Promise<void> {
+  await apiFetchJson<void>(`/api/v1/admin/organization-types/${encodeURIComponent(code)}`, {
+    method: 'DELETE',
+  });
 }
 
 export async function fetchAdminAskReview(reviewOnly = true): Promise<AdminAskReviewPayload> {

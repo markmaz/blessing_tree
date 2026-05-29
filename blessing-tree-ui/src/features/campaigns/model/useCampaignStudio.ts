@@ -11,6 +11,7 @@ import {
   deleteCommunicationSchedule,
   getCampaignStudio,
   saveCampaignMilestones,
+  sendCampaignCommunication,
   sendCommunicationTemplateTestEmail,
   updateCampaignGiftPolicy,
   updateCommunicationTemplate,
@@ -21,6 +22,7 @@ import type {
   CampaignStudioData,
   CommunicationTemplateTestEmailResult,
   CommunicationTemplate,
+  CreateCommunicationSendInput,
   CreateCampaignAssignmentInput,
   CreateCampaignEventInput,
   CreateCommunicationScheduleInput,
@@ -193,6 +195,18 @@ export function useCampaignStudio(campaignId: string | null) {
       }));
       return null;
     }
+  };
+
+  const sendCommunication = async (input: CreateCommunicationSendInput) => {
+    if (!campaignId) {
+      return false;
+    }
+    return performMutation(
+      async () => {
+        await sendCampaignCommunication(campaignId, input);
+      },
+      'Campaign communication sent.'
+    );
   };
 
   const addCommunicationSchedule = async (input: CreateCommunicationScheduleInput) => {
@@ -390,6 +404,7 @@ export function useCampaignStudio(campaignId: string | null) {
     patchCommunicationTemplate,
     removeCommunicationTemplate,
     sendTemplateTestEmail,
+    sendCommunication,
     addCommunicationSchedule,
     patchCommunicationSchedule,
     removeCommunicationSchedule,

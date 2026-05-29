@@ -35,8 +35,176 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
     HelpTopic(
         key="add_recipient",
         title="Add a recipient",
-        phrases=("add recipient", "new recipient", "add person", "new child", "people intake"),
-        answer="Open People Intake to add a recipient, household, organization group, and wishlist details.",
+        phrases=("add recipient", "new recipient", "add person", "new child", "people intake", "add adult"),
+        answer=(
+            "Open People Intake to add a family, organization, child, adult, and wishlist details. "
+            "After saving a child or adult, open that person from the intake record to add gifts to the wishlist."
+        ),
+        steps=(
+            "Open People Intake.",
+            "Create or select the family or organization.",
+            "Add the child or adult.",
+            "Open the saved person and add wishlist gifts.",
+            "Add another child or adult from the same intake record when needed.",
+        ),
+        actions=(
+            AskAction(
+                label="Open People Intake",
+                route_name="campaign_people_intake",
+                required_capability="campaign.recipients.edit",
+            ),
+        ),
+    ),
+    HelpTopic(
+        key="manage_organization_types",
+        title="Manage organization types",
+        phrases=(
+            "organization types",
+            "organization type",
+            "add organization type",
+            "edit organization type",
+            "people served",
+            "nursing home",
+            "foster care",
+            "mh clients",
+            "mental health clients",
+            "child organization",
+            "adult organization",
+            "family organization",
+        ),
+        answer=(
+            "Use Admin Organization Types to manage the global list used by People Intake. "
+            "Each type has a People Served value: Children, Adults, or Families. That value controls whether an organization flow is built around children, adults, or linked families."
+        ),
+        steps=(
+            "Open Admin.",
+            "Choose Organization Types.",
+            "Create or select the type.",
+            "Set the label and People Served value.",
+            "Save the type, then use it when creating organizations in People Intake.",
+        ),
+        actions=(
+            AskAction(
+                label="Open Organization Types",
+                route_name="admin_organization_types",
+                required_capability=None,
+            ),
+            AskAction(
+                label="Open People Intake",
+                route_name="campaign_people_intake",
+                required_capability="campaign.recipients.edit",
+            ),
+        ),
+        related_prompts=(
+            "How do I add a family under an organization?",
+            "What does People Served mean?",
+            "How do I create an organization?",
+        ),
+    ),
+    HelpTopic(
+        key="family_under_organization",
+        title="Add a family under an organization",
+        phrases=(
+            "family under organization",
+            "family under an organization",
+            "add a family under an organization",
+            "family in organization",
+            "add family to organization",
+            "family belongs to organization",
+            "families belong to organization",
+            "link family to organization",
+            "associate family with organization",
+            "organization has families",
+            "families in orgs",
+            "family organization",
+            "referred by organization",
+        ),
+        answer=(
+            "Organizations can now hold linked families. Create or select the organization, then create or edit a family and choose the parent organization. "
+            "Children and wishlists stay on the family record, while the organization shows the linked families."
+        ),
+        steps=(
+            "Open People Intake or People Directory.",
+            "Create or select the organization.",
+            "Create or edit the family.",
+            "Set the parent organization on the family record.",
+            "Add children and wishlists on the family record.",
+        ),
+        actions=(
+            AskAction(
+                label="Open People Intake",
+                route_name="campaign_people_intake",
+                required_capability="campaign.recipients.edit",
+            ),
+            AskAction(
+                label="Open People Directory",
+                route_name="campaign_people_directory",
+                required_capability="campaign.recipients.view",
+            ),
+        ),
+        related_prompts=(
+            "How do I add children to a family?",
+            "How do I manage organization types?",
+            "Where is People Directory?",
+        ),
+    ),
+    HelpTopic(
+        key="child_cardinal_labels",
+        title="Child labels",
+        phrases=(
+            "child one",
+            "child two",
+            "children names",
+            "child names",
+            "do not collect names",
+            "anonymous children",
+            "cardinal child",
+            "renumber children",
+            "delete child renumber",
+            "c1 c2",
+        ),
+        answer=(
+            "Children in a family are labeled automatically as Child One, Child Two, and so on. "
+            "If a child is deleted, the remaining children are renumbered so the labels stay sequential. Real child names are not required."
+        ),
+        actions=(
+            AskAction(
+                label="Open People Intake",
+                route_name="campaign_people_intake",
+                required_capability="campaign.recipients.edit",
+            ),
+        ),
+        related_prompts=(
+            "How do I add a child?",
+            "How do I add gifts after adding a child?",
+        ),
+    ),
+    HelpTopic(
+        key="add_wishlist_after_person",
+        title="Add gifts after adding a person",
+        phrases=(
+            "add gifts after child",
+            "add gifts after adding child",
+            "add gifts after adult",
+            "add gifts after adding adult",
+            "add wishlist after child",
+            "add wishlist after adult",
+            "add another child",
+            "add another adult",
+            "create child then gifts",
+            "create adult then gifts",
+        ),
+        answer=(
+            "After saving a child or adult from People Intake, open that saved person and add wishlist gifts. "
+            "When the wishlist is done, return to the family or organization record to add another child or adult."
+        ),
+        steps=(
+            "Create the family or organization.",
+            "Add the child or adult.",
+            "Open the saved person from the intake record.",
+            "Add wishlist gifts.",
+            "Return to the group record to add another person.",
+        ),
         actions=(
             AskAction(
                 label="Open People Intake",

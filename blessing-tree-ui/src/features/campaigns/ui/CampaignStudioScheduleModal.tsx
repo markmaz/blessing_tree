@@ -2,6 +2,8 @@ import type {
   CampaignMilestone,
   CampaignMilestoneDefinition,
   CampaignScheduleItem,
+  CommunicationAudienceOption,
+  CommunicationAudienceRecipientSummary,
   CommunicationSchedule,
   CommunicationTemplate,
   CreateCampaignEventInput,
@@ -26,6 +28,8 @@ interface CampaignStudioScheduleModalProps {
   milestones: CampaignMilestone[];
   schedules: CommunicationSchedule[];
   templates: CommunicationTemplate[];
+  audienceCatalog: CommunicationAudienceOption[];
+  audienceRecipientSummaries: CommunicationAudienceRecipientSummary[];
   isSaving: boolean;
   onSelectType: (type: CampaignScheduleEditorType) => void;
   onClose: () => void;
@@ -51,6 +55,8 @@ export function CampaignStudioScheduleModal({
   milestones,
   schedules,
   templates,
+  audienceCatalog,
+  audienceRecipientSummaries,
   isSaving,
   onSelectType,
   onClose,
@@ -146,6 +152,8 @@ export function CampaignStudioScheduleModal({
             milestoneDefinitions={milestoneDefinitions}
             schedules={schedules}
             templates={templates}
+            audienceCatalog={audienceCatalog}
+            audienceRecipientSummaries={audienceRecipientSummaries}
             editingScheduleId={item?.sourceType === 'communication' ? item.sourceId : null}
             selectedDate={selectedDate}
             isSaving={isSaving}

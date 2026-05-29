@@ -26,6 +26,8 @@ from app.features.admin.serializers import (
     serialize_invitation,
     serialize_llm_configuration,
 )
+from app.features.recipients.organization_type_service import OrganizationTypeService
+from app.features.recipients.serializers import serialize_organization_type
 from app.features.admin.user_access_service import AdminUserAccessService
 from app.features.rbac.decorators import require_app_admin
 from app.models.app_user import AppUser
@@ -40,6 +42,7 @@ _feature_flag_service = FeatureFlagService()
 _health_service = AdminHealthService(llm_service=_llm_service)
 _campaign_operations_service = CampaignOperationsAdminService()
 _user_access_service = AdminUserAccessService()
+_organization_type_service = OrganizationTypeService()
 
 
 def _serialize_ask_prompt_log(row: tuple[AskPromptLog, Campaign | None, AppUser | None]) -> dict[str, object]:
@@ -298,6 +301,47 @@ class AdminFeatureFlagDetailResource(Resource):
                 is_enabled=bool(payload.get("is_enabled")),
             )
             return {"feature": serialize_feature_flag(flag)}, 200
+
+
+@admin_ns.route("/organization-types")
+class AdminOrganizationTypeListResource(Resource):
+    @token_required
+    @require_app_admin()
+    def get(self):
+        with SessionLocal() as db:
+            organization_types = _organization_type_service.list_types(db, include_inactive=True)
+            return {
+                "organization_types": [
+                    serialize_organization_type(organization_type)
+                    for organization_type in organization_types
+                ]
+            }, 200
+
+    @token_required
+    @require_app_admin()
+    def post(self):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            organization_type = _organization_type_service.create_type(db, payload)
+            return {"organization_type": serialize_organization_type(organization_type)}, 201
+
+
+@admin_ns.route("/organization-types/<string:code>")
+class AdminOrganizationTypeDetailResource(Resource):
+    @token_required
+    @require_app_admin()
+    def patch(self, code: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            organization_type = _organization_type_service.update_type(db, code, payload)
+            return {"organization_type": serialize_organization_type(organization_type)}, 200
+
+    @token_required
+    @require_app_admin()
+    def delete(self, code: str):
+        with SessionLocal() as db:
+            _organization_type_service.delete_type(db, code)
+            return "", 204
 
 
 @admin_ns.route("/campaign-operations/milestone-definitions")

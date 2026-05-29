@@ -127,12 +127,19 @@ export function AdminUsersTable({
             </tr>
           ) : (
             rows.map((row) => (
-              <tr key={row.id}>
+              <tr
+                key={row.id}
+                className="admin-users-table__clickable-row"
+                onClick={() => onOpenDetails(row)}
+              >
                 <td>
                   <button
                     type="button"
                     className="admin-users-table__row-link"
-                    onClick={() => onOpenDetails(row)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onOpenDetails(row);
+                    }}
                   >
                     <i className="bi bi-person-vcard me-2" aria-hidden="true" />
                     {row.displayName}
@@ -146,7 +153,7 @@ export function AdminUsersTable({
                   </span>
                 </td>
                 <td>{formatAdminDateTime(row.lastActivityAt)}</td>
-                <td className="text-end">
+                <td className="text-end" onClick={(event) => event.stopPropagation()}>
                   <AdminUserActionsMenu
                     row={row}
                     onOpenDetails={onOpenDetails}

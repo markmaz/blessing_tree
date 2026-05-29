@@ -90,6 +90,81 @@ def test_ask_sponsor_email_prompt_returns_campaign_communications_help(
     assert payload["actions"][0]["route"] == f"/campaigns/{campaign_id}/studio"
 
 
+def test_ask_organization_type_prompt_returns_admin_help(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "How do I add organization types for foster care and nursing homes?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "app_help"
+    assert payload["title"] == "Manage organization types"
+    assert "People Served" in payload["answer"]
+    assert payload["actions"][0]["route"] == "/admin/organization-types"
+
+
+def test_ask_family_under_organization_prompt_returns_people_help(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "How do I add a family under an organization?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "app_help"
+    assert payload["title"] == "Add a family under an organization"
+    assert "Children and wishlists stay on the family record" in payload["answer"]
+    assert payload["actions"][0]["route"] == f"/campaigns/{campaign_id}/people/intake"
+
+
+def test_ask_child_labels_prompt_explains_anonymous_labels(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "How do child names work if we do not collect names?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "app_help"
+    assert payload["title"] == "Child labels"
+    assert "Child One" in payload["answer"]
+    assert "Real child names are not required" in payload["answer"]
+
+
 def test_ask_flyer_prompt_opens_flyer_builder(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
     install_auth(monkeypatch)
     session = campaign_api_module.SessionLocal()

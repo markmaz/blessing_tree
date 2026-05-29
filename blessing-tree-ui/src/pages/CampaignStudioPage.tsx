@@ -38,6 +38,7 @@ export function CampaignStudioPage() {
     patchCommunicationTemplate,
     removeCommunicationTemplate,
     sendTemplateTestEmail,
+    sendCommunication,
     addCommunicationSchedule,
     patchCommunicationSchedule,
     removeCommunicationSchedule,
@@ -192,6 +193,7 @@ export function CampaignStudioPage() {
             patchCommunicationTemplate,
             removeCommunicationTemplate,
             sendTemplateTestEmail,
+            sendCommunication,
             addCommunicationSchedule,
             patchCommunicationSchedule,
             removeCommunicationSchedule,
@@ -271,6 +273,7 @@ function renderStudioSection({
   patchCommunicationTemplate,
   removeCommunicationTemplate,
   sendTemplateTestEmail,
+  sendCommunication,
   addCommunicationSchedule,
   patchCommunicationSchedule,
   removeCommunicationSchedule,
@@ -292,6 +295,7 @@ function renderStudioSection({
   patchCommunicationTemplate: ReturnType<typeof useCampaignStudio>['patchCommunicationTemplate'];
   removeCommunicationTemplate: ReturnType<typeof useCampaignStudio>['removeCommunicationTemplate'];
   sendTemplateTestEmail: ReturnType<typeof useCampaignStudio>['sendTemplateTestEmail'];
+  sendCommunication: ReturnType<typeof useCampaignStudio>['sendCommunication'];
   addCommunicationSchedule: ReturnType<typeof useCampaignStudio>['addCommunicationSchedule'];
   patchCommunicationSchedule: ReturnType<typeof useCampaignStudio>['patchCommunicationSchedule'];
   removeCommunicationSchedule: ReturnType<typeof useCampaignStudio>['removeCommunicationSchedule'];
@@ -328,6 +332,9 @@ function renderStudioSection({
     return (
       <CampaignStudioCommunicationsSection
         audienceCatalog={studio.communications.audienceCatalog}
+        audienceRecipientSummaries={studio.communications.audienceRecipientSummaries}
+        recipientOptions={studio.communications.recipientOptions}
+        sends={studio.communications.sends}
         templates={studio.communications.templates}
         isSaving={isSaving}
         requestedTemplateId={communicationTemplateFocusId}
@@ -336,6 +343,7 @@ function renderStudioSection({
         onUpdateTemplate={patchCommunicationTemplate}
         onDeleteTemplate={removeCommunicationTemplate}
         onSendTestEmail={sendTemplateTestEmail}
+        onSendCommunication={sendCommunication}
       />
     );
   }
@@ -349,6 +357,8 @@ function renderStudioSection({
         milestones={studio.milestones}
         schedules={studio.communications.schedules}
         templates={studio.communications.templates}
+        audienceCatalog={studio.communications.audienceCatalog}
+        audienceRecipientSummaries={studio.communications.audienceRecipientSummaries}
         isSaving={isSaving}
         onSaveMilestones={persistMilestones}
         onCreateEvent={addScheduleEvent}

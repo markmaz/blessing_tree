@@ -105,6 +105,7 @@ MILESTONE_DEFINITIONS = {
     "sponsor_outreach_start": "Sponsor Outreach Starts",
     "gift_intake_start": "Gift Intake Starts",
     "gift_intake_end": "Gift Intake Ends",
+    "gift_turn_in_due": "Gift Turn-In Due",
     "pickup_start": "Pickup Window Opens",
     "pickup_end": "Pickup Window Closes",
     "campaign_close": "Campaign Closes",

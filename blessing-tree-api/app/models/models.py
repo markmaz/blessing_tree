@@ -23,6 +23,8 @@ from .base import Base
 from .campaign import Campaign
 from .campaign_automation_execution import CampaignAutomationExecution
 from .campaign_communication_schedule import CampaignCommunicationSchedule
+from .campaign_communication_send import CampaignCommunicationSend
+from .campaign_communication_send_recipient import CampaignCommunicationSendRecipient
 from .campaign_event import CampaignEvent
 from .campaign_flyer import CampaignFlyer
 from .campaign_gift_tag_template import CampaignGiftTagTemplate
@@ -46,6 +48,7 @@ from .group_contact import GroupContact
 from .item_event import ItemEvent
 from .label_print_item import LabelPrintItem
 from .label_print_job import LabelPrintJob
+from .organization_type import OrganizationType
 from .pending_sponsor_registration import PendingSponsorRegistration
 from .pickup import Pickup
 from .pickup_item import PickupItem
@@ -76,6 +79,8 @@ __all__ = [
     "Campaign",
     "CampaignAutomationExecution",
     "CampaignCommunicationSchedule",
+    "CampaignCommunicationSend",
+    "CampaignCommunicationSendRecipient",
     "CampaignEvent",
     "CampaignFlyer",
     "CampaignGiftTagTemplate",
@@ -99,6 +104,7 @@ __all__ = [
     "ItemEvent",
     "LabelPrintItem",
     "LabelPrintJob",
+    "OrganizationType",
     "PendingSponsorRegistration",
     "Pickup",
     "PickupItem",

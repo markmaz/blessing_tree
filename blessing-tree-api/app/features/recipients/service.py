@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns.gift_policy_service import CampaignGiftPolicyService
 from app.features.campaigns.service import CampaignService
+from app.features.recipients.organization_type_service import OrganizationTypeService
 from app.features.recipients.validation import (
     parse_bool,
     require_short_text,
@@ -18,7 +19,6 @@ from app.features.recipients.validation import (
     validate_group_status,
     validate_group_type,
     validate_intake_method,
-    validate_organization_type,
     validate_optional_datetime,
     validate_optional_email,
     validate_optional_int,
@@ -50,10 +50,13 @@ from app.models.wishlist_item import WishlistItem
 from app.models.fulfillment import Fulfillment
 from app.models.recipient_constants import (
     RECIPIENT_AGE_UNIT_YEARS,
+    RECIPIENT_GROUP_TYPE_HOUSEHOLD,
     RECIPIENT_GROUP_TYPE_ORGANIZATION,
     RECIPIENT_GROUP_STATUS_ACTIVE,
     RECIPIENT_KIND_ADULT,
+    RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
     RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT,
+    RECIPIENT_PROGRAM_TYPE_ORGANIZATION_CHILD,
     WISHLIST_ITEM_TYPE_GIFT,
 )
 
@@ -72,17 +75,24 @@ class CampaignRecipientService:
     def __init__(self, campaign_service: CampaignService | None = None) -> None:
         self.campaigns = campaign_service or CampaignService()
         self.gift_policy = CampaignGiftPolicyService(self.campaigns)
+        self.organization_types = OrganizationTypeService()
 
     def get_workspace_payload(self, db: Session, campaign_id: str) -> dict[str, object]:
         policy = self.gift_policy.get_policy(db, campaign_id)
+        policy_summary = {
+            "recipient_coverage_rule": policy.recipient_coverage_rule,
+            "recipient_coverage_required_count": policy.recipient_coverage_required_count,
+        }
+        organization_types = self.organization_types.list_types(db)
         groups = self.list_groups(db, campaign_id)
         recipients = self.list_recipients(db, campaign_id)
         return {
             "campaign_id": campaign_id,
             "counts": self._build_counts(groups, recipients, policy),
-            "gift_policy": policy,
+            "gift_policy": policy_summary,
             "groups": groups,
             "recipients": recipients,
+            "organization_types": organization_types,
         }
 
     def list_groups(
@@ -137,8 +147,15 @@ class CampaignRecipientService:
             id=uuid.uuid4(),
             campaign_id=uuid.UUID(campaign_id),
             group_type=group_type,
+            parent_organization_group_id=self._validate_parent_organization_group(
+                db,
+                campaign_id=campaign_id,
+                group_type=group_type,
+                parent_group_id=payload.get("parent_organization_group_id"),
+            ),
             group_name=require_short_text(payload.get("group_name"), "group_name"),
-            organization_type=validate_organization_type(
+            organization_type=self.organization_types.validate_group_organization_type(
+                db,
                 payload.get("organization_type"),
                 required=group_type == RECIPIENT_GROUP_TYPE_ORGANIZATION,
             ),
@@ -172,10 +189,21 @@ class CampaignRecipientService:
             if next_group_type == "HOUSEHOLD":
                 group.organization_type = None
                 group.program_abbreviation = None
-            elif group.program_abbreviation is None:
+            else:
+                group.parent_organization_group_id = None
+            if next_group_type == "ORGANIZATION" and group.program_abbreviation is None:
                 group.program_abbreviation = self._derive_group_abbreviation(group.group_name)
+        if "parent_organization_group_id" in payload or "group_type" in payload:
+            group.parent_organization_group_id = self._validate_parent_organization_group(
+                db,
+                campaign_id=campaign_id,
+                group_type=group.group_type,
+                parent_group_id=payload.get("parent_organization_group_id", group.parent_organization_group_id),
+                current_group_id=group.id,
+            )
         if "organization_type" in payload or ("group_type" in payload and group.group_type == RECIPIENT_GROUP_TYPE_ORGANIZATION):
-            group.organization_type = validate_organization_type(
+            group.organization_type = self.organization_types.validate_group_organization_type(
+                db,
                 payload.get("organization_type", group.organization_type),
                 required=group.group_type == RECIPIENT_GROUP_TYPE_ORGANIZATION,
             )
@@ -345,6 +373,16 @@ class CampaignRecipientService:
         age = validate_optional_int(payload.get("age"), "age", minimum=0)
         age_unit = validate_age_unit(payload.get("age_unit"), default=RECIPIENT_AGE_UNIT_YEARS) if age is not None else None
         age, age_unit = validate_age_fields(age, age_unit)
+        is_child_recipient = _is_child_program(program_type)
+        display_label = (
+            self._next_child_cardinal_label(db, group.id)
+            if is_child_recipient
+            else require_short_text(payload.get("display_label"), "display_label")
+        )
+        first_name, last_name = _split_child_cardinal_label(display_label) if is_child_recipient else (
+            validate_optional_text(payload.get("first_name"), "first_name", max_length=128),
+            validate_optional_text(payload.get("last_name"), "last_name", max_length=128),
+        )
         recipient = Recipient(
             id=uuid.uuid4(),
             campaign_id=uuid.UUID(campaign_id),
@@ -352,9 +390,9 @@ class CampaignRecipientService:
             recipient_kind=recipient_kind,
             program_type=program_type,
             privacy_level=validate_privacy_level(payload.get("privacy_level")),
-            display_label=require_short_text(payload.get("display_label"), "display_label"),
-            first_name=validate_optional_text(payload.get("first_name"), "first_name", max_length=128),
-            last_name=validate_optional_text(payload.get("last_name"), "last_name", max_length=128),
+            display_label=display_label,
+            first_name=first_name,
+            last_name=last_name,
             birth_year=validate_optional_int(payload.get("birth_year"), "birth_year", minimum=1900, maximum=3000),
             age=age,
             age_unit=age_unit,
@@ -391,6 +429,8 @@ class CampaignRecipientService:
 
     def update_recipient(self, db: Session, campaign_id: str, recipient_id: str, payload: dict[str, object]) -> Recipient:
         recipient = self.get_recipient(db, campaign_id, recipient_id)
+        original_group_id = recipient.recipient_group_id
+        original_program_type = recipient.program_type
         group = recipient.recipient_group
         group_changed = False
         if "recipient_group_id" in payload:
@@ -412,7 +452,7 @@ class CampaignRecipientService:
         )
         if "privacy_level" in payload:
             recipient.privacy_level = validate_privacy_level(payload.get("privacy_level"))
-        if "display_label" in payload:
+        if "display_label" in payload and not _is_child_program(program_type):
             recipient.display_label = require_short_text(payload.get("display_label"), "display_label")
         for field_name, max_length in {
             "first_name": 128,
@@ -451,6 +491,8 @@ class CampaignRecipientService:
             recipient.notes = validate_optional_long_text(payload.get("notes"), "notes")
         if "status" in payload:
             recipient.status = validate_recipient_status(payload.get("status"))
+        if _is_child_program(program_type):
+            self._apply_child_cardinal_identity(db, group.id, recipient)
         validate_recipient_contact_context(
             group_type=group.group_type,
             recipient_kind=recipient_kind,
@@ -467,12 +509,19 @@ class CampaignRecipientService:
             recipient.program_recipient_number = None
             recipient.program_recipient_id = None
         self._assign_program_recipient_identity(db, group, recipient)
+        if group_changed and _is_child_program(original_program_type):
+            self._renumber_child_recipients(db, original_group_id)
         self._commit_with_duplicate_handling(db)
         return self.get_recipient(db, campaign_id, recipient_id)
 
     def delete_recipient(self, db: Session, campaign_id: str, recipient_id: str) -> None:
         recipient = self.get_recipient(db, campaign_id, recipient_id)
+        group_id = recipient.recipient_group_id
+        should_renumber_children = _is_child_program(recipient.program_type)
         db.delete(recipient)
+        db.flush()
+        if should_renumber_children:
+            self._renumber_child_recipients(db, group_id)
         db.commit()
 
     def get_wishlist(self, db: Session, campaign_id: str, recipient_id: str) -> Wishlist:
@@ -678,6 +727,54 @@ class CampaignRecipientService:
                 details={"field": "program_abbreviation"},
             )
 
+    def _validate_parent_organization_group(
+        self,
+        db: Session,
+        *,
+        campaign_id: str,
+        group_type: str,
+        parent_group_id: object,
+        current_group_id: uuid.UUID | None = None,
+    ) -> uuid.UUID | None:
+        if parent_group_id in (None, ""):
+            return None
+        if group_type != RECIPIENT_GROUP_TYPE_HOUSEHOLD:
+            raise ServiceError(
+                "Only families can be associated with an organization",
+                status_code=400,
+                details={"field": "parent_organization_group_id"},
+            )
+
+        parent_uuid = require_uuid(parent_group_id, "parent_organization_group_id")
+        if current_group_id is not None and parent_uuid == current_group_id:
+            raise ServiceError(
+                "A family cannot be associated with itself",
+                status_code=400,
+                details={"field": "parent_organization_group_id"},
+            )
+
+        parent_group = (
+            db.query(RecipientGroup)
+            .filter(
+                RecipientGroup.campaign_id == campaign_id,
+                RecipientGroup.id == parent_uuid,
+            )
+            .one_or_none()
+        )
+        if parent_group is None:
+            raise ServiceError(
+                "Associated organization not found",
+                status_code=404,
+                details={"field": "parent_organization_group_id"},
+            )
+        if parent_group.group_type != RECIPIENT_GROUP_TYPE_ORGANIZATION:
+            raise ServiceError(
+                "Associated group must be an organization",
+                status_code=400,
+                details={"field": "parent_organization_group_id"},
+            )
+        return parent_group.id
+
     def _validate_duplicate_recipient(
         self,
         db: Session,
@@ -760,6 +857,65 @@ class CampaignRecipientService:
             recipient.program_recipient_number = (max_number or 0) + 1
 
         recipient.program_recipient_id = f"{abbreviation}-{recipient.program_recipient_number:03d}"
+
+    def _next_child_cardinal_label(self, db: Session, group_id: uuid.UUID) -> str:
+        child_count = (
+            db.query(func.count(Recipient.id))
+            .filter(
+                Recipient.recipient_group_id == group_id,
+                Recipient.program_type.in_(_CHILD_PROGRAM_TYPES),
+            )
+            .scalar()
+            or 0
+        )
+        return _child_cardinal_label(child_count + 1)
+
+    def _apply_child_cardinal_identity(
+        self,
+        db: Session,
+        group_id: uuid.UUID,
+        recipient: Recipient,
+    ) -> None:
+        child_recipients = self._child_recipients_for_group(db, group_id, include_pending=recipient)
+        for index, child in enumerate(child_recipients, start=1):
+            if child.id == recipient.id:
+                label = _child_cardinal_label(index)
+                child.display_label = label
+                child.first_name, child.last_name = _split_child_cardinal_label(label)
+                return
+
+    def _renumber_child_recipients(self, db: Session, group_id: uuid.UUID) -> None:
+        child_recipients = self._child_recipients_for_group(db, group_id)
+        for child in child_recipients:
+            child.display_label = f"__child_renumber_{child.id}"
+            child.first_name = None
+            child.last_name = None
+        db.flush()
+        for index, child in enumerate(child_recipients, start=1):
+            label = _child_cardinal_label(index)
+            child.display_label = label
+            child.first_name, child.last_name = _split_child_cardinal_label(label)
+
+    @staticmethod
+    def _child_recipients_for_group(
+        db: Session,
+        group_id: uuid.UUID,
+        *,
+        include_pending: Recipient | None = None,
+    ) -> list[Recipient]:
+        child_recipients = (
+            db.query(Recipient)
+            .filter(
+                Recipient.recipient_group_id == group_id,
+                Recipient.program_type.in_(_CHILD_PROGRAM_TYPES),
+            )
+            .order_by(Recipient.created_at.asc(), Recipient.id.asc())
+            .all()
+        )
+        if include_pending is not None and all(child.id != include_pending.id for child in child_recipients):
+            child_recipients.append(include_pending)
+            child_recipients.sort(key=lambda child: (child.created_at, str(child.id)))
+        return child_recipients
 
     def _sync_group_program_recipient_ids(self, db: Session, group: RecipientGroup) -> None:
         recipients = db.query(Recipient).filter(Recipient.recipient_group_id == group.id).all()
@@ -869,6 +1025,8 @@ class CampaignRecipientService:
     @staticmethod
     def _recipient_group_load_options():
         return (
+            joinedload(RecipientGroup.parent_organization),
+            joinedload(RecipientGroup.families),
             joinedload(RecipientGroup.recipients).options(*CampaignRecipientService._recipient_detail_load_options()),
         )
 
@@ -926,3 +1084,67 @@ def _recipient_required_sponsored_count(policy, total_count: int) -> int:
     if policy.recipient_coverage_rule == "MIN_GIFTS_SPONSORED":
         return min(policy.recipient_coverage_required_count, total_count)
     return total_count
+
+
+_CHILD_PROGRAM_TYPES = (
+    RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+    RECIPIENT_PROGRAM_TYPE_ORGANIZATION_CHILD,
+)
+
+_CARDINAL_WORDS = {
+    1: "One",
+    2: "Two",
+    3: "Three",
+    4: "Four",
+    5: "Five",
+    6: "Six",
+    7: "Seven",
+    8: "Eight",
+    9: "Nine",
+    10: "Ten",
+    11: "Eleven",
+    12: "Twelve",
+    13: "Thirteen",
+    14: "Fourteen",
+    15: "Fifteen",
+    16: "Sixteen",
+    17: "Seventeen",
+    18: "Eighteen",
+    19: "Nineteen",
+    20: "Twenty",
+}
+
+_CARDINAL_TENS = {
+    30: "Thirty",
+    40: "Forty",
+    50: "Fifty",
+    60: "Sixty",
+    70: "Seventy",
+    80: "Eighty",
+    90: "Ninety",
+}
+
+
+def _is_child_program(program_type: str) -> bool:
+    return program_type in _CHILD_PROGRAM_TYPES
+
+
+def _child_cardinal_label(index: int) -> str:
+    return f"Child {_cardinal_word(index)}"
+
+
+def _split_child_cardinal_label(label: str) -> tuple[str, str]:
+    parts = label.split(" ", 1)
+    return parts[0], parts[1] if len(parts) > 1 else ""
+
+
+def _cardinal_word(value: int) -> str:
+    if value in _CARDINAL_WORDS:
+        return _CARDINAL_WORDS[value]
+    if value < 100:
+        tens = value - (value % 10)
+        ones = value % 10
+        if ones == 0:
+            return _CARDINAL_TENS.get(tens, str(value))
+        return f"{_CARDINAL_TENS.get(tens, str(tens))}-{_CARDINAL_WORDS[ones]}"
+    return str(value)

@@ -10,9 +10,15 @@ import {
   type CampaignStudioData,
   type CampaignTeamSnapshot,
   type CommunicationAudienceOption,
+  type CommunicationAudienceRecipientSummary,
+  type CommunicationRecipientOption,
+  type CommunicationRecipientOptions,
   type CommunicationSchedule,
+  type CommunicationSendHistoryItem,
+  type CommunicationSendResult,
   type CommunicationTemplate,
   type CommunicationTemplateTestEmailResult,
+  type CreateCommunicationSendInput,
   type CreateCommunicationScheduleInput,
   type CreateCommunicationTemplateInput,
   type SaveCampaignMilestoneInput,
@@ -104,6 +110,19 @@ interface CommunicationAudienceOptionResponse {
   description: string;
 }
 
+interface CommunicationAudienceRecipientSummaryResponse {
+  audience: CommunicationAudienceRecipientSummary['audience'];
+  count: number;
+  sample_recipients: Array<{
+    display_name: string;
+    email: string;
+  }>;
+  recipients?: Array<{
+    display_name: string;
+    email: string;
+  }>;
+}
+
 interface CommunicationScheduleResponse {
   id: string;
   campaign_id: string;
@@ -117,10 +136,69 @@ interface CommunicationScheduleResponse {
   updated_at: string | null;
 }
 
+interface CommunicationSendHistoryResponse {
+  id: string;
+  campaign_id: string;
+  template_id: string;
+  template_name: string;
+  target_mode: string;
+  status: string;
+  subject: string;
+  recipient_count: number;
+  delivered_count: number;
+  failed_count: number;
+  error_message: string | null;
+  created_by_user_id: string | null;
+  created_by_display_name: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  recipients?: CommunicationSendHistoryRecipientResponse[];
+}
+
+interface CommunicationSendHistoryRecipientResponse {
+  id: string;
+  send_id: string;
+  recipient_type: string;
+  recipient_ref_id: string | null;
+  email: string;
+  display_name: string | null;
+  status: string;
+  error_message: string | null;
+  sent_at: string | null;
+  created_at: string | null;
+}
+
+interface CommunicationRecipientOptionResponse {
+  id: string;
+  label: string;
+  email: string | null;
+  description: string | null;
+  member_count?: number;
+}
+
+interface CommunicationRecipientOptionsResponse {
+  teams: CommunicationRecipientOptionResponse[];
+  sponsors: CommunicationRecipientOptionResponse[];
+  members: CommunicationRecipientOptionResponse[];
+  contacts: CommunicationRecipientOptionResponse[];
+}
+
 interface CommunicationTemplateTestEmailResponse {
   template_id: string;
   recipient_email: string;
   subject: string;
+}
+
+interface CommunicationSendResultResponse {
+  send_id: string;
+  template_id: string;
+  target_mode: string;
+  status: string;
+  subject: string;
+  recipient_count: number;
+  delivered_count: number;
+  failed_count: number;
+  error_message: string | null;
 }
 
 interface CampaignMilestoneResponse {
@@ -210,8 +288,11 @@ interface CampaignStudioResponse {
   team: CampaignTeamSnapshotResponse;
   communications: {
     audience_catalog: CommunicationAudienceOptionResponse[];
+    audience_recipient_summaries: CommunicationAudienceRecipientSummaryResponse[];
     templates: CommunicationTemplateResponse[];
     schedules: CommunicationScheduleResponse[];
+    sends: CommunicationSendHistoryResponse[];
+    recipient_options: CommunicationRecipientOptionsResponse;
   };
   schedule: {
     items: CampaignScheduleItemResponse[];
@@ -236,8 +317,13 @@ export async function getCampaignStudio(campaignId: string): Promise<CampaignStu
       audienceCatalog: response.communications.audience_catalog.map(
         mapCommunicationAudienceOption
       ),
+      audienceRecipientSummaries: (response.communications.audience_recipient_summaries ?? []).map(
+        mapCommunicationAudienceRecipientSummary
+      ),
       templates: response.communications.templates.map(mapCommunicationTemplate),
       schedules: response.communications.schedules.map(mapCommunicationSchedule),
+      sends: (response.communications.sends ?? []).map(mapCommunicationSendHistory),
+      recipientOptions: mapCommunicationRecipientOptions(response.communications.recipient_options),
     },
     schedule: {
       items: response.schedule.items.map(mapCampaignScheduleItem),
@@ -247,6 +333,13 @@ export async function getCampaignStudio(campaignId: string): Promise<CampaignStu
     giftPolicy: mapCampaignGiftPolicy(response.gift_policy),
     readiness: mapCampaignReadiness(response.readiness),
   };
+}
+
+export async function listCommunicationTemplates(campaignId: string): Promise<CommunicationTemplate[]> {
+  const response = await apiFetchJson<CommunicationTemplateResponse[]>(
+    `/api/v1/campaigns/${campaignId}/communications/templates`
+  );
+  return response.map(mapCommunicationTemplate);
 }
 
 export async function createCommunicationTemplate(
@@ -340,6 +433,32 @@ export async function sendCommunicationTemplateTestEmail(
     recipientEmail: response.recipient_email,
     subject: response.subject,
   };
+}
+
+export async function sendCampaignCommunication(
+  campaignId: string,
+  input: CreateCommunicationSendInput
+): Promise<CommunicationSendResult> {
+  const response = await apiFetchJson<CommunicationSendResultResponse>(
+    `/api/v1/campaigns/${campaignId}/communications/send`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        template_id: input.templateId,
+        target_mode: input.targetMode,
+        manual_recipients: (input.manualRecipients ?? []).map((recipient) => ({
+          email: recipient.email,
+          display_name: recipient.displayName ?? null,
+        })),
+        team_ids: input.teamIds ?? [],
+        sponsor_ids: input.sponsorIds ?? [],
+        member_ids: input.memberIds ?? [],
+        contact_ids: input.contactIds ?? [],
+      }),
+    }
+  );
+  return mapCommunicationSendResult(response);
 }
 
 export async function createCommunicationSchedule(
@@ -563,6 +682,102 @@ function mapCommunicationTemplate(
     createdByUserId: template.created_by_user_id,
     createdAt: template.created_at,
     updatedAt: template.updated_at,
+  };
+}
+
+function mapCommunicationAudienceRecipientSummary(
+  summary: CommunicationAudienceRecipientSummaryResponse
+): CommunicationAudienceRecipientSummary {
+  return {
+    audience: summary.audience,
+    count: summary.count,
+    sampleRecipients: summary.sample_recipients.map((recipient) => ({
+      displayName: recipient.display_name,
+      email: recipient.email,
+    })),
+    recipients: (summary.recipients ?? summary.sample_recipients).map((recipient) => ({
+      displayName: recipient.display_name,
+      email: recipient.email,
+    })),
+  };
+}
+
+function mapCommunicationSendHistory(
+  send: CommunicationSendHistoryResponse
+): CommunicationSendHistoryItem {
+  return {
+    id: send.id,
+    campaignId: send.campaign_id,
+    templateId: send.template_id,
+    templateName: send.template_name,
+    targetMode: send.target_mode,
+    status: send.status,
+    subject: send.subject,
+    recipientCount: send.recipient_count,
+    deliveredCount: send.delivered_count,
+    failedCount: send.failed_count,
+    errorMessage: send.error_message,
+    createdByUserId: send.created_by_user_id,
+    createdByDisplayName: send.created_by_display_name,
+    createdAt: send.created_at,
+    updatedAt: send.updated_at,
+    recipients: (send.recipients ?? []).map(mapCommunicationSendHistoryRecipient),
+  };
+}
+
+function mapCommunicationSendHistoryRecipient(
+  recipient: CommunicationSendHistoryRecipientResponse
+) {
+  return {
+    id: recipient.id,
+    sendId: recipient.send_id,
+    recipientType: recipient.recipient_type,
+    recipientRefId: recipient.recipient_ref_id,
+    email: recipient.email,
+    displayName: recipient.display_name,
+    status: recipient.status,
+    errorMessage: recipient.error_message,
+    sentAt: recipient.sent_at,
+    createdAt: recipient.created_at,
+  };
+}
+
+function mapCommunicationSendResult(
+  send: CommunicationSendResultResponse
+): CommunicationSendResult {
+  return {
+    sendId: send.send_id,
+    templateId: send.template_id,
+    targetMode: send.target_mode,
+    status: send.status,
+    subject: send.subject,
+    recipientCount: send.recipient_count,
+    deliveredCount: send.delivered_count,
+    failedCount: send.failed_count,
+    errorMessage: send.error_message,
+  };
+}
+
+function mapCommunicationRecipientOptions(
+  options: CommunicationRecipientOptionsResponse | undefined
+): CommunicationRecipientOptions {
+  return {
+    teams: (options?.teams ?? []).map(mapCommunicationRecipientOption),
+    sponsors: (options?.sponsors ?? []).map(mapCommunicationRecipientOption),
+    members: (options?.members ?? []).map(mapCommunicationRecipientOption),
+    contacts: (options?.contacts ?? []).map(mapCommunicationRecipientOption),
+  };
+}
+
+function mapCommunicationRecipientOption(
+  option: CommunicationRecipientOptionResponse
+): CommunicationRecipientOption {
+  return {
+    id: option.id,
+    label: option.label,
+    email: option.email,
+    description: option.description,
+    memberCount: option.member_count,
   };
 }
 
