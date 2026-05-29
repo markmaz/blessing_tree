@@ -220,6 +220,7 @@ export function CampaignPeopleGroupDrawer({
       || (!selectedOrganizationType && ['ORPHANAGE', 'CHILDRENS_HOME'].includes(groupDraft.organizationType ?? '')));
   const groupRecipientLabel = !isOrganizationGroup || isOrganizationChildProgram ? 'Child' : 'Adult';
   const groupRecipientLabelPlural = groupRecipientLabel === 'Child' ? 'Children' : 'Adults';
+  const canAddDirectRecipient = Boolean(group && (!isOrganizationFamilyProgram || group.recipients.length > 0));
   const groupSaveButtonLabel = group ? `Save ${groupRecordLabel}` : `Create ${groupRecordLabel}`;
   const linkedFamilyGroups = group?.groupType === 'ORGANIZATION'
     ? groups
@@ -548,6 +549,48 @@ export function CampaignPeopleGroupDrawer({
         />
       ) : null}
       <div className="campaign-team-drawer__stack">
+        {group && (canAddDirectRecipient || onAddFamilyToOrganization) ? (
+          <section className="campaign-team-drawer__section campaign-people-quick-actions">
+            <div>
+              <h4 className="h6 mb-1">Quick Actions</h4>
+              <p className="text-muted mb-0">
+                Add another person without leaving this {isOrganizationGroup ? 'organization' : 'family'} record.
+              </p>
+            </div>
+            <div className="campaign-people-quick-actions__buttons">
+              {canAddDirectRecipient ? (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => onAddRecipientToGroup(group.id)}
+                  disabled={!canEdit}
+                >
+                  <i
+                    className={`bi ${
+                      groupRecipientLabel === 'Child'
+                        ? 'bi-person-plus'
+                        : 'bi-people-fill'
+                    } me-2`}
+                    aria-hidden="true"
+                  />
+                  Add {groupRecipientLabel}
+                </button>
+              ) : null}
+              {group.groupType === 'ORGANIZATION' && onAddFamilyToOrganization ? (
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() => onAddFamilyToOrganization(group.id)}
+                  disabled={!canEdit}
+                >
+                  <i className="bi bi-house-heart me-2" aria-hidden="true" />
+                  Add Family
+                </button>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+
         <section className="campaign-team-drawer__section">
           <div className="campaign-team-drawer__section-header">
             <div className="campaign-people-section-heading">
@@ -1167,7 +1210,7 @@ export function CampaignPeopleGroupDrawer({
           </section>
         ) : null}
 
-        {group && (!isOrganizationFamilyProgram || group.recipients.length > 0) ? (
+        {group && canAddDirectRecipient ? (
           <section className="campaign-team-drawer__section">
             <div className="campaign-team-drawer__section-header">
               <div>

@@ -330,8 +330,36 @@ describe('CampaignPeopleGroupDrawer', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Children' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Add Child' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Add Child' }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: 'Add Adult' })).not.toBeInTheDocument();
+  });
+
+  it('surfaces a quick add child action when opening an existing family', async () => {
+    const user = userEvent.setup();
+    const onAddRecipientToGroup = vi.fn();
+
+    render(
+      <CampaignPeopleGroupDrawer
+        isOpen
+        isSaving={false}
+        canEdit
+        group={householdGroup}
+        groups={[householdGroup]}
+        onClose={vi.fn()}
+        onSaveGroup={vi.fn()}
+        onSaveContact={vi.fn()}
+        onDeleteContact={vi.fn()}
+        onDeleteGroup={vi.fn()}
+        onSearchAddresses={vi.fn().mockResolvedValue([])}
+        onAddRecipientToGroup={onAddRecipientToGroup}
+        onSelectGroup={vi.fn()}
+        onSelectRecipient={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getAllByRole('button', { name: 'Add Child' })[0]);
+
+    expect(onAddRecipientToGroup).toHaveBeenCalledWith('group-household');
   });
 
   it('shows families associated with an organization and can start a family from the organization', async () => {
@@ -372,7 +400,7 @@ describe('CampaignPeopleGroupDrawer', () => {
     expect(screen.getByRole('heading', { name: 'Families' })).toBeInTheDocument();
     expect(screen.getByText('Johnson Family')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Add Family' }));
+    await user.click(screen.getAllByRole('button', { name: 'Add Family' })[0]);
     expect(onAddFamilyToOrganization).toHaveBeenCalledWith(organizationGroup.id);
   });
 
@@ -404,7 +432,7 @@ describe('CampaignPeopleGroupDrawer', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Families' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Add Family' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Add Family' }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: 'Add Adult' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add Child' })).not.toBeInTheDocument();
   });

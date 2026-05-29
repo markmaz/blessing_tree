@@ -57,6 +57,20 @@
   background: rgba(248, 245, 239, 0.48);
 }
 
+.campaign-people-quick-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.campaign-people-quick-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
 .campaign-people-metadata-details {
   border: 1px solid rgba(226, 218, 205, 0.9);
   border-radius: 0.95rem;
@@ -451,6 +465,14 @@
 
   .campaign-people-intake-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .campaign-people-quick-actions {
+    flex-direction: column;
+  }
+
+  .campaign-people-quick-actions__buttons {
+    justify-content: flex-start;
   }
 }
 
