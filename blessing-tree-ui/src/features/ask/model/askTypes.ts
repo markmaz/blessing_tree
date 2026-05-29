@@ -59,3 +59,11 @@ export interface AskResponse {
     document: string;
   }>;
 }
+
+export interface AskRequestContext {
+  screen?: string;
+  fieldName?: string;
+  fieldLabel?: string;
+  route?: string;
+  currentValue?: string;
+}

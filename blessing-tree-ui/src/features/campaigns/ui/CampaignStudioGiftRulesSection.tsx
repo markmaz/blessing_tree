@@ -4,9 +4,11 @@ import type {
   RecipientCoverageRule,
   UpdateCampaignGiftPolicyInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
+import { FieldHelpButton } from '@/features/ask/ui/FieldHelpButton';
 import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudioSectionCard';
 
 interface CampaignStudioGiftRulesSectionProps {
+  campaignId?: string | null;
   policy: CampaignGiftPolicy;
   isSaving: boolean;
   canEdit: boolean;
@@ -14,6 +16,7 @@ interface CampaignStudioGiftRulesSectionProps {
 }
 
 export function CampaignStudioGiftRulesSection({
+  campaignId,
   policy,
   isSaving,
   canEdit,
@@ -46,7 +49,10 @@ export function CampaignStudioGiftRulesSection({
       >
         <form className="campaign-team-form-grid" onSubmit={handleSubmit}>
           <label className="form-label">
-            Gifts per Sponsor
+            <span className="d-inline-flex align-items-center gap-1">
+              <span>Gifts per Sponsor</span>
+              <FieldHelpButton campaignId={campaignId} screen="Gift Rules" fieldName="Sponsor Gift Limit" />
+            </span>
             <input
               className="form-control mt-2"
               type="number"
@@ -59,7 +65,10 @@ export function CampaignStudioGiftRulesSection({
           </label>
 
           <label className="form-label">
-            Wishlist Gifts per Person
+            <span className="d-inline-flex align-items-center gap-1">
+              <span>Wishlist Gifts per Person</span>
+              <FieldHelpButton campaignId={campaignId} screen="Gift Rules" fieldName="Wishlist Gift Limit" />
+            </span>
             <input
               className="form-control mt-2"
               type="number"
@@ -72,7 +81,10 @@ export function CampaignStudioGiftRulesSection({
           </label>
 
           <label className="form-label">
-            Recipient Coverage Rule
+            <span className="d-inline-flex align-items-center gap-1">
+              <span>Recipient Coverage Rule</span>
+              <FieldHelpButton campaignId={campaignId} screen="Gift Rules" fieldName="Fulfillment Rule" />
+            </span>
             <select
               className="form-select mt-2"
               value={draft.recipientCoverageRule}
@@ -91,7 +103,10 @@ export function CampaignStudioGiftRulesSection({
           </label>
 
           <label className="form-label">
-            Required Sponsored Gifts
+            <span className="d-inline-flex align-items-center gap-1">
+              <span>Required Sponsored Gifts</span>
+              <FieldHelpButton campaignId={campaignId} screen="Gift Rules" fieldName="Fulfilled Gift Count" />
+            </span>
             <input
               className="form-control mt-2"
               type="number"
@@ -104,7 +119,10 @@ export function CampaignStudioGiftRulesSection({
           </label>
 
           <label className="form-label">
-            Reservation Hold Minutes
+            <span className="d-inline-flex align-items-center gap-1">
+              <span>Reservation Hold Minutes</span>
+              <FieldHelpButton campaignId={campaignId} screen="Gift Rules" fieldName="Reminder Rules" />
+            </span>
             <input
               className="form-control mt-2"
               type="number"

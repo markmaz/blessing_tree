@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
+import { FieldHelpButton } from '@/features/ask/ui/FieldHelpButton';
 import type {
   CampaignAddressSuggestion,
   CampaignPeopleGroup,
@@ -24,6 +25,7 @@ import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 
 interface CampaignPeopleGroupDrawerProps {
+  campaignId?: string | null;
   isOpen: boolean;
   isSaving: boolean;
   canEdit: boolean;
@@ -135,6 +137,7 @@ const fallbackOrganizationTypes: OrganizationTypeOption[] = [
 ];
 
 export function CampaignPeopleGroupDrawer({
+  campaignId,
   isOpen,
   isSaving,
   canEdit,
@@ -726,7 +729,10 @@ export function CampaignPeopleGroupDrawer({
             ) : (
               <>
                 <label className="form-label">
-                  Guardian Role
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <span>Guardian Role</span>
+                    <FieldHelpButton campaignId={campaignId} screen="People Group Drawer" fieldName="Guardian Role" />
+                  </span>
                   <select
                     className="form-select mt-2"
                     value={householdPrimaryContactDraft.contactRole ?? 'PARENT'}
@@ -781,7 +787,10 @@ export function CampaignPeopleGroupDrawer({
                 </label>
 
                 <label className="form-label">
-                  Guardian First Name
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <span>Guardian First Name</span>
+                    <FieldHelpButton campaignId={campaignId} screen="People Group Drawer" fieldName="Guardian First/Last Name" fieldLabel="Guardian First Name" />
+                  </span>
                   <input
                     className="form-control mt-2"
                     value={householdPrimaryContactDraft.firstName ?? ''}
@@ -796,7 +805,10 @@ export function CampaignPeopleGroupDrawer({
                 </label>
 
                 <label className="form-label">
-                  Guardian Last Name
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <span>Guardian Last Name</span>
+                    <FieldHelpButton campaignId={campaignId} screen="People Group Drawer" fieldName="Guardian First/Last Name" fieldLabel="Guardian Last Name" />
+                  </span>
                   <input
                     className="form-control mt-2"
                     value={householdPrimaryContactDraft.lastName ?? ''}
@@ -811,7 +823,10 @@ export function CampaignPeopleGroupDrawer({
                 </label>
 
                 <label className="form-label">
-                  Guardian Email
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <span>Guardian Email</span>
+                    <FieldHelpButton campaignId={campaignId} screen="People Group Drawer" fieldName="Guardian Email/Phone" fieldLabel="Guardian Email" />
+                  </span>
                   <input
                     className="form-control mt-2"
                     type="email"
@@ -827,7 +842,10 @@ export function CampaignPeopleGroupDrawer({
                 </label>
 
                 <label className="form-label">
-                  Guardian Phone
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <span>Guardian Phone</span>
+                    <FieldHelpButton campaignId={campaignId} screen="People Group Drawer" fieldName="Guardian Email/Phone" fieldLabel="Guardian Phone" />
+                  </span>
                   <input
                     className="form-control mt-2"
                     value={householdPrimaryContactDraft.phone ?? ''}
@@ -842,7 +860,10 @@ export function CampaignPeopleGroupDrawer({
                 </label>
 
                 <label className="form-label">
-                  Preferred Contact
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <span>Preferred Contact</span>
+                    <FieldHelpButton campaignId={campaignId} screen="People Group Drawer" fieldName="Preferred Contact" />
+                  </span>
                   <select
                     className="form-select mt-2"
                     value={householdPrimaryContactDraft.preferredContact ?? 'NONE'}
@@ -895,7 +916,10 @@ export function CampaignPeopleGroupDrawer({
 
             {isOrganizationGroup ? (
               <label className="form-label">
-                Organization Type
+                <span className="d-inline-flex align-items-center gap-1">
+                  <span>Organization Type</span>
+                  <FieldHelpButton campaignId={campaignId} screen="People Group Drawer" fieldName="Organization Type" />
+                </span>
                 <select
                   className="form-select mt-2"
                   value={groupDraft.organizationType ?? organizationTypeOptions[0]?.code ?? ''}
@@ -927,7 +951,10 @@ export function CampaignPeopleGroupDrawer({
 
             {isOrganizationGroup ? (
               <label className="form-label">
-                {programAbbreviationLabel}
+                <span className="d-inline-flex align-items-center gap-1">
+                  <span>{programAbbreviationLabel}</span>
+                  <FieldHelpButton campaignId={campaignId} screen="People Group Drawer" fieldName="Program Abbreviation" />
+                </span>
                 <input
                   className="form-control mt-2 text-uppercase"
                   value={groupDraft.programAbbreviation ?? ''}

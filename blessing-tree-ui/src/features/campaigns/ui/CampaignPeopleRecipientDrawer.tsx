@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { FieldHelpButton } from '@/features/ask/ui/FieldHelpButton';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
 import type {
   CampaignPeopleGroup,
@@ -28,6 +29,7 @@ import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 
 interface CampaignPeopleRecipientDrawerProps {
+  campaignId?: string | null;
   isOpen: boolean;
   isSaving: boolean;
   canEdit: boolean;
@@ -125,6 +127,7 @@ function buildRecipientDraft(
 }
 
 export function CampaignPeopleRecipientDrawer({
+  campaignId,
   isOpen,
   isSaving,
   canEdit,
@@ -588,9 +591,15 @@ export function CampaignPeopleRecipientDrawer({
           <div className="campaign-team-form-grid">
             {isContextualIntake ? (
               <label className="form-label campaign-team-form-grid__span-2">
-                {lockedGroup?.groupType === 'HOUSEHOLD'
-                  ? 'Family'
-                  : 'Organization'}
+                <RecipientHelpLabel
+                  campaignId={campaignId}
+                  fieldName={lockedGroup?.groupType === 'HOUSEHOLD' ? 'Family Name' : 'Organization Name'}
+                  fieldLabel={lockedGroup?.groupType === 'HOUSEHOLD' ? 'Family' : 'Organization'}
+                >
+                  {lockedGroup?.groupType === 'HOUSEHOLD'
+                    ? 'Family'
+                    : 'Organization'}
+                </RecipientHelpLabel>
                 <input
                   className="form-control mt-2"
                   value={lockedGroup?.groupName ?? ''}
@@ -599,7 +608,9 @@ export function CampaignPeopleRecipientDrawer({
               </label>
             ) : (
               <label className="form-label campaign-team-form-grid__span-2">
-                Household or Organization
+                <RecipientHelpLabel campaignId={campaignId} fieldName="Associated Organization" fieldLabel="Household or Organization">
+                  Household or Organization
+                </RecipientHelpLabel>
                 <select
                   className="form-select mt-2"
                   value={recipientDraft.recipientGroupId}
@@ -622,7 +633,9 @@ export function CampaignPeopleRecipientDrawer({
             )}
 
             <label className="form-label">
-              Program
+              <RecipientHelpLabel campaignId={campaignId} fieldName="Program">
+                Program
+              </RecipientHelpLabel>
               <input
                 className="form-control mt-2"
                 value={recipientProgram ? toRecipientProgramTypeLabel(recipientProgram.programType) : 'Select a group first'}
@@ -631,7 +644,9 @@ export function CampaignPeopleRecipientDrawer({
             </label>
 
             <label className="form-label">
-              Status
+              <RecipientHelpLabel campaignId={campaignId} fieldName="Person Status" fieldLabel="Status">
+                Status
+              </RecipientHelpLabel>
               <select
                 className="form-select mt-2"
                 value={recipientDraft.status ?? 'ACTIVE'}
@@ -650,11 +665,13 @@ export function CampaignPeopleRecipientDrawer({
             </label>
 
             <label className="form-label campaign-team-form-grid__span-2">
-              {isChildIntake
-                ? 'Child Label'
-                : isOrganizationAdultIntake
-                  ? 'Adult Display Name'
-                  : 'Display Name'}
+              <RecipientHelpLabel campaignId={campaignId} fieldName={isChildIntake ? 'Child Label' : 'First/Last Name'} fieldLabel={isChildIntake ? 'Child Label' : 'Display Name'}>
+                {isChildIntake
+                  ? 'Child Label'
+                  : isOrganizationAdultIntake
+                    ? 'Adult Display Name'
+                    : 'Display Name'}
+              </RecipientHelpLabel>
               <input
                 className="form-control mt-2"
                 value={isChildIntake ? recipient?.displayLabel ?? 'Assigned after save' : computedDisplayLabel}
@@ -665,7 +682,9 @@ export function CampaignPeopleRecipientDrawer({
             {!isChildIntake ? (
               <>
                 <label className="form-label">
-                  First Name
+                  <RecipientHelpLabel campaignId={campaignId} fieldName="First/Last Name" fieldLabel="First Name">
+                    First Name
+                  </RecipientHelpLabel>
                   <input
                     className="form-control mt-2"
                     value={recipientDraft.firstName ?? ''}
@@ -680,7 +699,9 @@ export function CampaignPeopleRecipientDrawer({
                 </label>
 
                 <label className="form-label">
-                  Last Name
+                  <RecipientHelpLabel campaignId={campaignId} fieldName="First/Last Name" fieldLabel="Last Name">
+                    Last Name
+                  </RecipientHelpLabel>
                   <input
                     className="form-control mt-2"
                     value={recipientDraft.lastName ?? ''}
@@ -701,7 +722,9 @@ export function CampaignPeopleRecipientDrawer({
             )}
 
             <label className="form-label">
-              Age
+              <RecipientHelpLabel campaignId={campaignId} fieldName="Age and Age Unit" fieldLabel="Age">
+                Age
+              </RecipientHelpLabel>
               <input
                 className="form-control mt-2"
                 type="number"
@@ -718,7 +741,9 @@ export function CampaignPeopleRecipientDrawer({
             </label>
 
             <label className="form-label">
-              Age Unit
+              <RecipientHelpLabel campaignId={campaignId} fieldName="Age and Age Unit" fieldLabel="Age Unit">
+                Age Unit
+              </RecipientHelpLabel>
               <select
                 className="form-select mt-2"
                 value={recipientDraft.ageUnit ?? 'YEARS'}
@@ -736,7 +761,9 @@ export function CampaignPeopleRecipientDrawer({
             </label>
 
             <label className="form-label">
-              Gender
+              <RecipientHelpLabel campaignId={campaignId} fieldName="Gender">
+                Gender
+              </RecipientHelpLabel>
               <select
                 className="form-select mt-2"
                 value={recipientDraft.gender ?? ''}
@@ -757,7 +784,9 @@ export function CampaignPeopleRecipientDrawer({
             </label>
 
             <label className="form-label">
-              Privacy Level
+              <RecipientHelpLabel campaignId={campaignId} fieldName="Privacy Level">
+                Privacy Level
+              </RecipientHelpLabel>
               <select
                 className="form-select mt-2"
                 value={recipientDraft.privacyLevel ?? 'FULL_NAME'}
@@ -778,7 +807,9 @@ export function CampaignPeopleRecipientDrawer({
             {isOrganizationIntake ? (
               <>
                 <label className="form-label">
-                  Person ID
+                  <RecipientHelpLabel campaignId={campaignId} fieldName="Person ID">
+                    Person ID
+                  </RecipientHelpLabel>
                   <input
                     className="form-control mt-2"
                     value={recipient?.programRecipientId ?? 'Generated after save'}
@@ -787,7 +818,9 @@ export function CampaignPeopleRecipientDrawer({
                 </label>
 
                 <label className="form-label">
-                  Room / Unit
+                  <RecipientHelpLabel campaignId={campaignId} fieldName="Room / Unit">
+                    Room / Unit
+                  </RecipientHelpLabel>
                   <input
                     className="form-control mt-2"
                     value={recipientDraft.facilityRoom ?? ''}
@@ -802,7 +835,9 @@ export function CampaignPeopleRecipientDrawer({
                 </label>
 
                 <label className="form-label">
-                  Subgroup Label
+                  <RecipientHelpLabel campaignId={campaignId} fieldName="Subgroup Label">
+                    Subgroup Label
+                  </RecipientHelpLabel>
                   <input
                     className="form-control mt-2"
                     value={recipientDraft.subgroupLabel ?? ''}
@@ -821,7 +856,9 @@ export function CampaignPeopleRecipientDrawer({
             {showAdultDirectContact ? (
               <>
                 <label className="form-label campaign-team-form-grid__span-2">
-                  Home Address Line 1
+                  <RecipientHelpLabel campaignId={campaignId} fieldName="Address Fields" fieldLabel="Home Address Line 1">
+                    Home Address Line 1
+                  </RecipientHelpLabel>
                   <input
                     className="form-control mt-2"
                     value={recipientDraft.addressLine1 ?? ''}
@@ -836,7 +873,9 @@ export function CampaignPeopleRecipientDrawer({
                 </label>
 
                 <label className="form-label campaign-team-form-grid__span-2">
-                  Address Line 2
+                  <RecipientHelpLabel campaignId={campaignId} fieldName="Address Fields" fieldLabel="Address Line 2">
+                    Address Line 2
+                  </RecipientHelpLabel>
                   <input
                     className="form-control mt-2"
                     value={recipientDraft.addressLine2 ?? ''}
@@ -851,7 +890,9 @@ export function CampaignPeopleRecipientDrawer({
                 </label>
 
                 <label className="form-label">
-                  City
+                  <RecipientHelpLabel campaignId={campaignId} fieldName="Address Fields" fieldLabel="City">
+                    City
+                  </RecipientHelpLabel>
                   <input
                     className="form-control mt-2"
                     value={recipientDraft.city ?? ''}
@@ -866,7 +907,9 @@ export function CampaignPeopleRecipientDrawer({
                 </label>
 
                 <label className="form-label">
-                  State
+                  <RecipientHelpLabel campaignId={campaignId} fieldName="Address Fields" fieldLabel="State">
+                    State
+                  </RecipientHelpLabel>
                   <input
                     className="form-control mt-2"
                     value={recipientDraft.state ?? ''}
@@ -881,7 +924,9 @@ export function CampaignPeopleRecipientDrawer({
                 </label>
 
                 <label className="form-label">
-                  ZIP Code
+                  <RecipientHelpLabel campaignId={campaignId} fieldName="Address Fields" fieldLabel="ZIP Code">
+                    ZIP Code
+                  </RecipientHelpLabel>
                   <input
                     className="form-control mt-2"
                     value={recipientDraft.postalCode ?? ''}
@@ -896,7 +941,9 @@ export function CampaignPeopleRecipientDrawer({
                 </label>
 
                 <label className="form-label">
-                  Direct Email
+                  <RecipientHelpLabel campaignId={campaignId} fieldName="Direct Email/Phone" fieldLabel="Direct Email">
+                    Direct Email
+                  </RecipientHelpLabel>
                   <input
                     className="form-control mt-2"
                     type="email"
@@ -912,7 +959,9 @@ export function CampaignPeopleRecipientDrawer({
                 </label>
 
                 <label className="form-label">
-                  Direct Phone
+                  <RecipientHelpLabel campaignId={campaignId} fieldName="Direct Email/Phone" fieldLabel="Direct Phone">
+                    Direct Phone
+                  </RecipientHelpLabel>
                   <input
                     className="form-control mt-2"
                     value={recipientDraft.directPhone ?? ''}
@@ -930,7 +979,9 @@ export function CampaignPeopleRecipientDrawer({
 
             {isOrganizationAdultIntake ? (
               <label className="form-label campaign-team-form-grid__span-2">
-                Mobility Notes
+                <RecipientHelpLabel campaignId={campaignId} fieldName="Mobility Notes">
+                  Mobility Notes
+                </RecipientHelpLabel>
                 <textarea
                   className="form-control mt-2"
                   rows={3}
@@ -947,13 +998,15 @@ export function CampaignPeopleRecipientDrawer({
             ) : null}
 
             <label className="form-label campaign-team-form-grid__span-2">
-              {isHouseholdIntake
-                ? 'Child Notes'
-                : isOrganizationAdultIntake
-                  ? 'Adult Notes'
-                  : isOrganizationChildIntake
-                    ? 'Child Notes'
-                  : 'Notes'}
+              <RecipientHelpLabel campaignId={campaignId} fieldName="Notes">
+                {isHouseholdIntake
+                  ? 'Child Notes'
+                  : isOrganizationAdultIntake
+                    ? 'Adult Notes'
+                    : isOrganizationChildIntake
+                      ? 'Child Notes'
+                      : 'Notes'}
+              </RecipientHelpLabel>
               <textarea
                 className="form-control mt-2"
                 rows={4}
@@ -1287,7 +1340,9 @@ export function CampaignPeopleRecipientDrawer({
                   ) : null}
 
                   <label className="form-label campaign-team-form-grid__span-2">
-                    Description
+                    <RecipientHelpLabel campaignId={campaignId} fieldName="Description" fieldLabel="Gift Description">
+                      Description
+                    </RecipientHelpLabel>
                     <input
                       className="form-control mt-2"
                       value={itemDraft.description}
@@ -1302,7 +1357,9 @@ export function CampaignPeopleRecipientDrawer({
                   </label>
 
                   <label className="form-label">
-                    Item Type
+                    <RecipientHelpLabel campaignId={campaignId} fieldName="Item Type">
+                      Item Type
+                    </RecipientHelpLabel>
                     <select
                       className="form-select mt-2"
                       value={itemDraft.itemType}
@@ -1324,7 +1381,9 @@ export function CampaignPeopleRecipientDrawer({
                   </label>
 
                   <label className="form-label">
-                    Category
+                    <RecipientHelpLabel campaignId={campaignId} fieldName="Gift Category" fieldLabel="Category">
+                      Category
+                    </RecipientHelpLabel>
                     <input
                       className="form-control mt-2"
                       value={itemDraft.category}
@@ -1339,7 +1398,9 @@ export function CampaignPeopleRecipientDrawer({
                   </label>
 
                   <label className="form-label">
-                    Size
+                    <RecipientHelpLabel campaignId={campaignId} fieldName="Size">
+                      Size
+                    </RecipientHelpLabel>
                     <input
                       className="form-control mt-2"
                       value={itemDraft.size}
@@ -1354,7 +1415,9 @@ export function CampaignPeopleRecipientDrawer({
                   </label>
 
                   <label className="form-label">
-                    Quantity
+                    <RecipientHelpLabel campaignId={campaignId} fieldName="Quantity Requested" fieldLabel="Quantity">
+                      Quantity
+                    </RecipientHelpLabel>
                     <input
                       className="form-control mt-2"
                       type="number"
@@ -1371,7 +1434,9 @@ export function CampaignPeopleRecipientDrawer({
                   </label>
 
                   <label className="form-label">
-                    Priority
+                    <RecipientHelpLabel campaignId={campaignId} fieldName="Priority">
+                      Priority
+                    </RecipientHelpLabel>
                     <select
                       className="form-select mt-2"
                       value={itemDraft.priority}
@@ -1390,7 +1455,9 @@ export function CampaignPeopleRecipientDrawer({
                   </label>
 
                   <label className="form-label">
-                    Estimated Cost (USD)
+                    <RecipientHelpLabel campaignId={campaignId} fieldName="Estimated Cost" fieldLabel="Estimated Cost (USD)">
+                      Estimated Cost (USD)
+                    </RecipientHelpLabel>
                     <input
                       className="form-control mt-2"
                       type="number"
@@ -1408,7 +1475,9 @@ export function CampaignPeopleRecipientDrawer({
                   </label>
 
                   <label className="form-label campaign-team-form-grid__span-2">
-                    Recipient Note
+                    <RecipientHelpLabel campaignId={campaignId} fieldName="Recipient Note">
+                      Recipient Note
+                    </RecipientHelpLabel>
                     <textarea
                       className="form-control mt-2"
                       rows={2}
@@ -1424,7 +1493,9 @@ export function CampaignPeopleRecipientDrawer({
                   </label>
 
                   <label className="form-label campaign-team-form-grid__span-2">
-                    Item Notes
+                    <RecipientHelpLabel campaignId={campaignId} fieldName="Internal Gift Notes" fieldLabel="Item Notes">
+                      Item Notes
+                    </RecipientHelpLabel>
                     <textarea
                       className="form-control mt-2"
                       rows={2}
@@ -1451,12 +1522,17 @@ export function CampaignPeopleRecipientDrawer({
                       }
                       disabled={!canEdit}
                     />
-                    <span>Allow substitution</span>
+                    <span className="d-inline-flex align-items-center gap-1">
+                      <span>Allow substitution</span>
+                      <FieldHelpButton campaignId={campaignId} screen="Wishlist Item" fieldName="Allow Substitute" />
+                    </span>
                   </label>
 
                   {!itemDraft.allowSubstitute ? (
                     <label className="form-label campaign-team-form-grid__span-2">
-                      Do Not Substitute Reason
+                      <RecipientHelpLabel campaignId={campaignId} fieldName="Do Not Substitute Reason">
+                        Do Not Substitute Reason
+                      </RecipientHelpLabel>
                       <textarea
                         className="form-control mt-2"
                         rows={2}
@@ -1584,6 +1660,27 @@ function parseCostDollars(value: string): number | null {
   }
 
   return Math.round(parsed * 100);
+}
+
+function RecipientHelpLabel({
+  campaignId,
+  screen = 'Person and Wishlist',
+  fieldName,
+  fieldLabel,
+  children,
+}: {
+  campaignId?: string | null;
+  screen?: string;
+  fieldName: string;
+  fieldLabel?: string;
+  children: ReactNode;
+}) {
+  return (
+    <span className="d-flex align-items-center gap-1">
+      <span>{children}</span>
+      <FieldHelpButton campaignId={campaignId} screen={screen} fieldName={fieldName} fieldLabel={fieldLabel} />
+    </span>
+  );
 }
 
 function getOrganizationRecipientCategory(

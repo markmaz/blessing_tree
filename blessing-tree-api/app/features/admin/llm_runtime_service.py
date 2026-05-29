@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from typing import TYPE_CHECKING, Any
 
@@ -39,6 +40,18 @@ class AdminLlmRuntimeService:
             return None
         return self._request_json(config, system_prompt=system_prompt, user_prompt=user_prompt)
 
+    def embed_texts(
+        self,
+        db: Session,
+        *,
+        texts: list[str],
+        model: str | None = None,
+    ) -> list[list[float]] | None:
+        config = self._llm_service.get_configuration(db)
+        if config is None or not config.is_enabled:
+            return None
+        return self._request_embeddings(config, texts=texts, model=model)
+
     def _request_json(
         self,
         config: AdminLlmConfiguration,
@@ -74,6 +87,52 @@ class AdminLlmRuntimeService:
         if not isinstance(parsed, dict):
             raise LlmRuntimeUnavailableError("Configured LLM returned a non-object JSON payload.")
         return parsed
+
+    def _request_embeddings(
+        self,
+        config: AdminLlmConfiguration,
+        *,
+        texts: list[str],
+        model: str | None = None,
+    ) -> list[list[float]]:
+        if not texts:
+            return []
+        headers = {"Content-Type": "application/json"}
+        api_key = decrypt_secret(config.api_key_encrypted)
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        payload = {
+            "model": model or os.getenv("BT_ASK_EMBEDDING_MODEL") or "text-embedding-3-small",
+            "input": texts,
+        }
+        endpoint = f"{config.base_url.rstrip('/')}/embeddings"
+        try:
+            response = requests.post(endpoint, headers=headers, json=payload, timeout=45)
+            response.raise_for_status()
+        except RequestException as exc:
+            raise LlmRuntimeUnavailableError(f"Configured embedding request failed: {exc}") from exc
+
+        try:
+            response_payload = response.json()
+        except ValueError as exc:
+            raise LlmRuntimeUnavailableError("Configured embedding endpoint returned invalid JSON.") from exc
+        data = response_payload.get("data") if isinstance(response_payload, dict) else None
+        if not isinstance(data, list):
+            raise LlmRuntimeUnavailableError("Configured embedding endpoint did not return data.")
+
+        embeddings: list[list[float]] = []
+        for item in data:
+            embedding = item.get("embedding") if isinstance(item, dict) else None
+            if not isinstance(embedding, list) or not embedding:
+                raise LlmRuntimeUnavailableError("Configured embedding endpoint returned malformed embeddings.")
+            try:
+                embeddings.append([float(value) for value in embedding])
+            except (TypeError, ValueError) as exc:
+                raise LlmRuntimeUnavailableError("Configured embedding endpoint returned non-numeric embeddings.") from exc
+        if len(embeddings) != len(texts):
+            raise LlmRuntimeUnavailableError("Configured embedding endpoint returned the wrong number of embeddings.")
+        return embeddings
 
     @staticmethod
     def _post_chat_completion(

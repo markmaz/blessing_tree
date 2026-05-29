@@ -193,6 +193,7 @@ export function SponsorsIntakePage() {
 
       <CampaignSponsorDrawer
         key={selectedSponsor?.id ?? (isCreateOpen ? 'create-sponsor' : 'closed-sponsor')}
+        campaignId={workspace.campaignId}
         isOpen={isCreateOpen || selectedSponsor !== null}
         canEdit={canEditSponsors}
         isSaving={isSaving}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { askBlessingTree, submitAskFeedback } from '@/features/ask/api/askApi';
-import type { AskAction, AskResponse } from '@/features/ask/model/askTypes';
+import type { AskAction, AskRequestContext, AskResponse } from '@/features/ask/model/askTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
 import '@/features/ask/ui/ask.css';
@@ -17,6 +17,7 @@ const SUGGESTED_PROMPTS = [
 interface AskConversationTurn {
   id: string;
   prompt: string;
+  context: AskRequestContext | null;
   response: AskResponse | null;
   error: string | null;
 }
@@ -49,7 +50,7 @@ export function AskBlessingTreePage() {
   }, [campaignId, selectCampaign, selectedCampaignId]);
 
   const submitPrompt = useCallback(
-    async (nextPrompt: string) => {
+    async (nextPrompt: string, context: AskRequestContext | null = null) => {
       const cleaned = nextPrompt.trim();
       if (!activeCampaignId || !cleaned || isLoading) {
         return;
@@ -61,6 +62,7 @@ export function AskBlessingTreePage() {
         {
           id: turnId,
           prompt: cleaned,
+          context,
           response: null,
           error: null,
         },
@@ -68,7 +70,7 @@ export function AskBlessingTreePage() {
       setPendingTurnId(turnId);
       setIsLoading(true);
       try {
-        const result = await askBlessingTree(activeCampaignId, cleaned);
+        const result = await askBlessingTree(activeCampaignId, cleaned, context);
         setConversationTurns((currentValue) =>
           currentValue.map((turn) => (turn.id === turnId ? { ...turn, response: result } : turn))
         );
@@ -111,12 +113,26 @@ export function AskBlessingTreePage() {
 
   useEffect(() => {
     const urlPrompt = searchParams.get('prompt')?.trim();
+    const fieldName = searchParams.get('fieldName')?.trim();
+    const fieldLabel = searchParams.get('fieldLabel')?.trim();
+    const screen = searchParams.get('screen')?.trim();
+    const route = searchParams.get('route')?.trim();
     if (!campaignId || !urlPrompt || submittedUrlPrompt === urlPrompt) {
       return;
     }
     setSubmittedUrlPrompt(urlPrompt);
     setSearchParams({}, { replace: true });
-    void submitPrompt(urlPrompt);
+    void submitPrompt(
+      urlPrompt,
+      fieldName || fieldLabel || screen || route
+        ? {
+            fieldName: fieldName || undefined,
+            fieldLabel: fieldLabel || undefined,
+            screen: screen || undefined,
+            route: route || undefined,
+          }
+        : null
+    );
   }, [campaignId, searchParams, setSearchParams, submitPrompt, submittedUrlPrompt]);
 
   if (!campaignId) {
@@ -256,6 +272,11 @@ function AskConversationTurn({
       <div className="ask-message ask-message--user">
         <div className="ask-message__bubble">
           <p className="mb-0">{turn.prompt}</p>
+          {turn.context?.fieldLabel || turn.context?.screen ? (
+            <p className="ask-message__context mb-0">
+              {[turn.context.fieldLabel, turn.context.screen].filter(Boolean).join(' · ')}
+            </p>
+          ) : null}
         </div>
       </div>
       <div className="ask-message ask-message--assistant">

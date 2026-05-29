@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
+import { FieldHelpButton } from '@/features/ask/ui/FieldHelpButton';
 import type {
   CampaignSponsor,
   CampaignSponsorInteraction,
@@ -23,6 +24,7 @@ import {
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 
 interface CampaignSponsorDrawerProps {
+  campaignId?: string | null;
   isOpen: boolean;
   canEdit: boolean;
   isSaving: boolean;
@@ -61,6 +63,7 @@ interface CampaignSponsorDrawerProps {
 }
 
 export function CampaignSponsorDrawer({
+  campaignId,
   isOpen,
   canEdit,
   isSaving,
@@ -301,7 +304,9 @@ export function CampaignSponsorDrawer({
 
             <div className="row g-3">
               <div className="col-md-6">
-                <label className="form-label">First Name</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Display Name" fieldLabel="First Name">
+                  First Name
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   value={form.firstName ?? ''}
@@ -310,7 +315,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-md-6">
-                <label className="form-label">Last Name</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Display Name" fieldLabel="Last Name">
+                  Last Name
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   value={form.lastName ?? ''}
@@ -319,7 +326,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-md-6">
-                <label className="form-label">Organization Name</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Organization">
+                  Organization Name
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   value={form.organizationName ?? ''}
@@ -328,7 +337,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-md-6">
-                <label className="form-label">Display Name</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Display Name">
+                  Display Name
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   value={form.displayName ?? ''}
@@ -338,7 +349,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-md-6">
-                <label className="form-label">Email</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Email">
+                  Email
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   type="email"
@@ -348,7 +361,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-md-6">
-                <label className="form-label">Phone</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Phone">
+                  Phone
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   value={form.phone ?? ''}
@@ -357,7 +372,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-md-4">
-                <label className="form-label">Preferred Contact</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Preferred Contact">
+                  Preferred Contact
+                </SponsorFieldLabel>
                 <select
                   className="form-select"
                   value={form.preferredContact}
@@ -400,7 +417,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-md-6">
-                <label className="form-label">Address Line 1</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Address Fields" fieldLabel="Address Line 1">
+                  Address Line 1
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   value={form.addressLine1 ?? ''}
@@ -409,7 +428,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-md-6">
-                <label className="form-label">Address Line 2</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Address Fields" fieldLabel="Address Line 2">
+                  Address Line 2
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   value={form.addressLine2 ?? ''}
@@ -418,7 +439,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-md-5">
-                <label className="form-label">City</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Address Fields" fieldLabel="City">
+                  City
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   value={form.city ?? ''}
@@ -427,7 +450,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-md-3">
-                <label className="form-label">State</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Address Fields" fieldLabel="State">
+                  State
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   value={form.state ?? ''}
@@ -436,7 +461,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-md-4">
-                <label className="form-label">Postal Code</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Address Fields" fieldLabel="Postal Code">
+                  Postal Code
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   value={form.postalCode ?? ''}
@@ -445,7 +472,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-12">
-                <label className="form-label">Notes</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Notes">
+                  Notes
+                </SponsorFieldLabel>
                 <textarea
                   className="form-control"
                   rows={3}
@@ -463,7 +492,10 @@ export function CampaignSponsorDrawer({
                     onChange={(event) => setForm((currentValue) => ({ ...currentValue, isActive: event.target.checked }))}
                     disabled={!canEdit}
                   />
-                  <span className="form-check-label">Sponsor is active</span>
+                  <span className="form-check-label d-inline-flex align-items-center gap-1">
+                    <span>Sponsor is active</span>
+                    <FieldHelpButton campaignId={campaignId} screen="Sponsor Drawer" fieldName="Sponsor is Active" />
+                  </span>
                 </label>
               </div>
               <div className="col-md-6">
@@ -475,7 +507,10 @@ export function CampaignSponsorDrawer({
                     onChange={(event) => setForm((currentValue) => ({ ...currentValue, doNotContact: event.target.checked }))}
                     disabled={!canEdit}
                   />
-                  <span className="form-check-label">Do not contact</span>
+                  <span className="form-check-label d-inline-flex align-items-center gap-1">
+                    <span>Do not contact</span>
+                    <FieldHelpButton campaignId={campaignId} screen="Sponsor Drawer" fieldName="Do Not Contact" />
+                  </span>
                 </label>
               </div>
             </div>
@@ -500,7 +535,9 @@ export function CampaignSponsorDrawer({
 
             <div className="row g-3">
               <div className="col-md-3">
-                <label className="form-label">Status</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Campaign Participation Status" fieldLabel="Status">
+                  Status
+                </SponsorFieldLabel>
                 <select
                   className="form-select"
                   value={participation.status}
@@ -518,7 +555,9 @@ export function CampaignSponsorDrawer({
                 </select>
               </div>
               <div className="col-md-3">
-                <label className="form-label">Interest</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Interest">
+                  Interest
+                </SponsorFieldLabel>
                 <select
                   className="form-select"
                   value={participation.interestStatus}
@@ -538,7 +577,9 @@ export function CampaignSponsorDrawer({
                 </select>
               </div>
               <div className="col-md-3">
-                <label className="form-label">Drop-off</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Drop-off">
+                  Drop-off
+                </SponsorFieldLabel>
                 <select
                   className="form-select"
                   value={participation.dropOffStatus}
@@ -557,7 +598,9 @@ export function CampaignSponsorDrawer({
                 </select>
               </div>
               <div className="col-md-3">
-                <label className="form-label">Sponsor Code</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Sponsor Code">
+                  Sponsor Code
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   value={participation.sponsorCode ?? ''}
@@ -571,7 +614,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-md-6">
-                <label className="form-label">Drop-off Due</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Drop-off Due">
+                  Drop-off Due
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   type="datetime-local"
@@ -586,7 +631,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-md-6">
-                <label className="form-label">Drop-off Completed</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Drop-off Completed">
+                  Drop-off Completed
+                </SponsorFieldLabel>
                 <input
                   className="form-control"
                   type="datetime-local"
@@ -601,7 +648,9 @@ export function CampaignSponsorDrawer({
                 />
               </div>
               <div className="col-12">
-                <label className="form-label">Campaign Notes</label>
+                <SponsorFieldLabel campaignId={campaignId} fieldName="Campaign Notes">
+                  Campaign Notes
+                </SponsorFieldLabel>
                 <textarea
                   className="form-control"
                   rows={3}
@@ -726,7 +775,9 @@ export function CampaignSponsorDrawer({
 
                 <div className="row g-3 align-items-end">
                   <div className="col-12 col-lg-7">
-                    <label className="form-label">Template</label>
+                    <SponsorFieldLabel campaignId={campaignId} fieldName="Template">
+                      Template
+                    </SponsorFieldLabel>
                     <select
                       className="form-select"
                       value={selectedTemplateId}
@@ -962,6 +1013,7 @@ export function CampaignSponsorDrawer({
       {isInteractionModalOpen ? (
         <SponsorInteractionModal
           key={activeInteraction?.id ?? 'new-interaction'}
+          campaignId={campaignId}
           sponsor={sponsor}
           interaction={activeInteraction}
           isSaving={isSaving}
@@ -1051,13 +1103,36 @@ function MetadataRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function SponsorFieldLabel({
+  campaignId,
+  screen = 'Sponsor Drawer',
+  fieldName,
+  fieldLabel,
+  children,
+}: {
+  campaignId?: string | null;
+  screen?: string;
+  fieldName: string;
+  fieldLabel?: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className="form-label d-flex align-items-center gap-1">
+      <span>{children}</span>
+      <FieldHelpButton campaignId={campaignId} screen={screen} fieldName={fieldName} fieldLabel={fieldLabel} />
+    </label>
+  );
+}
+
 function SponsorInteractionModal({
+  campaignId,
   sponsor,
   interaction,
   isSaving,
   onClose,
   onSave,
 }: {
+  campaignId?: string | null;
   sponsor: CampaignSponsor | null;
   interaction: CampaignSponsorInteraction | null;
   isSaving: boolean;
@@ -1098,7 +1173,9 @@ function SponsorInteractionModal({
 
         <div className="row g-3">
           <div className="col-md-4">
-            <label className="form-label">Channel</label>
+            <SponsorFieldLabel campaignId={campaignId} screen="Sponsor Interaction" fieldName="Channel">
+              Channel
+            </SponsorFieldLabel>
             <select
               className="form-select"
               value={form.channel}
@@ -1111,7 +1188,9 @@ function SponsorInteractionModal({
             </select>
           </div>
           <div className="col-md-4">
-            <label className="form-label">Direction</label>
+            <SponsorFieldLabel campaignId={campaignId} screen="Sponsor Interaction" fieldName="Direction">
+              Direction
+            </SponsorFieldLabel>
             <select
               className="form-select"
               value={form.direction}
@@ -1122,7 +1201,9 @@ function SponsorInteractionModal({
             </select>
           </div>
           <div className="col-md-4">
-            <label className="form-label">Outcome</label>
+            <SponsorFieldLabel campaignId={campaignId} screen="Sponsor Interaction" fieldName="Outcome">
+              Outcome
+            </SponsorFieldLabel>
             <select
               className="form-select"
               value={form.outcome}
@@ -1139,7 +1220,9 @@ function SponsorInteractionModal({
             </select>
           </div>
           <div className="col-12">
-            <label className="form-label">Subject</label>
+            <SponsorFieldLabel campaignId={campaignId} screen="Sponsor Interaction" fieldName="Subject">
+              Subject
+            </SponsorFieldLabel>
             <input
               className="form-control"
               value={form.subject ?? ''}
@@ -1147,7 +1230,9 @@ function SponsorInteractionModal({
             />
           </div>
           <div className="col-md-6">
-            <label className="form-label">Occurred At</label>
+            <SponsorFieldLabel campaignId={campaignId} screen="Sponsor Interaction" fieldName="Occurred At">
+              Occurred At
+            </SponsorFieldLabel>
             <input
               className="form-control"
               type="datetime-local"
@@ -1156,7 +1241,9 @@ function SponsorInteractionModal({
             />
           </div>
           <div className="col-md-6">
-            <label className="form-label">Follow-up At</label>
+            <SponsorFieldLabel campaignId={campaignId} screen="Sponsor Interaction" fieldName="Follow-up At">
+              Follow-up At
+            </SponsorFieldLabel>
             <input
               className="form-control"
               type="datetime-local"
@@ -1165,7 +1252,9 @@ function SponsorInteractionModal({
             />
           </div>
           <div className="col-12">
-            <label className="form-label">Notes</label>
+            <SponsorFieldLabel campaignId={campaignId} screen="Sponsor Interaction" fieldName="Notes">
+              Notes
+            </SponsorFieldLabel>
             <textarea
               className="form-control"
               rows={4}
