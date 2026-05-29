@@ -87,7 +87,37 @@ def test_ask_sponsor_email_prompt_returns_campaign_communications_help(
     assert payload["kind"] == "app_help"
     assert payload["title"] == "Create sponsor communications"
     assert "Communications" in payload["answer"]
+    assert "individual recipients" in payload["answer"]
     assert payload["actions"][0]["route"] == f"/campaigns/{campaign_id}/studio"
+
+
+def test_ask_individual_sponsor_email_prompt_returns_sponsor_drawer_help(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "How do I send a gift reminder email to an individual sponsor?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "app_help"
+    assert payload["title"] == "Send a sponsor email from the sponsor drawer"
+    assert "Communication Log" in payload["answer"]
+    assert "committed gift merge fields" in payload["answer"]
+    assert payload["actions"][0]["route"] == f"/campaigns/{campaign_id}/sponsors/directory"
 
 
 def test_ask_organization_type_prompt_returns_admin_help(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -373,16 +373,22 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
             "schedule sponsor reminder",
             "schedule email to sponsors",
             "communication template",
+            "to field",
+            "email recipients",
+            "send to teams",
+            "send to families",
+            "send to organization contacts",
         ),
         answer=(
             "Open Campaign Studio and go to Communications. Create or edit a sponsor email template, "
-            "choose the sponsor audience, then schedule or send it from the campaign communications workflow."
+            "choose the audience or individual recipients in Send Now, then send it from the campaign communications workflow. "
+            "Templates support sponsors, teams, organization contacts, families, and individual recipients depending on the selected audience."
         ),
         steps=(
             "Open Campaign Studio.",
             "Go to Communications.",
             "Create or edit a sponsor email template.",
-            "Choose the sponsor audience.",
+            "Choose Audience to send to the template audience, or choose Individuals to pick specific recipients.",
             "Send a test email before scheduling or sending it.",
         ),
         actions=(
@@ -396,6 +402,57 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
             "How do I send a test email?",
             "Where do I edit email templates?",
             "How do I schedule sponsor reminders?",
+        ),
+    ),
+    HelpTopic(
+        key="send_sponsor_email_from_drawer",
+        title="Send a sponsor email from the sponsor drawer",
+        phrases=(
+            "send email from sponsor screen",
+            "send email from sponsor drawer",
+            "send template from sponsor screen",
+            "send template from sponsor drawer",
+            "send sponsor reminder from sponsor",
+            "send sponsor email from sponsor",
+            "email individual sponsor",
+            "email a sponsor",
+            "send a gift reminder email to an individual sponsor",
+            "gift reminder email to an individual sponsor",
+            "send gift reminder to sponsor",
+            "remind sponsor of gifts",
+            "remind sponsor about gifts",
+            "sponsor committed gifts email",
+            "sponsor gift reminder email",
+        ),
+        answer=(
+            "Open the sponsor from Sponsor Directory, expand Communication Log, then use Send Sponsor Email. "
+            "Choose an active sponsor email template, preview it, review any warnings, and then send. "
+            "Sponsor templates can include committed gift merge fields such as all gifts, gifts awaiting turn-in, gifts received or later, and the gift turn-in due date."
+        ),
+        steps=(
+            "Open Sponsors.",
+            "Choose Directory.",
+            "Select the sponsor row.",
+            "Expand Communication Log.",
+            "Choose an active sponsor email template.",
+            "Preview the email, review warnings, then send it.",
+        ),
+        actions=(
+            AskAction(
+                label="Open Sponsor Directory",
+                route_name="campaign_sponsors_directory",
+                required_capability="campaign.sponsors.manage",
+            ),
+            AskAction(
+                label="Open Campaign Communications",
+                route_name="campaign_studio",
+                required_capability="campaign.admin",
+            ),
+        ),
+        related_prompts=(
+            "Where do I create sponsor email templates?",
+            "What gift merge fields can I use?",
+            "How do I send a test email?",
         ),
     ),
     HelpTopic(
