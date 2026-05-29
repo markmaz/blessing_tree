@@ -9,14 +9,18 @@ from sqlalchemy.orm import Session
 from app.exceptions.service_error import ServiceError
 from app.features.ask.classifier import classify_prompt
 from app.features.ask.entity_extractor import entities_from_llm_payload, merge_entities
+from app.features.ask.field_reference import search_field_reference
 from app.features.ask.help_catalog import HELP_TOPICS
+from app.features.ask.knowledge_answerer import AskKnowledgeAnswerer
 from app.features.ask.knowledge_base import GUIDE_DOWNLOAD_ROUTE, search_knowledge_base
+from app.features.ask.knowledge_query_planner import AskKnowledgeQueryPlanner, AskRequestContext
 from app.features.ask.llm_entity_extractor import AskLlmEntityExtractor
 from app.features.ask.navigation_catalog import NAVIGATION_TARGETS, build_route
 from app.features.ask.report_catalog import REPORT_METRICS
 from app.features.ask.report_executors import AskReportExecutor
 from app.features.ask.schemas import AskAction, Classification, KnowledgeArticle
 from app.features.ask.serializers import serialize_action, serialize_entities
+from app.features.ask.vector_retriever import AskVectorKnowledgeRetriever
 from app.features.campaigns.service import CampaignService
 from app.features.rbac.services.authorization_service import AuthorizationService
 from app.models.ask_prompt_log import AskPromptLog
@@ -30,11 +34,17 @@ class AskBlessingTreeService:
         campaign_service: CampaignService | None = None,
         report_executor: AskReportExecutor | None = None,
         llm_extractor: AskLlmEntityExtractor | None = None,
+        knowledge_answerer: AskKnowledgeAnswerer | None = None,
+        knowledge_planner: AskKnowledgeQueryPlanner | None = None,
+        vector_retriever: AskVectorKnowledgeRetriever | None = None,
     ) -> None:
         self.authorization = authorization or AuthorizationService()
         self.campaigns = campaign_service or CampaignService()
         self.report_executor = report_executor or AskReportExecutor()
         self.llm_extractor = llm_extractor or AskLlmEntityExtractor()
+        self.knowledge_answerer = knowledge_answerer
+        self.knowledge_planner = knowledge_planner
+        self.vector_retriever = vector_retriever
 
     def ask(
         self,
@@ -43,6 +53,7 @@ class AskBlessingTreeService:
         campaign_id: uuid.UUID,
         user_id: uuid.UUID | None,
         prompt: str,
+        context: AskRequestContext | None = None,
         include_debug: bool = False,
     ) -> dict[str, Any]:
         cleaned_prompt = (prompt or "").strip()
@@ -57,9 +68,45 @@ class AskBlessingTreeService:
             prompt=cleaned_prompt,
             campaign_name=campaign.name,
         )
+        knowledge_plan = self._knowledge_planner().plan(
+            db,
+            prompt=cleaned_prompt,
+            campaign_name=campaign.name,
+            context=context,
+        )
+        field_match = search_field_reference(
+            cleaned_prompt,
+            field_name=knowledge_plan.field_name if knowledge_plan.intent == "field_help" else None,
+            screen=knowledge_plan.screen if knowledge_plan.intent == "field_help" else None,
+        )
+        vector_match = self._vector_retriever().search(
+            db,
+            prompt=cleaned_prompt,
+            retrieval_query=knowledge_plan.retrieval_query,
+        )
         knowledge_match = search_knowledge_base(cleaned_prompt)
 
-        if knowledge_match and _should_use_knowledge_match(cleaned_prompt, classification, knowledge_match[1]):
+        if field_match:
+            response = self._knowledge_response(
+                db,
+                campaign_id=campaign_id,
+                user_id=user_id,
+                classification=classification,
+                article=field_match[0],
+                score=field_match[1],
+                prompt=cleaned_prompt,
+            )
+        elif vector_match:
+            response = self._knowledge_response(
+                db,
+                campaign_id=campaign_id,
+                user_id=user_id,
+                classification=classification,
+                article=vector_match[0],
+                score=vector_match[1],
+                prompt=cleaned_prompt,
+            )
+        elif knowledge_match and _should_use_knowledge_match(cleaned_prompt, classification, knowledge_match[1]):
             response = self._knowledge_response(
                 db,
                 campaign_id=campaign_id,
@@ -67,6 +114,7 @@ class AskBlessingTreeService:
                 classification=classification,
                 article=knowledge_match[0],
                 score=knowledge_match[1],
+                prompt=cleaned_prompt,
             )
         elif classification.kind == "app_help" and classification.key:
             response = self._help_response(db, campaign_id=campaign_id, user_id=user_id, classification=classification)
@@ -101,6 +149,7 @@ class AskBlessingTreeService:
         classification: Classification,
         article: KnowledgeArticle,
         score: float,
+        prompt: str,
     ) -> dict[str, Any]:
         actions: list[AskAction] = [
             AskAction(
@@ -124,9 +173,10 @@ class AskBlessingTreeService:
             "How do I receive and distribute gifts?",
             "Where is the Gift Status report?",
         ]
+        generated_answer = self._knowledge_answerer().answer(db, prompt=prompt, article=article)
         return {
             "kind": "knowledge_result",
-            "answer": article.content,
+            "answer": generated_answer or article.content,
             "confidence": max(score, classification.confidence),
             "title": article.title,
             "steps": list(article.steps),
@@ -136,6 +186,21 @@ class AskBlessingTreeService:
             "suggestions": suggestions,
             "sources": [{"title": article.section, "document": "Blessing Tree User Guide"}],
         }
+
+    def _knowledge_answerer(self) -> AskKnowledgeAnswerer:
+        if self.knowledge_answerer is None:
+            self.knowledge_answerer = AskKnowledgeAnswerer()
+        return self.knowledge_answerer
+
+    def _vector_retriever(self) -> AskVectorKnowledgeRetriever:
+        if self.vector_retriever is None:
+            self.vector_retriever = AskVectorKnowledgeRetriever()
+        return self.vector_retriever
+
+    def _knowledge_planner(self) -> AskKnowledgeQueryPlanner:
+        if self.knowledge_planner is None:
+            self.knowledge_planner = AskKnowledgeQueryPlanner()
+        return self.knowledge_planner
 
     def record_feedback(
         self,
@@ -429,6 +494,8 @@ def _should_use_knowledge_match(prompt: str, classification: Classification, kno
     explicitly_guide = any(word in normalized_prompt for word in ("guide", "manual", "documentation", "document", "pdf"))
     if explicitly_guide and knowledge_score >= 0.55:
         return True
+    if _is_field_help_prompt(normalized_prompt) and knowledge_score >= 0.55:
+        return classification.kind != "report_result"
     if classification.kind == "report_result":
         return False
     if classification.kind == "clarification":
@@ -438,6 +505,19 @@ def _should_use_knowledge_match(prompt: str, classification: Classification, kno
     if classification.kind == "app_help" and knowledge_score > classification.confidence + 0.12:
         return True
     return False
+
+
+def _is_field_help_prompt(prompt: str) -> bool:
+    field_help_phrases = (
+        "what should i put",
+        "what do i put",
+        "what goes in",
+        "what should go in",
+        "what does",
+        "explain",
+    )
+    field_terms = ("field", "purpose", "slug", "people served", "organization type", "status", "drop-off", "drop off")
+    return any(phrase in prompt for phrase in field_help_phrases) and any(term in prompt for term in field_terms)
 
 
 def _report_actions(metric_key: str, subject: str) -> list[AskAction]:

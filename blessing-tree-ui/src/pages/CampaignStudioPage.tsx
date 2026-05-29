@@ -383,6 +383,7 @@ function renderStudioSection({
   if (selectedSection === 'gift_rules') {
     return (
       <CampaignStudioGiftRulesSection
+        campaignId={studio.campaign.id}
         policy={studio.giftPolicy}
         isSaving={isSaving}
         canEdit={canManageCampaign(studio.access)}

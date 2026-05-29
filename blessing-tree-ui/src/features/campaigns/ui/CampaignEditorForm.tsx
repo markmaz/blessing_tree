@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { buildCampaignSponsorFlyerPath, buildPublicCampaignSponsorPath } from '@/app/routes';
+import { buildCampaignSponsorFlyerPath, buildCampaignStudioPath, buildPublicCampaignSponsorPath } from '@/app/routes';
+import { FieldHelpButton } from '@/features/ask/ui/FieldHelpButton';
 import {
   buildCampaignEditorValues,
   campaignStatusOptions,
@@ -83,7 +84,15 @@ export function CampaignEditorForm({
         </label>
 
         <label className="form-label">
-          Year
+          <span className="d-inline-flex align-items-center gap-1">
+            <span>Year</span>
+            <FieldHelpButton
+              campaignId={campaign?.id}
+              screen="Campaign Settings"
+              fieldName="Year"
+              route={campaign ? buildCampaignStudioPath(campaign.id) : undefined}
+            />
+          </span>
           <input
             type="number"
             className={`form-control ${errors.year ? 'is-invalid' : ''}`}
@@ -107,7 +116,15 @@ export function CampaignEditorForm({
         </label>
 
         <label className="form-label">
-          Status
+          <span className="d-inline-flex align-items-center gap-1">
+            <span>Status</span>
+            <FieldHelpButton
+              campaignId={campaign?.id}
+              screen="Campaign Settings"
+              fieldName="Status"
+              route={campaign ? buildCampaignStudioPath(campaign.id) : undefined}
+            />
+          </span>
           <select
             className={`form-select ${errors.status ? 'is-invalid' : ''}`}
             {...register('status', { required: 'Campaign status is required' })}
@@ -121,7 +138,15 @@ export function CampaignEditorForm({
         </label>
 
         <label className="form-label campaign-studio__form-span-2">
-          Campaign Purpose
+          <span className="d-inline-flex align-items-center gap-1">
+            <span>Campaign Purpose</span>
+            <FieldHelpButton
+              campaignId={campaign?.id}
+              screen="Campaign Settings"
+              fieldName="Campaign Purpose"
+              route={campaign ? buildCampaignStudioPath(campaign.id) : undefined}
+            />
+          </span>
           <input
             className={`form-control ${errors.seasonTheme ? 'is-invalid' : ''}`}
             placeholder="Christmas giving, Easter baskets, winter coats"
@@ -140,7 +165,15 @@ export function CampaignEditorForm({
         </label>
 
         <label className="form-label campaign-studio__form-span-2">
-          Public Sponsor Slug
+          <span className="d-inline-flex align-items-center gap-1">
+            <span>Public Sponsor Slug</span>
+            <FieldHelpButton
+              campaignId={campaign?.id}
+              screen="Campaign Settings"
+              fieldName="Public Sponsor Slug"
+              route={campaign ? buildCampaignStudioPath(campaign.id) : undefined}
+            />
+          </span>
           <input
             className={`form-control ${errors.publicSponsorSlug ? 'is-invalid' : ''}`}
             placeholder="blessing-tree-2026-sponsors"
@@ -213,12 +246,28 @@ export function CampaignEditorForm({
         ) : null}
 
         <label className="form-label">
-          Start Date
+          <span className="d-inline-flex align-items-center gap-1">
+            <span>Start Date</span>
+            <FieldHelpButton
+              campaignId={campaign?.id}
+              screen="Campaign Settings"
+              fieldName="Start Date"
+              route={campaign ? buildCampaignStudioPath(campaign.id) : undefined}
+            />
+          </span>
           <input type="date" className="form-control" {...register('startDate')} />
         </label>
 
         <label className="form-label">
-          End Date
+          <span className="d-inline-flex align-items-center gap-1">
+            <span>End Date</span>
+            <FieldHelpButton
+              campaignId={campaign?.id}
+              screen="Campaign Settings"
+              fieldName="End Date"
+              route={campaign ? buildCampaignStudioPath(campaign.id) : undefined}
+            />
+          </span>
           <input type="date" className="form-control" {...register('endDate')} />
         </label>
 

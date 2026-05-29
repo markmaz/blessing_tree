@@ -1,19 +1,25 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.orm import Session
 
-from app.features.admin.llm_runtime_service import AdminLlmRuntimeService, LlmRuntimeUnavailableError
 from app.features.ask.help_catalog import HELP_TOPICS
 from app.features.ask.navigation_catalog import NAVIGATION_TARGETS
 from app.features.ask.report_catalog import REPORT_METRICS
 
+if TYPE_CHECKING:
+    from app.features.admin.llm_runtime_service import AdminLlmRuntimeService
+
 
 class AskLlmEntityExtractor:
     def __init__(self, runtime: AdminLlmRuntimeService | None = None) -> None:
-        self.runtime = runtime or AdminLlmRuntimeService()
+        if runtime is None:
+            from app.features.admin.llm_runtime_service import AdminLlmRuntimeService
+
+            runtime = AdminLlmRuntimeService()
+        self.runtime = runtime
 
     def extract(self, db: Session, *, prompt: str, campaign_name: str | None = None) -> dict[str, Any] | None:
         system_prompt = (
@@ -62,5 +68,5 @@ class AskLlmEntityExtractor:
                 system_prompt=system_prompt,
                 user_prompt=json.dumps(user_payload, separators=(",", ":")),
             )
-        except LlmRuntimeUnavailableError:
+        except RuntimeError:
             return None

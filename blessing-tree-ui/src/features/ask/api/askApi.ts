@@ -1,5 +1,5 @@
 import { apiFetchJson } from '@/shared/api/client';
-import type { AskAction, AskReportResult, AskResponse } from '@/features/ask/model/askTypes';
+import type { AskAction, AskReportResult, AskRequestContext, AskResponse } from '@/features/ask/model/askTypes';
 
 interface RawAskAction {
   type?: string;
@@ -40,11 +40,22 @@ interface RawAskResponse {
   }>;
 }
 
-export async function askBlessingTree(campaignId: string, prompt: string): Promise<AskResponse> {
+export async function askBlessingTree(campaignId: string, prompt: string, context?: AskRequestContext | null): Promise<AskResponse> {
   const response = await apiFetchJson<RawAskResponse>(`/api/v1/campaigns/${campaignId}/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({
+      prompt,
+      context: context
+        ? {
+            screen: context.screen,
+            field_name: context.fieldName,
+            field_label: context.fieldLabel,
+            route: context.route,
+            current_value: context.currentValue,
+          }
+        : undefined,
+    }),
   });
   return normalizeAskResponse(response);
 }

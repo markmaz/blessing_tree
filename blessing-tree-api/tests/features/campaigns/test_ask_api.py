@@ -6,6 +6,9 @@ from datetime import datetime, timedelta
 import pytest
 from flask import Flask
 
+from app.features.ask.knowledge_documents import build_ask_knowledge_documents
+from app.features.ask.knowledge_query_planner import AskKnowledgeQueryPlan
+from app.features.ask.vector_retriever import AskVectorConfig, AskVectorKnowledgeRetriever
 from app.features.campaigns import api as campaign_api_module
 from app.models.ask_prompt_log import AskPromptLog
 from app.models.pending_sponsor_registration import PendingSponsorRegistration
@@ -36,6 +39,127 @@ from tests.features.campaigns.studio_test_support import (
 )
 
 pytest_plugins = ("tests.features.campaigns.studio_test_support",)
+
+
+class _StaticKnowledgePlanner:
+    def __init__(self, plan: AskKnowledgeQueryPlan) -> None:
+        self.plan_value = plan
+
+    def plan(self, *args, **kwargs) -> AskKnowledgeQueryPlan:
+        return self.plan_value
+
+
+class _NullVectorRetriever:
+    def search(self, *args, **kwargs):
+        return None
+
+
+class _NullLlmExtractor:
+    def extract(self, *args, **kwargs):
+        return None
+
+
+class _NullKnowledgeAnswerer:
+    def answer(self, *args, **kwargs):
+        return None
+
+
+def test_ask_knowledge_documents_include_documented_fields() -> None:
+    documents = build_ask_knowledge_documents()
+
+    campaign_purpose = next((doc for doc in documents if doc.key == "field_reference_campaign_purpose"), None)
+    assert campaign_purpose is not None
+    assert campaign_purpose.document_type == "field_reference"
+    assert "Campaign Purpose" in campaign_purpose.content
+    assert "Use plain language" in campaign_purpose.content
+
+
+def test_ask_vector_retriever_is_disabled_by_default() -> None:
+    retriever = AskVectorKnowledgeRetriever(
+        config=AskVectorConfig(
+            enabled=False,
+            qdrant_url="http://qdrant.test",
+            qdrant_api_key=None,
+            collection="ask_test",
+            timeout_s=1,
+            embedding_model="text-embedding-test",
+            min_score=0.62,
+        )
+    )
+
+    assert retriever.search(None, prompt="What should I put in campaign purpose?") is None  # type: ignore[arg-type]
+
+
+def test_ask_service_uses_planned_field_name_for_field_help(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.features.ask.service import AskBlessingTreeService
+
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = manager.id
+    campaign_id = campaign.id
+    session.commit()
+
+    service = AskBlessingTreeService(
+        llm_extractor=_NullLlmExtractor(),  # type: ignore[arg-type]
+        knowledge_answerer=_NullKnowledgeAnswerer(),  # type: ignore[arg-type]
+        knowledge_planner=_StaticKnowledgePlanner(
+            AskKnowledgeQueryPlan(
+                intent="field_help",
+                field_name="public sponsor slug",
+                retrieval_query="public sponsor slug field",
+                confidence=0.91,
+                source="test",
+            )
+        ),  # type: ignore[arg-type]
+        vector_retriever=_NullVectorRetriever(),  # type: ignore[arg-type]
+    )
+
+    payload = service.ask(
+        session,
+        campaign_id=campaign_id,
+        user_id=manager_id,
+        prompt="What should go here?",
+    )
+
+    assert payload["kind"] == "knowledge_result"
+    assert payload["title"] == "Public Sponsor Slug Field"
+    assert "URL-safe public sponsor signup identifier" in payload["answer"]
+    session.close()
+
+
+def test_ask_api_uses_field_context_for_here_prompt(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={
+            "prompt": "What should I put here?",
+            "context": {
+                "screen": "Campaign Settings",
+                "field_name": "Campaign Purpose",
+                "field_label": "Campaign Purpose",
+                "route": f"/campaigns/{campaign_id}/studio",
+            },
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "knowledge_result"
+    assert payload["title"] == "Campaign Purpose Field"
+    assert "Campaign Purpose" in payload["answer"]
 
 
 def test_ask_help_returns_direct_navigation_action(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -298,6 +422,97 @@ def test_ask_user_guide_download_prompt_returns_pdf_action(
     assert payload["title"] == "Download the User Guide"
     assert payload["actions"][0]["type"] == "external"
     assert payload["actions"][0]["route"] == "/blessing-tree-user-guide.pdf"
+
+
+def test_ask_field_help_explains_campaign_purpose_instead_of_navigation(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "What should I put in the campaign purpose?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "knowledge_result"
+    assert payload["title"] == "Campaign Purpose Field"
+    assert "Christmas Giving" in payload["answer"]
+    assert any(action["label"] == "Download User Guide" for action in payload["actions"])
+
+
+def test_ask_field_help_matches_guardian_field_not_campaign_purpose(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "What should I put in the guadian field?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "knowledge_result"
+    assert payload["title"] == "Guardian First/Last Name Field"
+    assert "Primary household contact" in payload["answer"]
+    assert "Christmas Giving" not in payload["answer"]
+
+
+def test_ask_field_help_uses_documented_field_reference_for_multiple_fields(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+    client = app.test_client()
+
+    cases = [
+        ("What should I put in the public sponsor slug?", "Public Sponsor Slug Field", "URL-safe public sponsor signup identifier"),
+        ("What should I put in the year field?", "Year Field", "campaign year used for sorting"),
+        ("What goes in people served?", "People Served Field", "Children, Adults, or Families"),
+        ("Explain drop off due", "Drop-off Due Field", "When gifts are due from the sponsor"),
+    ]
+    for prompt, expected_title, expected_text in cases:
+        response = client.post(
+            f"/api/v1/campaigns/{campaign_id}/ask",
+            json={"prompt": prompt},
+            headers=auth_header(manager_id, "VOLUNTEER"),
+        )
+
+        assert response.status_code == 200
+        payload = response.get_json()
+        assert payload["kind"] == "knowledge_result"
+        assert payload["title"] == expected_title
+        assert expected_text in payload["answer"]
 
 
 def test_flyer_builder_api_creates_default_and_updates(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:

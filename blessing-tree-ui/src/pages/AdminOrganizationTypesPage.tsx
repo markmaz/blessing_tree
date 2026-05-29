@@ -7,6 +7,8 @@ import {
 } from '@/features/admin/api/adminApi';
 import type { AdminOrganizationType } from '@/features/admin/model/adminTypes';
 import { AdminWorkspaceDrawer } from '@/features/admin/ui/AdminWorkspaceDrawer';
+import { FieldHelpButton } from '@/features/ask/ui/FieldHelpButton';
+import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 import '@/features/admin/ui/adminUsers.css';
 import '@/features/admin/ui/adminCampaignOperations.css';
@@ -38,6 +40,7 @@ function formatRecipientCategory(value: AdminOrganizationType['recipientCategory
 }
 
 export function AdminOrganizationTypesPage() {
+  const { selectedCampaignId } = useCampaigns();
   const [organizationTypes, setOrganizationTypes] = useState<AdminOrganizationType[]>([]);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [draft, setDraft] = useState<OrganizationTypeDraft>(emptyDraft);
@@ -238,7 +241,10 @@ export function AdminOrganizationTypesPage() {
             </div>
             <div className="admin-users-form-grid">
               <label className="form-label">
-                Code
+                <span className="d-flex align-items-center gap-1">
+                  <span>Code</span>
+                  <FieldHelpButton campaignId={selectedCampaignId} screen="Organization Types" fieldName="Code" />
+                </span>
                 <input
                   className="form-control text-uppercase"
                   value={draft.code}
@@ -253,7 +259,10 @@ export function AdminOrganizationTypesPage() {
                 <span className="form-text">Leave blank for new types to generate it from the label.</span>
               </label>
               <label className="form-label">
-                Label
+                <span className="d-flex align-items-center gap-1">
+                  <span>Label</span>
+                  <FieldHelpButton campaignId={selectedCampaignId} screen="Organization Types" fieldName="Label" />
+                </span>
                 <input
                   className="form-control"
                   value={draft.label}
@@ -261,7 +270,10 @@ export function AdminOrganizationTypesPage() {
                 />
               </label>
               <label className="form-label">
-                People Served
+                <span className="d-flex align-items-center gap-1">
+                  <span>People Served</span>
+                  <FieldHelpButton campaignId={selectedCampaignId} screen="Organization Types" fieldName="People Served" />
+                </span>
                 <select
                   className="form-select"
                   value={draft.recipientCategory}
@@ -293,7 +305,10 @@ export function AdminOrganizationTypesPage() {
                   checked={draft.isActive}
                   onChange={(event) => setDraft((currentValue) => ({ ...currentValue, isActive: event.target.checked }))}
                 />
-                <span className="form-check-label">Available in People intake</span>
+                <span className="form-check-label d-inline-flex align-items-center gap-1">
+                  <span>Available in People intake</span>
+                  <FieldHelpButton campaignId={selectedCampaignId} screen="Organization Types" fieldName="Available in People Intake" />
+                </span>
               </label>
             </div>
           </section>

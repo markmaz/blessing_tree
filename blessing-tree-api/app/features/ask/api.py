@@ -6,6 +6,7 @@ from flask import g, request
 from flask_restx import Resource
 
 from app.db import SessionLocal
+from app.features.ask.knowledge_query_planner import request_context_from_payload
 from app.features.ask.service import AskBlessingTreeService
 from app.features.campaigns import campaign_ns
 from app.features.rbac.decorators import require_campaign_capability
@@ -24,6 +25,7 @@ class CampaignAskResource(Resource):
                 campaign_id=uuid.UUID(campaign_id),
                 user_id=uuid.UUID(str(g.user_id)) if getattr(g, "user_id", None) else None,
                 prompt=str(payload.get("prompt") or ""),
+                context=request_context_from_payload(payload.get("context")),
                 include_debug=bool(payload.get("include_debug")),
             )
         return response

@@ -365,6 +365,7 @@ export function CampaignPeopleWorkspace({
 
       <CampaignPeopleGroupDrawer
         key={selectedGroup?.id ?? `group-${createGroupType ?? 'closed'}`}
+        campaignId={workspace.campaignId}
         isOpen={createGroupType !== null || selectedGroup !== null}
         isSaving={isSaving}
         canEdit={canEditPeople}
@@ -424,6 +425,7 @@ export function CampaignPeopleWorkspace({
 
       <CampaignPeopleRecipientDrawer
         key={selectedRecipient?.id ?? `recipient-${createRecipientGroupId ?? (isCreateRecipientOpen ? 'create' : 'closed')}`}
+        campaignId={workspace.campaignId}
         isOpen={selectedRecipient !== null || isCreateRecipientOpen}
         isSaving={isSaving}
         canEdit={canEditPeople}
