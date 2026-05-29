@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-AskKind = Literal["app_help", "navigation_result", "report_result", "clarification", "error"]
+AskKind = Literal["app_help", "navigation_result", "report_result", "knowledge_result", "clarification", "error"]
 AskIntent = Literal["count", "list", "navigate", "help"]
 
 
@@ -46,6 +46,18 @@ class ReportMetric:
     intents: tuple[str, ...]
     required_capability: str
     executor: str
+
+
+@dataclass(frozen=True)
+class KnowledgeArticle:
+    key: str
+    title: str
+    section: str
+    content: str
+    phrases: tuple[str, ...]
+    steps: tuple[str, ...] = ()
+    route_name: str | None = None
+    required_capability: str | None = None
 
 
 @dataclass

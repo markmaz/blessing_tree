@@ -1,4 +1,10 @@
-export type AskResultKind = 'app_help' | 'navigation_result' | 'report_result' | 'clarification' | 'error';
+export type AskResultKind =
+  | 'app_help'
+  | 'navigation_result'
+  | 'report_result'
+  | 'knowledge_result'
+  | 'clarification'
+  | 'error';
 
 export interface AskAction {
   type: 'route' | 'prompt' | 'external';
@@ -48,4 +54,8 @@ export interface AskResponse {
   interpretedAs: AskInterpretation | null;
   warnings: string[];
   suggestions: string[];
+  sources: Array<{
+    title: string;
+    document: string;
+  }>;
 }
