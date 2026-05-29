@@ -10,11 +10,12 @@ from app.exceptions.service_error import ServiceError
 from app.features.ask.classifier import classify_prompt
 from app.features.ask.entity_extractor import entities_from_llm_payload, merge_entities
 from app.features.ask.help_catalog import HELP_TOPICS
+from app.features.ask.knowledge_base import GUIDE_DOWNLOAD_ROUTE, search_knowledge_base
 from app.features.ask.llm_entity_extractor import AskLlmEntityExtractor
 from app.features.ask.navigation_catalog import NAVIGATION_TARGETS, build_route
 from app.features.ask.report_catalog import REPORT_METRICS
 from app.features.ask.report_executors import AskReportExecutor
-from app.features.ask.schemas import AskAction, Classification
+from app.features.ask.schemas import AskAction, Classification, KnowledgeArticle
 from app.features.ask.serializers import serialize_action, serialize_entities
 from app.features.campaigns.service import CampaignService
 from app.features.rbac.services.authorization_service import AuthorizationService
@@ -56,8 +57,18 @@ class AskBlessingTreeService:
             prompt=cleaned_prompt,
             campaign_name=campaign.name,
         )
+        knowledge_match = search_knowledge_base(cleaned_prompt)
 
-        if classification.kind == "app_help" and classification.key:
+        if knowledge_match and _should_use_knowledge_match(cleaned_prompt, classification, knowledge_match[1]):
+            response = self._knowledge_response(
+                db,
+                campaign_id=campaign_id,
+                user_id=user_id,
+                classification=classification,
+                article=knowledge_match[0],
+                score=knowledge_match[1],
+            )
+        elif classification.kind == "app_help" and classification.key:
             response = self._help_response(db, campaign_id=campaign_id, user_id=user_id, classification=classification)
         elif classification.kind == "navigation_result" and classification.key:
             response = self._navigation_response(db, campaign_id=campaign_id, user_id=user_id, classification=classification)
@@ -80,6 +91,51 @@ class AskBlessingTreeService:
             response=response,
         )
         return response
+
+    def _knowledge_response(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        user_id: uuid.UUID | None,
+        classification: Classification,
+        article: KnowledgeArticle,
+        score: float,
+    ) -> dict[str, Any]:
+        actions: list[AskAction] = [
+            AskAction(
+                label="Download User Guide",
+                type="external",
+                route=GUIDE_DOWNLOAD_ROUTE,
+            )
+        ]
+        if article.route_name:
+            actions.insert(
+                0,
+                AskAction(
+                    label=f"Open {article.title}",
+                    route_name=article.route_name,
+                    required_capability=article.required_capability,
+                ),
+            )
+        allowed_actions = self._allowed_actions(db, campaign_id=campaign_id, user_id=user_id, actions=actions)
+        suggestions = [
+            "How do I add a sponsor?",
+            "How do I receive and distribute gifts?",
+            "Where is the Gift Status report?",
+        ]
+        return {
+            "kind": "knowledge_result",
+            "answer": article.content,
+            "confidence": max(score, classification.confidence),
+            "title": article.title,
+            "steps": list(article.steps),
+            "actions": [serialize_action(action, campaign_id=str(campaign_id)) for action in allowed_actions],
+            "interpreted_as": serialize_entities(classification.entities),
+            "warnings": classification.warnings,
+            "suggestions": suggestions,
+            "sources": [{"title": article.section, "document": "Blessing Tree User Guide"}],
+        }
 
     def record_feedback(
         self,
@@ -322,7 +378,7 @@ class AskBlessingTreeService:
 
 
 def _valid_kind(value: object) -> str | None:
-    if value in {"app_help", "navigation_result", "report_result", "clarification"}:
+    if value in {"app_help", "navigation_result", "report_result", "knowledge_result", "clarification"}:
         return str(value)
     return None
 
@@ -357,12 +413,31 @@ def _response_log_summary(response: dict[str, Any]) -> dict[str, Any]:
         "report_metric_key": report.get("metric_key") if isinstance(report, dict) else None,
         "report_summary": summary,
         "warnings": list(response.get("warnings") or []),
+        "sources": list(response.get("sources") or []),
         "actions": [
             {"label": action.get("label"), "route": action.get("route"), "prompt": action.get("prompt")}
             for action in response.get("actions") or []
             if isinstance(action, dict)
         ],
     }
+
+
+def _should_use_knowledge_match(prompt: str, classification: Classification, knowledge_score: float) -> bool:
+    if knowledge_score < 0.48:
+        return False
+    normalized_prompt = prompt.lower()
+    explicitly_guide = any(word in normalized_prompt for word in ("guide", "manual", "documentation", "document", "pdf"))
+    if explicitly_guide and knowledge_score >= 0.55:
+        return True
+    if classification.kind == "report_result":
+        return False
+    if classification.kind == "clarification":
+        return True
+    if classification.kind == "navigation_result" and knowledge_score >= 0.62 and classification.confidence < 0.8:
+        return True
+    if classification.kind == "app_help" and knowledge_score > classification.confidence + 0.12:
+        return True
+    return False
 
 
 def _report_actions(metric_key: str, subject: str) -> list[AskAction]:

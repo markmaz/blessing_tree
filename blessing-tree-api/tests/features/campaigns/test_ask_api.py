@@ -243,6 +243,63 @@ def test_ask_gift_tag_builder_prompt_opens_builder(app: Flask, monkeypatch: pyte
     assert payload["actions"][0]["route"] == f"/campaigns/{campaign_id}/gifts/tag-builder"
 
 
+def test_ask_uses_user_guide_knowledge_base_for_how_to_question(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "What does the user guide say about receiving and distributing gifts?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "knowledge_result"
+    assert payload["title"] == "Gift Workflow"
+    assert "QR scanning" in payload["answer"]
+    assert payload["sources"][0]["document"] == "Blessing Tree User Guide"
+    assert any(action["label"] == "Download User Guide" for action in payload["actions"])
+
+
+def test_ask_user_guide_download_prompt_returns_pdf_action(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "Can I download the user guide PDF?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "knowledge_result"
+    assert payload["title"] == "Download the User Guide"
+    assert payload["actions"][0]["type"] == "external"
+    assert payload["actions"][0]["route"] == "/blessing-tree-user-guide.pdf"
+
+
 def test_flyer_builder_api_creates_default_and_updates(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
     install_auth(monkeypatch)
     session = campaign_api_module.SessionLocal()

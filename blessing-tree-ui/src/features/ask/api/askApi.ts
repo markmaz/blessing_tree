@@ -34,6 +34,10 @@ interface RawAskResponse {
   } | null;
   warnings?: string[];
   suggestions?: string[];
+  sources?: Array<{
+    title?: string;
+    document?: string;
+  }>;
 }
 
 export async function askBlessingTree(campaignId: string, prompt: string): Promise<AskResponse> {
@@ -78,6 +82,10 @@ function normalizeAskResponse(response: RawAskResponse): AskResponse {
       : null,
     warnings: response.warnings ?? [],
     suggestions: response.suggestions ?? [],
+    sources: (response.sources ?? []).map((source) => ({
+      title: source.title ?? 'User Guide',
+      document: source.document ?? 'Blessing Tree User Guide',
+    })),
   };
 }
 

@@ -141,6 +141,10 @@ export function AskBlessingTreePage() {
             Ask for help using the app or run a campaign report in plain language.
           </p>
         </div>
+        <a href="/blessing-tree-user-guide.pdf" className="btn btn-outline-secondary btn-sm" download>
+          <i className="bi bi-file-earmark-pdf me-2" aria-hidden="true" />
+          Download User Guide
+        </a>
       </div>
 
       <div className="content-card ask-composer">
@@ -337,6 +341,20 @@ function AskResult({
 
       {response.report ? <AskReport report={response.report} /> : null}
 
+      {response.sources.length ? (
+        <div className="ask-sources" aria-label="Answer sources">
+          <h3 className="h6 mb-2">From the Guide</h3>
+          <div className="ask-source-list">
+            {response.sources.map((source) => (
+              <span key={`${source.document}-${source.title}`} className="ask-source">
+                <i className="bi bi-journal-text" aria-hidden="true" />
+                {source.document}: {source.title}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {response.warnings.length ? (
         <div className="alert alert-warning mb-0" role="alert">
           {response.warnings.join(' ')}
@@ -496,6 +514,14 @@ function AskActionButton({ action, onPrompt }: { action: AskAction; onPrompt: (p
     );
   }
   if (action.route) {
+    if (action.type === 'external') {
+      return (
+        <a href={action.route} className="btn btn-secondary btn-sm" download={action.route.endsWith('.pdf') || undefined}>
+          <i className="bi bi-download me-1" aria-hidden="true" />
+          {action.label}
+        </a>
+      );
+    }
     return (
       <Link to={action.route} className="btn btn-secondary btn-sm">
         {action.label}
@@ -507,6 +533,7 @@ function AskActionButton({ action, onPrompt }: { action: AskAction; onPrompt: (p
 
 function resultLabel(kind: AskResponse['kind']) {
   if (kind === 'report_result') return 'Report';
+  if (kind === 'knowledge_result') return 'Guide';
   if (kind === 'navigation_result') return 'Navigation';
   if (kind === 'app_help') return 'Help';
   if (kind === 'clarification') return 'Clarification';

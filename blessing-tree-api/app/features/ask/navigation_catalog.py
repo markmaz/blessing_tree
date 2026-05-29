@@ -88,6 +88,7 @@ NAVIGATION_TARGETS: tuple[NavigationTarget, ...] = (
 def build_route(route_name: str, campaign_id: str) -> str:
     campaign_routes = {
         "dashboard": "/",
+        "campaign_ask": f"/campaigns/{campaign_id}/ask",
         "campaign_studio": f"/campaigns/{campaign_id}/studio",
         "campaign_sponsor_flyer": f"/campaigns/{campaign_id}/studio/sponsor-flyer",
         "campaign_people_intake": f"/campaigns/{campaign_id}/people/intake",
