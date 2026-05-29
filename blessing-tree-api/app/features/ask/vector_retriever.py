@@ -29,7 +29,7 @@ class AskVectorConfig:
     @classmethod
     def from_env(cls) -> "AskVectorConfig":
         return cls(
-            enabled=_env_bool("BT_ASK_VECTOR_ENABLED", default=False),
+            enabled=_env_bool("BT_ASK_VECTOR_ENABLED", default=True),
             qdrant_url=(os.getenv("QDRANT_URL") or "http://localhost:6333").rstrip("/"),
             qdrant_api_key=(os.getenv("QDRANT_API_KEY") or "").strip() or None,
             collection=(os.getenv("BT_ASK_KNOWLEDGE_COLLECTION") or "blessing_tree_ask_knowledge").strip(),

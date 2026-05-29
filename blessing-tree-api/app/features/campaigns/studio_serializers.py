@@ -216,6 +216,76 @@ def serialize_schedule_item(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def serialize_calendar_intelligence(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "campaign_id": payload.get("campaign_id"),
+        "generated_at": _serialize_datetime(payload.get("generated_at")),
+        "summary": payload.get("summary") or {},
+        "critical_dates": [
+            serialize_calendar_critical_date(item)
+            for item in payload.get("critical_dates", [])
+        ],
+        "agenda_groups": [
+            {
+                "key": group.get("key"),
+                "label": group.get("label"),
+                "items": [
+                    serialize_calendar_item(item)
+                    for item in group.get("items", [])
+                ],
+            }
+            for group in payload.get("agenda_groups", [])
+        ],
+        "items": [
+            serialize_calendar_item(item)
+            for item in payload.get("items", [])
+        ],
+        "warnings": [
+            {
+                "code": warning.get("code"),
+                "message": warning.get("message"),
+                "severity": warning.get("severity"),
+            }
+            for warning in payload.get("warnings", [])
+        ],
+    }
+
+
+def serialize_calendar_critical_date(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "key": payload.get("key"),
+        "label": payload.get("label"),
+        "date": _serialize_date(payload.get("date")),
+        "status": payload.get("status"),
+        "is_blocker": bool(payload.get("is_blocker")),
+        "source_type": payload.get("source_type"),
+        "source_id": str(payload.get("source_id")) if payload.get("source_id") is not None else None,
+        "route_name": payload.get("route_name"),
+    }
+
+
+def serialize_calendar_item(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": str(payload.get("id")),
+        "title": payload.get("title"),
+        "description": payload.get("description"),
+        "item_type": payload.get("item_type"),
+        "urgency": payload.get("urgency"),
+        "date": _serialize_date(payload.get("date")),
+        "starts_at": _serialize_datetime(payload.get("starts_at")),
+        "ends_at": _serialize_datetime(payload.get("ends_at")),
+        "all_day": bool(payload.get("all_day")),
+        "is_blocker": bool(payload.get("is_blocker")),
+        "is_missing": bool(payload.get("is_missing")),
+        "is_overdue": bool(payload.get("is_overdue")),
+        "count": payload.get("count"),
+        "source_type": payload.get("source_type"),
+        "source_id": str(payload.get("source_id")) if payload.get("source_id") is not None else None,
+        "route_name": payload.get("route_name"),
+        "metadata": payload.get("metadata") or {},
+    }
+
+
 def serialize_milestone(milestone: CampaignMilestone) -> dict[str, Any]:
     return {
         "id": str(milestone.id),

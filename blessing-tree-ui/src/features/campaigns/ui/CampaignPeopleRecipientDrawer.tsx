@@ -209,6 +209,9 @@ export function CampaignPeopleRecipientDrawer({
   const isOrganizationChildIntake = recipientProgram?.programType === 'ORGANIZATION_CHILD';
   const isOrganizationAdultIntake = recipientProgram?.programType === 'ORGANIZATION_ADULT';
   const isChildIntake = isHouseholdIntake || isOrganizationChildIntake;
+  const visibleDisplayLabel = isChildIntake
+    ? recipient?.displayLabel?.trim() || 'Assigned after save'
+    : computedDisplayLabel;
   const showAdultDirectContact = isOrganizationAdultIntake;
   const nextRecipientButtonLabel = isHouseholdIntake
     ? 'Add Another Child'
@@ -673,8 +676,10 @@ export function CampaignPeopleRecipientDrawer({
                     : 'Display Name'}
               </RecipientHelpLabel>
               <input
+                key={`${recipient?.id ?? 'new'}-${visibleDisplayLabel}`}
                 className="form-control mt-2"
-                value={isChildIntake ? recipient?.displayLabel ?? 'Assigned after save' : computedDisplayLabel}
+                value={visibleDisplayLabel}
+                readOnly
                 disabled
               />
             </label>

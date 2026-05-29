@@ -1,8 +1,9 @@
-const TOKEN_KEY = 'auth_token';
+const LEGACY_TOKEN_KEY = 'auth_token';
 const USER_ID_KEY = 'auth_userId';
 const EMAIL_KEY = 'auth_email';
 const ROLE_KEY = 'auth_role';
 const AUTH_STORAGE_EVENT = 'blessing-tree-auth-storage';
+let accessToken: string | null = null;
 
 export interface StoredAuth {
   token: string | null;
@@ -19,16 +20,18 @@ function emitAuthStorageChange(): void {
 }
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return accessToken;
 }
 
 export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
+  accessToken = token;
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
   emitAuthStorageChange();
 }
 
 export function clearToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
+  accessToken = null;
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
   emitAuthStorageChange();
 }
 
@@ -64,7 +67,8 @@ export function setRole(role: string | null): void {
 }
 
 export function clearAuthStorage(): void {
-  localStorage.removeItem(TOKEN_KEY);
+  accessToken = null;
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
   localStorage.removeItem(USER_ID_KEY);
   localStorage.removeItem(EMAIL_KEY);
   localStorage.removeItem(ROLE_KEY);
@@ -87,7 +91,7 @@ export function subscribeToAuthStorageChanges(listener: () => void): () => void 
   }
 
   const handleStorage = (event: StorageEvent) => {
-    if (!event.key || [TOKEN_KEY, USER_ID_KEY, EMAIL_KEY, ROLE_KEY].includes(event.key)) {
+    if (!event.key || [LEGACY_TOKEN_KEY, USER_ID_KEY, EMAIL_KEY, ROLE_KEY].includes(event.key)) {
       listener();
     }
   };

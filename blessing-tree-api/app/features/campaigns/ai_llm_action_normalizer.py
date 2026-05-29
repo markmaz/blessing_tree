@@ -226,7 +226,7 @@ def _schedule_action(payload: Mapping[str, Any], state: NormalizationState) -> d
     scheduled_for = _optional_text(payload.get("scheduled_for"))
     if milestone_key is None and scheduled_for is None:
         raise ValueError("Communication schedule needs milestone_key or scheduled_for")
-    state.extra_warnings.append("This drafts a planned calendar communication only. Automated delivery is not wired yet.")
+    state.extra_warnings.append("This drafts a planned calendar communication. Scheduled delivery depends on the campaign automation worker and beat process.")
     return _action(
         "create_communication_schedule",
         "communications",

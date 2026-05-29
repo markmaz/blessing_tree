@@ -23,10 +23,8 @@ import type {
   UpdateCommunicationTemplateInput,
   CommunicationTemplateTestEmailResult,
 } from '@/features/campaigns/model/campaignStudioTypes';
-import {
-  CampaignAudienceRecipientDrawer,
-  audienceLabelForSummary,
-} from '@/features/campaigns/ui/CampaignAudienceRecipientDrawer';
+import { audienceLabelForSummary } from '@/features/campaigns/model/campaignAudienceSummary';
+import { CampaignAudienceRecipientDrawer } from '@/features/campaigns/ui/CampaignAudienceRecipientDrawer';
 import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudioSectionCard';
 import { CampaignStudioTemplateLibrary } from '@/features/campaigns/ui/CampaignStudioTemplateLibrary';
 import { CampaignStudioTemplateWorkspace } from '@/features/campaigns/ui/CampaignStudioTemplateWorkspace';
@@ -272,7 +270,8 @@ function CampaignCommunicationSendNowPanel({
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
   const [isAudienceRecipientDrawerOpen, setIsAudienceRecipientDrawerOpen] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const selectedTemplate = activeTemplates.find((template) => template.id === templateId) ?? null;
+  const effectiveTemplateId = templateId || activeTemplates[0]?.id || '';
+  const selectedTemplate = activeTemplates.find((template) => template.id === effectiveTemplateId) ?? null;
   const audienceOption = selectedTemplate
     ? audienceCatalog.find((option) => option.key === selectedTemplate.audience)
     : null;
@@ -290,12 +289,6 @@ function CampaignCommunicationSendNowPanel({
     selectedMemberIds,
     selectedContactIds,
   });
-
-  useEffect(() => {
-    if (!templateId && activeTemplates.length > 0) {
-      setTemplateId(activeTemplates[0].id);
-    }
-  }, [activeTemplates, templateId]);
 
   const handleSend = async () => {
     setLocalError(null);
@@ -340,7 +333,7 @@ function CampaignCommunicationSendNowPanel({
           Template
           <select
             className="form-select"
-            value={templateId}
+            value={effectiveTemplateId}
             onChange={(event) => {
               setTemplateId(event.target.value);
               setLocalError(null);

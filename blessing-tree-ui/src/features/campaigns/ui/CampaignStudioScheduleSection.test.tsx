@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { getCampaignCalendarIntelligence } from '@/features/campaigns/api/campaignStudioApi';
 import { CampaignStudioScheduleSection } from '@/features/campaigns/ui/CampaignStudioScheduleSection';
 import type {
   CampaignMilestone,
@@ -10,6 +11,29 @@ import type {
   CommunicationTemplate,
 } from '@/features/campaigns/model/campaignStudioTypes';
 import type { CampaignAccess } from '@/features/campaigns/model/campaignTypes';
+
+vi.mock('@/features/campaigns/api/campaignStudioApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/campaigns/api/campaignStudioApi')>();
+  return {
+    ...actual,
+    getCampaignCalendarIntelligence: vi.fn().mockResolvedValue({
+      campaignId: 'campaign-123',
+      generatedAt: '2026-11-01T00:00:00',
+      summary: {
+        totalItems: 0,
+        overdueCount: 0,
+        dueSoonCount: 0,
+        missingCriticalDatesCount: 0,
+        scheduledCommunicationsCount: 0,
+        blockerCount: 0,
+      },
+      criticalDates: [],
+      agendaGroups: [],
+      items: [],
+      warnings: [],
+    }),
+  };
+});
 
 const managerAccess: CampaignAccess = {
   campaignId: 'campaign-123',
@@ -77,6 +101,18 @@ const milestoneDefinitions: CampaignMilestoneDefinition[] = [
     createdAt: null,
     updatedAt: null,
   },
+  {
+    id: 'definition-2',
+    milestoneKey: 'gift_turn_in_due',
+    label: 'Gift Turn-In Due',
+    description: null,
+    featureArea: 'GIFT',
+    defaultSortOrder: 2,
+    isActive: true,
+    isSystem: true,
+    createdAt: null,
+    updatedAt: null,
+  },
 ];
 
 const templates: CommunicationTemplate[] = [
@@ -105,6 +141,7 @@ describe('CampaignStudioScheduleSection', () => {
 
     render(
       <CampaignStudioScheduleSection
+        campaignId="campaign-123"
         access={managerAccess}
         items={scheduleItems}
         milestoneDefinitions={milestoneDefinitions}
@@ -151,6 +188,7 @@ describe('CampaignStudioScheduleSection', () => {
 
     render(
       <CampaignStudioScheduleSection
+        campaignId="campaign-123"
         access={managerAccess}
         items={scheduleItems}
         milestoneDefinitions={milestoneDefinitions}
@@ -174,9 +212,68 @@ describe('CampaignStudioScheduleSection', () => {
     expect(within(dialog).getByDisplayValue('Registration Opens')).toBeInTheDocument();
   });
 
-  it('shows read-only schedule messaging without admin capability', () => {
+  it('opens the milestone editor from a missing critical date', async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(getCampaignCalendarIntelligence).mockResolvedValueOnce({
+      campaignId: 'campaign-123',
+      generatedAt: '2026-11-01T00:00:00',
+      summary: {
+        totalItems: 1,
+        overdueCount: 0,
+        dueSoonCount: 0,
+        missingCriticalDatesCount: 1,
+        scheduledCommunicationsCount: 0,
+        blockerCount: 1,
+      },
+      criticalDates: [
+        {
+          key: 'gift_turn_in_due',
+          label: 'Gift Turn-In Due',
+          date: null,
+          status: 'missing',
+          isBlocker: true,
+          sourceType: 'milestone_definition',
+          sourceId: 'gift_turn_in_due',
+          routeName: null,
+        },
+      ],
+      agendaGroups: [],
+      items: [],
+      warnings: [],
+    });
+
     render(
       <CampaignStudioScheduleSection
+        campaignId="campaign-123"
+        access={managerAccess}
+        items={scheduleItems}
+        milestoneDefinitions={milestoneDefinitions}
+        milestones={milestones}
+        schedules={schedules}
+        templates={templates}
+        isSaving={false}
+        onSaveMilestones={vi.fn().mockResolvedValue(true)}
+        onCreateEvent={vi.fn().mockResolvedValue(true)}
+        onUpdateEvent={vi.fn().mockResolvedValue(true)}
+        onDeleteEvent={vi.fn().mockResolvedValue(true)}
+        onCreateSchedule={vi.fn().mockResolvedValue(true)}
+        onUpdateSchedule={vi.fn().mockResolvedValue(true)}
+        onDeleteSchedule={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    await user.click(await screen.findByRole('button', { name: /gift turn-in due/i }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: /add milestone/i })).toBeInTheDocument();
+    expect(within(dialog).getByLabelText(/milestone/i)).toHaveValue('gift_turn_in_due');
+  });
+
+  it('shows read-only schedule messaging without admin capability', async () => {
+    render(
+      <CampaignStudioScheduleSection
+        campaignId="campaign-123"
         access={viewerAccess}
         items={scheduleItems}
         milestoneDefinitions={milestoneDefinitions}
@@ -194,6 +291,7 @@ describe('CampaignStudioScheduleSection', () => {
       />
     );
 
+    expect(await screen.findByText(/campaign date snapshot/i)).toBeInTheDocument();
     expect(screen.getByText(/read-only calendar/i)).toBeInTheDocument();
     expect(
       screen.queryByLabelText(/add a calendar item on 2026-11-02/i)
@@ -206,6 +304,7 @@ describe('CampaignStudioScheduleSection', () => {
 
     render(
       <CampaignStudioScheduleSection
+        campaignId="campaign-123"
         access={managerAccess}
         items={scheduleItems}
         milestoneDefinitions={milestoneDefinitions}

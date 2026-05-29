@@ -33,7 +33,6 @@ import { CampaignDetailPage } from '@/pages/CampaignDetailPage';
 import { CampaignsPage } from '@/pages/CampaignsPage';
 import { CampaignStudioPage } from '@/pages/CampaignStudioPage';
 import { DashboardPage } from '@/pages/DashboardPage';
-import { DonationsPage } from '@/pages/DonationsPage';
 import { GiftOperationsPage } from '@/pages/GiftOperationsPage';
 import { GiftPoolPage } from '@/pages/GiftPoolPage';
 import { GiftSearchPage } from '@/pages/GiftSearchPage';
@@ -222,16 +221,6 @@ export function App() {
                         <Suspense fallback={<section className="content-card"><p className="text-muted mb-0">Loading gift tag builder...</p></section>}>
                           <GiftTagBuilderPage />
                         </Suspense>
-                      </CampaignCapabilityGate>
-                    </FeatureGate>
-                  }
-                />
-                <Route
-                  path={routes.DONATIONS.slice(1)}
-                  element={
-                    <FeatureGate featureKey="donations">
-                      <CampaignCapabilityGate capability={campaignCapabilities.giftPoolManage}>
-                        <DonationsPage />
                       </CampaignCapabilityGate>
                     </FeatureGate>
                   }

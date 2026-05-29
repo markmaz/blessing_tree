@@ -30,7 +30,6 @@ const getPageTitle = (pathname: string) => {
   if (pathname.startsWith('/campaigns')) return 'Campaigns';
   if (pathname.startsWith('/account/profile')) return 'Profile';
   if (pathname.startsWith('/account/settings')) return 'Settings';
-  if (pathname.startsWith('/donations')) return 'Donations';
   if (pathname.startsWith('/reports')) return 'Reports';
   if (pathname.startsWith('/admin')) return 'Admin';
   return 'Dashboard';

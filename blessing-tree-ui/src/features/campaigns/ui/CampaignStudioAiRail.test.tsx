@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { askBlessingTree } from '@/features/ask/api/askApi';
 import { draftCampaignStudioAi } from '@/features/campaigns/api/campaignStudioAiApi';
 import { CampaignStudioAiRail } from '@/features/campaigns/ui/CampaignStudioAiRail';
 import type {
@@ -13,6 +14,11 @@ import type { Campaign } from '@/features/campaigns/model/campaignTypes';
 
 vi.mock('@/features/campaigns/api/campaignStudioAiApi', () => ({
   draftCampaignStudioAi: vi.fn(),
+}));
+
+vi.mock('@/features/ask/api/askApi', () => ({
+  askBlessingTree: vi.fn(),
+  submitAskFeedback: vi.fn(),
 }));
 
 const campaign: Campaign = {
@@ -138,6 +144,7 @@ const scheduleItems: CampaignScheduleItem[] = [];
 
 beforeEach(() => {
   vi.mocked(draftCampaignStudioAi).mockReset();
+  vi.mocked(askBlessingTree).mockReset();
 });
 
 function buildBaseProps() {
@@ -178,6 +185,90 @@ describe('CampaignStudioAiRail', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/add communication timing for the key milestones/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /send ai prompt/i })).toBeDisabled();
+  });
+
+  it('answers studio questions through Ask Blessing Tree instead of drafting changes', async () => {
+    const user = userEvent.setup();
+    vi.mocked(askBlessingTree).mockResolvedValueOnce({
+      kind: 'knowledge_result',
+      promptLogId: 'prompt-log-1',
+      answer: 'Use Communications to choose a template, audience, and delivery timing.',
+      confidence: 0.87,
+      title: 'Campaign Communications',
+      steps: ['Open Campaigns, then Communications.', 'Choose a template and audience.'],
+      actions: [],
+      report: undefined,
+      interpretedAs: null,
+      warnings: [],
+      suggestions: [],
+      sources: [],
+    });
+
+    render(
+      <CampaignStudioAiRail
+        {...buildBaseProps()}
+      />
+    );
+
+    await user.type(
+      screen.getByPlaceholderText(/ask blessing tree to draft or refine schedule changes/i),
+      'How do I send a sponsor reminder?'
+    );
+    await user.click(screen.getByRole('button', { name: /send ai prompt/i }));
+
+    await waitFor(() => {
+      expect(askBlessingTree).toHaveBeenCalledWith('campaign-123', 'How do I send a sponsor reminder?', {
+        screen: 'Campaign Studio schedule',
+        route: 'campaign_studio',
+      });
+    });
+    expect(draftCampaignStudioAi).not.toHaveBeenCalled();
+    expect(screen.getByText(/campaign communications/i)).toBeInTheDocument();
+    expect(screen.getByText(/use communications to choose a template/i)).toBeInTheDocument();
+  });
+
+  it('keeps explanatory unblock prompts in Ask Blessing Tree', async () => {
+    const user = userEvent.setup();
+    vi.mocked(askBlessingTree).mockResolvedValueOnce({
+      kind: 'app_help',
+      promptLogId: 'prompt-log-2',
+      answer: 'The readiness panel lists the blockers and suggested next steps.',
+      confidence: 0.8,
+      title: 'Readiness Help',
+      steps: [],
+      actions: [],
+      report: undefined,
+      interpretedAs: null,
+      warnings: [],
+      suggestions: [],
+      sources: [],
+    });
+
+    render(
+      <CampaignStudioAiRail
+        {...buildBaseProps()}
+        selectedSection="readiness"
+      />
+    );
+
+    await user.type(
+      screen.getByPlaceholderText(/ask blessing tree to explain blockers or draft a fix bundle for readiness gaps/i),
+      'Tell me what I need to do to unblock readiness.'
+    );
+    await user.click(screen.getByRole('button', { name: /send ai prompt/i }));
+
+    await waitFor(() => {
+      expect(askBlessingTree).toHaveBeenCalledWith(
+        'campaign-123',
+        'Tell me what I need to do to unblock readiness.',
+        {
+          screen: 'Campaign Studio readiness',
+          route: 'campaign_studio',
+        }
+      );
+    });
+    expect(draftCampaignStudioAi).not.toHaveBeenCalled();
+    expect(screen.getByText(/the readiness panel lists the blockers/i)).toBeInTheDocument();
   });
 
   it('drafts and applies a calendar event from a prompt', async () => {
@@ -221,7 +312,7 @@ describe('CampaignStudioAiRail', () => {
     );
 
     await user.type(
-      screen.getByPlaceholderText(/ask campaign ai to draft or refine schedule changes/i),
+      screen.getByPlaceholderText(/ask blessing tree to draft or refine schedule changes/i),
       'Add volunteer orientation on 2026-11-03 at 6pm'
     );
     await user.click(screen.getByRole('button', { name: /send ai prompt/i }));
@@ -338,7 +429,7 @@ describe('CampaignStudioAiRail', () => {
     );
 
     await user.type(
-      screen.getByPlaceholderText(/ask campaign ai to explain blockers or draft a fix bundle for readiness gaps/i),
+      screen.getByPlaceholderText(/ask blessing tree to explain blockers or draft a fix bundle for readiness gaps/i),
       'Fix the activation blockers for me.'
     );
     await user.click(screen.getByRole('button', { name: /send ai prompt/i }));
@@ -369,7 +460,7 @@ describe('CampaignStudioAiRail', () => {
       screen.getByRole('button', { name: /set the campaign dates from november 1, 2026 through december 20, 2026/i })
     ).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText(/ask campaign ai to draft campaign setting changes or explain lifecycle impacts/i)
+      screen.getByPlaceholderText(/ask blessing tree to draft campaign setting changes or explain lifecycle impacts/i)
     ).toBeInTheDocument();
   });
 
@@ -416,7 +507,7 @@ describe('CampaignStudioAiRail', () => {
     );
 
     await user.type(
-      screen.getByPlaceholderText(/ask campaign ai to draft campaign setting changes or explain lifecycle impacts/i),
+      screen.getByPlaceholderText(/ask blessing tree to draft campaign setting changes or explain lifecycle impacts/i),
       'Add a campaign description.'
     );
     await user.click(screen.getByRole('button', { name: /send ai prompt/i }));
@@ -621,7 +712,7 @@ describe('CampaignStudioAiRail', () => {
     );
 
     await user.type(
-      screen.getByPlaceholderText(/ask campaign ai to build teams, team roles, and roster assignments or explain team concepts/i),
+      screen.getByPlaceholderText(/ask blessing tree to build teams, team roles, and roster assignments or explain team concepts/i),
       'Set up a Warehouse Crew team with Check In and add Chris Walker to Warehouse Crew as Check In.'
     );
     await user.click(screen.getByRole('button', { name: /send ai prompt/i }));
@@ -671,7 +762,7 @@ describe('CampaignStudioAiRail', () => {
     vi.mocked(draftCampaignStudioAi).mockResolvedValueOnce({
       message: 'I drafted 2 communications actions for Blessing Tree 2026 Demo.',
       assumptions: [],
-      warnings: ['This drafts a planned calendar communication only. Automated delivery is not wired yet.'],
+      warnings: ['This drafts a planned calendar communication. Scheduled delivery depends on the campaign automation worker and beat process.'],
       actions: [
         {
           id: 'draft-template-1',
@@ -704,7 +795,7 @@ describe('CampaignStudioAiRail', () => {
           summary: 'Places Volunteer Welcome at Registration Opens',
           status: 'ready',
           assumptions: [],
-          warnings: ['This drafts a planned calendar communication only. Automated delivery is not wired yet.'],
+          warnings: ['This drafts a planned calendar communication. Scheduled delivery depends on the campaign automation worker and beat process.'],
           payload: {
             templateId: null,
             templateRef: 'draft-template-ref-1',
@@ -731,7 +822,7 @@ describe('CampaignStudioAiRail', () => {
     );
 
     await user.type(
-      screen.getByPlaceholderText(/ask campaign ai to draft communication templates and place them on the campaign calendar/i),
+      screen.getByPlaceholderText(/ask blessing tree to draft communication templates and place them on the campaign calendar/i),
       'Create a volunteer welcome template and place it on registration open.'
     );
     await user.click(screen.getByRole('button', { name: /send ai prompt/i }));

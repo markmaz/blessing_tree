@@ -37,6 +37,7 @@ services:
     env_file:
       - ${BT_ENV_FILE:-deploy/docker/blessing-tree.env}
     environment:
+      BT_SERVICE_NAME: blessing-tree-api
       VALKEY_ADDRESS: ${VALKEY_ADDRESS:-valkey}
       VALKEY_PORT: ${VALKEY_PORT:-6379}
       BT_CELERY_WORKER_POOL: ${BT_CELERY_WORKER_POOL:-prefork}
@@ -44,6 +45,8 @@ services:
     depends_on:
       valkey:
         condition: service_healthy
+      qdrant:
+        condition: service_started
     restart: unless-stopped
 
   celery-worker:
@@ -51,6 +54,7 @@ services:
     env_file:
       - ${BT_ENV_FILE:-deploy/docker/blessing-tree.env}
     environment:
+      BT_SERVICE_NAME: blessing-tree-celery-worker
       VALKEY_ADDRESS: ${VALKEY_ADDRESS:-valkey}
       VALKEY_PORT: ${VALKEY_PORT:-6379}
       BT_CELERY_WORKER_POOL: ${BT_CELERY_WORKER_POOL:-prefork}
@@ -61,6 +65,8 @@ services:
         condition: service_started
       valkey:
         condition: service_healthy
+      qdrant:
+        condition: service_started
     restart: unless-stopped
 
   celery-beat:
@@ -68,6 +74,7 @@ services:
     env_file:
       - ${BT_ENV_FILE:-deploy/docker/blessing-tree.env}
     environment:
+      BT_SERVICE_NAME: blessing-tree-celery-beat
       VALKEY_ADDRESS: ${VALKEY_ADDRESS:-valkey}
       VALKEY_PORT: ${VALKEY_PORT:-6379}
       BT_CELERY_WORKER_POOL: ${BT_CELERY_WORKER_POOL:-prefork}
@@ -78,6 +85,8 @@ services:
         condition: service_started
       valkey:
         condition: service_healthy
+      qdrant:
+        condition: service_started
     restart: unless-stopped
 
   valkey:
@@ -94,8 +103,6 @@ services:
 
   qdrant:
     image: qdrant/qdrant:latest
-    profiles:
-      - ask-vector
     ports:
       - "${QDRANT_PORT:-6333}:6333"
     volumes:

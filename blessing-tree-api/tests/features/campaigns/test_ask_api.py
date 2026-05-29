@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 from flask import Flask
@@ -767,6 +767,8 @@ def test_campaign_summary_includes_dashboard_widgets(app: Flask, monkeypatch: py
     assert widgets["sponsor_recipient_counts"][0]["recipient_count"] == 1
     assert widgets["popular_gifts_by_gender"][0]["gender"] == "Female"
     assert widgets["continue_where_left_off"][0]["prompt"] == "Show gift status."
+    assert widgets["calendar_upcoming"]["total_count"] > 0
+    assert widgets["calendar_upcoming"]["items"][0]["title"]
 
 
 def test_ask_report_runs_dashboard_widget_queries(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -811,6 +813,207 @@ def test_ask_report_runs_dashboard_widget_queries(app: Flask, monkeypatch: pytes
     unsponsored_payload = unsponsored_response.get_json()
     assert unsponsored_payload["report"]["metric_key"] == "unsponsored_gifts"
     assert unsponsored_payload["report"]["summary"]["value"] == 1
+
+
+def test_ask_report_answers_calendar_attention_questions(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "What important dates are missing?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "report_result"
+    assert payload["report"]["metric_key"] == "calendar_missing_dates"
+    assert payload["report"]["summary"]["value"] > 0
+    assert any(row["item_type"] == "Missing Date" for row in payload["report"]["rows"])
+    assert payload["actions"][0]["route"] == f"/campaigns/{campaign_id}/studio"
+
+
+def test_ask_report_answers_scheduled_communication_calendar_questions(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
+    from app.models.communication_template import CommunicationTemplate
+
+    template = CommunicationTemplate(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        template_key="sponsor_reminder",
+        name="Sponsor Reminder",
+        audience="SPONSOR",
+        channel="EMAIL",
+        subject_template="Reminder",
+        body_template="Bring gifts.",
+        is_active=True,
+        created_by_user_id=manager.id,
+    )
+    session.add(template)
+    session.flush()
+    session.add(
+        CampaignCommunicationSchedule(
+            id=uuid.uuid4(),
+            campaign_id=campaign.id,
+            template_id=template.id,
+            scheduled_for=datetime.utcnow() + timedelta(days=2),
+            status="SCHEDULED",
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "What emails are scheduled?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "report_result"
+    assert payload["report"]["metric_key"] == "calendar_scheduled_communications"
+    assert payload["report"]["summary"]["value"] == 1
+    assert payload["report"]["rows"][0]["title"] == "Sponsor Reminder"
+
+
+def test_ask_report_answers_specific_calendar_date_questions(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    from app.models.campaign_milestone import CampaignMilestone
+
+    session.add(
+        CampaignMilestone(
+            id=uuid.uuid4(),
+            campaign_id=campaign.id,
+            milestone_key="gift_turn_in_due",
+            label="Gift Turn-In Due",
+            occurs_on=date(2026, 12, 10),
+            sort_order=40,
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "When is gift turn in?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "report_result"
+    assert payload["report"]["metric_key"] == "calendar_gift_turn_in_date"
+    assert payload["report"]["summary"]["value"] == 1
+    assert payload["report"]["rows"][0]["date"] == "2026-12-10"
+    assert payload["report"]["rows"][0]["title"] == "Gift Turn-In Due"
+
+
+def test_ask_report_answers_sponsor_followup_due_questions(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    from app.models.sponsor_interaction import SponsorInteraction
+
+    sponsor = Sponsor(
+        id=uuid.uuid4(),
+        display_name="Follow Up Sponsor",
+        preferred_contact="EMAIL",
+        is_active=True,
+    )
+    session.add(sponsor)
+    session.flush()
+    session.add(
+        SponsorInteraction(
+            id=uuid.uuid4(),
+            campaign_id=campaign.id,
+            sponsor_id=sponsor.id,
+            channel="EMAIL",
+            direction="OUTBOUND",
+            subject="Gift reminder",
+            outcome="LEFT_VM",
+            follow_up_at=datetime.utcnow() + timedelta(days=2),
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "Who has follow-up due?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "report_result"
+    assert payload["report"]["metric_key"] == "calendar_followups_due"
+    assert payload["report"]["summary"]["value"] == 1
+    assert payload["report"]["rows"][0]["title"] == "1 sponsor follow-up due"
+    assert payload["report"]["rows"][0]["description"] == "Follow Up Sponsor"
+
+
+def test_ask_report_answers_dates_outside_campaign_window_questions(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    from app.models.campaign_event import CampaignEvent
+
+    session.add(
+        CampaignEvent(
+            id=uuid.uuid4(),
+            campaign_id=campaign.id,
+            title="Early Volunteer Planning",
+            event_type="VOLUNTEER",
+            start_at=datetime(2026, 10, 15, 9, 0),
+            all_day=False,
+            source_type="manual",
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "Are there dates outside the campaign window?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["kind"] == "report_result"
+    assert payload["report"]["metric_key"] == "calendar_outside_campaign_window"
+    assert payload["report"]["summary"]["value"] == 1
+    assert payload["report"]["rows"][0]["message"] == "Early Volunteer Planning is outside the campaign date range."
 
 
 def test_ask_report_requires_report_capability(app: Flask, monkeypatch: pytest.MonkeyPatch) -> None:

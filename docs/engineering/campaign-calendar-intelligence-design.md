@@ -2,7 +2,9 @@
 
 ## Status
 
-Proposed for implementation.
+Implemented on branch `codex/calendar-intelligence`.
+
+The core feature is now built across the backend, Campaign Studio Schedule, Ask Blessing Tree, and the Dashboard. No database migration was required because calendar intelligence is a read model over existing campaign, milestone, schedule, communication, sponsorship, and sponsor interaction records.
 
 ## Purpose
 
@@ -16,10 +18,11 @@ Campaign Studio already has a working schedule surface where managers can add mi
 - What sponsor follow-ups or gift deadlines need attention?
 - What is missing from the campaign plan?
 
-This design adds a shared campaign calendar intelligence layer that powers both:
+This design adds a shared campaign calendar intelligence layer that powers:
 
 - a visual Campaign Studio calendar overview
 - Ask Blessing Tree answers about campaign dates and timing
+- a Dashboard calendar attention widget
 
 The goal is not to replace the existing editable calendar. The goal is to add a compact, holistic view above it and make the same data available conversationally.
 
@@ -34,6 +37,8 @@ The Schedule section should become:
 3. Agenda grouped by urgency
 4. Existing large editable calendar
 
+The Dashboard also shows an `Upcoming Calendar` widget with the next scheduled campaign dates and events.
+
 Ask Blessing Tree should use the same backend calendar intelligence service to answer natural language questions such as:
 
 - "What is overdue?"
@@ -44,6 +49,7 @@ Ask Blessing Tree should use the same backend calendar intelligence service to a
 - "What communications are scheduled?"
 - "Who has a sponsor follow-up due?"
 - "What needs attention before pickup?"
+- "Are there dates outside the campaign window?"
 
 ## Design Principles
 
@@ -55,7 +61,8 @@ Build one backend service that gathers, classifies, and summarizes campaign date
 
 - Campaign Studio UI
 - Ask Blessing Tree report/query execution
-- future dashboard widgets or reports
+- Dashboard widgets
+- future reports
 
 ### Keep Source Records Clear
 
@@ -213,6 +220,82 @@ Use cases:
 - flag gifts not ready before pickup
 
 V1 can use milestone dates and gift status counts. Do not block V1 waiting for every gift status timestamp if not all timestamps exist yet.
+
+## Implemented Behavior
+
+### Backend
+
+Implemented service:
+
+- `blessing-tree-api/app/features/campaigns/calendar_intelligence_service.py`
+
+Implemented endpoint:
+
+- `GET /api/v1/campaigns/<campaign_id>/calendar-intelligence`
+- Required capability: `campaign.view`
+
+Implemented dashboard reuse:
+
+- `CampaignService.get_dashboard_widgets()` now includes `calendar_upcoming`
+- The widget is generated from `CampaignCalendarIntelligenceService`, not a separate query path
+
+Implemented Ask reuse:
+
+- `AskReportExecutor` uses `CampaignCalendarIntelligenceService`
+- `report_catalog.py` includes calendar-specific report metrics
+- `classifier.py` includes date, timeline, pickup, recruitment, follow-up, and gift turn-in vocabulary
+
+### Campaign Studio Schedule
+
+The Schedule section now renders:
+
+- summary metric tiles for overdue, due soon, missing dates, and scheduled emails
+- warning strip for missing or out-of-window items
+- critical date strip
+- agenda panels for needs attention, coming up, and missing important dates
+- existing editable calendar below the overview
+
+Click behavior:
+
+- existing manual, milestone, and communication schedule items open the existing schedule modal
+- missing milestone dates open the milestone editor with the missing milestone preselected
+- read-only users can view the overview and calendar but cannot edit
+
+### Dashboard
+
+The Dashboard now includes `Upcoming Calendar`.
+
+It shows:
+
+- count of upcoming calendar items
+- next scheduled dates and events from the shared intelligence service
+- status labels such as Today, Due Soon, Upcoming, or Future
+- an Ask shortcut using: `What is coming up on the campaign calendar?`
+
+### Ask Blessing Tree
+
+Ask can now answer:
+
+- `What is overdue?`
+- `What is coming up this week?`
+- `What important dates are missing?`
+- `What blocker dates are missing?`
+- `What emails are scheduled?`
+- `When is gift turn-in?`
+- `When does sponsor recruitment start?`
+- `When is pickup?`
+- `Who has follow-up due?`
+- `Are there dates outside the campaign window?`
+
+Calendar Ask responses return report-style rows with direct actions back to Campaign Studio.
+
+### Warning Rules
+
+Warnings currently include:
+
+- missing important or blocker dates
+- overdue actionable items
+- items dated before campaign start or after campaign end
 
 ## Normalized Calendar Intelligence Model
 
@@ -493,11 +576,11 @@ V1 can cap detailed names to the first 5 per grouped item.
 
 ## Frontend Design
 
-### New API Client
+### API Client
 
-Add:
+The frontend calendar intelligence API is implemented in the existing Campaign Studio API client:
 
-- `campaignCalendarIntelligenceApi.ts`
+- `blessing-tree-ui/src/features/campaigns/api/campaignStudioApi.ts`
 
 Model:
 
@@ -506,27 +589,23 @@ Model:
 - `CampaignCriticalDate`
 - `CampaignAgendaGroup`
 
-### Hook
+### Data Loading
 
-Add:
-
-- `useCampaignCalendarIntelligence(campaignId)`
-
-Reload when:
+`CampaignStudioScheduleSection` fetches calendar intelligence directly and reloads when:
 
 - schedule events change
 - milestones change
 - communication schedules change
-- campaign settings dates change
+
+Campaign settings date refresh can be added when the settings panel mutates dates from the same Studio session.
 
 ### Components
 
-Add:
+Implemented inside:
 
 - `CampaignCalendarOverviewPanel`
-- `CampaignCriticalDatesStrip`
-- `CampaignAgendaPanel`
-- `CampaignAgendaRow`
+- `CalendarMetric`
+- `CampaignCalendarAgendaList`
 
 Placement:
 
@@ -538,9 +617,8 @@ Placement:
 Click behavior:
 
 - milestone/manual/communication items open the existing schedule modal where possible
-- grouped sponsor drop-off items route to sponsor report/filter
-- grouped follow-up items route to sponsor follow-up report/filter
-- missing date items route to the relevant edit surface
+- missing milestone dates open the milestone editor with the milestone preselected
+- grouped sponsor drop-off and follow-up items currently show in the overview and Ask; deeper report-filter routing can be added later
 
 ### Visual Style
 
@@ -580,48 +658,69 @@ Ask:
 
 ### Phase 1: Backend Calendar Intelligence
 
-1. Add calendar intelligence service.
-2. Build normalized item model.
-3. Aggregate existing schedule items.
-4. Add campaign setup dates.
-5. Add milestone missing/blocker detection.
-6. Add communication schedule summaries.
-7. Add grouped sponsor drop-off due items.
-8. Add grouped sponsor follow-up items.
-9. Add API endpoint.
-10. Add backend tests for grouping, missing dates, overdue dates, and RBAC.
+Status: implemented.
+
+Completed:
+
+1. Added calendar intelligence service.
+2. Built normalized item model.
+3. Aggregated existing schedule items.
+4. Added campaign setup dates.
+5. Added milestone missing/blocker detection.
+6. Added communication schedule summaries.
+7. Added grouped sponsor drop-off due items.
+8. Added grouped sponsor follow-up items.
+9. Added API endpoint.
+10. Added backend tests for grouping, missing dates, overdue dates, and RBAC.
 
 ### Phase 2: Campaign Studio Overview UI
 
-1. Add frontend API models and fetcher.
-2. Add `useCampaignCalendarIntelligence`.
-3. Add critical date strip.
-4. Add agenda panel.
-5. Wire click actions to existing modal/routes.
-6. Refresh intelligence after schedule mutations.
-7. Add responsive styling.
-8. Add frontend tests for rendering missing/overdue/upcoming states.
+Status: implemented.
+
+Completed:
+
+1. Added frontend API models and fetcher.
+2. Added critical date strip.
+3. Added agenda panel.
+4. Wired click actions to existing modal routes.
+5. Added direct missing-milestone edit flow.
+6. Refreshes intelligence after schedule inputs change.
+7. Added responsive styling.
+8. Added frontend tests for create/edit/read-only and missing milestone behavior.
 
 ### Phase 3: Ask Blessing Tree Calendar Queries
 
-1. Add calendar questions to Ask report catalog/classifier.
-2. Add executor methods backed by calendar intelligence service.
-3. Support common natural language date questions.
-4. Add concise answers with counts, dates, and actions.
-5. Add tests for:
-   - overdue questions
-   - upcoming questions
+Status: implemented.
+
+Completed:
+
+1. Added calendar questions to Ask report catalog/classifier.
+2. Added executor methods backed by calendar intelligence service.
+3. Supported common natural language date questions.
+4. Added report-style answers with counts, dates, and actions.
+5. Added tests for:
    - missing blocker questions
    - scheduled communication questions
+   - specific date questions
    - sponsor follow-up questions
+   - outside campaign window questions
 
 ### Phase 4: Polish And Extensions
 
+Status: partially implemented.
+
+Completed:
+
+1. Added "date outside campaign window" warnings.
+2. Added Dashboard widget reuse.
+3. Added warning strip in Campaign Studio Schedule.
+
+Remaining optional extensions:
+
 1. Add calendar filters if users ask for them.
-2. Add "date outside campaign window" warnings.
-3. Add optional polling.
-4. Add dashboard widget reuse.
-5. Add PDF/export if this becomes a report.
+2. Add optional polling while Schedule is open.
+3. Add PDF/export if this becomes a formal report.
+4. Add route-filtered deep links for sponsor drop-off and follow-up grouped rows.
 
 ## Testing Strategy
 
@@ -664,6 +763,7 @@ Verify:
 
 - overview shows the right counts
 - critical dates show missing/overdue/upcoming
+- dashboard Upcoming Calendar matches upcoming overview facts
 - large calendar still works
 - Ask answers the same facts as the overview
 
@@ -678,6 +778,7 @@ Do not implement yet:
 - per-user personal calendars
 - automatic rescheduling
 - LLM-generated calendar edits without user approval
+- persistent calendar intelligence table
 
 ## Open Questions
 
@@ -690,13 +791,13 @@ Recommended defaults:
    - Recommendation: show only missing blocker/critical dates in the default view; optional missing dates can appear in a lower-priority section later.
 
 3. Should Ask answer date questions from raw data or from the same overview service?
-   - Recommendation: use the same overview service.
+   - Decision: use the same overview service.
 
 4. Should the overview include completed past items?
    - Recommendation: hide completed past items by default, but include them in Ask when explicitly requested.
 
 5. Should this live under Schedule or as its own Campaign Studio section?
-   - Recommendation: keep it under Schedule so all date work stays together.
+   - Decision: keep it under Schedule so all date work stays together.
 
 ## Recommendation
 

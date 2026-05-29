@@ -9,6 +9,7 @@ from app.features.campaigns.studio_serializers import (
     serialize_ai_draft,
     serialize_campaign_event,
     serialize_campaign_assignment,
+    serialize_calendar_intelligence,
     serialize_campaign_flyer,
     serialize_communication_schedule,
     serialize_communication_template,
@@ -21,6 +22,7 @@ from app.features.campaigns.studio_serializers import (
     serialize_team_snapshot,
 )
 from app.features.campaigns.ai_draft_service import CampaignStudioAiDraftService
+from app.features.campaigns.calendar_intelligence_service import CampaignCalendarIntelligenceService
 from app.features.campaigns.communication_send_service import CampaignCommunicationSendService
 from app.features.campaigns.flyer_service import CampaignFlyerService
 from app.features.campaigns.gift_policy_service import CampaignGiftPolicyService
@@ -36,6 +38,7 @@ _ai_draft_service = CampaignStudioAiDraftService()
 _gift_policy_service = CampaignGiftPolicyService()
 _flyer_service = CampaignFlyerService()
 _communication_send_service = CampaignCommunicationSendService()
+_calendar_intelligence_service = CampaignCalendarIntelligenceService()
 
 
 @campaign_ns.route("/<string:campaign_id>/studio")
@@ -230,6 +233,15 @@ class CampaignScheduleResource(Resource):
             "campaign_id": campaign_id,
             "items": [serialize_schedule_item(item) for item in items],
         }
+
+
+@campaign_ns.route("/<string:campaign_id>/calendar-intelligence")
+class CampaignCalendarIntelligenceResource(Resource):
+    @require_campaign_capability("campaign.view")
+    def get(self, campaign_id: str):
+        with SessionLocal() as db:
+            payload = _calendar_intelligence_service.get_calendar_intelligence(db, campaign_id)
+        return serialize_calendar_intelligence(payload)
 
 
 @campaign_ns.route("/<string:campaign_id>/events")

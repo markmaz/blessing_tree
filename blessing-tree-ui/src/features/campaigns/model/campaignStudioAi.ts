@@ -258,7 +258,7 @@ export function buildAiAssistantResponse({
     return [
       `Campaign AI can help shape the ${campaign.name} communication plan.`,
       `There ${templates.length === 1 ? 'is' : 'are'} currently ${templates.length} template${templates.length === 1 ? '' : 's'} available in this campaign.`,
-      'Use this panel to draft new templates and optionally place them on the campaign calendar. Actual email delivery automation still is not wired yet.',
+      'Use this panel to draft new templates and optionally place them on the campaign calendar for scheduled delivery.',
     ].join('\n\n');
   }
 

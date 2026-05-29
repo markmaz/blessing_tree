@@ -25,7 +25,8 @@ Blessing Tree is a split frontend/backend application for managing a church gift
 - Generic Google/Yahoo sign-in is now restricted to already-linked returning users, while invitation onboarding now lets invited users choose Google, Yahoo, or a local password from the invite page.
 - Invitation validation now distinguishes pending vs already-accepted onboarding state, and the invite/callback UI now shows clearer completion and error messaging.
 - The Communications section is now template-only and uses a Query Forge-inspired template-builder workspace with a collapsible tool rail, heading/text/image content blocks, inline uploads for small embedded images such as maps, a builder-side merge-field drawer, and a stronger rendered-preview surface; the Studio AI panel is now hidden by default and opens as a right-side drawer when needed.
-- The Schedule section is now calendar-first, with direct date-click and item-click modal editing for manual events, milestones, and communication schedules on top of the unified backend schedule APIs.
+- The Schedule section is now calendar-first, with a Calendar Intelligence overview, critical date strip, warning list, and direct date-click and item-click modal editing for manual events, milestones, and communication schedules on top of the unified backend schedule APIs.
+- Ask Blessing Tree and the Dashboard now reuse the same calendar intelligence service for campaign date questions, upcoming calendar events, missing blockers, follow-up due items, and scheduled communications.
 - Schedule readiness now flags missing manual planning events and missing communication timing for key milestones, and the AI rail now surfaces schedule-aware prompt starters from those gaps.
 - The Team section in Campaign Studio is now a member-centric workspace with a campaign roster table, custom teams, fixed access-role management, optional app-access linking, and Query Forge-style edit drawers.
 - The frontend now also has campaign admin create/update UI on top of the existing campaign backend routes.
@@ -91,6 +92,16 @@ Bootstrap backend environment from:
 ```text
 blessing-tree-api/.env.example
 ```
+
+Local API logs default to:
+
+```text
+blessing-tree-api/logs/blessing-tree-api.log
+```
+
+Use `BT_LOG_LEVEL`, `BT_LOG_FORMAT`, `BT_LOG_TO_CONSOLE`, `BT_LOG_TO_FILE`, and `BT_LOG_FILE`
+to adjust local logging. Docker production defaults to JSON logs on stdout so the same output can
+be shipped to CloudWatch later.
 
 Helper scripts from `blessing-tree-api/`:
 

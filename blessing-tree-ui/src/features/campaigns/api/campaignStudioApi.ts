@@ -3,6 +3,8 @@ import { mapCampaignScheduleItem } from '@/features/campaigns/api/campaignStudio
 import {
   type CampaignAssignment,
   type CampaignMilestone,
+  type CampaignCalendarIntelligence,
+  type CampaignCalendarIntelligenceItem,
   type CampaignGiftPolicy,
   type CampaignMilestoneDefinition,
   type CampaignReadiness,
@@ -268,6 +270,60 @@ interface CampaignReadinessResponse {
   category_counts: CampaignReadiness['categoryCounts'];
 }
 
+interface CampaignCalendarIntelligenceResponse {
+  campaign_id: string;
+  generated_at: string | null;
+  summary: {
+    total_items: number;
+    overdue_count: number;
+    due_soon_count: number;
+    missing_critical_dates_count: number;
+    scheduled_communications_count: number;
+    blocker_count: number;
+  };
+  critical_dates: Array<{
+    key: string;
+    label: string;
+    date: string | null;
+    status: CampaignCalendarIntelligence['criticalDates'][number]['status'];
+    is_blocker: boolean;
+    source_type: string;
+    source_id: string | null;
+    route_name: string | null;
+  }>;
+  agenda_groups: Array<{
+    key: string;
+    label: string;
+    items: CampaignCalendarIntelligenceItemResponse[];
+  }>;
+  items: CampaignCalendarIntelligenceItemResponse[];
+  warnings: Array<{
+    code: string;
+    message: string;
+    severity: string;
+  }>;
+}
+
+interface CampaignCalendarIntelligenceItemResponse {
+  id: string;
+  title: string;
+  description: string | null;
+  item_type: CampaignCalendarIntelligenceItem['itemType'];
+  urgency: CampaignCalendarIntelligenceItem['urgency'];
+  date: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  all_day: boolean;
+  is_blocker: boolean;
+  is_missing: boolean;
+  is_overdue: boolean;
+  count: number | null;
+  source_type: string;
+  source_id: string | null;
+  route_name: string | null;
+  metadata: Record<string, unknown>;
+}
+
 interface CampaignGiftPolicyResponse {
   id: string;
   campaign_id: string;
@@ -333,6 +389,13 @@ export async function getCampaignStudio(campaignId: string): Promise<CampaignStu
     giftPolicy: mapCampaignGiftPolicy(response.gift_policy),
     readiness: mapCampaignReadiness(response.readiness),
   };
+}
+
+export async function getCampaignCalendarIntelligence(campaignId: string): Promise<CampaignCalendarIntelligence> {
+  const response = await apiFetchJson<CampaignCalendarIntelligenceResponse>(
+    `/api/v1/campaigns/${campaignId}/calendar-intelligence`
+  );
+  return mapCampaignCalendarIntelligence(response);
 }
 
 export async function listCommunicationTemplates(campaignId: string): Promise<CommunicationTemplate[]> {
@@ -628,6 +691,12 @@ function mapCampaignSummary(summary: CampaignSummaryResponse): CampaignSummary {
         items: [],
       },
       continueWhereLeftOff: [],
+      calendarUpcoming: {
+        totalCount: 0,
+        dueSoonCount: 0,
+        scheduledCommunicationsCount: 0,
+        items: [],
+      },
     },
   };
 }
@@ -888,5 +957,63 @@ function mapCampaignReadinessItem(
     actionLabel: item.action_label,
     blockingFor: item.blocking_for,
     details: item.details,
+  };
+}
+
+function mapCampaignCalendarIntelligence(
+  payload: CampaignCalendarIntelligenceResponse
+): CampaignCalendarIntelligence {
+  return {
+    campaignId: payload.campaign_id,
+    generatedAt: payload.generated_at,
+    summary: {
+      totalItems: payload.summary.total_items ?? 0,
+      overdueCount: payload.summary.overdue_count ?? 0,
+      dueSoonCount: payload.summary.due_soon_count ?? 0,
+      missingCriticalDatesCount: payload.summary.missing_critical_dates_count ?? 0,
+      scheduledCommunicationsCount: payload.summary.scheduled_communications_count ?? 0,
+      blockerCount: payload.summary.blocker_count ?? 0,
+    },
+    criticalDates: payload.critical_dates.map((item) => ({
+      key: item.key,
+      label: item.label,
+      date: item.date,
+      status: item.status,
+      isBlocker: item.is_blocker,
+      sourceType: item.source_type,
+      sourceId: item.source_id,
+      routeName: item.route_name,
+    })),
+    agendaGroups: payload.agenda_groups.map((group) => ({
+      key: group.key,
+      label: group.label,
+      items: group.items.map(mapCampaignCalendarIntelligenceItem),
+    })),
+    items: payload.items.map(mapCampaignCalendarIntelligenceItem),
+    warnings: payload.warnings,
+  };
+}
+
+function mapCampaignCalendarIntelligenceItem(
+  item: CampaignCalendarIntelligenceItemResponse
+): CampaignCalendarIntelligenceItem {
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    itemType: item.item_type,
+    urgency: item.urgency,
+    date: item.date,
+    startsAt: item.starts_at,
+    endsAt: item.ends_at,
+    allDay: item.all_day,
+    isBlocker: item.is_blocker,
+    isMissing: item.is_missing,
+    isOverdue: item.is_overdue,
+    count: item.count,
+    sourceType: item.source_type,
+    sourceId: item.source_id,
+    routeName: item.route_name,
+    metadata: item.metadata,
   };
 }

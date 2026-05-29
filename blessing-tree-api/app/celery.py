@@ -3,7 +3,9 @@ from __future__ import annotations
 import os
 
 from celery import Celery
+from celery.signals import setup_logging
 
+from app.config.logging_config import configure_logging
 from app.config import (
     BT_CAMPAIGN_AUTOMATION_POLL_SECONDS,
     BT_CAMPAIGN_LIFECYCLE_POLL_SECONDS,
@@ -67,5 +69,11 @@ beat_schedule["campaigns-evaluate-gift-reminders"] = {
     "options": {"queue": "bt"},
 }
 celery.conf.beat_schedule = beat_schedule
+
+
+@setup_logging.connect
+def configure_celery_logging(**_kwargs) -> None:
+    service_name = os.getenv("BT_SERVICE_NAME", "blessing-tree-celery")
+    configure_logging(service_name=service_name)
 
 __all__ = ["BT_TASK_NAMESPACE", "celery", "init_celery"]

@@ -104,7 +104,7 @@ export function CampaignStudioPage() {
               }`}
               onClick={() => setIsAiRailOpen((currentValue) => !currentValue)}
             >
-              <i className={`bi ${isAiRailOpen ? 'bi-stars' : 'bi-robot'}`} aria-hidden="true" />
+              <i className="bi bi-chat-square-text" aria-hidden="true" />
               <span>{isAiRailOpen ? 'Hide AI Panel' : 'Open AI Panel'}</span>
             </button>
           ) : null}
@@ -351,6 +351,7 @@ function renderStudioSection({
   if (selectedSection === 'schedule') {
     return (
       <CampaignStudioScheduleSection
+        campaignId={studio.campaign.id}
         access={studio.access}
         items={studio.schedule.items}
         milestoneDefinitions={studio.milestoneDefinitions}

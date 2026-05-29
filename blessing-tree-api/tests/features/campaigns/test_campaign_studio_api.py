@@ -7,6 +7,7 @@ import pytest
 from flask import Flask
 from app.features.campaigns import api as campaign_api_module
 from app.features.campaigns import studio_api as campaign_studio_api_module
+from app.features.campaigns.calendar_intelligence_service import CampaignCalendarIntelligenceService
 from app.features.admin.llm_runtime_service import LlmRuntimeUnavailableError
 from app.models.admin_llm_configuration import AdminLlmConfiguration
 from app.models.campaign_communication_schedule import CampaignCommunicationSchedule
@@ -18,6 +19,7 @@ from app.models.campaign_milestone import CampaignMilestone
 from app.models.campaign_milestone_definition import CampaignMilestoneDefinition
 from app.models.communication_template import CommunicationTemplate
 from app.models.sponsor import Sponsor
+from app.models.sponsor_interaction import SponsorInteraction
 from app.models.sponsorship import Sponsorship
 from tests.features.campaigns.studio_test_support import (
     assign_role,
@@ -170,6 +172,143 @@ def test_get_campaign_studio_returns_aggregate_payload(
     assert "planning_gaps" in payload["readiness"]["groups"]
     assert "launch_checks" in payload["readiness"]["groups"]
     assert payload["readiness"]["items"][0]["action_label"].startswith("Open ")
+
+
+def test_get_calendar_intelligence_returns_critical_dates_and_operational_groups(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    monkeypatch.setattr(
+        campaign_studio_api_module,
+        "_calendar_intelligence_service",
+        CampaignCalendarIntelligenceService(today_provider=lambda: date(2026, 11, 15)),
+    )
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Calendar Manager")
+    campaign = seed_campaign(session)
+    campaign.public_sponsor_signup_enabled = True
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    template = CommunicationTemplate(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        template_key="gift_due",
+        name="Gift Due Reminder",
+        audience="SPONSOR",
+        channel="EMAIL",
+        subject_template="Gift Due",
+        body_template="Please bring your gifts.",
+        is_active=True,
+        created_by_user_id=manager.id,
+    )
+    milestone = CampaignMilestone(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        milestone_key="gift_turn_in_due",
+        label="Gift Turn-In Due",
+        occurs_on=date(2026, 11, 14),
+        sort_order=1,
+    )
+    manual_event = CampaignEvent(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        title="Wrapping Day",
+        event_type="GIFT",
+        start_at=datetime(2026, 11, 20, 9, 0),
+        end_at=None,
+        all_day=False,
+        source_type="manual",
+        created_by_user_id=manager.id,
+    )
+    sponsor = Sponsor(
+        id=uuid.uuid4(),
+        display_name="Taylor Sponsor",
+        email="taylor@example.test",
+        preferred_contact="EMAIL",
+        source="STAFF_ENTRY",
+        is_active=True,
+    )
+    session.add_all([template, milestone, manual_event, sponsor])
+    session.flush()
+    session.add(
+        CampaignCommunicationSchedule(
+            id=uuid.uuid4(),
+            campaign_id=campaign.id,
+            template_id=template.id,
+            milestone_key="gift_turn_in_due",
+            status="SCHEDULED",
+        )
+    )
+    session.add(
+        Sponsorship(
+            id=uuid.uuid4(),
+            campaign_id=campaign.id,
+            sponsor_id=sponsor.id,
+            status="ACTIVE",
+            interest_status="COMMITTED",
+            drop_off_status="NOT_STARTED",
+            drop_off_due_at=datetime(2026, 11, 13, 17, 0),
+        )
+    )
+    session.add(
+        SponsorInteraction(
+            id=uuid.uuid4(),
+            campaign_id=campaign.id,
+            sponsor_id=sponsor.id,
+            channel="CALL",
+            direction="OUTBOUND",
+            subject="Reminder call",
+            outcome="LEFT_VM",
+            occurred_at=datetime(2026, 11, 12, 10, 0),
+            follow_up_at=datetime(2026, 11, 16, 9, 0),
+        )
+    )
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/calendar-intelligence",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["campaign_id"] == campaign_id
+    assert payload["summary"]["scheduled_communications_count"] == 1
+    assert payload["summary"]["overdue_count"] >= 2
+    assert any(item["key"] == "gift_turn_in_due" and item["status"] == "overdue" for item in payload["critical_dates"])
+    assert any(item["item_type"] == "sponsor_dropoff" and item["count"] == 1 for item in payload["items"])
+    assert any(item["item_type"] == "sponsor_followup" and item["urgency"] == "due_soon" for item in payload["items"])
+    assert any(item["item_type"] == "missing_date" and item["is_blocker"] for item in payload["items"])
+    needs_attention = next(group for group in payload["agenda_groups"] if group["key"] == "needs_attention")
+    assert needs_attention["items"]
+
+
+def test_calendar_intelligence_requires_campaign_view(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Calendar Manager")
+    outsider = seed_user(session, name="Outside User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    outsider_id = str(outsider.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/calendar-intelligence",
+        headers=auth_header(outsider_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 403
 
 
 def test_patch_gift_policy_updates_campaign_rules(
@@ -959,7 +1098,7 @@ def test_post_ai_draft_returns_schedule_communication_action_with_warning(
     payload = response.get_json()
     assert payload["actions"][0]["action_type"] == "create_communication_schedule"
     assert payload["warnings"] == [
-        "This drafts a planned calendar communication only. Automated delivery is not wired yet."
+        "This drafts a planned calendar communication. Scheduled delivery depends on the campaign automation worker and beat process."
     ]
     assert payload["actions"][0]["payload"] == {
         "template_id": template_id,
@@ -1129,7 +1268,7 @@ def test_post_ai_draft_returns_communications_template_and_schedule_bundle(
     )
     assert payload["actions"][1]["payload"]["milestone_key"] == "registration_open"
     assert payload["warnings"] == [
-        "This drafts a planned calendar communication only. Automated delivery is not wired yet."
+        "This drafts a planned calendar communication. Scheduled delivery depends on the campaign automation worker and beat process."
     ]
 
 
