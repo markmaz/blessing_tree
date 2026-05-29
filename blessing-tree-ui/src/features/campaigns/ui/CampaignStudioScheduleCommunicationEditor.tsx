@@ -8,10 +8,8 @@ import type {
   CreateCommunicationScheduleInput,
   UpdateCommunicationScheduleInput,
 } from '@/features/campaigns/model/campaignStudioTypes';
-import {
-  CampaignAudienceRecipientDrawer,
-  audienceLabelForSummary,
-} from '@/features/campaigns/ui/CampaignAudienceRecipientDrawer';
+import { audienceLabelForSummary } from '@/features/campaigns/model/campaignAudienceSummary';
+import { CampaignAudienceRecipientDrawer } from '@/features/campaigns/ui/CampaignAudienceRecipientDrawer';
 import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
 
 interface CommunicationFormState {

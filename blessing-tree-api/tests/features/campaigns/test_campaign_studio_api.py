@@ -1098,7 +1098,7 @@ def test_post_ai_draft_returns_schedule_communication_action_with_warning(
     payload = response.get_json()
     assert payload["actions"][0]["action_type"] == "create_communication_schedule"
     assert payload["warnings"] == [
-        "This drafts a planned calendar communication only. Automated delivery is not wired yet."
+        "This drafts a planned calendar communication. Scheduled delivery depends on the campaign automation worker and beat process."
     ]
     assert payload["actions"][0]["payload"] == {
         "template_id": template_id,
@@ -1268,7 +1268,7 @@ def test_post_ai_draft_returns_communications_template_and_schedule_bundle(
     )
     assert payload["actions"][1]["payload"]["milestone_key"] == "registration_open"
     assert payload["warnings"] == [
-        "This drafts a planned calendar communication only. Automated delivery is not wired yet."
+        "This drafts a planned calendar communication. Scheduled delivery depends on the campaign automation worker and beat process."
     ]
 
 

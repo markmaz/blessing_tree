@@ -762,7 +762,7 @@ describe('CampaignStudioAiRail', () => {
     vi.mocked(draftCampaignStudioAi).mockResolvedValueOnce({
       message: 'I drafted 2 communications actions for Blessing Tree 2026 Demo.',
       assumptions: [],
-      warnings: ['This drafts a planned calendar communication only. Automated delivery is not wired yet.'],
+      warnings: ['This drafts a planned calendar communication. Scheduled delivery depends on the campaign automation worker and beat process.'],
       actions: [
         {
           id: 'draft-template-1',
@@ -795,7 +795,7 @@ describe('CampaignStudioAiRail', () => {
           summary: 'Places Volunteer Welcome at Registration Opens',
           status: 'ready',
           assumptions: [],
-          warnings: ['This drafts a planned calendar communication only. Automated delivery is not wired yet.'],
+          warnings: ['This drafts a planned calendar communication. Scheduled delivery depends on the campaign automation worker and beat process.'],
           payload: {
             templateId: null,
             templateRef: 'draft-template-ref-1',

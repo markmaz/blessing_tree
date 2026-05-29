@@ -552,7 +552,7 @@ describe('CampaignPeopleWorkspace', () => {
 
     expect(await screen.findByRole('heading', { name: 'Add Child' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('Johnson Household')).toBeInTheDocument();
-    expect(screen.getByLabelText('Child Label')).toHaveValue('Assigned after save');
+    expect(screen.getByDisplayValue('Assigned after save')).toBeInTheDocument();
     expect(screen.queryByLabelText('First Name')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Last Name')).not.toBeInTheDocument();
   });

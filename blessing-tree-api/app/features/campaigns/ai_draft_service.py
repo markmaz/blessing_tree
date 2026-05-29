@@ -735,7 +735,7 @@ def _build_communication_action(
 
     assumptions = [template_assumption] if template_assumption else []
     warnings = [
-        "This drafts a planned calendar communication only. Automated delivery is not wired yet."
+        "This drafts a planned calendar communication. Scheduled delivery depends on the campaign automation worker and beat process."
     ]
 
     summary = (
@@ -848,7 +848,7 @@ def _build_communication_schedule_from_template_ref(
         )
 
     warnings = [
-        "This drafts a planned calendar communication only. Automated delivery is not wired yet."
+        "This drafts a planned calendar communication. Scheduled delivery depends on the campaign automation worker and beat process."
     ]
 
     summary = (
@@ -1175,7 +1175,7 @@ def _build_readiness_schedule_actions(
 ) -> tuple[list[dict[str, Any]], list[str], list[str]]:
     assumptions: list[str] = []
     warnings = [
-        "This drafts planned calendar communications only. Automated delivery is not wired yet."
+        "This drafts planned calendar communications. Scheduled delivery depends on the campaign automation worker and beat process."
     ]
     actions: list[dict[str, Any]] = []
     milestone_keys = [str(key) for key in item.get("details", {}).get("missing_keys", [])]

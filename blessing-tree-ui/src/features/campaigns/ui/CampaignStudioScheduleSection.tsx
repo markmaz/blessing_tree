@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { startTransition, useEffect, useMemo, useState } from 'react';
 import '@/features/campaigns/ui/campaignStudioSchedule.css';
 import { getCampaignCalendarIntelligence } from '@/features/campaigns/api/campaignStudioApi';
 import { formatScheduleDateRange, sourceLabel } from '@/features/campaigns/model/campaignSchedule';
@@ -115,8 +115,10 @@ export function CampaignStudioScheduleSection({
 
   useEffect(() => {
     let cancelled = false;
-    setIsCalendarIntelligenceLoading(true);
-    setCalendarIntelligenceError(null);
+    startTransition(() => {
+      setIsCalendarIntelligenceLoading(true);
+      setCalendarIntelligenceError(null);
+    });
     getCampaignCalendarIntelligence(campaignId)
       .then((payload) => {
         if (!cancelled) {

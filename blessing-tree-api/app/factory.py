@@ -97,6 +97,9 @@ def extract_user_id():
     return "unknown_user"
 
 def create_app():
+    configure_logging(service_name="blessing-tree-api")
+    logger = logging.getLogger(__name__)
+
     app = Flask(__name__)
     app.config["RESTX_MASK_SWAGGER"] = False
     app.url_map.strict_slashes = False
@@ -149,9 +152,8 @@ def create_app():
     def handle_api_service_error(error):
         return error.to_dict(), error.status_code
 
-    configure_logging()
-    logger = logging.getLogger(__name__)
     logger.info("Starting the application...")
+    request_logger = logging.getLogger("app.request")
 
     valkey_client = valkey.StrictValkey(host=VALKEY_ADDRESS, port=VALKEY_PORT, decode_responses=True)
 
@@ -176,6 +178,18 @@ def create_app():
         duration_ms = int((time.time() - g.start_time) * 1000)
         g.audit_data["status_code"] = response.status_code
         g.audit_data["response_time_ms"] = duration_ms
+        request_logger.info(
+            "HTTP request completed",
+            extra={
+                "correlation_id": g.correlation_id,
+                "method": request.method,
+                "path": request.path,
+                "status_code": response.status_code,
+                "duration_ms": duration_ms,
+                "user_id": g.audit_data.get("user_id"),
+                "ip_address": g.audit_data.get("ip_address"),
+            },
+        )
         try:
             valkey_client.rpush(LOG_QUEUE, json.dumps(g.audit_data))
         except Exception as e:

@@ -93,6 +93,16 @@ Bootstrap backend environment from:
 blessing-tree-api/.env.example
 ```
 
+Local API logs default to:
+
+```text
+blessing-tree-api/logs/blessing-tree-api.log
+```
+
+Use `BT_LOG_LEVEL`, `BT_LOG_FORMAT`, `BT_LOG_TO_CONSOLE`, `BT_LOG_TO_FILE`, and `BT_LOG_FILE`
+to adjust local logging. Docker production defaults to JSON logs on stdout so the same output can
+be shipped to CloudWatch later.
+
 Helper scripts from `blessing-tree-api/`:
 
 ```bash

@@ -34,7 +34,6 @@ export const routes = {
   SCAN_GIFT: '/scan/gifts/:labelCode',
   ACCOUNT_PROFILE: '/account/profile',
   ACCOUNT_SETTINGS: '/account/settings',
-  DONATIONS: '/donations',
   REPORTS: '/reports',
   ADMIN: '/admin',
   ADMIN_USERS: '/admin/users',

@@ -278,6 +278,27 @@ Current configuration expects values for at least:
 
 - database connection: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`
 - JWT/auth: `JWT_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`
+
+### Logging
+
+Local development writes human-readable logs to stdout and to a rotating file by default:
+
+```text
+logs/blessing-tree-api.log
+```
+
+Useful logging environment variables:
+
+- `BT_LOG_LEVEL`: default `INFO`
+- `BT_LOG_FORMAT`: `human` or `json`
+- `BT_LOG_TO_CONSOLE`: default `true`
+- `BT_LOG_TO_FILE`: default `true`
+- `BT_LOG_FILE`: default `logs/blessing-tree-api.log`
+- `BT_LOG_MAX_BYTES`: default `10485760`
+- `BT_LOG_BACKUP_COUNT`: default `5`
+
+Docker production uses JSON stdout logs by default through `deploy/docker/blessing-tree.env.example`.
+That keeps local operation simple while making the same log stream ready for CloudWatch collection.
 - refresh cookie/auth options
 - Valkey: `VALKEY_ADDRESS`, `VALKEY_PORT`, `LOG_QUEUE`
 - mail transport: `SMTP_SERVER`, `SMTP_PORT`, `SMTP_USE_TLS`, `SMTP_USE_SSL`, `DEFAULT_MAIL_SENDER`
