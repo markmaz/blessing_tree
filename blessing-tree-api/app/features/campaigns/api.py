@@ -5,6 +5,7 @@ from flask_restx import Resource
 
 from app.db import SessionLocal
 from app.decorators.security import token_required
+from app.features.admin.audit_service import AuditEventService, build_changes
 from app.features.campaigns import campaign_ns
 from app.features.campaigns.serializers import (
     serialize_campaign,
@@ -18,6 +19,19 @@ from app.features.rbac.decorators import require_app_admin, require_campaign_cap
 
 _campaign_service = CampaignService()
 _season_reflection_service = CampaignSeasonReflectionService(campaigns=_campaign_service)
+_audit_event_service = AuditEventService()
+
+CAMPAIGN_FIELD_MAP = {
+    "name": "Name",
+    "year": "Year",
+    "description": "Description",
+    "season_theme": "Campaign Purpose",
+    "public_sponsor_slug": "Public Sponsor Slug",
+    "public_sponsor_signup_enabled": "Public Sponsor Sign-up",
+    "status": "Status",
+    "start_date": "Start Date",
+    "end_date": "End Date",
+}
 
 
 @campaign_ns.route("")
@@ -49,7 +63,21 @@ class CampaignListResource(Resource):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
             campaign = _campaign_service.create_campaign(db, getattr(g, "user_id"), payload)
-        return serialize_campaign(campaign), 201
+            response = serialize_campaign(campaign)
+            _audit_event_service.record_event(
+                db,
+                area="campaigns",
+                action="created",
+                entity_type="campaign",
+                entity_id=campaign.id,
+                entity_label=campaign.name,
+                campaign_id=campaign.id,
+                actor_user_id=getattr(g, "user_id", None),
+                summary=f"Created campaign {campaign.name}.",
+                changes=build_changes(before={}, after=response, field_map=CAMPAIGN_FIELD_MAP),
+            )
+            db.commit()
+        return response, 201
 
 
 @campaign_ns.route("/<string:campaign_id>")
@@ -65,13 +93,29 @@ class CampaignDetailResource(Resource):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
             campaign = _campaign_service.get_campaign(db, campaign_id)
+            before = serialize_campaign(campaign)
             updated = _campaign_service.update_campaign(
                 db,
                 campaign,
                 payload,
                 is_app_admin=_campaign_service.authorization.user_is_app_admin(db, getattr(g, "user_id")),
             )
-        return serialize_campaign(updated)
+            response = serialize_campaign(updated)
+            changes = build_changes(before=before, after=response, field_map=CAMPAIGN_FIELD_MAP)
+            _audit_event_service.record_event(
+                db,
+                area="campaigns",
+                action="status_changed" if any(change["field"] == "status" for change in changes) else "updated",
+                entity_type="campaign",
+                entity_id=updated.id,
+                entity_label=updated.name,
+                campaign_id=updated.id,
+                actor_user_id=getattr(g, "user_id", None),
+                summary=f"Updated campaign {updated.name}.",
+                changes=changes,
+            )
+            db.commit()
+        return response
 
 
 @campaign_ns.route("/<string:campaign_id>/access")

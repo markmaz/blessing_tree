@@ -1,5 +1,10 @@
 import { apiFetchJson } from '@/shared/api/client';
 import type {
+  AdminAuditEventDetail,
+  AdminAuditEventDetailPayload,
+  AdminAuditEventFilters,
+  AdminAuditEventListItem,
+  AdminAuditEventsPayload,
   AdminFeatureFlag,
   AdminAskReviewLog,
   AdminAskReviewPayload,
@@ -210,6 +215,121 @@ function normalizeAskReviewPayload(payload: AdminAskReviewPayload): AdminAskRevi
       createdAt: log.createdAt ?? (log as unknown as { created_at?: string | null }).created_at ?? null,
     })),
   };
+}
+
+function normalizeAuditActor(actor: unknown): AdminAuditEventListItem['actor'] {
+  if (!actor || typeof actor !== 'object') {
+    return null;
+  }
+  const value = actor as {
+    userId?: string | null;
+    user_id?: string | null;
+    displayName?: string | null;
+    display_name?: string | null;
+    email?: string | null;
+  };
+  return {
+    userId: value.userId ?? value.user_id ?? null,
+    displayName: value.displayName ?? value.display_name ?? null,
+    email: value.email ?? null,
+  };
+}
+
+function normalizeAuditCampaign(campaign: unknown): AdminAuditEventListItem['campaign'] {
+  if (!campaign || typeof campaign !== 'object') {
+    return null;
+  }
+  const value = campaign as { id?: string; name?: string };
+  if (!value.id) {
+    return null;
+  }
+  return {
+    id: value.id,
+    name: value.name ?? value.id,
+  };
+}
+
+function normalizeAuditEventListItem(event: AdminAuditEventListItem): AdminAuditEventListItem {
+  const raw = event as unknown as {
+    occurred_at?: string;
+    entity_type?: string;
+    entity_id?: string | null;
+    entity_label?: string | null;
+    change_count?: number;
+  };
+  return {
+    id: event.id,
+    occurredAt: event.occurredAt ?? raw.occurred_at ?? '',
+    actor: normalizeAuditActor(event.actor),
+    campaign: normalizeAuditCampaign(event.campaign),
+    area: event.area ?? '',
+    action: event.action ?? '',
+    entityType: event.entityType ?? raw.entity_type ?? '',
+    entityId: event.entityId ?? raw.entity_id ?? null,
+    entityLabel: event.entityLabel ?? raw.entity_label ?? null,
+    summary: event.summary ?? '',
+    changeCount: Number(event.changeCount ?? raw.change_count ?? 0),
+  };
+}
+
+function normalizeAuditEventDetail(event: AdminAuditEventDetail): AdminAuditEventDetail {
+  const raw = event as unknown as {
+    change_set?: AdminAuditEventDetail['changeSet'];
+    correlation_id?: string | null;
+    ip_address?: string | null;
+    user_agent?: string | null;
+    created_at?: string;
+  };
+  return {
+    ...normalizeAuditEventListItem(event),
+    changeSet: event.changeSet ?? raw.change_set ?? [],
+    metadata: event.metadata ?? {},
+    correlationId: event.correlationId ?? raw.correlation_id ?? null,
+    ipAddress: event.ipAddress ?? raw.ip_address ?? null,
+    userAgent: event.userAgent ?? raw.user_agent ?? null,
+    createdAt: event.createdAt ?? raw.created_at ?? '',
+  };
+}
+
+function normalizeAuditEventsPayload(payload: AdminAuditEventsPayload): AdminAuditEventsPayload {
+  const raw = payload as unknown as {
+    pagination?: { page?: number; page_size?: number; pageSize?: number; total?: number };
+    filters?: { areas?: string[]; actions?: string[] };
+  };
+  return {
+    items: (payload.items ?? []).map(normalizeAuditEventListItem),
+    pagination: {
+      page: Number(raw.pagination?.page ?? 1),
+      pageSize: Number(raw.pagination?.pageSize ?? raw.pagination?.page_size ?? 25),
+      total: Number(raw.pagination?.total ?? 0),
+    },
+    filters: {
+      areas: raw.filters?.areas ?? [],
+      actions: raw.filters?.actions ?? [],
+    },
+  };
+}
+
+function buildAuditEventParams(filters: AdminAuditEventFilters = {}): URLSearchParams {
+  const params = new URLSearchParams();
+  const entries: Array<[string, string | number | undefined]> = [
+    ['page', filters.page],
+    ['page_size', filters.pageSize],
+    ['date_from', filters.dateFrom],
+    ['date_to', filters.dateTo],
+    ['actor_user_id', filters.actorUserId],
+    ['campaign_id', filters.campaignId],
+    ['area', filters.area],
+    ['action', filters.action],
+    ['entity_type', filters.entityType],
+    ['search', filters.search],
+  ];
+  entries.forEach(([key, value]) => {
+    if (value !== undefined && value !== '') {
+      params.set(key, String(value));
+    }
+  });
+  return params;
 }
 
 export async function fetchAdminUsers(): Promise<AdminUsersPayload> {
@@ -479,4 +599,25 @@ export async function markAdminAskPromptReviewed(promptLogId: string, reviewNote
     body: JSON.stringify({ review_note: reviewNote }),
   });
   return normalizeAskReviewPayload({ logs: [payload.log], reviewOnly: false, limit: 1 }).logs[0];
+}
+
+export async function fetchAdminAuditEvents(
+  filters: AdminAuditEventFilters = {}
+): Promise<AdminAuditEventsPayload> {
+  const params = buildAuditEventParams(filters);
+  const suffix = params.toString() ? `?${params}` : '';
+  return normalizeAuditEventsPayload(
+    await apiFetchJson<AdminAuditEventsPayload>(`/api/v1/admin/audit-events${suffix}`)
+  );
+}
+
+export async function fetchAdminAuditEventDetail(
+  eventId: string
+): Promise<AdminAuditEventDetailPayload> {
+  const payload = await apiFetchJson<AdminAuditEventDetailPayload>(
+    `/api/v1/admin/audit-events/${eventId}`
+  );
+  return {
+    event: normalizeAuditEventDetail(payload.event),
+  };
 }

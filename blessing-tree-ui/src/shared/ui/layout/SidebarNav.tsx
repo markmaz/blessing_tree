@@ -171,6 +171,11 @@ const navItems: SidebarItem[] = [
         icon: 'bi-people-fill',
       },
       {
+        label: 'Activity Log',
+        to: routes.ADMIN_ACTIVITY_LOG,
+        icon: 'bi-clock-history',
+      },
+      {
         label: 'Ask Review',
         to: routes.ADMIN_ASK_REVIEW,
         icon: 'bi-chat-square-dots',

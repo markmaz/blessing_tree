@@ -163,6 +163,77 @@ export interface AdminAskReviewPayload {
   limit: number;
 }
 
+export interface AdminAuditActor {
+  userId: string | null;
+  displayName: string | null;
+  email: string | null;
+}
+
+export interface AdminAuditCampaign {
+  id: string;
+  name: string;
+}
+
+export interface AdminAuditChange {
+  field: string;
+  label: string;
+  before: unknown;
+  after: unknown;
+}
+
+export interface AdminAuditEventListItem {
+  id: string;
+  occurredAt: string;
+  actor: AdminAuditActor | null;
+  campaign: AdminAuditCampaign | null;
+  area: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  entityLabel: string | null;
+  summary: string;
+  changeCount: number;
+}
+
+export interface AdminAuditEventDetail extends AdminAuditEventListItem {
+  changeSet: AdminAuditChange[];
+  metadata: Record<string, unknown>;
+  correlationId: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}
+
+export interface AdminAuditEventsPayload {
+  items: AdminAuditEventListItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+  };
+  filters: {
+    areas: string[];
+    actions: string[];
+  };
+}
+
+export interface AdminAuditEventDetailPayload {
+  event: AdminAuditEventDetail;
+}
+
+export interface AdminAuditEventFilters {
+  page?: number;
+  pageSize?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  actorUserId?: string;
+  campaignId?: string;
+  area?: string;
+  action?: string;
+  entityType?: string;
+  search?: string;
+}
+
 export interface InviteValidationPayload {
   invitationId: string;
   userId: string;

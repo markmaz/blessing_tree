@@ -150,6 +150,8 @@ a:hover {
 
 .app-sidebar {
   width: var(--blessing-sidebar-width);
+  height: 100vh;
+  max-height: 100dvh;
   background: var(--blessing-purple-dark);
   color: #fff;
   position: fixed;
@@ -304,7 +306,29 @@ a:hover {
   gap: 0.25rem;
   padding: 0.5rem 0.75rem;
   flex: 1;
+  min-height: 0;
   margin-top: -85px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(255, 255, 255, 0.34) transparent;
+  scrollbar-width: thin;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 0.45rem;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.46);
 }
 
 .sidebar-link {

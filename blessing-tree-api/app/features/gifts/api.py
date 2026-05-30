@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import hashlib
 import uuid
 
 from flask import g, request
 from flask_restx import Resource
 
 from app.db import SessionLocal
+from app.features.admin.audit_service import AuditEventService, build_changes
 from app.features.campaigns import campaign_ns
 from app.features.gifts import (
     GiftLabelService,
@@ -36,6 +38,9 @@ from app.features.gifts.serializers import (
     serialize_gift_search_item,
     serialize_scan_lookup,
 )
+from app.models.donation_line import DonationLine
+from app.models.wishlist import Wishlist
+from app.models.wishlist_item import WishlistItem
 
 _gift_search_service = GiftSearchService()
 _gift_reservation_service = GiftReservationService()
@@ -45,6 +50,44 @@ _gift_label_service = GiftLabelService(operations_service=_gift_operations_servi
 _gift_reminder_service = GiftReminderService()
 _gift_report_service = GiftReportService()
 _gift_tag_template_service = CampaignGiftTagTemplateService()
+_audit_event_service = AuditEventService()
+
+GIFT_STATUS_FIELD_MAP = {
+    "status": "Status",
+    "qty_fulfilled": "Quantity Fulfilled",
+    "storage_location_id": "Storage Location",
+}
+
+GIFT_TAG_TEMPLATE_FIELD_MAP = {
+    "template_key": "Template Key",
+    "name": "Name",
+    "tag_width_in": "Tag Width",
+    "tag_height_in": "Tag Height",
+    "orientation": "Orientation",
+    "layout_changed": "Layout",
+    "gift_tag_message": "Gift Tag Message",
+    "include_cut_lines_default": "Include Cut Lines",
+    "is_active": "Active",
+}
+
+DONATION_LINE_FIELD_MAP = {
+    "line_type": "Line Type",
+    "description": "Description",
+    "category": "Category",
+    "size": "Size",
+    "quantity": "Quantity",
+    "quantity_available": "Quantity Available",
+    "quantity_assigned": "Quantity Assigned",
+    "estimated_value_cents": "Estimated Value",
+    "age_min": "Minimum Age",
+    "age_max": "Maximum Age",
+    "gender_fit": "Gender Fit",
+    "gift_condition": "Condition",
+    "source_label": "Source Label",
+    "inventory_status": "Inventory Status",
+    "storage_location_id": "Storage Location",
+    "notes": "Notes",
+}
 
 
 @campaign_ns.route("/<string:campaign_id>/gifts/search")
@@ -113,6 +156,8 @@ class CampaignGiftTagTemplateResource(Resource):
     def put(self, campaign_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
+            before_template = _gift_tag_template_service.get_template(db, campaign_id)
+            before = _snapshot_gift_tag_template(before_template)
             template = _gift_tag_template_service.update_template(
                 db,
                 campaign_id=campaign_id,
@@ -120,6 +165,23 @@ class CampaignGiftTagTemplateResource(Resource):
                 payload=payload,
             )
             response = serialize_gift_tag_template(template)
+            _audit_event_service.record_event(
+                db,
+                area="templates",
+                action="updated",
+                entity_type="gift_tag_template",
+                entity_id=template.id,
+                entity_label=template.name,
+                campaign_id=campaign_id,
+                actor_user_id=_actor_user_id(),
+                summary=f"Updated gift tag template {template.name}.",
+                changes=build_changes(
+                    before=before,
+                    after=_snapshot_gift_tag_template(template),
+                    field_map=GIFT_TAG_TEMPLATE_FIELD_MAP,
+                ),
+            )
+            db.commit()
         return {"template": response}
 
 
@@ -210,6 +272,24 @@ class CampaignGiftLabelPrintJobsResource(Resource):
                 notes=str(payload.get("notes") or "").strip() or None,
             )
             response = serialize_label_print_job(job)
+            _audit_event_service.record_event(
+                db,
+                area="gifts",
+                action="printed",
+                entity_type="gift_label_print_job",
+                entity_id=job.id,
+                entity_label=f"Gift tag print job {str(job.id)[:8]}",
+                campaign_id=campaign_id,
+                actor_user_id=_actor_user_id(),
+                summary=f"Created gift tag print job with {len(response.get('items') or [])} tag rows.",
+                metadata={
+                    "wishlist_item_count": len(item_ids),
+                    "manual_quantity": int(payload.get("manual_quantity") or 0),
+                    "copies": int(payload.get("copies") or 1),
+                    "format": str(payload.get("format") or "TAPE"),
+                },
+            )
+            db.commit()
         return {"print_job": response}, 201
 
 
@@ -251,6 +331,7 @@ class CampaignGiftScanActionsResource(Resource):
         if not action:
             return {"error": "action is required", "details": {"field": "action"}}, 400
         with SessionLocal() as db:
+            before = _gift_snapshot_by_label(db, campaign_id, label_code)
             item = _gift_label_service.scan_action(
                 db,
                 campaign_id=uuid.UUID(campaign_id),
@@ -260,6 +341,15 @@ class CampaignGiftScanActionsResource(Resource):
                 notes=str(payload.get("notes") or "").strip() or None,
             )
             response = serialize_scan_lookup(item)
+            _record_gift_status_event(
+                db,
+                campaign_id=campaign_id,
+                item=item,
+                before=before,
+                action="scanned",
+                summary=f"Scanned gift {item.description} and performed {action.upper()}.",
+                metadata={"label_code": label_code, "scan_action": action.upper()},
+            )
         return response
 
 
@@ -290,6 +380,37 @@ class CampaignDonationsResource(Resource):
                 payload=payload,
             )
             response = serialize_donation(donation)
+            _audit_event_service.record_event(
+                db,
+                area="gifts",
+                action="created",
+                entity_type="donation",
+                entity_id=donation.id,
+                entity_label=f"{donation.source} donation",
+                campaign_id=campaign_id,
+                actor_user_id=_actor_user_id(),
+                summary=f"Created {donation.source.lower().replace('_', ' ')} donation with {len(donation.lines or [])} gift pool line(s).",
+                metadata={
+                    "source": donation.source,
+                    "sponsor_id": str(donation.sponsor_id) if donation.sponsor_id else None,
+                    "line_count": len(donation.lines or []),
+                },
+            )
+            for line in donation.lines or []:
+                _audit_event_service.record_event(
+                    db,
+                    area="gifts",
+                    action="created",
+                    entity_type="donation_line",
+                    entity_id=line.id,
+                    entity_label=line.description,
+                    campaign_id=campaign_id,
+                    actor_user_id=_actor_user_id(),
+                    summary=f"Added gift pool item {line.description}.",
+                    changes=build_changes(before={}, after=_donation_line_snapshot(line), field_map=DONATION_LINE_FIELD_MAP),
+                    metadata={"donation_id": str(donation.id)},
+                )
+            db.commit()
         return {"donation": response}, 201
 
 
@@ -307,6 +428,20 @@ class CampaignDonationLinesResource(Resource):
                 payload=payload,
             )
             response = serialize_gift_pool_line(line)
+            _audit_event_service.record_event(
+                db,
+                area="gifts",
+                action="created",
+                entity_type="donation_line",
+                entity_id=line.id,
+                entity_label=line.description,
+                campaign_id=campaign_id,
+                actor_user_id=_actor_user_id(),
+                summary=f"Added gift pool item {line.description}.",
+                changes=build_changes(before={}, after=_donation_line_snapshot(line), field_map=DONATION_LINE_FIELD_MAP),
+                metadata={"donation_id": donation_id},
+            )
+            db.commit()
         return {"line": response}, 201
 
 
@@ -316,6 +451,8 @@ class CampaignDonationLineResource(Resource):
     def patch(self, campaign_id: str, line_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
+            before_line = _find_donation_line(db, campaign_id, line_id)
+            before = _donation_line_snapshot(before_line) if before_line is not None else {}
             line = _gift_pool_service.update_donation_line(
                 db,
                 campaign_id=uuid.UUID(campaign_id),
@@ -323,6 +460,19 @@ class CampaignDonationLineResource(Resource):
                 payload=payload,
             )
             response = serialize_gift_pool_line(line)
+            _audit_event_service.record_event(
+                db,
+                area="gifts",
+                action="status_changed" if before.get("inventory_status") != line.inventory_status else "updated",
+                entity_type="donation_line",
+                entity_id=line.id,
+                entity_label=line.description,
+                campaign_id=campaign_id,
+                actor_user_id=_actor_user_id(),
+                summary=f"Updated gift pool item {line.description}.",
+                changes=build_changes(before=before, after=_donation_line_snapshot(line), field_map=DONATION_LINE_FIELD_MAP),
+            )
+            db.commit()
         return {"line": response}
 
 
@@ -350,6 +500,9 @@ class CampaignDonationLineAssignResource(Resource):
         if not wishlist_item_id:
             return {"error": "wishlist_item_id is required", "details": {"field": "wishlist_item_id"}}, 400
         with SessionLocal() as db:
+            before_line = _find_donation_line(db, campaign_id, line_id)
+            before_line_snapshot = _donation_line_snapshot(before_line) if before_line is not None else {}
+            before_gift = _gift_snapshot(db, campaign_id, wishlist_item_id)
             fulfillment = _gift_pool_service.assign_line(
                 db,
                 campaign_id=uuid.UUID(campaign_id),
@@ -365,6 +518,63 @@ class CampaignDonationLineAssignResource(Resource):
                 "line": serialize_gift_pool_line(fulfillment.donation_line),
                 "gift": serialize_gift_search_item(fulfillment.wishlist_item, public=False),
             }
+            _audit_event_service.record_event(
+                db,
+                area="gifts",
+                action="created",
+                entity_type="fulfillment",
+                entity_id=fulfillment.id,
+                entity_label=fulfillment.wishlist_item.description,
+                campaign_id=campaign_id,
+                actor_user_id=_actor_user_id(),
+                summary=f"Assigned {fulfillment.quantity_fulfilled} gift pool item(s) to {fulfillment.wishlist_item.description}.",
+                metadata={
+                    "donation_line_id": line_id,
+                    "wishlist_item_id": wishlist_item_id,
+                    "quantity": fulfillment.quantity_fulfilled,
+                },
+            )
+            _audit_event_service.record_event(
+                db,
+                area="gifts",
+                action="status_changed",
+                entity_type="donation_line",
+                entity_id=fulfillment.donation_line.id,
+                entity_label=fulfillment.donation_line.description,
+                campaign_id=campaign_id,
+                actor_user_id=_actor_user_id(),
+                summary=f"Updated gift pool quantity for {fulfillment.donation_line.description}.",
+                changes=build_changes(
+                    before=before_line_snapshot,
+                    after=_donation_line_snapshot(fulfillment.donation_line),
+                    field_map=DONATION_LINE_FIELD_MAP,
+                ),
+                metadata={"fulfillment_id": str(fulfillment.id)},
+            )
+            _audit_event_service.record_event(
+                db,
+                area="gifts",
+                action="status_changed",
+                entity_type="wishlist_item",
+                entity_id=fulfillment.wishlist_item.id,
+                entity_label=fulfillment.wishlist_item.description,
+                campaign_id=campaign_id,
+                actor_user_id=_actor_user_id(),
+                summary=f"Gift pool assignment updated {fulfillment.wishlist_item.description}.",
+                changes=build_changes(
+                    before=before_gift,
+                    after={
+                        "status": fulfillment.wishlist_item.status,
+                        "qty_fulfilled": fulfillment.wishlist_item.qty_fulfilled,
+                        "storage_location_id": str(fulfillment.wishlist_item.storage_location_id)
+                        if fulfillment.wishlist_item.storage_location_id
+                        else None,
+                    },
+                    field_map=GIFT_STATUS_FIELD_MAP,
+                ),
+                metadata={"fulfillment_id": str(fulfillment.id), "donation_line_id": line_id},
+            )
+            db.commit()
         return response, 201
 
 
@@ -377,6 +587,7 @@ class CampaignGiftCommitResource(Resource):
         if not sponsor_id:
             return {"error": "sponsor_id is required", "details": {"field": "sponsor_id"}}, 400
         with SessionLocal() as db:
+            before = _gift_snapshot(db, campaign_id, wishlist_item_id)
             sponsorship_item = _gift_reservation_service.staff_commit_gift(
                 db,
                 campaign_id=uuid.UUID(campaign_id),
@@ -386,7 +597,20 @@ class CampaignGiftCommitResource(Resource):
                 notes=str(payload.get("notes") or "").strip() or None,
             )
             gift_payload = serialize_gift_search_item(sponsorship_item.wishlist_item, public=False)
-        return {"gift": gift_payload, "sponsorship_item_id": str(sponsorship_item.id)}, 201
+            sponsorship_item_id = str(sponsorship_item.id)
+            _record_gift_status_event(
+                db,
+                campaign_id=campaign_id,
+                item=sponsorship_item.wishlist_item,
+                before=before,
+                action="status_changed",
+                summary=f"Committed gift {sponsorship_item.wishlist_item.description} to a sponsor.",
+                metadata={
+                    "sponsor_id": sponsor_id,
+                    "sponsorship_item_id": sponsorship_item_id,
+                },
+            )
+        return {"gift": gift_payload, "sponsorship_item_id": sponsorship_item_id}, 201
 
 
 @campaign_ns.route("/<string:campaign_id>/gifts/<string:wishlist_item_id>/release")
@@ -394,12 +618,21 @@ class CampaignGiftReleaseResource(Resource):
     @require_campaign_capability("campaign.gifts.commit")
     def post(self, campaign_id: str, wishlist_item_id: str):
         with SessionLocal() as db:
+            before = _gift_snapshot(db, campaign_id, wishlist_item_id)
             item = _gift_reservation_service.release_gift(
                 db,
                 campaign_id=uuid.UUID(campaign_id),
                 wishlist_item_id=uuid.UUID(wishlist_item_id),
             )
             payload = serialize_gift_search_item(item, public=False)
+            _record_gift_status_event(
+                db,
+                campaign_id=campaign_id,
+                item=item,
+                before=before,
+                action="status_changed",
+                summary=f"Released gift {item.description}.",
+            )
         return {"gift": payload}
 
 
@@ -409,6 +642,7 @@ class CampaignGiftReceiveResource(Resource):
     def post(self, campaign_id: str, wishlist_item_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
+            before = _gift_snapshot(db, campaign_id, wishlist_item_id)
             item = _gift_operations_service.receive_gift(
                 db,
                 campaign_id=uuid.UUID(campaign_id),
@@ -418,6 +652,15 @@ class CampaignGiftReceiveResource(Resource):
                 notes=str(payload.get("notes") or "").strip() or None,
             )
             response = serialize_gift_operations_item(item)
+            _record_gift_status_event(
+                db,
+                campaign_id=campaign_id,
+                item=item,
+                before=before,
+                action="status_changed",
+                summary=f"Received gift {item.description}.",
+                metadata={"notes": str(payload.get("notes") or "").strip() or None},
+            )
         return {"gift": response}
 
 
@@ -427,6 +670,7 @@ class CampaignGiftWrapResource(Resource):
     def post(self, campaign_id: str, wishlist_item_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
+            before = _gift_snapshot(db, campaign_id, wishlist_item_id)
             item = _gift_operations_service.wrap_gift(
                 db,
                 campaign_id=uuid.UUID(campaign_id),
@@ -435,6 +679,15 @@ class CampaignGiftWrapResource(Resource):
                 notes=str(payload.get("notes") or "").strip() or None,
             )
             response = serialize_gift_operations_item(item)
+            _record_gift_status_event(
+                db,
+                campaign_id=campaign_id,
+                item=item,
+                before=before,
+                action="status_changed",
+                summary=f"Wrapped gift {item.description}.",
+                metadata={"notes": str(payload.get("notes") or "").strip() or None},
+            )
         return {"gift": response}
 
 
@@ -444,6 +697,7 @@ class CampaignGiftReadyResource(Resource):
     def post(self, campaign_id: str, wishlist_item_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
+            before = _gift_snapshot(db, campaign_id, wishlist_item_id)
             item = _gift_operations_service.mark_ready(
                 db,
                 campaign_id=uuid.UUID(campaign_id),
@@ -452,6 +706,15 @@ class CampaignGiftReadyResource(Resource):
                 notes=str(payload.get("notes") or "").strip() or None,
             )
             response = serialize_gift_operations_item(item)
+            _record_gift_status_event(
+                db,
+                campaign_id=campaign_id,
+                item=item,
+                before=before,
+                action="status_changed",
+                summary=f"Marked gift {item.description} ready for distribution.",
+                metadata={"notes": str(payload.get("notes") or "").strip() or None},
+            )
         return {"gift": response}
 
 
@@ -461,6 +724,7 @@ class CampaignGiftPickupResource(Resource):
     def post(self, campaign_id: str, wishlist_item_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
+            before = _gift_snapshot(db, campaign_id, wishlist_item_id)
             item = _gift_operations_service.mark_picked_up(
                 db,
                 campaign_id=uuid.UUID(campaign_id),
@@ -469,6 +733,15 @@ class CampaignGiftPickupResource(Resource):
                 notes=str(payload.get("notes") or "").strip() or None,
             )
             response = serialize_gift_operations_item(item)
+            _record_gift_status_event(
+                db,
+                campaign_id=campaign_id,
+                item=item,
+                before=before,
+                action="status_changed",
+                summary=f"Marked gift {item.description} picked up.",
+                metadata={"notes": str(payload.get("notes") or "").strip() or None},
+            )
         return {"gift": response}
 
 
@@ -478,6 +751,7 @@ class CampaignGiftExceptionResource(Resource):
     def post(self, campaign_id: str, wishlist_item_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
+            before = _gift_snapshot(db, campaign_id, wishlist_item_id)
             item = _gift_operations_service.mark_exception(
                 db,
                 campaign_id=uuid.UUID(campaign_id),
@@ -486,6 +760,15 @@ class CampaignGiftExceptionResource(Resource):
                 notes=str(payload.get("notes") or "").strip() or None,
             )
             response = serialize_gift_operations_item(item)
+            _record_gift_status_event(
+                db,
+                campaign_id=campaign_id,
+                item=item,
+                before=before,
+                action="status_changed",
+                summary=f"Marked gift {item.description} as an exception.",
+                metadata={"notes": str(payload.get("notes") or "").strip() or None},
+            )
         return {"gift": response}
 
 
@@ -502,3 +785,123 @@ def _limit_arg() -> int:
 def _actor_user_id() -> uuid.UUID | None:
     user_id = getattr(g, "user_id", None)
     return uuid.UUID(str(user_id)) if user_id else None
+
+
+def _gift_snapshot(db, campaign_id: str, wishlist_item_id: str) -> dict[str, object]:
+    item = (
+        db.query(WishlistItem)
+        .join(Wishlist, Wishlist.id == WishlistItem.wishlist_id)
+        .filter(
+            Wishlist.campaign_id == uuid.UUID(campaign_id),
+            WishlistItem.id == uuid.UUID(wishlist_item_id),
+        )
+        .one_or_none()
+    )
+    if item is None:
+        return {}
+    return {
+        "status": item.status,
+        "qty_fulfilled": item.qty_fulfilled,
+        "storage_location_id": str(item.storage_location_id) if item.storage_location_id else None,
+    }
+
+
+def _gift_snapshot_by_label(db, campaign_id: str, label_code: str) -> dict[str, object]:
+    item = (
+        db.query(WishlistItem)
+        .join(Wishlist, Wishlist.id == WishlistItem.wishlist_id)
+        .filter(
+            Wishlist.campaign_id == uuid.UUID(campaign_id),
+            WishlistItem.label_code == label_code,
+        )
+        .one_or_none()
+    )
+    if item is None:
+        return {}
+    return {
+        "status": item.status,
+        "qty_fulfilled": item.qty_fulfilled,
+        "storage_location_id": str(item.storage_location_id) if item.storage_location_id else None,
+    }
+
+
+def _record_gift_status_event(
+    db,
+    *,
+    campaign_id: str,
+    item,
+    before: dict[str, object],
+    action: str,
+    summary: str,
+    metadata: dict[str, object] | None = None,
+) -> None:
+    _audit_event_service.record_event(
+        db,
+        area="gifts",
+        action=action,
+        entity_type="wishlist_item",
+        entity_id=item.id,
+        entity_label=item.description,
+        campaign_id=campaign_id,
+        actor_user_id=_actor_user_id(),
+        summary=summary,
+        changes=build_changes(
+            before=before,
+            after={
+                "status": item.status,
+                "qty_fulfilled": item.qty_fulfilled,
+                "storage_location_id": str(item.storage_location_id) if item.storage_location_id else None,
+            },
+            field_map=GIFT_STATUS_FIELD_MAP,
+        ),
+        metadata={key: value for key, value in (metadata or {}).items() if value not in (None, "")},
+    )
+    db.commit()
+
+
+def _snapshot_gift_tag_template(template) -> dict[str, object]:
+    return {
+        "template_key": template.template_key,
+        "name": template.name,
+        "tag_width_in": str(template.tag_width_in),
+        "tag_height_in": str(template.tag_height_in),
+        "orientation": template.orientation,
+        "layout_changed": _content_marker(template.layout_json),
+        "gift_tag_message": template.gift_tag_message,
+        "include_cut_lines_default": bool(template.include_cut_lines_default),
+        "is_active": bool(template.is_active),
+    }
+
+
+def _content_marker(value: object) -> str:
+    digest = hashlib.sha256(str(value).encode("utf-8")).hexdigest()[:12]
+    return f"content:{digest}"
+
+
+def _find_donation_line(db, campaign_id: str, line_id: str) -> DonationLine | None:
+    return (
+        db.query(DonationLine)
+        .filter(DonationLine.campaign_id == uuid.UUID(campaign_id), DonationLine.id == uuid.UUID(line_id))
+        .one_or_none()
+    )
+
+
+def _donation_line_snapshot(line: DonationLine) -> dict[str, object]:
+    return {
+        "line_type": line.line_type,
+        "description": line.description,
+        "category": line.category,
+        "size": line.size,
+        "quantity": line.quantity,
+        "quantity_available": line.quantity_available,
+        "quantity_assigned": line.quantity_assigned,
+        "estimated_value_cents": line.estimated_value_cents,
+        "age_min": line.age_min,
+        "age_max": line.age_max,
+        "gender_fit": line.gender_fit,
+        "gift_condition": line.gift_condition,
+        "source_label": line.source_label,
+        "inventory_status": line.inventory_status,
+        "storage_location_id": str(line.storage_location_id) if line.storage_location_id else None,
+        "notes": line.notes,
+    }
