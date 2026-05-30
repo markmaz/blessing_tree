@@ -75,7 +75,7 @@ class OrganizationTypeService:
             organization_type.is_active = bool(payload.get("is_active"))
         if "sort_order" in payload:
             organization_type.sort_order = validate_sort_order(payload.get("sort_order"))
-        db.flush()
+        db.commit()
         return self.get_type(db, organization_type.code)
 
     def delete_type(self, db: Session, code: str) -> None:

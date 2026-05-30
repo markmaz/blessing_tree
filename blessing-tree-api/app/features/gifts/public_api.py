@@ -5,14 +5,22 @@ from flask_restx import Resource
 
 from app.db import SessionLocal
 from app.exceptions.service_error import ServiceError
+from app.features.admin.audit_service import AuditEventService, build_changes
 from app.features.gifts import GiftLabelService, GiftSearchService, serialize_gift_search_response
 from app.features.gifts.serializers import serialize_public_manual_scan_lookup, serialize_public_scan_lookup
 from app.features.public import public_ns
 from app.models.campaign import Campaign
 from app.models.campaign_manual_gift_label import CampaignManualGiftLabel
+from app.models.wishlist_item import WishlistItem
 
 _gift_search_service = GiftSearchService()
 _gift_label_service = GiftLabelService()
+_audit_event_service = AuditEventService()
+
+GIFT_STATUS_FIELD_MAP = {
+    "status": "Status",
+    "qty_fulfilled": "Quantity Fulfilled",
+}
 
 
 @public_ns.route("/campaigns/<string:public_slug>/gifts/search")
@@ -69,6 +77,8 @@ class PublicGiftScanActionsResource(Resource):
         if not action:
             return {"error": "action is required", "details": {"field": "action"}}, 400
         with SessionLocal() as db:
+            before_item = _find_item_by_label(db, label_code)
+            before = _gift_snapshot(before_item) if before_item is not None else {}
             item = _gift_label_service.public_scan_action(
                 db,
                 label_code=label_code,
@@ -79,6 +89,24 @@ class PublicGiftScanActionsResource(Resource):
             if campaign is None:
                 raise ServiceError("Campaign not found for gift label", status_code=404)
             response = serialize_public_scan_lookup(campaign, item)
+            _audit_event_service.record_event(
+                db,
+                area="gifts",
+                action="scanned",
+                entity_type="wishlist_item",
+                entity_id=item.id,
+                entity_label=item.description,
+                campaign_id=campaign.id,
+                actor_user_id=None,
+                summary=f"Public scan performed {action.upper()} for {item.description}.",
+                changes=build_changes(
+                    before=before,
+                    after=_gift_snapshot(item),
+                    field_map=GIFT_STATUS_FIELD_MAP,
+                ),
+                metadata={"label_code": label_code, "scan_action": action.upper(), "source": "public_scan"},
+            )
+            db.commit()
         return response
 
 
@@ -90,3 +118,16 @@ def _limit_arg() -> int:
         return int(value)
     except ValueError:
         return 100
+
+
+def _find_item_by_label(db, label_code: str) -> WishlistItem | None:
+    return db.query(WishlistItem).filter(WishlistItem.label_code == (label_code or "").strip()).one_or_none()
+
+
+def _gift_snapshot(item: WishlistItem | None) -> dict[str, object]:
+    if item is None:
+        return {}
+    return {
+        "status": item.status,
+        "qty_fulfilled": item.qty_fulfilled,
+    }

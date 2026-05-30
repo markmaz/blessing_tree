@@ -21,6 +21,7 @@ import {
 import { AccountProfilePage } from '@/pages/AccountProfilePage';
 import { AccountSettingsPage } from '@/pages/AccountSettingsPage';
 import { AdminCapabilitiesPage } from '@/pages/AdminCapabilitiesPage';
+import { AdminActivityLogPage } from '@/pages/AdminActivityLogPage';
 import { AdminAskReviewPage } from '@/pages/AdminAskReviewPage';
 import { AdminCampaignOperationsPage } from '@/pages/AdminCampaignOperationsPage';
 import { AdminHealthPage } from '@/pages/AdminHealthPage';
@@ -236,6 +237,7 @@ export function App() {
                 <Route path={routes.ADMIN.slice(1)} element={<AdminPage />}>
                   <Route index element={<Navigate to={routes.ADMIN_USERS} replace />} />
                   <Route path="users" element={<AdminUsersPage />} />
+                  <Route path="activity-log" element={<AdminActivityLogPage />} />
                   <Route path="ask-review" element={<AdminAskReviewPage />} />
                   <Route path="campaign-operations" element={<AdminCampaignOperationsPage />} />
                   <Route path="organization-types" element={<AdminOrganizationTypesPage />} />

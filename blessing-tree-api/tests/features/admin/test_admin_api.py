@@ -339,6 +339,228 @@ def test_admin_can_manage_organization_types(
     assert patched["is_active"] is False
 
 
+def test_admin_audit_event_api_lists_filters_and_returns_detail(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    from app.features.admin import api as admin_api
+    from app.features.admin.audit_service import AuditEventService
+
+    audit_service = AuditEventService()
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="audit-admin@blessingtree.test", role="ADMIN", name="Audit Admin")
+        other_user = seed_user(db, email="other-audit@blessingtree.test", role="COORDINATOR", name="Other User")
+        campaign = seed_campaign(db, name="Audit Campaign")
+
+        with app.test_request_context(
+            "/api/v1/admin/audit-events",
+            headers={"User-Agent": "Audit Test Browser", "X-Forwarded-For": "203.0.113.10"},
+        ):
+            from flask import g
+
+            g.correlation_id = "corr-audit-1"
+            event = audit_service.record_event(
+                db,
+                area="gifts",
+                action="status_changed",
+                entity_type="wishlist_item",
+                entity_id=uuid.uuid4(),
+                entity_label="Art Kit",
+                campaign_id=campaign.id,
+                actor_user_id=admin_user.id,
+                summary="Audit Admin changed Art Kit from Ready to Distributed.",
+                changes=[
+                    {
+                        "field": "status",
+                        "label": "Status",
+                        "before": "Ready",
+                        "after": "Distributed",
+                    },
+                    {
+                        "field": "password",
+                        "label": "Password",
+                        "before": "old-secret",
+                        "after": "new-secret",
+                    },
+                ],
+                metadata={"source": "unit-test", "api_key": "secret-value"},
+            )
+        audit_service.record_event(
+            db,
+            area="people",
+            action="created",
+            entity_type="recipient_group",
+            entity_label="Johnson Household",
+            campaign_id=campaign.id,
+            actor_user_id=other_user.id,
+            summary="Other User created Johnson Household.",
+        )
+        event_id = str(event.id)
+        db.commit()
+        admin_user_id = str(admin_user.id)
+
+    list_response = client.get(
+        "/api/v1/admin/audit-events?area=gifts&search=Art&page_size=10",
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+
+    assert list_response.status_code == 200
+    list_payload = list_response.get_json()
+    assert list_payload["pagination"]["total"] == 1
+    assert list_payload["filters"]["areas"]
+    item = list_payload["items"][0]
+    assert item["id"] == event_id
+    assert item["area"] == "gifts"
+    assert item["action"] == "status_changed"
+    assert item["entity_label"] == "Art Kit"
+    assert item["change_count"] == 2
+    assert item["actor"]["display_name"] == "Audit Admin"
+    assert item["campaign"]["name"] == "Audit Campaign"
+
+    detail_response = client.get(
+        f"/api/v1/admin/audit-events/{event_id}",
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+
+    assert detail_response.status_code == 200
+    detail = detail_response.get_json()["event"]
+    assert detail["correlation_id"] == "corr-audit-1"
+    assert detail["ip_address"] == "203.0.113.10"
+    assert detail["user_agent"] == "Audit Test Browser"
+    assert detail["change_set"][0] == {
+        "field": "status",
+        "label": "Status",
+        "before": "Ready",
+        "after": "Distributed",
+    }
+    assert detail["change_set"][1]["before"] == "[redacted]"
+    assert detail["metadata"]["source"] == "unit-test"
+    assert detail["metadata"]["api_key"] == "[redacted]"
+
+
+def test_admin_audit_event_api_requires_app_admin(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    from app.features.admin import api as admin_api
+    from app.features.admin.audit_service import AuditEventService
+
+    with admin_api.SessionLocal() as db:
+        non_admin = seed_user(db, email="audit-viewer@blessingtree.test", role="VOLUNTEER", name="Audit Viewer")
+        AuditEventService().record_event(
+            db,
+            area="admin",
+            action="created",
+            entity_type="app_user",
+            entity_label="Sample User",
+            summary="Sample User was created.",
+        )
+        non_admin_id = str(non_admin.id)
+        db.commit()
+
+    response = client.get(
+        "/api/v1/admin/audit-events",
+        headers=auth_header(non_admin_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 403
+
+
+def test_admin_audit_event_api_validates_bad_filters(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    from app.features.admin import api as admin_api
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="audit-filter-admin@blessingtree.test", role="ADMIN", name="Audit Admin")
+        admin_user_id = str(admin_user.id)
+        db.commit()
+
+    response = client.get(
+        "/api/v1/admin/audit-events?campaign_id=not-a-uuid",
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+
+    assert response.status_code == 400
+
+
+def test_admin_mutations_write_audit_events(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    from app.features.admin import api as admin_api
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="audit-writer-admin@blessingtree.test", role="ADMIN", name="Audit Writer")
+        admin_user_id = str(admin_user.id)
+        db.commit()
+
+    headers = auth_header(admin_user_id, "ADMIN")
+
+    invite_response = client.post(
+        "/api/v1/admin/users",
+        json={
+            "email": "audit-invitee@blessingtree.test",
+            "display_name": "Audit Invitee",
+            "role": "COORDINATOR",
+        },
+        headers=headers,
+    )
+    assert invite_response.status_code == 201
+
+    feature_response = client.put(
+        "/api/v1/admin/features/people",
+        json={"is_enabled": False},
+        headers=headers,
+    )
+    assert feature_response.status_code == 200
+
+    organization_type_response = client.post(
+        "/api/v1/admin/organization-types",
+        json={
+            "label": "Audit Partners",
+            "recipient_category": "FAMILY",
+            "sort_order": 42,
+        },
+        headers=headers,
+    )
+    assert organization_type_response.status_code == 201
+
+    audit_response = client.get(
+        "/api/v1/admin/audit-events?area=admin&page_size=20",
+        headers=headers,
+    )
+    assert audit_response.status_code == 200
+    events = audit_response.get_json()["items"]
+    entity_types = {event["entity_type"] for event in events}
+    assert {"app_user", "feature_flag", "organization_type"}.issubset(entity_types)
+    invite_event = next(event for event in events if event["entity_type"] == "app_user")
+    assert invite_event["actor"]["display_name"] == "Audit Writer"
+    assert invite_event["summary"] == "Invited user Audit Invitee."
+
+    detail_response = client.get(
+        f"/api/v1/admin/audit-events/{invite_event['id']}",
+        headers=headers,
+    )
+    assert detail_response.status_code == 200
+    detail = detail_response.get_json()["event"]
+    changed_fields = {change["field"] for change in detail["change_set"]}
+    assert {"email", "display_name", "role", "is_active"}.issubset(changed_fields)
+
+
 def test_campaign_operation_definition_mutation_requires_admin(
     app: Flask,
     client,

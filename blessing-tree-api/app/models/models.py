@@ -15,6 +15,7 @@ from .admin_llm_configuration import AdminLlmConfiguration
 from .admin_user_invitation import AdminUserInvitation
 from .app_user import AppUser
 from .app_feature_flag import AppFeatureFlag
+from .audit_event import AuditEvent
 from .ask_prompt_log import AskPromptLog
 from .auth import AuthIdentity
 from .auth_password_reset_token import AuthPasswordResetToken
@@ -71,6 +72,7 @@ __all__ = [
     "AppUser",
     "AppFeatureFlag",
     "AppUserSettings",
+    "AuditEvent",
     "AskPromptLog",
     "AuthIdentity",
     "AuthPasswordResetToken",

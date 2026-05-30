@@ -108,6 +108,7 @@ describe('SidebarNav', () => {
 
     expect(screen.getByText(/^admin$/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /user management/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /activity log/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /campaign operations/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /llm configuration/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /health check/i })).toBeInTheDocument();

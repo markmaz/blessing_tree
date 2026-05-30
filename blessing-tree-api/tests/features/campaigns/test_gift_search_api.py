@@ -8,6 +8,7 @@ from app.features.campaigns.studio_service import CampaignStudioService
 from app.features.gifts.search_parser import parse_gift_search_text
 from app.models.campaign_gift_policy import CampaignGiftPolicy
 from app.models.campaign_gift_reminder_rule import CampaignGiftReminderRule
+from app.models.audit_event import AuditEvent
 from app.models.campaign_manual_gift_label import CampaignManualGiftLabel
 from app.models.campaign_milestone import CampaignMilestone
 from app.models.communication_template import CommunicationTemplate
@@ -144,6 +145,17 @@ def test_staff_can_commit_and_release_gift(app, monkeypatch) -> None:
     assert commit_payload["gift"]["sponsorship_status"] == "SPONSORED"
     assert session.query(SponsorshipItem).filter(SponsorshipItem.wishlist_item_id == gifts["coat_id"]).count() == 1
     assert session.query(GiftReservation).filter(GiftReservation.wishlist_item_id == gifts["coat_id"]).count() == 1
+    commit_audit = (
+        session.query(AuditEvent)
+        .filter(AuditEvent.entity_id == gifts["coat_id"], AuditEvent.area == "gifts")
+        .order_by(AuditEvent.occurred_at.desc())
+        .first()
+    )
+    assert commit_audit is not None
+    assert commit_audit.action == "status_changed"
+    assert commit_audit.change_set_json[0]["field"] == "status"
+    assert commit_audit.change_set_json[0]["before"] == "OPEN"
+    assert commit_audit.change_set_json[0]["after"] == "COMMITTED"
 
     release_response = client.post(
         f"/api/v1/campaigns/{campaign.id}/gifts/{gifts['coat_id']}/release",
