@@ -600,4 +600,20 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
             ),
         ),
     ),
+    HelpTopic(
+        key="activity_log",
+        title="Review activity history",
+        phrases=("activity log", "audit log", "who changed", "change history", "what changed", "export activity log"),
+        answer=(
+            "App admins can use Admin > Activity Log to review important changes. Filter by search text, area, action, "
+            "and date range, click a row for before/after details, or export the currently loaded results to PDF or Excel."
+        ),
+        actions=(
+            AskAction(
+                label="Open Activity Log",
+                route_name="admin_activity_log",
+                required_capability=None,
+            ),
+        ),
+    ),
 )

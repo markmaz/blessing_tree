@@ -189,8 +189,8 @@ FIELD_REFERENCES: tuple[FieldReference, ...] = (
     FieldReference(
         section='Common List, Drawer, and Export Controls',
         field='Excel Export',
-        what_it_does='Downloads report data for spreadsheet filtering or analysis.',
-        suggestion='Use Excel when staff need to sort, filter, or reconcile data.',
+        what_it_does='Downloads a true .xlsx workbook for spreadsheet filtering or analysis.',
+        suggestion='Use Excel when staff need to sort, filter, reconcile data, or share a workbook.',
     ),
     FieldReference(
         section='Common List, Drawer, and Export Controls',
@@ -1472,9 +1472,39 @@ FIELD_REFERENCES: tuple[FieldReference, ...] = (
     ),
     FieldReference(
         section='Report Screen Fields',
+        field='Activity Log Search',
+        what_it_does='Search box on Admin Activity Log.',
+        suggestion='Use it to find a sponsor, person, record label, user, or summary text.',
+    ),
+    FieldReference(
+        section='Report Screen Fields',
+        field='Activity Log Area',
+        what_it_does='Filters activity by app area.',
+        suggestion='Use this to focus on People, Sponsors, Gifts, Campaigns, Communications, Admin, Ask, or Templates.',
+    ),
+    FieldReference(
+        section='Report Screen Fields',
+        field='Activity Log Action',
+        what_it_does='Filters by the kind of change.',
+        suggestion='Use this for created, updated, status changed, sent, scheduled, printed, scanned, activated, or deactivated events.',
+    ),
+    FieldReference(
+        section='Report Screen Fields',
+        field='Activity Log Date Range',
+        what_it_does='Limits audit events by when they occurred.',
+        suggestion='Use this when reviewing a specific event day, pickup window, or operating week.',
+    ),
+    FieldReference(
+        section='Report Screen Fields',
+        field='Activity Log Row',
+        what_it_does='Clickable audit event summary.',
+        suggestion='Click a row to see details, including before/after field values when they were captured.',
+    ),
+    FieldReference(
+        section='Report Screen Fields',
         field='Export Buttons',
         what_it_does='Download report output.',
-        suggestion='Use Excel for working data and PDF for a formatted snapshot.',
+        suggestion='Use Excel for a .xlsx workbook and PDF for a formatted snapshot. Exports use the rows currently loaded on the screen.',
     ),
 )
 

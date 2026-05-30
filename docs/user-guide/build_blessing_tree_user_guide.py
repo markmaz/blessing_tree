@@ -247,7 +247,7 @@ def build_document() -> None:
             ["People", "Family, organization, child, adult, wishlist, and people reports."],
             ["Sponsors", "Sponsor intake, sponsor directory, sponsor reports, interaction logs, and sponsor email sends."],
             ["Gifts", "Gift search, reservations, operations, gift pool, Gift Status report, and Gift Tag Builder."],
-            ["Admin", "User access, organization types, global campaign operation rules, LLM configuration, health, and app capabilities."],
+            ["Admin", "User access, activity history, organization types, global campaign operation rules, LLM configuration, health, and app capabilities."],
         ],
         widths=[1.5, 4.75],
     )
@@ -529,7 +529,7 @@ def build_document() -> None:
     add_heading(doc, "Reports and Exports", level=1)
     add_body(
         doc,
-        "Reports appear under People, Sponsors, and Gifts. Report screens are designed to be exported to Excel and PDF. Excel is useful for filtering and analysis; PDF is useful for sharing a clean snapshot.",
+        "Reports appear under People, Sponsors, Gifts, Ask Blessing Tree, and Admin Activity Log. Report screens are designed to be exported to Excel and PDF. Excel is useful for filtering and analysis; PDF is useful for sharing a clean snapshot.",
     )
     add_table(
         doc,
@@ -540,8 +540,14 @@ def build_document() -> None:
             ["Gift Status", "Recipient-by-recipient visual gift workflow status with actions from the drawer."],
             ["Dashboard Widgets", "Calendar attention, popular gifts by gender, recipients sponsored by sponsor, unsponsored gifts, counts, and recent Ask prompts."],
             ["Ask Blessing Tree", "Natural-language report answers and report links for supported catalog questions."],
+            ["Admin Activity Log", "Filtered list of who changed what, when it happened, and which area, action, campaign, and record were involved."],
         ],
         widths=[1.7, 4.55],
+    )
+    add_note(
+        doc,
+        "Export scope",
+        "Exports use the rows currently loaded on the screen. On paginated screens such as Activity Log, apply the filters and row count you want before exporting.",
     )
 
     add_heading(doc, "Admin", level=1)
@@ -565,6 +571,22 @@ def build_document() -> None:
     add_body(
         doc,
         "Campaign Operations is the admin rule builder for global milestone definitions and readiness rules. Use it to define which milestones exist, whether they are blockers, where readiness warnings appear, and what message staff see.",
+    )
+    add_heading(doc, "Activity Log", level=2)
+    add_body(
+        doc,
+        "Activity Log shows a durable history of important changes across the app. Use it to answer questions such as who updated a sponsor, who changed a gift status, who edited campaign settings, who changed user access, or when a communication/template was changed.",
+    )
+    add_screenshot(doc, "admin-activity-log.png", "Admin Activity Log shows searchable change history with PDF and Excel exports.")
+    add_bullets(
+        doc,
+        [
+            "Use Search to find a person, sponsor, record label, user, or summary text.",
+            "Use Area and Action filters to narrow the log to people, sponsors, gifts, communications, campaigns, admin changes, created records, updates, status changes, scans, sends, and prints.",
+            "Use From and To dates when reviewing a specific operating window.",
+            "Click any row to open the detail drawer with before/after values when field-level changes were captured.",
+            "Use Excel export for sorting/filtering outside the app and PDF export for a readable snapshot of the currently loaded results.",
+        ],
     )
     add_heading(doc, "Organization Types", level=2)
     add_body(

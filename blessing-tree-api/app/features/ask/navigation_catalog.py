@@ -63,6 +63,12 @@ NAVIGATION_TARGETS: tuple[NavigationTarget, ...] = (
     NavigationTarget("account_profile", "Profile", ("profile", "my profile"), "account_profile"),
     NavigationTarget("account_settings", "Settings", ("settings", "my settings", "user settings"), "account_settings"),
     NavigationTarget("admin_users", "User Management", ("user management", "users", "invite user", "app access"), "admin_users"),
+    NavigationTarget(
+        "admin_activity_log",
+        "Activity Log",
+        ("activity log", "audit log", "who changed", "change history", "what changed", "export activity log"),
+        "admin_activity_log",
+    ),
     NavigationTarget("admin_campaign_operations", "Campaign Operations", ("campaign operations", "milestones", "readiness rules", "rule builder"), "admin_campaign_operations"),
     NavigationTarget(
         "admin_organization_types",
@@ -107,6 +113,7 @@ def build_route(route_name: str, campaign_id: str) -> str:
         "account_profile": "/account/profile",
         "account_settings": "/account/settings",
         "admin_users": "/admin/users",
+        "admin_activity_log": "/admin/activity-log",
         "admin_campaign_operations": "/admin/campaign-operations",
         "admin_organization_types": "/admin/organization-types",
         "admin_llm": "/admin/llm",

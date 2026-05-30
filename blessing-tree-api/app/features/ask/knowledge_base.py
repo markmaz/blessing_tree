@@ -269,12 +269,25 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
         content=(
             "Admin is for app administrators. User Management controls invitations, user status, deletion of deactivated "
             "users, app roles, and campaign screen access. Campaign Operations manages milestone and readiness rule definitions. "
-            "Organization Types controls the People Intake organization dropdown."
+            "Organization Types controls the People Intake organization dropdown. Activity Log shows who changed important "
+            "records, when it happened, the affected area/action/campaign, and before/after field values when captured."
         ),
-        phrases=("admin", "user management", "invite users", "delete user", "organization types", "campaign operations"),
+        phrases=(
+            "admin",
+            "user management",
+            "invite users",
+            "delete user",
+            "organization types",
+            "campaign operations",
+            "activity log",
+            "audit log",
+            "who changed",
+            "change history",
+        ),
         steps=(
             "Open Admin.",
             "Use User Management for users and access.",
+            "Use Activity Log to review important changes and export filtered activity.",
             "Use Campaign Operations for milestone and readiness rules.",
             "Use Organization Types for intake organization choices.",
             "Use Health Check and App Capabilities for runtime administration.",
@@ -291,7 +304,7 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
             "common list controls, campaign setup, Campaign Studio, communications, milestones, gift rules, people, "
             "wishlists, sponsors, sponsor interactions, gift workflow, Gift Status, Gift Pool, Gift Tag Builder, Flyer "
             "Builder, public sponsor registration, public QR scanning, user management, organization types, campaign "
-            "operations, Ask Blessing Tree, and reports. Each field explains what it is used for and gives practical "
+            "operations, Activity Log, Ask Blessing Tree, and reports. Each field explains what it is used for and gives practical "
             "operator suggestions."
         ),
         phrases=(

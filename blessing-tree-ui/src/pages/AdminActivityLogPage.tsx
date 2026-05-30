@@ -10,6 +10,7 @@ import type {
   AdminAuditEventsPayload,
 } from '@/features/admin/model/adminTypes';
 import { AdminWorkspaceDrawer } from '@/features/admin/ui/AdminWorkspaceDrawer';
+import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
 import '@/features/admin/ui/adminUsers.css';
 import '@/features/admin/ui/adminCampaignOperations.css';
 
@@ -57,6 +58,43 @@ export function AdminActivityLogPage() {
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(pagination.total / pagination.pageSize)),
     [pagination.pageSize, pagination.total]
+  );
+  const exportPayload = useMemo(
+    () => ({
+      title: 'Admin Activity Log',
+      subtitle: buildExportSubtitle(appliedFilters, pagination, events.length),
+      fileName: 'admin-activity-log',
+      sheets: [
+        {
+          name: 'Activity',
+          columns: [
+            { key: 'occurredAt', label: 'When' },
+            { key: 'user', label: 'User' },
+            { key: 'email', label: 'Email' },
+            { key: 'area', label: 'Area' },
+            { key: 'action', label: 'Action' },
+            { key: 'campaign', label: 'Campaign' },
+            { key: 'recordType', label: 'Record Type' },
+            { key: 'record', label: 'Record' },
+            { key: 'summary', label: 'Summary' },
+            { key: 'changedFields', label: 'Changed Fields' },
+          ],
+          rows: events.map((event) => ({
+            occurredAt: formatDateTime(event.occurredAt),
+            user: event.actor?.displayName ?? 'System',
+            email: event.actor?.email ?? '',
+            area: formatLabel(event.area),
+            action: formatLabel(event.action),
+            campaign: event.campaign?.name ?? 'Global',
+            recordType: formatLabel(event.entityType),
+            record: event.entityLabel ?? '',
+            summary: event.summary,
+            changedFields: event.changeCount,
+          })),
+        },
+      ],
+    }),
+    [appliedFilters, events, pagination]
   );
 
   useEffect(() => {
@@ -161,15 +199,18 @@ export function AdminActivityLogPage() {
             Review recent changes across users, campaigns, people, sponsors, gifts, and communications.
           </p>
         </div>
-        <button
-          type="button"
-          className="btn btn-outline-secondary btn-sm"
-          onClick={() => applyFilters(pagination.page)}
-          disabled={isLoading}
-        >
-          <i className="bi bi-arrow-clockwise me-2" aria-hidden="true" />
-          Refresh
-        </button>
+        <div className="d-flex flex-wrap gap-2">
+          <ReportExportActions payload={exportPayload} disabled={isLoading || events.length === 0} />
+          <button
+            type="button"
+            className="btn btn-outline-secondary btn-sm"
+            onClick={() => applyFilters(pagination.page)}
+            disabled={isLoading}
+          >
+            <i className="bi bi-arrow-clockwise me-2" aria-hidden="true" />
+            Refresh
+          </button>
+        </div>
       </div>
 
       <div className="content-card">
@@ -547,6 +588,22 @@ function formatDateTime(value: string): string {
     hour: 'numeric',
     minute: '2-digit',
   }).format(date);
+}
+
+function buildExportSubtitle(
+  filters: AdminAuditEventFilters,
+  pagination: AdminAuditEventsPayload['pagination'],
+  loadedCount: number
+): string {
+  const parts = [
+    filters.search ? `Search: ${filters.search}` : null,
+    filters.area ? `Area: ${formatLabel(filters.area)}` : null,
+    filters.action ? `Action: ${formatLabel(filters.action)}` : null,
+    filters.dateFrom ? `From: ${filters.dateFrom}` : null,
+    filters.dateTo ? `To: ${filters.dateTo}` : null,
+  ].filter(Boolean);
+  const resultSummary = `Showing ${loadedCount} of ${pagination.total} events, page ${pagination.page} of ${Math.max(1, Math.ceil(pagination.total / pagination.pageSize))}.`;
+  return parts.length ? `${resultSummary} ${parts.join(' | ')}` : resultSummary;
 }
 
 function formatValue(value: unknown): string {
