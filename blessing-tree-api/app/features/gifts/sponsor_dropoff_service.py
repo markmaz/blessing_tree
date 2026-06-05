@@ -141,11 +141,48 @@ class SponsorDropoffService:
         if row is None:
             raise ServiceError("Drop-off link not found", status_code=404)
         if row.revoked_at is not None:
+            self._record_scan_event(
+                db,
+                row=row,
+                outcome="REVOKED",
+                scanned_by_user_id=scanned_by_user_id,
+                user_agent=user_agent,
+                scanned_at=now,
+            )
             raise ServiceError("This drop-off link has been revoked.", status_code=410)
         if row.expires_at <= now:
+            self._record_scan_event(
+                db,
+                row=row,
+                outcome="EXPIRED",
+                scanned_by_user_id=scanned_by_user_id,
+                user_agent=user_agent,
+                scanned_at=now,
+            )
             raise ServiceError("This drop-off link is expired.", status_code=410)
 
         row.last_scanned_at = now
+        self._record_scan_event(
+            db,
+            row=row,
+            outcome="RESOLVED",
+            scanned_by_user_id=scanned_by_user_id,
+            user_agent=user_agent,
+            scanned_at=now,
+        )
+        db.flush()
+        return serialize_dropoff_payload(row)
+
+    @staticmethod
+    def _record_scan_event(
+        db: Session,
+        *,
+        row: SponsorDropoffToken,
+        outcome: str,
+        scanned_by_user_id: str | uuid.UUID | None,
+        user_agent: str | None,
+        scanned_at: datetime,
+    ) -> None:
         db.add(
             SponsorDropoffScanEvent(
                 id=uuid.uuid4(),
@@ -154,13 +191,11 @@ class SponsorDropoffService:
                 sponsorship_id=row.sponsorship_id,
                 sponsor_id=row.sponsor_id,
                 scanned_by_user_id=uuid.UUID(str(scanned_by_user_id)) if scanned_by_user_id else None,
-                scanned_at=now,
-                outcome="RESOLVED",
+                scanned_at=scanned_at,
+                outcome=outcome,
                 user_agent=_truncate_user_agent(user_agent),
             )
         )
-        db.flush()
-        return serialize_dropoff_payload(row)
 
 
 def serialize_dropoff_payload(row: SponsorDropoffToken) -> dict[str, object]:

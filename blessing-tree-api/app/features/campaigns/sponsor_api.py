@@ -7,7 +7,11 @@ from app.db import SessionLocal
 from app.features.admin.audit_service import AuditEventService, build_changes
 from app.features.campaigns import campaign_ns
 from app.features.campaigns.communication_send_service import CampaignCommunicationSendService
-from app.features.gifts.sponsor_dropoff_service import SponsorDropoffService
+from app.features.gifts.sponsor_dropoff_service import (
+    SponsorDropoffService,
+    build_dropoff_qr_url,
+    build_dropoff_url,
+)
 from app.features.rbac.decorators import require_campaign_capability
 from app.features.sponsors import (
     CampaignSponsorService,
@@ -259,6 +263,46 @@ class CampaignSponsorCommunicationSendResource(Resource):
                 template_id=str(payload.get("template_id") or ""),
                 created_by_user_id=getattr(g, "user_id", None),
             ), 200
+
+
+@campaign_ns.route("/<string:campaign_id>/sponsors/<string:sponsor_id>/dropoff-tokens/regenerate")
+class CampaignSponsorDropoffTokenRegenerateResource(Resource):
+    @require_campaign_capability("campaign.sponsors.manage")
+    def post(self, campaign_id: str, sponsor_id: str):
+        with SessionLocal() as db:
+            sponsorship = _sponsor_service.get_sponsor(db, campaign_id, sponsor_id)
+            raw_token, token = _sponsor_dropoff_service.get_or_create_active_token(
+                db,
+                sponsorship=sponsorship,
+                created_by_user_id=getattr(g, "user_id", None),
+            )
+            db.flush()
+            db.expire_all()
+            sponsorship = _sponsor_service.get_sponsor(db, campaign_id, sponsor_id)
+            response = {
+                "sponsor": serialize_workspace_sponsor(sponsorship),
+                "dropoff_link": {
+                    "token_id": str(token.id),
+                    "dropoff_url": build_dropoff_url(raw_token, campaign_id=campaign_id),
+                    "qr_image_url": build_dropoff_qr_url(raw_token, campaign_id=campaign_id),
+                    "expires_at": token.expires_at.isoformat() if token.expires_at else None,
+                },
+            }
+            _record_sponsor_event(
+                db,
+                campaign_id=campaign_id,
+                action="regenerated",
+                entity_type="sponsor_dropoff_token",
+                entity_id=token.id,
+                entity_label=sponsorship.sponsor.display_name,
+                summary=f"Regenerated sponsor drop-off QR link for {sponsorship.sponsor.display_name}.",
+                metadata={
+                    "sponsor_id": sponsor_id,
+                    "sponsorship_id": str(token.sponsorship_id),
+                    "token_id": str(token.id),
+                },
+            )
+        return response, 200
 
 
 @campaign_ns.route("/<string:campaign_id>/sponsors/<string:sponsor_id>/dropoff-tokens/<string:token_id>/revoke")

@@ -66,6 +66,18 @@ export interface CampaignSponsorDropoffToken {
   scanEvents: CampaignSponsorDropoffScanEvent[];
 }
 
+export interface CampaignSponsorDropoffLink {
+  tokenId: string;
+  dropoffUrl: string;
+  qrImageUrl: string;
+  expiresAt: string | null;
+}
+
+export interface CampaignSponsorDropoffRegenerateResult {
+  sponsor: CampaignSponsor;
+  dropoffLink: CampaignSponsorDropoffLink;
+}
+
 export interface CampaignSponsorInteraction {
   id: string;
   campaignId: string;

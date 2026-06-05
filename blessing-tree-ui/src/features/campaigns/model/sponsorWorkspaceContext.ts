@@ -2,6 +2,7 @@ import { useOutletContext } from 'react-router-dom';
 import type { CampaignAccess } from '@/features/campaigns/model/campaignTypes';
 import type {
   CampaignSponsor,
+  CampaignSponsorDropoffRegenerateResult,
   CampaignSponsorInteraction,
   CampaignSponsorWorkspaceData,
   PendingSponsorRegistration,
@@ -45,6 +46,7 @@ export interface SponsorWorkspaceOutletContext {
     templateId: string
   ) => Promise<SponsorCommunicationSendResult | null>;
   onRevokeDropoffToken: (sponsorId: string, tokenId: string) => Promise<CampaignSponsor | null>;
+  onRegenerateDropoffToken: (sponsorId: string) => Promise<CampaignSponsorDropoffRegenerateResult | null>;
   onCommitGift: (sponsorId: string, wishlistItemId: string, notes?: string) => Promise<CampaignSponsor | null>;
   onSaveSponsor: (
     sponsor: SponsorUpsertInput,

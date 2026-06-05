@@ -5,6 +5,7 @@ import '@/features/campaigns/ui/campaignSponsors.css';
 import type { CampaignAccess } from '@/features/campaigns/model/campaignTypes';
 import type {
   CampaignSponsor,
+  CampaignSponsorDropoffRegenerateResult,
   CampaignSponsorInteraction,
   CampaignSponsorWorkspaceData,
   PendingSponsorRegistration,
@@ -61,6 +62,7 @@ interface CampaignSponsorsWorkspaceProps {
     templateId: string
   ) => Promise<SponsorCommunicationSendResult | null>;
   onRevokeDropoffToken: (sponsorId: string, tokenId: string) => Promise<CampaignSponsor | null>;
+  onRegenerateDropoffToken: (sponsorId: string) => Promise<CampaignSponsorDropoffRegenerateResult | null>;
   onCommitGift: (sponsorId: string, wishlistItemId: string, notes?: string) => Promise<CampaignSponsor | null>;
   onSaveSponsor: (
     sponsor: SponsorUpsertInput,
@@ -97,6 +99,7 @@ export function CampaignSponsorsWorkspace({
   onPreviewCommunication,
   onSendCommunication,
   onRevokeDropoffToken,
+  onRegenerateDropoffToken,
   onCommitGift,
   onSaveSponsor,
   onDeleteSponsor,
@@ -377,6 +380,7 @@ export function CampaignSponsorsWorkspace({
         onPreviewCommunication={onPreviewCommunication}
         onSendCommunication={onSendCommunication}
         onRevokeDropoffToken={onRevokeDropoffToken}
+        onRegenerateDropoffToken={onRegenerateDropoffToken}
         onCommitGift={onCommitGift}
         onSaveSponsor={onSaveSponsor}
         onDeleteSponsor={onDeleteSponsor}

@@ -1,6 +1,7 @@
 import { apiFetchJson } from '@/shared/api/client';
 import type {
   CampaignSponsor,
+  CampaignSponsorDropoffRegenerateResult,
   CampaignSponsorDropoffToken,
   CampaignSponsorInteraction,
   CampaignSponsorWorkspaceData,
@@ -77,6 +78,18 @@ interface SponsorDropoffScanEventResponse {
   scanned_at: string | null;
   outcome: string;
   user_agent: string | null;
+}
+
+interface SponsorDropoffLinkResponse {
+  token_id: string;
+  dropoff_url: string;
+  qr_image_url: string;
+  expires_at: string | null;
+}
+
+interface SponsorDropoffRegenerateResponse {
+  sponsor: SponsorResponse;
+  dropoff_link: SponsorDropoffLinkResponse;
 }
 
 interface SponsorResponse {
@@ -343,6 +356,25 @@ export async function revokeCampaignSponsorDropoffToken(
     { method: 'POST' }
   );
   return mapSponsor(response);
+}
+
+export async function regenerateCampaignSponsorDropoffToken(
+  campaignId: string,
+  sponsorId: string
+): Promise<CampaignSponsorDropoffRegenerateResult> {
+  const response = await apiFetchJson<SponsorDropoffRegenerateResponse>(
+    `/api/v1/campaigns/${campaignId}/sponsors/${sponsorId}/dropoff-tokens/regenerate`,
+    { method: 'POST' }
+  );
+  return {
+    sponsor: mapSponsor(response.sponsor),
+    dropoffLink: {
+      tokenId: response.dropoff_link.token_id,
+      dropoffUrl: response.dropoff_link.dropoff_url,
+      qrImageUrl: response.dropoff_link.qr_image_url,
+      expiresAt: response.dropoff_link.expires_at,
+    },
+  };
 }
 
 export async function getPendingSponsorRegistrations(
