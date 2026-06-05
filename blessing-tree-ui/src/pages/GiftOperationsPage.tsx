@@ -22,6 +22,12 @@ import type {
   GiftReminderRulesResult,
 } from '@/features/gifts/model/giftSearchTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
+import {
+  canCheckInGifts,
+  canDistributeGifts,
+  canManageSponsors,
+  canWrapGifts,
+} from '@/features/campaigns/model/campaignPermissions';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
 import { DrawerActions } from '@/shared/ui/DrawerActions';
 import { DrawerSection } from '@/shared/ui/DrawerSection';
@@ -80,6 +86,16 @@ export function GiftOperationsPage() {
   const [reminderResult, setReminderResult] = useState<GiftReminderRulesResult | null>(null);
   const [reminderForm, setReminderForm] = useState(DEFAULT_REMINDER_FORM);
   const [reminderPreview, setReminderPreview] = useState<GiftReminderPreview | null>(null);
+  const campaign = campaigns.find((item) => item.id === campaignId) ?? null;
+  const giftActionAccess = useMemo(
+    () => ({
+      canCheckIn: canCheckInGifts(campaign?.userAccess ?? null),
+      canWrap: canWrapGifts(campaign?.userAccess ?? null),
+      canDistribute: canDistributeGifts(campaign?.userAccess ?? null),
+    }),
+    [campaign?.userAccess]
+  );
+  const canManageGiftReminders = canManageSponsors(campaign?.userAccess ?? null);
 
   useEffect(() => {
     if (!campaignId) {
@@ -114,7 +130,7 @@ export function GiftOperationsPage() {
   }, [loadOperations]);
 
   const loadReminders = useCallback(async () => {
-    if (!campaignId) {
+    if (!campaignId || !canManageGiftReminders) {
       return;
     }
     try {
@@ -128,15 +144,17 @@ export function GiftOperationsPage() {
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Unable to load gift reminder settings.');
     }
-  }, [campaignId]);
+  }, [campaignId, canManageGiftReminders]);
 
   useEffect(() => {
     void loadReminders();
   }, [loadReminders]);
 
-  const campaign = campaigns.find((item) => item.id === campaignId) ?? null;
   const items = result?.items ?? [];
-  const selectedActions = useMemo(() => buildAvailableActions(selectedGift), [selectedGift]);
+  const selectedActions = useMemo(
+    () => buildAvailableActions(selectedGift, giftActionAccess),
+    [giftActionAccess, selectedGift]
+  );
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -151,7 +169,7 @@ export function GiftOperationsPage() {
   }
 
   async function handleAction(action: GiftOperationsAction, targetGift = selectedGift, notes = actionNotes) {
-    if (!campaignId || !targetGift) {
+    if (!campaignId || !targetGift || !canPerformGiftWorkflowAction(action, giftActionAccess)) {
       return;
     }
     setIsSaving(true);
@@ -175,7 +193,7 @@ export function GiftOperationsPage() {
   }
 
   async function handleCreatePrintJob(targetItems: GiftOperationsItem[]) {
-    if (!campaignId || targetItems.length === 0) {
+    if (!campaignId || targetItems.length === 0 || !giftActionAccess.canCheckIn) {
       return;
     }
     setIsSaving(true);
@@ -197,7 +215,7 @@ export function GiftOperationsPage() {
   }
 
   async function handleCreateBlankPrintJob() {
-    if (!campaignId) {
+    if (!campaignId || !giftActionAccess.canCheckIn) {
       return;
     }
     const quantity = Math.max(Math.floor(blankTagQuantity || 0), 1);
@@ -236,7 +254,7 @@ export function GiftOperationsPage() {
 
   async function handleCreateReminder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!campaignId || !reminderForm.label.trim()) {
+    if (!campaignId || !canManageGiftReminders || !reminderForm.label.trim()) {
       return;
     }
     setIsSaving(true);
@@ -267,7 +285,7 @@ export function GiftOperationsPage() {
   }
 
   async function handleToggleReminder(rule: GiftReminderRule) {
-    if (!campaignId) {
+    if (!campaignId || !canManageGiftReminders) {
       return;
     }
     setIsSaving(true);
@@ -283,7 +301,7 @@ export function GiftOperationsPage() {
   }
 
   async function handlePreviewReminder(rule: GiftReminderRule) {
-    if (!campaignId) {
+    if (!campaignId || !canManageGiftReminders) {
       return;
     }
     setIsSaving(true);
@@ -299,7 +317,7 @@ export function GiftOperationsPage() {
   }
 
   async function handleSendReminder(rule: GiftReminderRule) {
-    if (!campaignId) {
+    if (!campaignId || !canManageGiftReminders) {
       return;
     }
     setIsSaving(true);
@@ -327,38 +345,44 @@ export function GiftOperationsPage() {
         chips={<span className="campaign-chip campaign-chip-muted">Gift Workflow</span>}
         actions={
           <div className="d-flex flex-wrap gap-2">
-          <div className="input-group gift-workflow-page__blank-tags">
-            <span className="input-group-text">Blank</span>
-            <input
-              className="form-control"
-              type="number"
-              min={1}
-              max={200}
-              value={blankTagQuantity}
-              onChange={(event) => setBlankTagQuantity(Number(event.target.value) || 1)}
-            />
-            <button type="button" className="btn btn-outline-secondary" disabled={isSaving} onClick={() => void handleCreateBlankPrintJob()}>
-              <i className="bi bi-tags me-2" aria-hidden="true" />
-              Print
+          {giftActionAccess.canCheckIn ? (
+            <div className="input-group gift-workflow-page__blank-tags">
+              <span className="input-group-text">Blank</span>
+              <input
+                className="form-control"
+                type="number"
+                min={1}
+                max={200}
+                value={blankTagQuantity}
+                onChange={(event) => setBlankTagQuantity(Number(event.target.value) || 1)}
+              />
+              <button type="button" className="btn btn-outline-secondary" disabled={isSaving} onClick={() => void handleCreateBlankPrintJob()}>
+                <i className="bi bi-tags me-2" aria-hidden="true" />
+                Print
+              </button>
+            </div>
+          ) : null}
+          {canManageGiftReminders ? (
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onClick={() => setRemindersOpen(true)}
+            >
+              <i className="bi bi-bell me-2" aria-hidden="true" />
+              Reminder Settings
             </button>
-          </div>
-          <button
-            type="button"
-            className="btn btn-outline-secondary"
-            onClick={() => setRemindersOpen(true)}
-          >
-            <i className="bi bi-bell me-2" aria-hidden="true" />
-            Reminder Settings
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            disabled={items.length === 0 || isSaving}
-            onClick={() => void handleCreatePrintJob(items)}
-          >
-            <i className="bi bi-printer me-2" aria-hidden="true" />
-            Print Visible Tags
-          </button>
+          ) : null}
+          {giftActionAccess.canCheckIn ? (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={items.length === 0 || isSaving}
+              onClick={() => void handleCreatePrintJob(items)}
+            >
+              <i className="bi bi-printer me-2" aria-hidden="true" />
+              Print Visible Tags
+            </button>
+          ) : null}
         </div>
         }
       />
@@ -438,6 +462,7 @@ export function GiftOperationsPage() {
                     key={item.wishlistItemId}
                     item={item}
                     isSaving={isSaving}
+                    actionAccess={giftActionAccess}
                     onOpen={() => openGift(item)}
                     onAction={(action) => void handleAction(action, item, '')}
                   />
@@ -501,15 +526,17 @@ export function GiftOperationsPage() {
                 />
               </label>
               <DrawerActions>
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  disabled={isSaving}
-                  onClick={() => void handleCreatePrintJob([selectedGift])}
-                >
-                  <i className="bi bi-printer me-2" aria-hidden="true" />
-                  Print Tag
-                </button>
+                {giftActionAccess.canCheckIn ? (
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    disabled={isSaving}
+                    onClick={() => void handleCreatePrintJob([selectedGift])}
+                  >
+                    <i className="bi bi-printer me-2" aria-hidden="true" />
+                    Print Tag
+                  </button>
+                ) : null}
                 {selectedActions.map((action) => (
                   <button
                     key={action}
@@ -522,6 +549,11 @@ export function GiftOperationsPage() {
                     {actionLabel(action)}
                   </button>
                 ))}
+                {selectedActions.length === 0 && !hasAnyGiftWorkflowPermission(giftActionAccess) ? (
+                  <span className="text-muted small">
+                    You can view this gift, but you do not have permission to change workflow status.
+                  </span>
+                ) : null}
               </DrawerActions>
             </DrawerSection>
           </div>
@@ -781,15 +813,17 @@ export function GiftOperationsPage() {
 function GiftOperationsRow({
   item,
   isSaving,
+  actionAccess,
   onOpen,
   onAction,
 }: {
   item: GiftOperationsItem;
   isSaving: boolean;
+  actionAccess: GiftActionAccess;
   onOpen: () => void;
   onAction: (action: GiftOperationsAction) => void;
 }) {
-  const actions = buildAvailableActions(item);
+  const actions = buildAvailableActions(item, actionAccess);
 
   function handleKeyDown(event: KeyboardEvent<HTMLTableRowElement>) {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -867,27 +901,47 @@ function DrawerDetail({ label, value }: { label: string; value: string }) {
   );
 }
 
-function buildAvailableActions(item: GiftOperationsItem | null): GiftOperationsAction[] {
+interface GiftActionAccess {
+  canCheckIn: boolean;
+  canWrap: boolean;
+  canDistribute: boolean;
+}
+
+function buildAvailableActions(item: GiftOperationsItem | null, access: GiftActionAccess): GiftOperationsAction[] {
   if (!item) {
     return [];
   }
   const actions: GiftOperationsAction[] = [];
-  if (item.status === 'COMMITTED' || item.status === 'EXCEPTION') {
+  if (access.canCheckIn && (item.status === 'COMMITTED' || item.status === 'EXCEPTION')) {
     actions.push('receive');
   }
-  if (item.status === 'RECEIVED' || item.status === 'EXCEPTION') {
+  if (access.canWrap && (item.status === 'RECEIVED' || item.status === 'EXCEPTION')) {
     actions.push('wrap');
   }
-  if (item.status === 'WRAPPED' || item.status === 'TAGGED' || item.status === 'EXCEPTION') {
+  if (access.canWrap && (item.status === 'WRAPPED' || item.status === 'TAGGED' || item.status === 'EXCEPTION')) {
     actions.push('ready');
   }
-  if (item.status === 'READY_FOR_DISTRIBUTION' || item.status === 'DISTRIBUTED' || item.status === 'EXCEPTION') {
+  if (access.canDistribute && (item.status === 'READY_FOR_DISTRIBUTION' || item.status === 'DISTRIBUTED' || item.status === 'EXCEPTION')) {
     actions.push('pickup');
   }
-  if (!['DISTRIBUTED', 'PICKED_UP', 'CANCELLED'].includes(item.status)) {
+  if (access.canDistribute && !['DISTRIBUTED', 'PICKED_UP', 'CANCELLED'].includes(item.status)) {
     actions.push('exception');
   }
   return actions;
+}
+
+function hasAnyGiftWorkflowPermission(access: GiftActionAccess): boolean {
+  return access.canCheckIn || access.canWrap || access.canDistribute;
+}
+
+function canPerformGiftWorkflowAction(action: GiftOperationsAction, access: GiftActionAccess): boolean {
+  if (action === 'receive' || action === 'unreceive') {
+    return access.canCheckIn;
+  }
+  if (action === 'wrap' || action === 'ready') {
+    return access.canWrap;
+  }
+  return access.canDistribute;
 }
 
 function countStatus(result: GiftOperationsResult | null, status: string): number {

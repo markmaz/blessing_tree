@@ -13,6 +13,18 @@ aligns sponsor/campaign email send endpoints to that capability, hides several
 communication/gift/mobile actions when the user lacks the matching capability,
 and adds focused API/RBAC tests.
 
+The next slice tightens gift workflow UI permissions:
+
+- Gift Operations hides print/tag and receive controls without
+  `campaign.gifts.check_in`.
+- Gift Operations hides sponsor reminder controls unless the user can manage
+  sponsors, matching the reminder API capability.
+- Gift Operations and Gift Status report filter receive, wrap, ready, pickup,
+  and exception actions by their exact gift workflow capabilities.
+- Gift Status report remains printable/exportable for report viewers, but
+  mutation controls are hidden unless the user also has the needed gift
+  operation capability.
+
 The follow-on branch `codex/sponsor-dropoff-qr-workflow` has implemented the
 sponsor drop-off QR workflow through token revocation and scan-event tracking:
 

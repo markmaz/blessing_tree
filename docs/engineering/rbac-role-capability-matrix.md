@@ -58,6 +58,10 @@ still reject unauthorized requests.
 - Mobile Receive and sponsor drop-off QR workflows require
   `campaign.gifts.check_in`, not just generic gift search or wrap/distribute
   access.
+- Gift Operations and Gift Status report actions are filtered per workflow
+  capability: receive/unreceive/print tags require `campaign.gifts.check_in`,
+  wrap/ready require `campaign.gifts.wrap`, and pickup/exception require
+  `campaign.gifts.distribute`.
 - Sponsor email send/preview/test actions require
   `campaign.communications.send`; this avoids giving sponsor-intake workers full
   campaign-admin access just to send sponsor communications.

@@ -78,6 +78,14 @@ export function canCheckInGifts(access: CampaignAccess | null | undefined): bool
   return hasCampaignCapability(access, campaignCapabilities.giftCheckIn);
 }
 
+export function canWrapGifts(access: CampaignAccess | null | undefined): boolean {
+  return hasCampaignCapability(access, campaignCapabilities.giftWrap);
+}
+
+export function canDistributeGifts(access: CampaignAccess | null | undefined): boolean {
+  return hasCampaignCapability(access, campaignCapabilities.giftDistribute);
+}
+
 export function canUseGiftOperations(access: CampaignAccess | null | undefined): boolean {
   return hasAnyCampaignCapability(access, giftOperationsCapabilities);
 }

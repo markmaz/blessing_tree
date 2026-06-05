@@ -26,6 +26,13 @@ import type {
   GiftOperationsAction,
 } from '@/features/gifts/model/giftSearchTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
+import {
+  canCheckInGifts,
+  canCommitGifts,
+  canDistributeGifts,
+  canUseGiftSearch,
+  canWrapGifts,
+} from '@/features/campaigns/model/campaignPermissions';
 import { GiftTagPreview } from '@/features/gifts/ui/GiftTagPreview';
 import { exportGiftTagPrintJobPdf } from '@/features/gifts/ui/giftTagPdf';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
@@ -65,7 +72,7 @@ const GIFT_STATUS_REFRESH_INTERVAL_MS = 5000;
 
 export function GiftWorkflowReportPage() {
   const { campaignId = null } = useParams();
-  const { selectedCampaignId, selectCampaign } = useCampaigns();
+  const { campaigns, selectedCampaignId, selectCampaign } = useCampaigns();
   const [report, setReport] = useState<GiftWorkflowReport | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [programFilter, setProgramFilter] = useState<string | null>(null);
@@ -87,6 +94,17 @@ export function GiftWorkflowReportPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const reportRefreshInFlightRef = useRef(false);
+  const campaign = campaigns.find((item) => item.id === campaignId) ?? null;
+  const giftActionAccess = useMemo(
+    () => ({
+      canCheckIn: canCheckInGifts(campaign?.userAccess ?? null),
+      canCommit: canCommitGifts(campaign?.userAccess ?? null),
+      canSearch: canUseGiftSearch(campaign?.userAccess ?? null),
+      canWrap: canWrapGifts(campaign?.userAccess ?? null),
+      canDistribute: canDistributeGifts(campaign?.userAccess ?? null),
+    }),
+    [campaign?.userAccess]
+  );
 
   useEffect(() => {
     if (!campaignId) {
@@ -160,7 +178,8 @@ export function GiftWorkflowReportPage() {
   }, [campaignId, isSaving, loadReport, printJob, selectedGift]);
 
   useEffect(() => {
-    if (!campaignId) {
+    if (!campaignId || !giftActionAccess.canCommit) {
+      setSponsors([]);
       return;
     }
     let cancelled = false;
@@ -180,7 +199,7 @@ export function GiftWorkflowReportPage() {
     return () => {
       cancelled = true;
     };
-  }, [campaignId]);
+  }, [campaignId, giftActionAccess.canCommit]);
 
   const recipients = useMemo(() => {
     const rows = report?.recipients ?? [];
@@ -315,7 +334,7 @@ export function GiftWorkflowReportPage() {
   }
 
   async function handleCommitGift() {
-    if (!campaignId || !selectedGift || !selectedSponsorId) {
+    if (!campaignId || !selectedGift || !selectedSponsorId || !giftActionAccess.canCommit) {
       return;
     }
     setIsSaving(true);
@@ -332,7 +351,7 @@ export function GiftWorkflowReportPage() {
   }
 
   async function handleWorkflowAction(action: GiftOperationsAction) {
-    if (!campaignId || !selectedGift) {
+    if (!campaignId || !selectedGift || !canPerformGiftReportWorkflowAction(action, giftActionAccess)) {
       return;
     }
     setIsSaving(true);
@@ -349,7 +368,7 @@ export function GiftWorkflowReportPage() {
   }
 
   async function handleDistributeGift() {
-    if (!campaignId || !selectedGift) {
+    if (!campaignId || !selectedGift || !giftActionAccess.canCheckIn) {
       return;
     }
     setIsSaving(true);
@@ -366,7 +385,7 @@ export function GiftWorkflowReportPage() {
   }
 
   async function handlePrintGiftTag() {
-    if (!campaignId || !selectedGift) {
+    if (!campaignId || !selectedGift || !giftActionAccess.canCheckIn) {
       return;
     }
     setIsSaving(true);
@@ -388,7 +407,7 @@ export function GiftWorkflowReportPage() {
   }
 
   async function handleCreateBlankPrintJob() {
-    if (!campaignId) {
+    if (!campaignId || !giftActionAccess.canCheckIn) {
       return;
     }
     const quantity = Math.max(Math.floor(blankTagQuantity || 0), 1);
@@ -434,21 +453,23 @@ export function GiftWorkflowReportPage() {
         actions={
           <div className="gift-workflow-report__header-actions">
           <ReportExportActions payload={giftReportExport} disabled={!report} />
-          <div className="input-group gift-workflow-page__blank-tags">
-            <span className="input-group-text">Blank</span>
-            <input
-              className="form-control"
-              type="number"
-              min={1}
-              max={200}
-              value={blankTagQuantity}
-              onChange={(event) => setBlankTagQuantity(Number(event.target.value) || 1)}
-            />
-            <button type="button" className="btn btn-outline-secondary btn-sm" disabled={isSaving} onClick={() => void handleCreateBlankPrintJob()}>
-              <i className="bi bi-tags me-2" aria-hidden="true" />
-              Print
-            </button>
-          </div>
+          {giftActionAccess.canCheckIn ? (
+            <div className="input-group gift-workflow-page__blank-tags">
+              <span className="input-group-text">Blank</span>
+              <input
+                className="form-control"
+                type="number"
+                min={1}
+                max={200}
+                value={blankTagQuantity}
+                onChange={(event) => setBlankTagQuantity(Number(event.target.value) || 1)}
+              />
+              <button type="button" className="btn btn-outline-secondary btn-sm" disabled={isSaving} onClick={() => void handleCreateBlankPrintJob()}>
+                <i className="bi bi-tags me-2" aria-hidden="true" />
+                Print
+              </button>
+            </div>
+          ) : null}
           <div className={`gift-workflow-report__sync ${isAutoRefreshing ? 'is-refreshing' : ''}`} aria-live="polite">
             <i className="bi bi-arrow-repeat" aria-hidden="true" />
             <span>
@@ -468,14 +489,18 @@ export function GiftWorkflowReportPage() {
             <i className="bi bi-arrow-clockwise me-2" aria-hidden="true" />
             Refresh
           </button>
-          <Link to={buildCampaignGiftsSearchPath(campaignId)} className="btn btn-outline-secondary btn-sm">
-            <i className="bi bi-search me-2" aria-hidden="true" />
-            Gift Search
-          </Link>
-          <Link to={buildCampaignGiftsOperationsPath(campaignId)} className="btn btn-secondary btn-sm">
-            <i className="bi bi-clipboard-check me-2" aria-hidden="true" />
-            Operations
-          </Link>
+          {giftActionAccess.canSearch ? (
+            <Link to={buildCampaignGiftsSearchPath(campaignId)} className="btn btn-outline-secondary btn-sm">
+              <i className="bi bi-search me-2" aria-hidden="true" />
+              Gift Search
+            </Link>
+          ) : null}
+          {giftActionAccess.canCheckIn ? (
+            <Link to={buildCampaignGiftsOperationsPath(campaignId)} className="btn btn-secondary btn-sm">
+              <i className="bi bi-clipboard-check me-2" aria-hidden="true" />
+              Operations
+            </Link>
+          ) : null}
         </div>
         }
       />
@@ -601,16 +626,18 @@ export function GiftWorkflowReportPage() {
                 />
               </label>
               <DrawerActions>
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  disabled={isSaving}
-                  onClick={() => void handlePrintGiftTag()}
-                >
-                  <i className="bi bi-printer me-2" aria-hidden="true" />
-                  Print Tag
-                </button>
-                {availableWorkflowActions(selectedGift.gift).map((action) => (
+                {giftActionAccess.canCheckIn ? (
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    disabled={isSaving}
+                    onClick={() => void handlePrintGiftTag()}
+                  >
+                    <i className="bi bi-printer me-2" aria-hidden="true" />
+                    Print Tag
+                  </button>
+                ) : null}
+                {availableWorkflowActions(selectedGift.gift, giftActionAccess).map((action) => (
                   <button
                     key={action}
                     type="button"
@@ -622,7 +649,7 @@ export function GiftWorkflowReportPage() {
                     {operationActionLabel(action)}
                   </button>
                 ))}
-                {canDistributeGift(selectedGift.gift) ? (
+                {giftActionAccess.canCheckIn && canDistributeGift(selectedGift.gift) ? (
                   <button
                     type="button"
                     className="btn btn-secondary"
@@ -633,10 +660,15 @@ export function GiftWorkflowReportPage() {
                     Mark Distributed
                   </button>
                 ) : null}
+                {!hasAnyGiftReportMutationPermission(giftActionAccess) ? (
+                  <span className="text-muted small">
+                    You can view this report, but you do not have permission to change gift workflow status.
+                  </span>
+                ) : null}
               </DrawerActions>
             </DrawerSection>
 
-            {canCommitGift(selectedGift.gift) ? (
+            {giftActionAccess.canCommit && canCommitGift(selectedGift.gift) ? (
               <DrawerSection
                 title="Commit to Sponsor"
                 description="Assign this wishlist gift to an active sponsor."
@@ -808,24 +840,46 @@ function DrawerDetail({ label, value }: { label: string; value: string }) {
   );
 }
 
-function availableWorkflowActions(gift: GiftWorkflowReportGift): GiftOperationsAction[] {
+interface GiftReportActionAccess {
+  canCheckIn: boolean;
+  canCommit: boolean;
+  canSearch: boolean;
+  canWrap: boolean;
+  canDistribute: boolean;
+}
+
+function availableWorkflowActions(gift: GiftWorkflowReportGift, access: GiftReportActionAccess): GiftOperationsAction[] {
   const actions: GiftOperationsAction[] = [];
-  if (gift.status === 'COMMITTED' || gift.status === 'EXCEPTION') {
+  if (access.canCheckIn && (gift.status === 'COMMITTED' || gift.status === 'EXCEPTION')) {
     actions.push('receive');
   }
-  if (gift.status === 'RECEIVED' || gift.status === 'EXCEPTION') {
+  if (access.canWrap && (gift.status === 'RECEIVED' || gift.status === 'EXCEPTION')) {
     actions.push('wrap');
   }
-  if (gift.status === 'WRAPPED' || gift.status === 'TAGGED' || gift.status === 'EXCEPTION') {
+  if (access.canWrap && (gift.status === 'WRAPPED' || gift.status === 'TAGGED' || gift.status === 'EXCEPTION')) {
     actions.push('ready');
   }
-  if (gift.status === 'READY_FOR_DISTRIBUTION' || gift.status === 'DISTRIBUTED' || gift.status === 'EXCEPTION') {
+  if (access.canDistribute && (gift.status === 'READY_FOR_DISTRIBUTION' || gift.status === 'DISTRIBUTED' || gift.status === 'EXCEPTION')) {
     actions.push('pickup');
   }
-  if (!['DISTRIBUTED', 'PICKED_UP', 'CANCELLED'].includes(gift.status)) {
+  if (access.canDistribute && !['DISTRIBUTED', 'PICKED_UP', 'CANCELLED'].includes(gift.status)) {
     actions.push('exception');
   }
   return actions;
+}
+
+function hasAnyGiftReportMutationPermission(access: GiftReportActionAccess): boolean {
+  return access.canCheckIn || access.canCommit || access.canWrap || access.canDistribute;
+}
+
+function canPerformGiftReportWorkflowAction(action: GiftOperationsAction, access: GiftReportActionAccess): boolean {
+  if (action === 'receive' || action === 'unreceive') {
+    return access.canCheckIn;
+  }
+  if (action === 'wrap' || action === 'ready') {
+    return access.canWrap;
+  }
+  return access.canDistribute;
 }
 
 function canCommitGift(gift: GiftWorkflowReportGift): boolean {
