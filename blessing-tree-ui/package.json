@@ -14,6 +14,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@zxing/browser": "^0.1.5",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
     "jspdf": "^4.2.1",

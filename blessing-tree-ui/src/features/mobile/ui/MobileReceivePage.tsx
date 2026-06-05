@@ -1,4 +1,6 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { buildMobileScanPath } from '@/app/routes';
 import { searchCampaignGifts, updateCampaignGiftOperation } from '@/features/gifts/api/giftSearchApi';
 import type { GiftSearchItem } from '@/features/gifts/model/giftSearchTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
@@ -12,7 +14,13 @@ const RECEIVED_OR_LATER_STATUSES = new Set([
   'PICKED_UP',
 ]);
 
+type ReceiveRouteState = {
+  recipientId?: string;
+  autoLookup?: boolean;
+};
+
 export function MobileReceivePage() {
+  const location = useLocation();
   const { selectedCampaign, selectedCampaignId } = useCampaigns();
   const [recipientIdDraft, setRecipientIdDraft] = useState('');
   const [lookedUpRecipientId, setLookedUpRecipientId] = useState('');
@@ -24,6 +32,7 @@ export function MobileReceivePage() {
   const [receiveNote, setReceiveNote] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const consumedScanValueRef = useRef<string | null>(null);
 
   const recipient = items[0]?.recipient ?? null;
   const sortedItems = useMemo(
@@ -31,9 +40,7 @@ export function MobileReceivePage() {
     [items]
   );
 
-  async function handleLookup(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const nextRecipientId = recipientIdDraft.trim();
+  const lookupRecipient = useCallback(async (nextRecipientId: string) => {
     if (!selectedCampaignId || !nextRecipientId) {
       return;
     }
@@ -66,6 +73,22 @@ export function MobileReceivePage() {
     } finally {
       setIsSearching(false);
     }
+  }, [selectedCampaignId]);
+
+  useEffect(() => {
+    const state = location.state as ReceiveRouteState | null;
+    const scannedRecipientId = state?.recipientId?.trim();
+    if (!state?.autoLookup || !scannedRecipientId || consumedScanValueRef.current === scannedRecipientId) {
+      return;
+    }
+    consumedScanValueRef.current = scannedRecipientId;
+    setRecipientIdDraft(scannedRecipientId);
+    void lookupRecipient(scannedRecipientId);
+  }, [location.state, lookupRecipient]);
+
+  async function handleLookup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await lookupRecipient(recipientIdDraft.trim());
   }
 
   async function handleReceive(item: GiftSearchItem) {
@@ -160,8 +183,12 @@ export function MobileReceivePage() {
         >
           {isSearching ? 'Finding...' : 'Find Wishlist'}
         </button>
+        <Link to={buildMobileScanPath()} className="mobile-secondary-action mobile-secondary-action--full">
+          <i className="bi bi-qr-code-scan" aria-hidden="true" />
+          Scan QR or ID
+        </Link>
         <p className="mobile-search-card__hint">
-          {selectedCampaign?.name ?? 'Selected campaign'} only. Scanner support can plug into this same field later.
+          {selectedCampaign?.name ?? 'Selected campaign'} only. Use Scan for sponsor QR codes or typed recipient IDs.
         </p>
       </form>
 

@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest';
+import { resolveMobileScanDestination } from './mobileScanner';
+
+describe('mobileScanner', () => {
+  it('routes sponsor drop-off QR URLs into the mobile drop-off page', () => {
+    expect(
+      resolveMobileScanDestination('https://app.example.test/mobile/receive/dropoff/abc123')
+    ).toEqual({
+      type: 'dropoff',
+      path: '/mobile/receive/dropoff/abc123',
+    });
+  });
+
+  it('routes gift label QR URLs to the existing scan page', () => {
+    expect(resolveMobileScanDestination('/public/gifts/scan/LABEL-1')).toEqual({
+      type: 'gift-label',
+      path: '/public/gifts/scan/LABEL-1',
+    });
+  });
+
+  it('routes typed recipient IDs back to the receive workflow', () => {
+    expect(resolveMobileScanDestination('bt-001')).toEqual({
+      type: 'recipient-id',
+      recipientId: 'BT-001',
+      path: '/mobile/receive',
+    });
+  });
+
+  it('rejects unrelated scan content', () => {
+    expect(resolveMobileScanDestination('not a blessing tree code')).toEqual({
+      type: 'unknown',
+      value: 'not a blessing tree code',
+    });
+  });
+});

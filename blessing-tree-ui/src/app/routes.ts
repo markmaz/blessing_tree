@@ -15,6 +15,7 @@ export const routes = {
   MOBILE_GIFTS: '/mobile/gifts',
   MOBILE_RECEIVE: '/mobile/receive',
   MOBILE_RECEIVE_DROPOFF: '/mobile/receive/dropoff/:token',
+  MOBILE_SCAN: '/mobile/scan',
   MOBILE_SPONSORS: '/mobile/sponsors',
   MOBILE_GROUPS: '/mobile/groups',
   HOME: '/',
@@ -150,6 +151,10 @@ export function buildMobileReceivePath(): string {
 
 export function buildMobileReceiveDropoffPath(token: string): string {
   return `/mobile/receive/dropoff/${encodeURIComponent(token)}`;
+}
+
+export function buildMobileScanPath(): string {
+  return '/mobile/scan';
 }
 
 export function buildMobileSponsorsPath(): string {

@@ -4,7 +4,7 @@ Last updated: 2026-06-05
 
 ## Status
 
-Phase 1 implemented on branch `codex/sponsor-dropoff-qr-workflow`.
+Phase 2 implemented on branch `codex/sponsor-dropoff-qr-workflow`.
 
 Implemented:
 
@@ -17,12 +17,18 @@ Implemented:
   and recipient/gift summary
 - demo sponsor drop-off reminder template with QR image block and URL fallback
 - Campaign Studio merge-field drawer entries for sponsor gift/drop-off fields
+- protected `/mobile/scan` in-app QR scanner
+- lazy-loaded browser QR decoder for scanner startup only
+- Scan action on mobile Receive
+- scanner routing for sponsor drop-off QR URLs, existing gift label scan URLs,
+  and typed recipient IDs
+- manual scanner fallback for recipient IDs or QR URLs
+- focused mobile scanner parser tests
 
 Not yet implemented:
 
 - explicit token revocation UI
 - separate scan-event table for sponsor drop-off links
-- built-in camera scanner inside the mobile app
 - phone-camera/manual QA against a real delivered email
 
 This design builds on:
@@ -306,24 +312,25 @@ Gift row:
 
 ## In-App Scanner
 
-The sponsor email QR can work immediately through the phone's native camera
-because it is a URL. A built-in scanner is useful but should be a later layer.
+The sponsor email QR can work through the phone's native camera because it is a
+URL. The app also includes a protected in-app scanner at `/mobile/scan`.
 
-When added:
+Implemented behavior:
 
 - add a Scan action on `/mobile/receive`
 - request camera permission only after the user taps Scan
 - scan QR URLs and route internally
-- scan recipient IDs or gift label QR codes later through the same scanner
-  component
+- route sponsor drop-off QR URLs to `/mobile/receive/dropoff/:token`
+- route existing gift label QR URLs to the current scan page
+- route typed recipient IDs back to `/mobile/receive` and auto-run lookup
 - provide manual entry fallback if camera permission fails
 
-Recommended library requirements:
+Library requirements:
 
 - maintained browser QR decoder
 - works in iOS Safari and Android Chrome
 - no heavy desktop-only dependencies
-- can be lazy-loaded so normal mobile pages stay light
+- lazy-loaded so normal mobile pages stay light
 
 ## Audit And Traceability
 
