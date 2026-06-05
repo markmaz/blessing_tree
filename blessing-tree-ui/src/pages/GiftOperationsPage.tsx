@@ -940,6 +940,7 @@ function statusBadgeClass(status: string): string {
 
 function actionLabel(action: GiftOperationsAction): string {
   if (action === 'receive') return 'Receive';
+  if (action === 'unreceive') return 'Undo Receive';
   if (action === 'wrap') return 'Wrap';
   if (action === 'ready') return 'Mark Ready';
   if (action === 'pickup') return 'Mark Picked Up';
@@ -948,6 +949,7 @@ function actionLabel(action: GiftOperationsAction): string {
 
 function actionIcon(action: GiftOperationsAction): string {
   if (action === 'receive') return 'bi-box-arrow-in-down';
+  if (action === 'unreceive') return 'bi-arrow-counterclockwise';
   if (action === 'wrap') return 'bi-gift';
   if (action === 'ready') return 'bi-check2-circle';
   if (action === 'pickup') return 'bi-person-check';

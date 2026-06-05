@@ -77,7 +77,7 @@ export interface GiftOperationsResult {
   items: GiftOperationsItem[];
 }
 
-export type GiftOperationsAction = 'receive' | 'wrap' | 'ready' | 'pickup' | 'exception';
+export type GiftOperationsAction = 'receive' | 'unreceive' | 'wrap' | 'ready' | 'pickup' | 'exception';
 
 export interface GiftLabelPayload {
   label_type?: 'GIFT' | 'MANUAL';

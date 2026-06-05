@@ -19,6 +19,7 @@ export function MobileReceivePage() {
   const [items, setItems] = useState<GiftSearchItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [receivingItemId, setReceivingItemId] = useState<string | null>(null);
+  const [unreceivingItemId, setUnreceivingItemId] = useState<string | null>(null);
   const [activeNoteItemId, setActiveNoteItemId] = useState<string | null>(null);
   const [receiveNote, setReceiveNote] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -98,6 +99,35 @@ export function MobileReceivePage() {
     }
   }
 
+  async function handleUnreceive(item: GiftSearchItem) {
+    if (!selectedCampaignId || item.status !== 'RECEIVED') {
+      return;
+    }
+
+    setUnreceivingItemId(item.wishlistItemId);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const updatedGift = await updateCampaignGiftOperation(
+        selectedCampaignId,
+        item.wishlistItemId,
+        'unreceive',
+        'Corrected accidental mobile receive.'
+      );
+      setItems((currentItems) =>
+        currentItems.map((currentItem) =>
+          currentItem.wishlistItemId === item.wishlistItemId ? updatedGift : currentItem
+        )
+      );
+      setMessage(`${updatedGift.description} moved back to ${toStatusLabel(updatedGift.status)}.`);
+    } catch (unreceiveError) {
+      setError(unreceiveError instanceof Error ? unreceiveError.message : 'Unable to undo receive.');
+    } finally {
+      setUnreceivingItemId(null);
+    }
+  }
+
   return (
     <section className="mobile-page mobile-receive-page">
       <div className="mobile-page__hero">
@@ -166,19 +196,17 @@ export function MobileReceivePage() {
           {sortedItems.map((item) => {
             const isReceived = isReceivedOrLater(item.status);
             const isReceiving = receivingItemId === item.wishlistItemId;
+            const isUnreceiving = unreceivingItemId === item.wishlistItemId;
             const noteOpen = activeNoteItemId === item.wishlistItemId;
             return (
               <article key={item.wishlistItemId} className="mobile-gift-card">
                 <div className="mobile-gift-card__main">
-                  <button
-                    type="button"
+                  <div
                     className={`mobile-gift-card__check ${isReceived ? 'mobile-gift-card__check--received' : ''}`}
-                    disabled={isReceived || isReceiving}
-                    onClick={() => void handleReceive(item)}
-                    aria-label={isReceived ? `${item.description} already received` : `Receive ${item.description}`}
+                    aria-hidden="true"
                   >
-                    <i className={`bi ${isReceived ? 'bi-check-lg' : 'bi-square'}`} aria-hidden="true" />
-                  </button>
+                    <i className={`bi ${isReceived ? 'bi-check-lg' : 'bi-gift'}`} aria-hidden="true" />
+                  </div>
                   <div className="mobile-gift-card__content">
                     <h3>{item.description}</h3>
                     <p>
@@ -212,8 +240,20 @@ export function MobileReceivePage() {
                       {isReceiving ? 'Receiving...' : 'Receive'}
                     </button>
                   </div>
+                ) : item.status === 'RECEIVED' ? (
+                  <div className="mobile-gift-card__actions">
+                    <div className="mobile-gift-card__received">Received successfully.</div>
+                    <button
+                      type="button"
+                      className="mobile-secondary-action mobile-secondary-action--danger"
+                      disabled={isUnreceiving}
+                      onClick={() => void handleUnreceive(item)}
+                    >
+                      {isUnreceiving ? 'Undoing...' : 'Undo'}
+                    </button>
+                  </div>
                 ) : (
-                  <div className="mobile-gift-card__received">Received. Undo requires the full site.</div>
+                  <div className="mobile-gift-card__received">Received. Further changes require the full site.</div>
                 )}
 
                 {noteOpen ? (

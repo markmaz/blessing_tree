@@ -294,6 +294,12 @@
   color: var(--blessing-purple-dark);
 }
 
+.mobile-secondary-action--danger {
+  border-color: rgba(185, 28, 28, 0.24);
+  background: #fff1f1;
+  color: #8a1c1c;
+}
+
 .mobile-alert {
   padding: 0.8rem 0.9rem;
   border-radius: 0.75rem;
@@ -456,6 +462,7 @@
 }
 
 .mobile-gift-card__received {
+  flex: 1 1 auto;
   padding: 0.55rem 0.7rem;
   border-radius: 0.65rem;
   background: #eefaf2;

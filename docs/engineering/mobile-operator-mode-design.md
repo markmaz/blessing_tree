@@ -18,6 +18,8 @@ Completed:
 - receive-by-recipient-ID workflow
 - mobile receive note capture without changing wishlist descriptions
 - receiving open/uncommitted wishlist items
+- immediate mobile undo for accidentally received gifts that have not advanced
+  past `RECEIVED`
 
 Not yet implemented:
 
@@ -53,7 +55,8 @@ workflow.
   desktop dashboard on mobile.
 - No editing sponsor details from mobile.
 - No editing organization/household details from mobile.
-- No undo for received gifts on mobile.
+- No undo for gifts that have advanced past `RECEIVED`; those corrections
+  require the full app.
 - No rewrite of official wishlist descriptions when the received item differs
   from the requested item.
 - No tablet-first redesign. Tablets, laptops, and Chromebooks should continue
@@ -177,8 +180,9 @@ Show:
 Rules:
 
 - Any wishlist item can be received, committed or uncommitted.
-- Already received items show as received and are disabled.
-- Undo requires the full application.
+- Already received items show as received.
+- Items at `RECEIVED` can be un-received immediately from mobile.
+- Items beyond `RECEIVED` require the full application for correction.
 - Receive note is optional.
 - If the sponsor bought a different item than requested, capture that as a
   note-only field for V1.
