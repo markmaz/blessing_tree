@@ -23,6 +23,8 @@ import type {
 } from '@/features/gifts/model/giftSearchTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
+import { DrawerActions } from '@/shared/ui/DrawerActions';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import { GiftTagPreview } from '@/features/gifts/ui/GiftTagPreview';
 import { exportGiftTagPrintJobPdf } from '@/features/gifts/ui/giftTagPdf';
@@ -456,25 +458,24 @@ export function GiftOperationsPage() {
       >
         {selectedGift ? (
           <div className="campaign-team-drawer__stack">
-            <section className="campaign-team-drawer__section">
-              <div className="campaign-team-drawer__section-header">
-                <div>
-                  <h4 className="h6 mb-1">Workflow</h4>
-                  <p className="text-muted mb-0">Current processing state and available next actions.</p>
-                </div>
+            <DrawerSection
+              title="Workflow"
+              description="Current processing state and available next actions."
+              actions={
                 <span className={`badge ${statusBadgeClass(selectedGift.status)}`}>
                   {toStatusLabel(selectedGift.status)}
                 </span>
-              </div>
+              }
+            >
               <div className="row g-3">
                 <DrawerDetail label="Received" value={formatDateTime(selectedGift.receivedAt)} />
                 <DrawerDetail label="Wrapped" value={formatDateTime(selectedGift.wrappedAt)} />
                 <DrawerDetail label="Label" value={selectedGift.labelCode ?? 'Not assigned'} />
                 <DrawerDetail label="Storage" value={selectedGift.storageLocationId ?? 'Not assigned'} />
               </div>
-            </section>
+            </DrawerSection>
 
-            <section className="campaign-team-drawer__section">
+            <DrawerSection>
               <div className="row g-3">
                 <DrawerDetail
                   label="Recipient"
@@ -487,9 +488,9 @@ export function GiftOperationsPage() {
                 <DrawerDetail label="Sponsor Email" value={selectedGift.sponsor?.email ?? 'Not provided'} />
                 <DrawerDetail label="Drop Off" value={toStatusLabel(selectedGift.sponsor?.dropOffStatus ?? 'UNKNOWN')} />
               </div>
-            </section>
+            </DrawerSection>
 
-            <section className="campaign-team-drawer__section">
+            <DrawerSection>
               <label className="form-label">
                 Action Notes
                 <textarea
@@ -500,7 +501,7 @@ export function GiftOperationsPage() {
                   placeholder="Optional handling note"
                 />
               </label>
-              <div className="campaign-team-drawer__actions">
+              <DrawerActions>
                 <button
                   type="button"
                   className="btn btn-outline-secondary"
@@ -522,8 +523,8 @@ export function GiftOperationsPage() {
                     {actionLabel(action)}
                   </button>
                 ))}
-              </div>
-            </section>
+              </DrawerActions>
+            </DrawerSection>
           </div>
         ) : null}
       </CampaignStudioDrawer>
@@ -537,17 +538,16 @@ export function GiftOperationsPage() {
       >
         {printJob ? (
           <div className="campaign-team-drawer__stack">
-            <section className="campaign-team-drawer__section">
-              <div className="campaign-team-drawer__section-header">
-                <div>
-                  <h4 className="h6 mb-1">Print Job</h4>
-                  <p className="text-muted mb-0">Export a letter-size PDF for the current tag batch.</p>
-                </div>
+            <DrawerSection
+              title="Print Job"
+              description="Export a letter-size PDF for the current tag batch."
+              actions={
                 <button type="button" className="btn btn-secondary btn-sm" disabled={isExportingPdf} onClick={() => void handleExportPrintJobPdf()}>
                   <i className="bi bi-printer me-2" aria-hidden="true" />
                   {isExportingPdf ? 'Exporting...' : 'Export PDF'}
                 </button>
-              </div>
+              }
+            >
               <div className="row g-3">
                 {printJob.items.map((item) => (
                   <div key={item.id} className="col-12 col-md-6 col-xl-4">
@@ -555,7 +555,7 @@ export function GiftOperationsPage() {
                   </div>
                 ))}
               </div>
-            </section>
+            </DrawerSection>
           </div>
         ) : null}
       </CampaignStudioDrawer>
@@ -568,14 +568,11 @@ export function GiftOperationsPage() {
         width="xwide"
       >
         <div className="campaign-team-drawer__stack">
-          <section className="campaign-team-drawer__section">
-            <div className="campaign-team-drawer__section-header">
-              <div>
-                <h4 className="h6 mb-1">Reminder Rules</h4>
-                <p className="text-muted mb-0">Rules use campaign milestones and sponsor email templates.</p>
-              </div>
-              <span className="text-muted small">{reminderResult?.rules.length ?? 0} configured</span>
-            </div>
+          <DrawerSection
+            title="Reminder Rules"
+            description="Rules use campaign milestones and sponsor email templates."
+            actions={<span className="text-muted small">{reminderResult?.rules.length ?? 0} configured</span>}
+          >
             {reminderResult?.rules.length ? (
               <div className="campaign-team-table-wrap">
                 <table className="table campaign-team-table align-middle">
@@ -643,21 +640,20 @@ export function GiftOperationsPage() {
             ) : (
               <div className="campaign-studio__empty-note">No gift reminder rules have been configured.</div>
             )}
-          </section>
+          </DrawerSection>
 
           {reminderPreview ? (
-            <section className="campaign-team-drawer__section">
-              <div className="campaign-team-drawer__section-header">
-                <div>
-                  <h4 className="h6 mb-1">Preview</h4>
-                  <p className="text-muted mb-0">
-                    {reminderPreview.recipientCount} sponsor{reminderPreview.recipientCount === 1 ? '' : 's'} currently match this rule.
-                  </p>
-                </div>
+            <DrawerSection
+              title="Preview"
+              description={
+                `${reminderPreview.recipientCount} sponsor${reminderPreview.recipientCount === 1 ? '' : 's'} currently match this rule.`
+              }
+              actions={
                 <span className={`badge ${reminderPreview.isDue ? 'text-bg-success' : 'text-bg-secondary'}`}>
                   {reminderPreview.isDue ? 'Due' : 'Not due'}
                 </span>
-              </div>
+              }
+            >
               <div className="d-flex flex-column gap-3">
                 {reminderPreview.recipients.map((recipient) => (
                   <div key={recipient.sponsorshipId} className="border rounded p-3">
@@ -674,16 +670,13 @@ export function GiftOperationsPage() {
                   </div>
                 ))}
               </div>
-            </section>
+            </DrawerSection>
           ) : null}
 
-          <section className="campaign-team-drawer__section">
-            <div className="campaign-team-drawer__section-header">
-              <div>
-                <h4 className="h6 mb-1">New Rule</h4>
-                <p className="text-muted mb-0">Create a reminder tied to a campaign milestone and email template.</p>
-              </div>
-            </div>
+          <DrawerSection
+            title="New Rule"
+            description="Create a reminder tied to a campaign milestone and email template."
+          >
             <form className="row g-3" onSubmit={handleCreateReminder}>
               <label className="form-label col-12 col-lg-6">
                 Rule Label
@@ -779,7 +772,7 @@ export function GiftOperationsPage() {
                 </button>
               </div>
             </form>
-          </section>
+          </DrawerSection>
         </div>
       </CampaignStudioDrawer>
     </div>

@@ -18,6 +18,8 @@ import {
 import type { GiftPoolLine, GiftPoolMatch, GiftPoolResult } from '@/features/gifts/model/giftPoolTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
+import { DrawerActions } from '@/shared/ui/DrawerActions';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import '@/features/campaigns/ui/campaignStudioTeam.css';
 import '@/features/gifts/ui/giftWorkflow.css';
@@ -307,7 +309,7 @@ export function GiftPoolPage() {
         width="wide"
       >
         <form className="campaign-team-drawer__stack" onSubmit={handleCreateDonation}>
-          <section className="campaign-team-drawer__section">
+          <DrawerSection title="Donation Source" description="Where this inventory came from and any intake notes.">
             <div className="campaign-team-form-grid">
               <label className="form-label">
                 Source
@@ -341,9 +343,9 @@ export function GiftPoolPage() {
                 />
               </label>
             </div>
-          </section>
+          </DrawerSection>
 
-          <section className="campaign-team-drawer__section">
+          <DrawerSection title="Inventory Line" description="Describe the available item and who it may fit.">
             <div className="campaign-team-form-grid">
               <label className="form-label campaign-team-form-grid__span-2">
                 Description
@@ -439,9 +441,9 @@ export function GiftPoolPage() {
                 />
               </label>
             </div>
-          </section>
+          </DrawerSection>
 
-          <div className="campaign-team-drawer__actions">
+          <DrawerActions>
             <button type="button" className="btn btn-outline-secondary" onClick={() => setIsIntakeOpen(false)}>
               Cancel
             </button>
@@ -449,7 +451,7 @@ export function GiftPoolPage() {
               <i className="bi bi-plus-lg me-2" aria-hidden="true" />
               {isSaving ? 'Adding...' : 'Add Inventory'}
             </button>
-          </div>
+          </DrawerActions>
         </form>
       </CampaignStudioDrawer>
 
@@ -465,16 +467,19 @@ export function GiftPoolPage() {
       >
         {selectedLineFromResult ? (
           <div className="campaign-team-drawer__stack">
-            <section className="campaign-team-drawer__section">
+            <DrawerSection title="Inventory Details" description="Available quantity and matching attributes.">
               <div className="row g-3">
                 <DrawerDetail label="Available" value={`${selectedLineFromResult.quantityAvailable} of ${selectedLineFromResult.quantity}`} />
                 <DrawerDetail label="Category" value={selectedLineFromResult.category ?? 'Not set'} />
                 <DrawerDetail label="Size" value={selectedLineFromResult.size ?? 'Not set'} />
                 <DrawerDetail label="Fit" value={formatFit(selectedLineFromResult)} />
               </div>
-            </section>
+            </DrawerSection>
 
-            <section className="campaign-team-drawer__section">
+            <DrawerSection
+              title="Match Suggestions"
+              description="Suggestions use category, description, size, age, gender, and priority."
+            >
               <label className="form-label">
                 Assignment Notes
                 <textarea
@@ -484,12 +489,6 @@ export function GiftPoolPage() {
                   onChange={(event) => setAssignmentNotes(event.target.value)}
                 />
               </label>
-              <div className="campaign-team-drawer__section-header">
-                <div>
-                  <h4 className="h6 mb-1">Match Suggestions</h4>
-                  <p className="text-muted mb-0">Suggestions use category, description, size, age, gender, and priority.</p>
-                </div>
-              </div>
               {isLoadingMatches ? (
                 <p className="text-muted mb-0">Loading matches...</p>
               ) : matches.length === 0 ? (
@@ -524,7 +523,7 @@ export function GiftPoolPage() {
                   ))}
                 </div>
               )}
-            </section>
+            </DrawerSection>
           </div>
         ) : null}
       </CampaignStudioDrawer>

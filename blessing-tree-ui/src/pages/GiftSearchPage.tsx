@@ -7,6 +7,8 @@ import { getCampaignSponsorWorkspace } from '@/features/campaigns/api/campaignSp
 import type { CampaignSponsor } from '@/features/campaigns/model/campaignSponsorWorkspaceTypes';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
+import { DrawerActions } from '@/shared/ui/DrawerActions';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 import { TablePagination } from '@/shared/ui/TablePagination';
 import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import { clampTablePage } from '@/shared/ui/tablePaginationModel';
@@ -288,13 +290,10 @@ export function GiftSearchPage() {
         width="regular"
       >
         <form className="campaign-team-drawer__stack" onSubmit={handleCommitGift}>
-          <section className="campaign-team-drawer__section">
-            <div className="campaign-team-drawer__section-header">
-              <div>
-                <h4 className="h6 mb-1">Sponsor</h4>
-                <p className="text-muted mb-0">Find and select the sponsor committing to this wishlist item.</p>
-              </div>
-            </div>
+          <DrawerSection
+            title="Sponsor"
+            description="Find and select the sponsor committing to this wishlist item."
+          >
             <label className="form-label mb-0 w-100">
               Search sponsors
               <div className="input-group mt-2">
@@ -350,15 +349,9 @@ export function GiftSearchPage() {
                 </button>
               </div>
             ) : null}
-          </section>
+          </DrawerSection>
 
-          <section className="campaign-team-drawer__section">
-            <div className="campaign-team-drawer__section-header">
-              <div>
-                <h4 className="h6 mb-1">Notes</h4>
-                <p className="text-muted mb-0">Optional notes for this commitment.</p>
-              </div>
-            </div>
+          <DrawerSection title="Notes" description="Optional notes for this commitment.">
             <label className="form-label w-100">
               <textarea
                 className="form-control"
@@ -368,8 +361,8 @@ export function GiftSearchPage() {
                 onChange={(event) => setCommitNotes(event.target.value)}
               />
             </label>
-          </section>
-          <div className="campaign-team-drawer__actions">
+          </DrawerSection>
+          <DrawerActions>
             <button type="button" className="btn btn-outline-secondary" onClick={() => setSelectedGift(null)}>
               Cancel
             </button>
@@ -377,7 +370,7 @@ export function GiftSearchPage() {
               <i className="bi bi-check2-circle me-2" aria-hidden="true" />
               {isSavingGift ? 'Committing...' : 'Commit Gift'}
             </button>
-          </div>
+          </DrawerActions>
         </form>
       </CampaignStudioDrawer>
 
@@ -519,13 +512,7 @@ function GiftDetailsDrawerContent({ item }: { item: GiftSearchItem }) {
   const recipient = item.recipient;
   return (
     <div className="campaign-team-drawer__stack">
-      <section className="campaign-team-drawer__section">
-        <div className="campaign-team-drawer__section-header">
-          <div>
-            <h4 className="h6 mb-1">Recipient</h4>
-            <p className="text-muted mb-0">Recipient context for matching and gift selection.</p>
-          </div>
-        </div>
+      <DrawerSection title="Recipient" description="Recipient context for matching and gift selection.">
         <div className="row g-3">
           <DetailField label="Name" value={recipient?.displayLabel ?? recipient?.publicLabel ?? 'Recipient'} />
           <DetailField label="Recipient ID" value={recipient?.programRecipientId ?? 'Not assigned'} />
@@ -535,15 +522,9 @@ function GiftDetailsDrawerContent({ item }: { item: GiftSearchItem }) {
           <DetailField label="Age" value={formatRecipientAge(recipient)} />
           <DetailField label="Gender" value={formatGender(recipient?.gender)} />
         </div>
-      </section>
+      </DrawerSection>
 
-      <section className="campaign-team-drawer__section">
-        <div className="campaign-team-drawer__section-header">
-          <div>
-            <h4 className="h6 mb-1">Gift</h4>
-            <p className="text-muted mb-0">Requested item details and matching notes.</p>
-          </div>
-        </div>
+      <DrawerSection title="Gift" description="Requested item details and matching notes.">
         <div className="row g-3">
           <DetailField label="Description" value={item.description} wide />
           <DetailField label="Category" value={item.category ?? 'Not set'} />
@@ -558,22 +539,16 @@ function GiftDetailsDrawerContent({ item }: { item: GiftSearchItem }) {
           <DetailField label="Recipient Note" value={item.recipientNote ?? 'No recipient note'} wide />
           <DetailField label="Staff Notes" value={item.notes ?? 'No staff notes'} wide />
         </div>
-      </section>
+      </DrawerSection>
 
-      <section className="campaign-team-drawer__section">
-        <div className="campaign-team-drawer__section-header">
-          <div>
-            <h4 className="h6 mb-1">Workflow</h4>
-            <p className="text-muted mb-0">Current availability and sponsorship status.</p>
-          </div>
-        </div>
+      <DrawerSection title="Workflow" description="Current availability and sponsorship status.">
         <div className="row g-3">
           <DetailField label="Status" value={formatEnumLabel(item.status)} />
           <DetailField label="Availability" value={item.isAvailable ? 'Available' : 'Not available'} />
           <DetailField label="Sponsorship" value={formatEnumLabel(item.sponsorshipStatus)} />
           <DetailField label="Fulfilled Qty" value={String(item.qtyFulfilled)} />
         </div>
-      </section>
+      </DrawerSection>
     </div>
   );
 }
@@ -581,13 +556,7 @@ function GiftDetailsDrawerContent({ item }: { item: GiftSearchItem }) {
 function SponsorDetailsDrawerContent({ sponsor }: { sponsor: CampaignSponsor }) {
   return (
     <div className="campaign-team-drawer__stack">
-      <section className="campaign-team-drawer__section">
-        <div className="campaign-team-drawer__section-header">
-          <div>
-            <h4 className="h6 mb-1">Contact</h4>
-            <p className="text-muted mb-0">Sponsor identity and contact details.</p>
-          </div>
-        </div>
+      <DrawerSection title="Contact" description="Sponsor identity and contact details.">
         <div className="row g-3">
           <DetailField label="Name" value={sponsor.displayName} />
           <DetailField label="Organization" value={sponsor.organizationName ?? 'Not set'} />
@@ -597,15 +566,9 @@ function SponsorDetailsDrawerContent({ sponsor }: { sponsor: CampaignSponsor }) 
           <DetailField label="Do Not Contact" value={sponsor.doNotContact ? 'Yes' : 'No'} />
           <DetailField label="Address" value={formatSponsorAddress(sponsor)} wide />
         </div>
-      </section>
+      </DrawerSection>
 
-      <section className="campaign-team-drawer__section">
-        <div className="campaign-team-drawer__section-header">
-          <div>
-            <h4 className="h6 mb-1">Campaign Participation</h4>
-            <p className="text-muted mb-0">Current sponsor commitment and drop-off state.</p>
-          </div>
-        </div>
+      <DrawerSection title="Campaign Participation" description="Current sponsor commitment and drop-off state.">
         <div className="row g-3">
           <DetailField label="Sponsor Code" value={sponsor.participation.sponsorCode ?? 'Not assigned'} />
           <DetailField label="Status" value={formatEnumLabel(sponsor.participation.status)} />
@@ -615,15 +578,9 @@ function SponsorDetailsDrawerContent({ sponsor }: { sponsor: CampaignSponsor }) 
           <DetailField label="Sponsored Gifts" value={String(sponsor.sponsoredItemCount)} />
           <DetailField label="Notes" value={sponsor.participation.notes ?? sponsor.notes ?? 'No notes'} wide />
         </div>
-      </section>
+      </DrawerSection>
 
-      <section className="campaign-team-drawer__section">
-        <div className="campaign-team-drawer__section-header">
-          <div>
-            <h4 className="h6 mb-1">Sponsored Gifts</h4>
-            <p className="text-muted mb-0">Gifts currently linked to this sponsor.</p>
-          </div>
-        </div>
+      <DrawerSection title="Sponsored Gifts" description="Gifts currently linked to this sponsor.">
         {sponsor.sponsoredItems.length === 0 ? (
           <div className="campaign-studio__empty-note mb-0">No gifts linked to this sponsor.</div>
         ) : (
@@ -656,7 +613,7 @@ function SponsorDetailsDrawerContent({ sponsor }: { sponsor: CampaignSponsor }) 
             </table>
           </div>
         )}
-      </section>
+      </DrawerSection>
     </div>
   );
 }
