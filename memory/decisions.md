@@ -33,7 +33,28 @@
 - Status: active
 - Decision: reuse Query Forge patterns selectively for backend auth, setup, and configuration, but do not copy unrelated runtime features wholesale.
 - Rationale: the two projects share the same Flask/JWT/refresh-cookie/Valkey setup shape, while Query Forge also carries broader product concerns that Blessing Tree does not need.
-- Consequence: prefer Query Forge-style env naming, bootstrap conventions, and cookie/auth handling where they fit, while keeping Blessing Tree's config surface intentionally smaller.
+- Consequence: prefer Query Forge-style env naming, bootstrap conventions, cookie/auth handling, and the Blessing Tree self-hosted-runner deploy pattern where they fit, while keeping each product's config surface intentionally scoped.
+
+## EC2 Self-Hosted Runner Deployment Pattern
+
+- Status: active
+- Decision: build CI artifacts/images on GitHub-hosted runners, but run production deploy and future migration commands on an EC2 self-hosted GitHub Actions runner inside the AWS environment.
+- Rationale: GitHub-hosted runner IPs are too broad/unstable for production server or database allowlisting, while running all build work on the production host would waste production CPU/RAM. Splitting build and deploy keeps build isolation while letting deploy/migration commands run from a trusted network location.
+- Consequence: deploy workflows should use `runs-on: ubuntu-latest` for builds and `runs-on: [self-hosted, prod-blessing-tree]` for EC2-local deploy steps. For QueryForge, prefer the same shape: app-local self-hosted runner, narrow labels, production environment approval, Docker access, and limited passwordless sudo for only the deploy/migration commands needed.
+
+## Production Qdrant Runtime Pattern
+
+- Status: active
+- Decision: run Qdrant as a private Docker Compose service, reachable by app containers through service DNS (`http://qdrant:6333`) and not published on the EC2 host port.
+- Rationale: the application needs Qdrant internally for Ask/Gift semantic retrieval, but there is no current need to expose Qdrant directly on the public host network. Using service DNS also avoids the container-localhost trap.
+- Consequence: production env files must use `QDRANT_URL=http://qdrant:6333` inside Compose. Do not append dev-local `QDRANT_URL=http://localhost:6333` values to shared production env files. Qdrant should use persistent storage, `restart: unless-stopped`, and Admin Health should remain the operator-visible status/index-generation surface.
+
+## Production Demo Seed Policy
+
+- Status: active
+- Decision: production demo/walkthrough data must be created with explicit append-only seed mode, unique campaign name, and unique public sponsor slug.
+- Rationale: the existing production database already contains real or semi-real campaigns, and the prior default seed behavior intentionally refreshed deterministic demo data. Production walkthrough data should never replace existing campaigns by accident.
+- Consequence: use `scripts/seed_demo_campaign_2026.py --append --campaign-name "..." --campaign-slug "..."` for production seeding. Append mode should refuse to run if the requested name, slug, or deterministic id already exists. Use the non-append default only in local/dev contexts where refreshing the deterministic seed campaign is intended.
 
 ## RBAC Strategy
 

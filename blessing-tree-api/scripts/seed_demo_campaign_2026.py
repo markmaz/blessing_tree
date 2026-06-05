@@ -90,8 +90,13 @@ from app.models.sponsor_constants import (
 from app.services.auth.password_service import PasswordService
 
 
-CAMPAIGN_NAME = "Blessing Tree Demo 2026"
-CAMPAIGN_ID = uuid.uuid5(uuid.NAMESPACE_URL, "blessing-tree-demo-2026:campaign")
+DEFAULT_CAMPAIGN_NAME = "Blessing Tree Demo 2026"
+DEFAULT_CAMPAIGN_SLUG = "blessing-tree-demo-2026"
+CAMPAIGN_NAME = DEFAULT_CAMPAIGN_NAME
+CAMPAIGN_SLUG = DEFAULT_CAMPAIGN_SLUG
+SEED_NAMESPACE = DEFAULT_CAMPAIGN_SLUG
+CAMPAIGN_ID = uuid.uuid5(uuid.NAMESPACE_URL, f"{SEED_NAMESPACE}:campaign")
+LABEL_CODE_PREFIX = f"BT-DEMO-{str(CAMPAIGN_ID)[:8].upper()}"
 DEFAULT_PASSWORD = "DemoPass2026!"
 
 PRESERVED_TABLES = {
@@ -611,18 +616,57 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Seed the Blessing Tree Demo 2026 campaign.")
     parser.add_argument("--reset", action="store_true", help="Clear operational data before seeding.")
     parser.add_argument("--yes", action="store_true", help="Required with --reset to confirm destructive local reset.")
+    parser.add_argument(
+        "--append",
+        action="store_true",
+        help="Create the seeded campaign without deleting or replacing existing seeded data.",
+    )
+    parser.add_argument("--campaign-name", default=DEFAULT_CAMPAIGN_NAME, help="Name for the seeded campaign.")
+    parser.add_argument(
+        "--campaign-slug",
+        default=None,
+        help="Public sponsor slug and deterministic seed namespace. Defaults to a slugified campaign name.",
+    )
     args = parser.parse_args()
     if args.reset and not args.yes:
         raise SystemExit("Refusing to reset without --yes.")
+    if args.reset and args.append:
+        raise SystemExit("--reset and --append cannot be used together.")
+
+    configure_seed_context(
+        campaign_name=args.campaign_name,
+        campaign_slug=args.campaign_slug or slugify(args.campaign_name),
+    )
 
     with SessionLocal() as db:
         if args.reset:
             reset_operational_data(db)
+        elif args.append:
+            ensure_seed_campaign_absent(db)
         else:
             refresh_seeded_campaign_only(db)
         summary = seed_demo(db)
         db.commit()
     print_summary(summary)
+
+
+def configure_seed_context(*, campaign_name: str, campaign_slug: str) -> None:
+    global CAMPAIGN_NAME, CAMPAIGN_SLUG, SEED_NAMESPACE, CAMPAIGN_ID, LABEL_CODE_PREFIX
+    CAMPAIGN_NAME = campaign_name.strip()
+    CAMPAIGN_SLUG = campaign_slug.strip()
+    if not CAMPAIGN_NAME:
+        raise SystemExit("Campaign name cannot be empty.")
+    if not CAMPAIGN_SLUG:
+        raise SystemExit("Campaign slug cannot be empty.")
+    SEED_NAMESPACE = CAMPAIGN_SLUG
+    CAMPAIGN_ID = uuid.uuid5(uuid.NAMESPACE_URL, f"{SEED_NAMESPACE}:campaign")
+    LABEL_CODE_PREFIX = f"BT-DEMO-{str(CAMPAIGN_ID)[:8].upper()}"
+
+
+def slugify(value: str) -> str:
+    slug = "".join(char.lower() if char.isalnum() else "-" for char in value.strip())
+    parts = [part for part in slug.split("-") if part]
+    return "-".join(parts)
 
 
 def reset_operational_data(db: Session) -> None:
@@ -643,7 +687,7 @@ def refresh_seeded_campaign_only(db: Session) -> None:
             or_(
                 Campaign.id == CAMPAIGN_ID,
                 Campaign.name == CAMPAIGN_NAME,
-                Campaign.public_sponsor_slug == "blessing-tree-demo-2026",
+                Campaign.public_sponsor_slug == CAMPAIGN_SLUG,
             )
         )
         .all()
@@ -655,6 +699,25 @@ def refresh_seeded_campaign_only(db: Session) -> None:
     demo_sponsor_ids = [demo_uuid(f"sponsor:{index}") for index in range(1, 93)]
     db.query(Sponsor).filter(Sponsor.id.in_(demo_sponsor_ids)).delete(synchronize_session=False)
     db.flush()
+
+
+def ensure_seed_campaign_absent(db: Session) -> None:
+    existing = (
+        db.query(Campaign)
+        .filter(
+            or_(
+                Campaign.id == CAMPAIGN_ID,
+                Campaign.name == CAMPAIGN_NAME,
+                Campaign.public_sponsor_slug == CAMPAIGN_SLUG,
+            )
+        )
+        .first()
+    )
+    if existing is not None:
+        raise SystemExit(
+            "Refusing to append because a campaign already exists with the requested "
+            f"name, slug, or deterministic id: {existing.name}"
+        )
 
 
 def seed_demo(db: Session) -> dict[str, int]:
@@ -760,7 +823,7 @@ def seed_campaign(db: Session) -> Campaign:
             "gift commitments, reports, and print workflows."
         ),
         season_theme="Giving and Love",
-        public_sponsor_slug="blessing-tree-demo-2026",
+        public_sponsor_slug=CAMPAIGN_SLUG,
         public_sponsor_signup_enabled=True,
         year=2026,
         start_date=date(2026, 10, 1),
@@ -1396,7 +1459,7 @@ def make_wishlist_item(
         recipient_note=rng.choice((None, "Favorite colors are blue or green.", "Any similar brand is fine.", "Please avoid scented items.")),
         status="OPEN",
         qty_fulfilled=0,
-        label_code=f"BT-DEMO-2026-{item_counter:04d}",
+        label_code=f"{LABEL_CODE_PREFIX}-{item_counter:04d}",
         notes=rng.choice((None, "Seeded demo wishlist item.", "Good candidate for sponsor walkthrough.")),
     )
 
@@ -1474,7 +1537,7 @@ def seed_sponsors(
                     source=source,
                     selected_wishlist_item_ids_json=[],
                     notes="Demo public sponsor registration.",
-                    verification_token=f"demo-token-{index:03d}",
+                    verification_token=f"{CAMPAIGN_SLUG}-token-{index:03d}",
                     verification_sent_at=datetime(2026, 11, 1, 9) + timedelta(days=index % 15),
                     verified_at=(datetime(2026, 11, 1, 10) + timedelta(days=index % 15)) if index % 9 != 0 else None,
                     expires_at=datetime(2026, 12, 12, 23, 59),
@@ -1653,7 +1716,7 @@ def phone_for_index(index: int) -> str:
 
 
 def demo_uuid(key: str) -> uuid.UUID:
-    return uuid.uuid5(uuid.NAMESPACE_URL, f"blessing-tree-demo-2026:{key}")
+    return uuid.uuid5(uuid.NAMESPACE_URL, f"{SEED_NAMESPACE}:{key}")
 
 
 def print_summary(summary: dict[str, int]) -> None:

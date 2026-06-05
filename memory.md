@@ -23,6 +23,7 @@ At the start of a session, agents should read:
 - `docs/engineering/security-tenancy.md` - auth, cookies, secrets, and trust-boundary guidance
 - `docs/engineering/compatibility-versioning.md` - migration, env, API, and compatibility expectations
 - `docs/engineering/report-export-design.md` - current PDF/Excel export behavior and scope
+- `docs/engineering/mobile-operator-mode-design.md` - planned phone-only search and gift-receive experience
 
 ## Operational Memory
 
@@ -31,6 +32,11 @@ At the start of a session, agents should read:
 - `memory/decisions.md` - project decisions with rationale and consequences
 - `memory/known-risks.md` - current architectural, operational, and delivery risks
 - `memory/fragile-areas.md` - code paths and contracts that need extra care
+
+The current operational memory includes the production EC2 self-hosted GitHub
+Actions runner pattern, private Docker Compose Qdrant setup, production shared
+environment rules, and append-only demo seeding flow. Reuse those notes when
+setting up QueryForge in the same style.
 
 ## Maintenance Rule
 

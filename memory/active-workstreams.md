@@ -1,27 +1,40 @@
 # Active Workstreams
 
-Last updated: 2026-06-01
+Last updated: 2026-06-05
 
 ## Current Phase
 
 The current feature branch is `codex/report-exports`.
 
-The most recent completed work adds true report exports and updates user
-documentation:
+The most recent completed work broadened the branch from report exports into
+production deployment, semantic search, demo seeding, and operational hardening:
 
-- Reports now export real PDFs and true Excel `.xlsx` workbooks.
-- Admin Activity Log now has PDF and Excel export controls.
-- Ask Blessing Tree help/navigation/catalog content now knows about Activity
-  Log and report exports.
-- The detailed user guide was regenerated as DOCX/PDF.
-- The public downloadable user guide PDF was refreshed.
-- User-guide screenshots were recaptured from the current local app, including
-  a new Admin Activity Log screenshot.
+- Reports export real PDFs and true Excel `.xlsx` workbooks.
+- Gift Search has improved query semantics and optional Qdrant-backed semantic
+  retrieval for broad/synonym-style searches such as "toys for boys under 8".
+- Admin Health checks Qdrant and can generate vector indexes.
+- Recipient/wishlist-item mutations enqueue async Valkey/Celery gift reindex
+  work.
+- Production Docker Compose includes Qdrant and Valkey; Qdrant is internal-only
+  on the compose network and uses `restart: unless-stopped`.
+- The EC2 production server now runs a self-hosted GitHub Actions runner named
+  `prod-blessing-tree-ip-172-31-30-142` with label `prod-blessing-tree`.
+- GitHub Actions deploy workflows now build on GitHub-hosted runners, then run
+  the EC2 deploy step on `[self-hosted, prod-blessing-tree]` without SSH/scp.
+- `/opt/blessing-tree/shared/blessing-tree.env` was cleaned so production uses
+  a single Qdrant block with `QDRANT_URL=http://qdrant:6333`.
+- The demo campaign seed script now supports safe append-only production seeding
+  with `--append --campaign-name ... --campaign-slug ...`.
+- Production was seeded with a new active campaign named
+  `Blessing Tree Walkthrough Demo 2026` without replacing the existing
+  `Blessing Tree 2026 Demo`.
 
-This branch has been committed and pushed:
+Recent commits pushed to `codex/report-exports`:
 
-- commit `53e90ca Add report exports and update user guide`
-- branch `codex/report-exports`
+- `d30cd61 Add campaign reports and semantic gift search`
+- `f71423a Use self-hosted runner for EC2 deploy`
+- `0f52875 Preserve shared env ownership during Docker deploy`
+- `a81ceec Allow appending demo campaign seed`
 
 ## Recently Completed Since The Older May Memory
 
@@ -115,15 +128,46 @@ This branch has been committed and pushed:
   - Activity Log
   - report exports
   - calendar intelligence
+- Added Qdrant-backed semantic gift search:
+  - gift search parser improvements for age phrases such as `8 and under`
+  - semantic candidate retrieval with SQL/campaign authorization remaining
+    authoritative
+  - async Valkey/Celery reindex on recipient/gift changes
+  - Admin Health Qdrant status and index-generation controls
+- Added Docker production Qdrant service and hardened production env:
+  - `QDRANT_URL=http://qdrant:6333` inside containers
+  - Qdrant internal-only rather than host-published on port `6333`
+  - `restart: unless-stopped` for self-healing container restarts
+- Added self-hosted GitHub Actions deployment on the Blessing Tree EC2 host:
+  - dedicated `github-runner` user
+  - runner service active under systemd
+  - Docker access and limited passwordless sudo for deploy operations
+  - deploy workflows split into GitHub-hosted build and EC2-local deploy
+- Added production-safe seed append flow and created production walkthrough
+  campaign:
+  - `Blessing Tree Walkthrough Demo 2026`
+  - slug `blessing-tree-walkthrough-demo-2026`
+  - 104 groups, 319 recipients, 319 wishlists, 896 items, 92 sponsorships,
+    90 commitments
 
 ## Immediate Next Steps
 
-1. Merge/deploy `codex/report-exports` after review.
-2. Confirm production deployment picks up the new `xlsx` dependency and user
-   guide PDF.
-3. Smoke-test one report PDF export, one report Excel export, and one Activity
-   Log export in production.
-4. Continue product hardening after exports:
+1. Merge `codex/report-exports` after review so `main` gets the self-hosted
+   runner workflow changes and seed append support.
+2. Smoke-test production after the self-hosted deploy:
+   - one report PDF export
+   - one report Excel export
+   - one Activity Log export
+   - Gift Search semantic queries after generating the gift index
+3. Use Admin Health to generate Qdrant indexes for the production walkthrough
+   campaign after seeding/deploying.
+4. Reuse this deployment pattern for QueryForge later:
+   - app-local self-hosted runner on the production EC2 host
+   - build on GitHub-hosted runners
+   - deploy/migrate on the self-hosted runner inside AWS
+   - Qdrant/Valkey internal compose services with app containers using service
+     DNS names instead of localhost
+5. Continue product hardening after exports:
    - operational monitoring/log review path
    - bundle-size/performance cleanup
    - more report coverage as users discover needs
@@ -131,8 +175,11 @@ This branch has been committed and pushed:
 
 ## Blockers Or Ambiguities
 
-- No current blocker is known for the report export branch.
+- No current blocker is known for the report/export/deploy branch.
 - User controls local app/Celery processes; avoid starting/stopping them unless
   explicitly asked.
 - Qdrant should default enabled only when its environment variables and service
   are available; deterministic Ask behavior must continue without it.
+- The production self-hosted runner is powerful because it can run commands on
+  the EC2 host. Keep it repo-scoped, label-scoped, and protected by the
+  GitHub `production` environment approval flow.
