@@ -510,6 +510,73 @@ def test_post_template_test_email_renders_and_sends_to_requested_address(
     assert "December 19, 2026" in sent_messages[0]["text_body"]
 
 
+def test_post_template_test_email_renders_sample_sponsor_gift_merge_fields(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    sent_messages: list[dict[str, object]] = []
+
+    def _fake_send_email_message(*, recipients, subject, html, text_body=None) -> None:
+        sent_messages.append(
+            {
+                "recipients": recipients,
+                "subject": subject,
+                "html": html,
+                "text_body": text_body,
+            }
+        )
+
+    monkeypatch.setattr(
+        "app.features.campaigns.studio_service.send_email_message",
+        _fake_send_email_message,
+    )
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session, name="Christmas Giving")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    template = CommunicationTemplate(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        template_key="sponsor_gift_summary",
+        name="Sponsor Gift Summary",
+        audience="SPONSOR",
+        channel="EMAIL",
+        subject_template="Your {{campaign.name}} gift commitments",
+        body_template=(
+            '__bt_template_blocks_v1__::{"version":1,"blocks":['
+            '{"id":"main","type":"text","content":"Hi {{sponsor.first_name}}\\n{{gift.all_list}}\\nIDs: {{gift.dropoff_recipient_ids}}"},'
+            '{"id":"qr","type":"image","src":"{{gift.dropoff_qr_image}}","altText":"Sponsor QR","caption":"Open: {{gift.dropoff_qr_url}}"}'
+            "]}"
+        ),
+        is_active=True,
+        created_by_user_id=manager.id,
+    )
+    session.add(template)
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    template_id = str(template.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/communications/templates/{template_id}/test-email",
+        json={"recipient_email": "reviewer@example.com"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    assert len(sent_messages) == 1
+    message = sent_messages[0]
+    assert "{{gift.all_list}}" not in message["html"]
+    assert "{{gift.dropoff_qr_image}}" not in message["html"]
+    assert "Ava Johnson (BT-001): Winter coat" in message["html"]
+    assert "IDs: BT-001, BT-002" in message["text_body"]
+    assert "https://docker.blessing-tree.com/mobile/receive/dropoff/demo-token" in message["text_body"]
+    assert "width:180px;max-width:180px" in message["html"]
+
+
 def test_put_milestones_accepts_active_configured_milestone_definition(
     app: Flask,
     monkeypatch: pytest.MonkeyPatch,
