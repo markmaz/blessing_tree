@@ -25,6 +25,7 @@ import {
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 import { searchCampaignGifts } from '@/features/gifts/api/giftSearchApi';
 import type { GiftSearchItem, GiftSearchResult } from '@/features/gifts/model/giftSearchTypes';
+import { DrawerActions } from '@/shared/ui/DrawerActions';
 
 interface CampaignSponsorDrawerProps {
   campaignId?: string | null;
@@ -1254,7 +1255,7 @@ export function CampaignSponsorDrawer({
             </div>
           </details>
 
-          <div className="campaign-team-drawer__actions">
+          <DrawerActions>
             <button type="button" className="btn btn-outline-secondary btn-sm" onClick={onClose}>
               <i className="bi bi-x-circle me-2" aria-hidden="true" />
               Close
@@ -1275,7 +1276,7 @@ export function CampaignSponsorDrawer({
                 {sponsor ? 'Save Sponsor' : 'Add Sponsor'}
               </button>
             ) : null}
-          </div>
+          </DrawerActions>
         </div>
       </CampaignStudioDrawer>
 
@@ -1559,7 +1560,7 @@ function SponsorInteractionModal({
           </div>
         </div>
 
-        <div className="campaign-team-drawer__actions mt-3">
+        <DrawerActions className="mt-3">
           <button type="button" className="btn btn-outline-secondary btn-sm" onClick={onClose}>
             <i className="bi bi-x-circle me-2" aria-hidden="true" />
             Cancel
@@ -1568,7 +1569,7 @@ function SponsorInteractionModal({
             <i className={`bi ${isSaving ? 'bi-arrow-repeat' : 'bi-floppy'} me-2`} aria-hidden="true" />
             {interaction ? 'Save Interaction' : 'Add Interaction'}
           </button>
-        </div>
+        </DrawerActions>
       </div>
     </div>
   );
