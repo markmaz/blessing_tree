@@ -23,7 +23,7 @@ else
 fi
 
 "${sudo_cmd[@]}" mkdir -p "$compose_dir/deploy/docker/caddy" "$shared_dir"
-"${sudo_cmd[@]}" chown -R "$(id -u):$(id -g)" "$deploy_dir"
+"${sudo_cmd[@]}" chown -R "$(id -u):$(id -g)" "$compose_dir"
 
 if [ ! -f "$env_file" ]; then
   echo "Runtime env file not found: $env_file" >&2
