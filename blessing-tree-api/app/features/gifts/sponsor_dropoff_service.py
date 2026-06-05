@@ -7,6 +7,7 @@ from datetime import date, datetime, time, timedelta
 from io import BytesIO
 import secrets
 import uuid
+from urllib.parse import urlencode
 
 from sqlalchemy.orm import Session, joinedload
 
@@ -82,7 +83,7 @@ class SponsorDropoffService:
             created_by_user_id=created_by_user_id,
         )
         if raw_token:
-            return build_dropoff_url(raw_token)
+            return build_dropoff_url(raw_token, campaign_id=str(sponsorship.campaign_id))
         raise ServiceError("Unable to create sponsor drop-off link", status_code=500)
 
     def revoke_token(
@@ -215,12 +216,18 @@ def serialize_dropoff_payload(row: SponsorDropoffToken) -> dict[str, object]:
     }
 
 
-def build_dropoff_url(token: str) -> str:
-    return f"{_frontend_base()}/mobile/receive/dropoff/{token}"
+def build_dropoff_url(token: str, *, campaign_id: str | uuid.UUID | None = None) -> str:
+    url = f"{_frontend_base()}/mobile/receive/dropoff/{token}"
+    if campaign_id:
+        url = f"{url}?{urlencode({'campaignId': str(campaign_id)})}"
+    return url
 
 
-def build_dropoff_qr_url(token: str) -> str:
-    return f"{_frontend_base()}/api/v1/campaigns/mobile/dropoff-qr/{token}.png"
+def build_dropoff_qr_url(token: str, *, campaign_id: str | uuid.UUID | None = None) -> str:
+    url = f"{_frontend_base()}/api/v1/campaigns/mobile/dropoff-qr/{token}.png"
+    if campaign_id:
+        url = f"{url}?{urlencode({'campaignId': str(campaign_id)})}"
+    return url
 
 
 def qr_png_bytes(value: str) -> bytes:

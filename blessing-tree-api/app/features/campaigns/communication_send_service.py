@@ -4,6 +4,7 @@ import re
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from urllib.parse import urlparse
 
 from sqlalchemy.orm import Session, joinedload
 
@@ -498,8 +499,8 @@ class CampaignCommunicationSendService:
             sponsorship=sponsorship,
             created_by_user_id=created_by_user_id,
         )
-        dropoff_token = dropoff_url.rstrip("/").rsplit("/", 1)[-1]
-        dropoff_qr_url = build_dropoff_qr_url(dropoff_token)
+        dropoff_token = urlparse(dropoff_url).path.rstrip("/").rsplit("/", 1)[-1]
+        dropoff_qr_url = build_dropoff_qr_url(dropoff_token, campaign_id=sponsorship.campaign_id)
         recipient_ids = _dropoff_recipient_ids(gift_rows)
         recipient_summary = _dropoff_recipient_summary(gift_rows)
 

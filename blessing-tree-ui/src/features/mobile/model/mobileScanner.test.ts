@@ -11,6 +11,15 @@ describe('mobileScanner', () => {
     });
   });
 
+  it('preserves campaign context from sponsor drop-off QR URLs', () => {
+    expect(
+      resolveMobileScanDestination('https://app.example.test/mobile/receive/dropoff/abc123?campaignId=campaign-123')
+    ).toEqual({
+      type: 'dropoff',
+      path: '/mobile/receive/dropoff/abc123?campaignId=campaign-123',
+    });
+  });
+
   it('routes gift label QR URLs to the existing scan page', () => {
     expect(resolveMobileScanDestination('/public/gifts/scan/LABEL-1')).toEqual({
       type: 'gift-label',

@@ -149,8 +149,9 @@ export function buildMobileReceivePath(): string {
   return '/mobile/receive';
 }
 
-export function buildMobileReceiveDropoffPath(token: string): string {
-  return `/mobile/receive/dropoff/${encodeURIComponent(token)}`;
+export function buildMobileReceiveDropoffPath(token: string, campaignId?: string | null): string {
+  const path = `/mobile/receive/dropoff/${encodeURIComponent(token)}`;
+  return campaignId ? `${path}?campaignId=${encodeURIComponent(campaignId)}` : path;
 }
 
 export function buildMobileScanPath(): string {
