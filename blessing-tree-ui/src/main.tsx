@@ -5,6 +5,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import './styles/theme.css'
 import './index.css'
+import './features/mobile/ui/mobile.css'
 import { App } from './app/App'
 
 createRoot(document.getElementById('root')!).render(

@@ -38,6 +38,15 @@ import { GiftOperationsPage } from '@/pages/GiftOperationsPage';
 import { GiftPoolPage } from '@/pages/GiftPoolPage';
 import { GiftSearchPage } from '@/pages/GiftSearchPage';
 import { GiftWorkflowReportPage } from '@/pages/GiftWorkflowReportPage';
+import { MobileHomePage } from '@/features/mobile/ui/MobilePlaceholderPages';
+import { MobileAppRedirectGuard } from '@/features/mobile/ui/MobileAppRedirectGuard';
+import { MobileReceivePage } from '@/features/mobile/ui/MobileReceivePage';
+import {
+  MobileGiftsPage,
+  MobileGroupsPage,
+  MobileSponsorsPage,
+} from '@/features/mobile/ui/MobileSearchPages';
+import { MobileShell } from '@/features/mobile/ui/MobileShell';
 import { PeopleDirectoryPage } from '@/pages/PeopleDirectoryPage';
 import { PeopleIntakePage } from '@/pages/PeopleIntakePage';
 import { PeoplePage } from '@/pages/PeoplePage';
@@ -83,10 +92,27 @@ export function App() {
               <Route path={routes.SCAN_GIFT} element={<PublicGiftScanPage />} />
 
               <Route
+                path={`${routes.MOBILE}/*`}
+                element={
+                  <ProtectedRoute>
+                    <MobileShell />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<MobileHomePage />} />
+                <Route path="gifts" element={<MobileGiftsPage />} />
+                <Route path="receive" element={<MobileReceivePage />} />
+                <Route path="sponsors" element={<MobileSponsorsPage />} />
+                <Route path="groups" element={<MobileGroupsPage />} />
+              </Route>
+
+              <Route
                 path={routes.HOME}
                 element={
                   <ProtectedRoute>
-                    <AppLayout />
+                    <MobileAppRedirectGuard>
+                      <AppLayout />
+                    </MobileAppRedirectGuard>
                   </ProtectedRoute>
                 }
               >

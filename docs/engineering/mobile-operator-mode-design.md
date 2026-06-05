@@ -4,7 +4,33 @@ Last updated: 2026-06-05
 
 ## Status
 
-Planned. No implementation has been started.
+Phase 1 implemented on branch `codex/mobile-operator-mode`.
+
+Completed:
+
+- `/mobile` route namespace
+- separate protected mobile shell
+- Blessing Tree-styled mobile header and bottom tabs
+- placeholder pages for Gifts, Receive, Sponsors, and Groups
+- full-site escape hatch preference write
+- phone auto-redirect guard for protected full-app routes
+- conservative phone detection that avoids narrow desktop and tablet redirects
+- receive-by-recipient-ID workflow
+- mobile receive note capture without changing wishlist descriptions
+- receiving open/uncommitted wishlist items
+- immediate mobile undo for accidentally received gifts that have not advanced
+  past `RECEIVED`
+- real mobile Gift Search result cards
+- mobile Gift Search commit, release, receive, and undo actions
+- mobile Sponsor Search with committed gift summaries
+- mobile Group Search with recipient and wishlist summaries
+- public gift QR scan page refactored to use the shared mobile scan view and
+  Blessing Tree mobile styling while remaining unauthenticated
+
+Not yet implemented:
+
+- camera/scanner recipient ID shortcut
+- desktop "Receive by Recipient ID" page
 
 ## Purpose
 
@@ -35,7 +61,8 @@ workflow.
   desktop dashboard on mobile.
 - No editing sponsor details from mobile.
 - No editing organization/household details from mobile.
-- No undo for received gifts on mobile.
+- No undo for gifts that have advanced past `RECEIVED`; those corrections
+  require the full app.
 - No rewrite of official wishlist descriptions when the received item differs
   from the requested item.
 - No tablet-first redesign. Tablets, laptops, and Chromebooks should continue
@@ -159,8 +186,9 @@ Show:
 Rules:
 
 - Any wishlist item can be received, committed or uncommitted.
-- Already received items show as received and are disabled.
-- Undo requires the full application.
+- Already received items show as received.
+- Items at `RECEIVED` can be un-received immediately from mobile.
+- Items beyond `RECEIVED` require the full application for correction.
 - Receive note is optional.
 - If the sponsor bought a different item than requested, capture that as a
   note-only field for V1.

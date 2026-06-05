@@ -80,8 +80,10 @@ class GiftOperationsService:
         notes: str | None = None,
     ) -> WishlistItem:
         item = self._load_operations_item(db, campaign_id, wishlist_item_id)
-        if item.status not in {"COMMITTED", "EXCEPTION"}:
-            raise ServiceError("Gift must be committed before it can be received", status_code=409)
+        if item.status in RECEIVED_OR_LATER_STATUSES:
+            raise ServiceError("Gift has already been received", status_code=409)
+        if item.status == "CANCELLED":
+            raise ServiceError("Cancelled gifts cannot be received", status_code=409)
         item.status = "RECEIVED"
         item.qty_fulfilled = max(item.qty_fulfilled or 0, item.qty_requested or 1)
         item.received_at = _now()
@@ -89,6 +91,39 @@ class GiftOperationsService:
         if storage_location_id is not None:
             item.storage_location_id = storage_location_id
         self._record_event(db, item, "RECEIVED", actor_user_id, notes=notes)
+        self._refresh_sponsor_drop_off_status(item)
+        db.commit()
+        db.refresh(item)
+        return item
+
+    def unreceive_gift(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        wishlist_item_id: uuid.UUID,
+        actor_user_id: uuid.UUID | None,
+        notes: str | None = None,
+    ) -> WishlistItem:
+        item = self._load_operations_item(db, campaign_id, wishlist_item_id)
+        if item.status != "RECEIVED":
+            raise ServiceError("Only received gifts can be un-received", status_code=409)
+        if list(item.fulfillment_rows or []):
+            raise ServiceError("Gift pool fulfilled gifts must be corrected in the full app", status_code=409)
+
+        previous_status = item.status
+        item.status = "COMMITTED" if item.sponsorship_item is not None else "OPEN"
+        item.qty_fulfilled = 0
+        item.received_at = None
+        item.received_by_user_id = None
+        self._record_event(
+            db,
+            item,
+            "STATUS_CHANGED",
+            actor_user_id,
+            notes=notes,
+            detail={"from_status": previous_status, "to_status": item.status, "reason": "unreceive"},
+        )
         self._refresh_sponsor_drop_off_status(item)
         db.commit()
         db.refresh(item)
@@ -216,8 +251,19 @@ class GiftOperationsService:
 
     def _load_operations_item(self, db: Session, campaign_id: uuid.UUID, wishlist_item_id: uuid.UUID) -> WishlistItem:
         item = (
-            self._base_operations_query(db, campaign_id)
-            .filter(WishlistItem.id == wishlist_item_id)
+            db.query(WishlistItem)
+            .options(
+                joinedload(WishlistItem.wishlist).joinedload(Wishlist.recipient).joinedload(Recipient.recipient_group),
+                joinedload(WishlistItem.fulfillment_rows),
+                joinedload(WishlistItem.sponsorship_item)
+                .joinedload(SponsorshipItem.sponsorship)
+                .joinedload(Sponsorship.sponsor),
+            )
+            .join(Wishlist, Wishlist.id == WishlistItem.wishlist_id)
+            .filter(
+                Wishlist.campaign_id == campaign_id,
+                WishlistItem.id == wishlist_item_id,
+            )
             .one_or_none()
         )
         if item is None:
@@ -272,6 +318,9 @@ class GiftOperationsService:
         if sponsored_items and all(row.status in RECEIVED_OR_LATER_STATUSES for row in sponsored_items):
             sponsorship.drop_off_status = "RECEIVED"
             sponsorship.drop_off_completed_at = sponsorship.drop_off_completed_at or _now()
+        elif sponsorship.drop_off_status == "RECEIVED":
+            sponsorship.drop_off_status = "NOT_STARTED"
+            sponsorship.drop_off_completed_at = None
 
 
 def _now() -> datetime:

@@ -664,6 +664,33 @@ class CampaignGiftReceiveResource(Resource):
         return {"gift": response}
 
 
+@campaign_ns.route("/<string:campaign_id>/gifts/<string:wishlist_item_id>/unreceive")
+class CampaignGiftUnreceiveResource(Resource):
+    @require_campaign_capability("campaign.gifts.check_in")
+    def post(self, campaign_id: str, wishlist_item_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            before = _gift_snapshot(db, campaign_id, wishlist_item_id)
+            item = _gift_operations_service.unreceive_gift(
+                db,
+                campaign_id=uuid.UUID(campaign_id),
+                wishlist_item_id=uuid.UUID(wishlist_item_id),
+                actor_user_id=_actor_user_id(),
+                notes=str(payload.get("notes") or "").strip() or None,
+            )
+            response = serialize_gift_operations_item(item)
+            _record_gift_status_event(
+                db,
+                campaign_id=campaign_id,
+                item=item,
+                before=before,
+                action="status_changed",
+                summary=f"Un-received gift {item.description}.",
+                metadata={"notes": str(payload.get("notes") or "").strip() or None},
+            )
+        return {"gift": response}
+
+
 @campaign_ns.route("/<string:campaign_id>/gifts/<string:wishlist_item_id>/wrap")
 class CampaignGiftWrapResource(Resource):
     @require_campaign_capability("campaign.gifts.wrap")

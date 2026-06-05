@@ -524,7 +524,7 @@ def _serialize_datetime(value) -> str | None:
 
 def _scan_actions_for_status(status: str) -> list[str]:
     actions: list[str] = []
-    if status in {"COMMITTED", "EXCEPTION"}:
+    if status not in {"RECEIVED", "WRAPPED", "TAGGED", "READY_FOR_DISTRIBUTION", "DISTRIBUTED", "PICKED_UP", "CANCELLED"}:
         actions.append("RECEIVE")
     if status in {"RECEIVED", "EXCEPTION"}:
         actions.append("WRAP")
