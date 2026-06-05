@@ -41,6 +41,7 @@ import { GiftWorkflowReportPage } from '@/pages/GiftWorkflowReportPage';
 import { MobileHomePage } from '@/features/mobile/ui/MobilePlaceholderPages';
 import { MobileAppRedirectGuard } from '@/features/mobile/ui/MobileAppRedirectGuard';
 import { MobileReceivePage } from '@/features/mobile/ui/MobileReceivePage';
+import { MobileSponsorDropoffPage } from '@/features/mobile/ui/MobileSponsorDropoffPage';
 import {
   MobileGiftsPage,
   MobileGroupsPage,
@@ -102,6 +103,7 @@ export function App() {
                 <Route index element={<MobileHomePage />} />
                 <Route path="gifts" element={<MobileGiftsPage />} />
                 <Route path="receive" element={<MobileReceivePage />} />
+                <Route path="receive/dropoff/:token" element={<MobileSponsorDropoffPage />} />
                 <Route path="sponsors" element={<MobileSponsorsPage />} />
                 <Route path="groups" element={<MobileGroupsPage />} />
               </Route>

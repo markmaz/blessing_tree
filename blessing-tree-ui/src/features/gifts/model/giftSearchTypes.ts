@@ -168,6 +168,52 @@ export interface PublicGiftScanLookup {
   availableActions: GiftScanAction[];
 }
 
+export interface SponsorDropoffGift {
+  wishlistItemId: string;
+  description: string;
+  category: string | null;
+  itemType: string;
+  size: string | null;
+  status: string;
+  receivedAt: string | null;
+  canReceive: boolean;
+  canUnreceive: boolean;
+}
+
+export interface SponsorDropoffRecipient {
+  id: string | null;
+  programRecipientId: string | null;
+  displayLabel: string;
+  age: number | null;
+  ageUnit: string | null;
+  gender: string | null;
+  groupLabel: string | null;
+  gifts: SponsorDropoffGift[];
+}
+
+export interface SponsorDropoffPayload {
+  campaign: {
+    id: string;
+    name: string;
+    year: number | null;
+  };
+  sponsor: {
+    id: string;
+    displayName: string;
+    email: string | null;
+    phone: string | null;
+  };
+  sponsorship: {
+    id: string;
+    dropOffStatus: string;
+  };
+  recipients: SponsorDropoffRecipient[];
+  token: {
+    expiresAt: string;
+    lastScannedAt: string | null;
+  };
+}
+
 export type GiftReminderAudience =
   | 'SPONSORS_WITH_COMMITTED_UNRECEIVED_GIFTS'
   | 'SPONSORS_WITH_OVERDUE_GIFTS'

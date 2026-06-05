@@ -13,6 +13,7 @@ import type {
   GiftReminderSendResult,
   GiftReminderTemplateOption,
   PublicGiftScanLookup,
+  SponsorDropoffPayload,
   GiftScanAction,
   GiftScanLookup,
   GiftSearchItem,
@@ -135,6 +136,48 @@ interface PublicGiftScanLookupResponse {
   message?: string;
   scan_path: string;
   available_actions: GiftScanAction[];
+}
+
+interface SponsorDropoffPayloadResponse {
+  campaign: {
+    id: string;
+    name: string;
+    year: number | null;
+  };
+  sponsor: {
+    id: string;
+    display_name: string;
+    email: string | null;
+    phone: string | null;
+  };
+  sponsorship: {
+    id: string;
+    drop_off_status: string;
+  };
+  recipients: Array<{
+    id: string | null;
+    program_recipient_id: string | null;
+    display_label: string;
+    age: number | null;
+    age_unit: string | null;
+    gender: string | null;
+    group_label: string | null;
+    gifts: Array<{
+      wishlist_item_id: string;
+      description: string;
+      category: string | null;
+      item_type: string;
+      size: string | null;
+      status: string;
+      received_at: string | null;
+      can_receive: boolean;
+      can_unreceive: boolean;
+    }>;
+  }>;
+  token: {
+    expires_at: string;
+    last_scanned_at: string | null;
+  };
 }
 
 interface GiftSearchResponse {
@@ -463,6 +506,13 @@ export async function updatePublicGiftScanAction(
   return mapPublicGiftScanLookup(response);
 }
 
+export async function getSponsorDropoffPayload(campaignId: string, token: string): Promise<SponsorDropoffPayload> {
+  const response = await apiFetchJson<SponsorDropoffPayloadResponse>(
+    `/api/v1/campaigns/${campaignId}/mobile/dropoff/${encodeURIComponent(token)}`
+  );
+  return mapSponsorDropoffPayload(response);
+}
+
 function mapGiftSearchResult(response: GiftSearchResponse): GiftSearchResult {
   return {
     campaignId: response.campaign_id,
@@ -601,6 +651,46 @@ function mapPublicGiftScanLookup(response: PublicGiftScanLookupResponse): Public
     message: response.message,
     scanPath: response.scan_path,
     availableActions: response.available_actions,
+  };
+}
+
+function mapSponsorDropoffPayload(response: SponsorDropoffPayloadResponse): SponsorDropoffPayload {
+  return {
+    campaign: response.campaign,
+    sponsor: {
+      id: response.sponsor.id,
+      displayName: response.sponsor.display_name,
+      email: response.sponsor.email,
+      phone: response.sponsor.phone,
+    },
+    sponsorship: {
+      id: response.sponsorship.id,
+      dropOffStatus: response.sponsorship.drop_off_status,
+    },
+    recipients: response.recipients.map((recipient) => ({
+      id: recipient.id,
+      programRecipientId: recipient.program_recipient_id,
+      displayLabel: recipient.display_label,
+      age: recipient.age,
+      ageUnit: recipient.age_unit,
+      gender: recipient.gender,
+      groupLabel: recipient.group_label,
+      gifts: recipient.gifts.map((gift) => ({
+        wishlistItemId: gift.wishlist_item_id,
+        description: gift.description,
+        category: gift.category,
+        itemType: gift.item_type,
+        size: gift.size,
+        status: gift.status,
+        receivedAt: gift.received_at,
+        canReceive: gift.can_receive,
+        canUnreceive: gift.can_unreceive,
+      })),
+    })),
+    token: {
+      expiresAt: response.token.expires_at,
+      lastScannedAt: response.token.last_scanned_at,
+    },
   };
 }
 

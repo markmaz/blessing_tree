@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import random
 import uuid
 from datetime import date, datetime, timedelta
@@ -964,6 +965,49 @@ def seed_campaign_setup(db: Session, campaign: Campaign, manager_user_id: uuid.U
 
 
 def seed_templates(db: Session, campaign: Campaign, manager_user_id: uuid.UUID) -> None:
+    dropoff_body = "__bt_template_blocks_v1__::" + json.dumps(
+        {
+            "version": 1,
+            "blocks": [
+                {
+                    "id": "dropoff-heading",
+                    "type": "heading",
+                    "content": "Gift drop-off reminder",
+                },
+                {
+                    "id": "dropoff-main",
+                    "type": "text",
+                    "content": (
+                        "Hi {{sponsor.first_name}},\n\n"
+                        "This is a reminder that gifts are due by {{gift.due_date}}.\n\n"
+                        "{{gift.awaiting_turn_in_list}}\n\n"
+                        "Recipient IDs for check-in: {{gift.dropoff_recipient_ids}}"
+                    ),
+                },
+                {
+                    "id": "dropoff-qr",
+                    "type": "image",
+                    "src": "{{gift.dropoff_qr_image}}",
+                    "altText": "Sponsor drop-off QR code",
+                    "caption": "Staff can scan this QR code at drop-off to open your gift list.",
+                },
+                {
+                    "id": "dropoff-location",
+                    "type": "text",
+                    "content": (
+                        "Drop-off location:\n"
+                        "Blessing Tree Demo Warehouse\n"
+                        "1212 Giving Ln\n"
+                        "Houston, TX 77024\n"
+                        "Map: https://maps.example.com/blessing-tree-demo-warehouse\n\n"
+                        "Plain link fallback: {{gift.dropoff_qr_url}}\n\n"
+                        "Please label each gift with the recipient ID if possible."
+                    ),
+                },
+            ],
+        },
+        separators=(",", ":"),
+    )
     templates = (
         (
             "sponsor_gift_summary",
@@ -975,7 +1019,7 @@ def seed_templates(db: Session, campaign: Campaign, manager_user_id: uuid.UUID) 
             "sponsor_drop_off_reminder",
             "Sponsor Gift Drop-Off Reminder",
             "Gift drop-off reminder for {{campaign.name}}",
-            "Hi {{sponsor.first_name}},\n\nThis is a reminder that gifts are due by {{gift.due_date}}.\n\n{{gift.awaiting_turn_in_list}}\n\nDrop-off location:\nBlessing Tree Demo Warehouse\n1212 Giving Ln\nHouston, TX 77024\nMap: https://maps.example.com/blessing-tree-demo-warehouse\n\nPlease label each gift with the recipient ID if possible.",
+            dropoff_body,
         ),
         (
             "final_sponsor_reminder",

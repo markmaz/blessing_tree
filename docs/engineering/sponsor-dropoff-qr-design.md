@@ -4,7 +4,26 @@ Last updated: 2026-06-05
 
 ## Status
 
-Planned. No implementation has been started.
+Phase 1 implemented on branch `codex/sponsor-dropoff-qr-workflow`.
+
+Implemented:
+
+- sponsor drop-off token table and SQLAlchemy model
+- opaque token generation with hashed token storage
+- authenticated campaign-scoped drop-off payload API
+- protected `/mobile/receive/dropoff/:token` page
+- mobile sponsor drop-off receive and immediate un-receive actions
+- sponsor communication merge fields for drop-off URL, QR image, recipient IDs,
+  and recipient/gift summary
+- demo sponsor drop-off reminder template with QR image block and URL fallback
+- Campaign Studio merge-field drawer entries for sponsor gift/drop-off fields
+
+Not yet implemented:
+
+- explicit token revocation UI
+- separate scan-event table for sponsor drop-off links
+- built-in camera scanner inside the mobile app
+- phone-camera/manual QA against a real delivered email
 
 This design builds on:
 
@@ -125,12 +144,16 @@ Store only a hash of the token. The plain token is only used in the email URL.
 Create or reuse an active token when rendering/sending a sponsor drop-off
 communication.
 
-Recommended lifecycle:
+Implemented lifecycle:
 
-- create token on first email render/send for a sponsorship
-- reuse active non-expired token for repeat sends
+- create a fresh token when a sponsor communication is rendered/sent
+- revoke older active tokens for the same sponsorship when creating a new token
 - expire after the campaign ends or after a configurable number of days
 - allow explicit revocation later if needed
+
+Because only token hashes are stored, the app cannot reconstruct an older plain
+token for repeat email rendering. Creating a fresh token per send preserves the
+hashed-token security property and keeps the latest email authoritative.
 
 If the sponsor's commitments change after email send, the token should resolve
 the current committed gift state, not stale email-time data.

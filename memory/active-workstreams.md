@@ -10,6 +10,18 @@ The current active work is finishing Mobile Operator Mode after completing the
 report/export, production deployment, semantic search, demo seeding, and
 operational hardening branch.
 
+The follow-on branch `codex/sponsor-dropoff-qr-workflow` has started sponsor
+drop-off QR implementation:
+
+- added hashed sponsor drop-off tokens and migration `V046`
+- added authenticated mobile drop-off payload API
+- added `/mobile/receive/dropoff/:token`
+- added sponsor email merge fields for drop-off URL, QR image, recipient IDs,
+  and recipient/gift summary
+- updated the demo drop-off reminder template to include the QR image and URL
+  fallback
+- added focused backend tests for sponsor QR merge fields and payload resolve
+
 Recently completed mobile work:
 
 - `/mobile` lightweight protected shell with Blessing Tree styling.
