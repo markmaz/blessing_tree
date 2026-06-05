@@ -18,6 +18,7 @@ export function SponsorsDirectoryPage() {
     onPreviewCommunication,
     onSendCommunication,
     onRevokeDropoffToken,
+    onCommitGift,
     onSaveSponsor,
     onDeleteSponsor,
     onSaveInteraction,
@@ -53,6 +54,7 @@ export function SponsorsDirectoryPage() {
         onPreviewCommunication={onPreviewCommunication}
         onSendCommunication={onSendCommunication}
         onRevokeDropoffToken={onRevokeDropoffToken}
+        onCommitGift={onCommitGift}
         onSaveSponsor={onSaveSponsor}
         onDeleteSponsor={onDeleteSponsor}
         onSaveInteraction={onSaveInteraction}

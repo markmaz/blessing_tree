@@ -182,6 +182,35 @@
   margin-bottom: 1rem;
 }
 
+.campaign-sponsor-gift-workflow,
+.campaign-sponsor-gift-results,
+.campaign-sponsor-gift-result-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.campaign-sponsor-gift-search {
+  display: block;
+}
+
+.campaign-sponsor-gift-results {
+  border: 1px solid rgba(226, 218, 205, 0.85);
+  border-radius: 0.65rem;
+  padding: 0.85rem;
+  background: rgba(255, 253, 249, 0.82);
+}
+
+.campaign-sponsor-gift-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(226, 218, 205, 0.72);
+  border-radius: 0.55rem;
+  padding: 0.75rem 0.85rem;
+  background: #fffdf9;
+}
+
 .campaign-sponsor-scan-history-row > td {
   padding-top: 0;
   background: rgba(248, 245, 239, 0.38);
@@ -263,6 +292,11 @@
 
   .campaign-sponsor-list__actions {
     justify-content: flex-start;
+  }
+
+  .campaign-sponsor-gift-result {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .campaign-sponsor-modal__backdrop {

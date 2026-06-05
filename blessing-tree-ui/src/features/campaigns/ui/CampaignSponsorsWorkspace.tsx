@@ -60,6 +60,7 @@ interface CampaignSponsorsWorkspaceProps {
     templateId: string
   ) => Promise<SponsorCommunicationSendResult | null>;
   onRevokeDropoffToken: (sponsorId: string, tokenId: string) => Promise<CampaignSponsor | null>;
+  onCommitGift: (sponsorId: string, wishlistItemId: string, notes?: string) => Promise<CampaignSponsor | null>;
   onSaveSponsor: (
     sponsor: SponsorUpsertInput,
     participation: SponsorshipUpsertInput,
@@ -95,6 +96,7 @@ export function CampaignSponsorsWorkspace({
   onPreviewCommunication,
   onSendCommunication,
   onRevokeDropoffToken,
+  onCommitGift,
   onSaveSponsor,
   onDeleteSponsor,
   onSaveInteraction,
@@ -380,6 +382,7 @@ export function CampaignSponsorsWorkspace({
         onPreviewCommunication={onPreviewCommunication}
         onSendCommunication={onSendCommunication}
         onRevokeDropoffToken={onRevokeDropoffToken}
+        onCommitGift={onCommitGift}
         onSaveSponsor={onSaveSponsor}
         onDeleteSponsor={onDeleteSponsor}
         onSaveInteraction={onSaveInteraction}

@@ -23,6 +23,8 @@ import {
   toSponsorStatusLabel,
 } from '@/features/campaigns/model/campaignSponsorWorkspacePresentation';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
+import { searchCampaignGifts } from '@/features/gifts/api/giftSearchApi';
+import type { GiftSearchItem, GiftSearchResult } from '@/features/gifts/model/giftSearchTypes';
 
 interface CampaignSponsorDrawerProps {
   campaignId?: string | null;
@@ -48,6 +50,7 @@ interface CampaignSponsorDrawerProps {
     templateId: string
   ) => Promise<SponsorCommunicationSendResult | null>;
   onRevokeDropoffToken: (sponsorId: string, tokenId: string) => Promise<CampaignSponsor | null>;
+  onCommitGift: (sponsorId: string, wishlistItemId: string, notes?: string) => Promise<CampaignSponsor | null>;
   onSaveSponsor: (
     sponsor: SponsorUpsertInput,
     participation: SponsorshipUpsertInput,
@@ -77,6 +80,7 @@ export function CampaignSponsorDrawer({
   onPreviewCommunication,
   onSendCommunication,
   onRevokeDropoffToken,
+  onCommitGift,
   onSaveSponsor,
   onDeleteSponsor,
   onSaveInteraction,
@@ -104,6 +108,12 @@ export function CampaignSponsorDrawer({
   const [communicationError, setCommunicationError] = useState<string | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [isSendingCommunication, setIsSendingCommunication] = useState(false);
+  const [giftSearchQuery, setGiftSearchQuery] = useState('');
+  const [giftSearchResult, setGiftSearchResult] = useState<GiftSearchResult | null>(null);
+  const [giftSearchError, setGiftSearchError] = useState<string | null>(null);
+  const [isGiftSearchLoading, setIsGiftSearchLoading] = useState(false);
+  const [giftCommitNotes, setGiftCommitNotes] = useState('');
+  const [committingGiftId, setCommittingGiftId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!sponsor) {
@@ -156,6 +166,11 @@ export function CampaignSponsorDrawer({
     setCommunicationError(null);
     setSelectedTemplateId('');
     setPendingRevokeToken(null);
+    setGiftSearchQuery('');
+    setGiftSearchResult(null);
+    setGiftSearchError(null);
+    setGiftCommitNotes('');
+    setCommittingGiftId(null);
   }, [sponsor]);
 
   useEffect(() => {
@@ -230,8 +245,6 @@ export function CampaignSponsorDrawer({
     [communicationTemplates]
   );
   const selectedTemplate = sponsorEmailTemplates.find((template) => template.id === selectedTemplateId) ?? null;
-  const hasCurrentPreview = communicationPreview?.templateId === selectedTemplateId;
-
   const handlePreviewCommunication = async () => {
     if (!sponsor || !selectedTemplateId) {
       return;
@@ -246,6 +259,44 @@ export function CampaignSponsorDrawer({
       setCommunicationError(previewError instanceof Error ? previewError.message : 'Unable to preview sponsor email.');
     } finally {
       setIsPreviewLoading(false);
+    }
+  };
+
+  const handleSearchGifts = async (event?: React.FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    if (!campaignId || !sponsor) {
+      return;
+    }
+    setGiftSearchError(null);
+    setIsGiftSearchLoading(true);
+    try {
+      const response = await searchCampaignGifts(campaignId, giftSearchQuery);
+      setGiftSearchResult(response);
+    } catch (searchError) {
+      setGiftSearchError(searchError instanceof Error ? searchError.message : 'Unable to search gifts.');
+    } finally {
+      setIsGiftSearchLoading(false);
+    }
+  };
+
+  const handleCommitGift = async (item: GiftSearchItem) => {
+    if (!sponsor) {
+      return;
+    }
+    setGiftSearchError(null);
+    setCommittingGiftId(item.wishlistItemId);
+    try {
+      const updated = await onCommitGift(sponsor.id, item.wishlistItemId, giftCommitNotes);
+      if (updated) {
+        onSaved(updated);
+      }
+      setLocalSuccess(`Committed ${item.description} to ${sponsor.displayName}.`);
+      setGiftCommitNotes('');
+      await handleSearchGifts();
+    } catch (commitError) {
+      setGiftSearchError(commitError instanceof Error ? commitError.message : 'Unable to commit gift.');
+    } finally {
+      setCommittingGiftId(null);
     }
   };
 
@@ -710,44 +761,140 @@ export function CampaignSponsorDrawer({
 
             {!sponsor ? (
               <div className="campaign-studio__empty-note">Save the sponsor first to start linking gifts and tracking commitments.</div>
-            ) : sponsor.sponsoredItems.length === 0 ? (
-              <div className="campaign-studio__empty-note">No gifts are linked to this sponsor yet.</div>
             ) : (
-              <div className="table-responsive">
-                <table className="table campaign-team-table align-middle">
-                  <thead>
-                    <tr>
-                      <th scope="col">Recipient</th>
-                      <th scope="col">Gift</th>
-                      <th scope="col">Qty</th>
-                      <th scope="col">Status</th>
-                      <th scope="col">Committed</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sponsor.sponsoredItems.map((item) => (
-                      <tr key={item.id}>
-                        <td>
-                          <div className="campaign-sponsor-table__primary">
-                            <span>{item.recipient?.displayLabel ?? 'Unknown recipient'}</span>
-                            <span className="campaign-sponsor-table__meta">{item.recipient?.programRecipientId ?? 'No person ID'}</span>
+              <div className="campaign-sponsor-gift-workflow">
+                <form className="campaign-sponsor-gift-search" onSubmit={(event) => void handleSearchGifts(event)}>
+                  <label className="form-label w-100 mb-0">
+                    Search available gifts
+                    <div className="input-group mt-2">
+                      <span className="input-group-text">
+                        <i className="bi bi-search" aria-hidden="true" />
+                      </span>
+                      <input
+                        className="form-control"
+                        value={giftSearchQuery}
+                        onChange={(event) => setGiftSearchQuery(event.target.value)}
+                        placeholder="Search recipient ID, age, gender, gift, size, or category"
+                        disabled={!canEdit || isGiftSearchLoading}
+                      />
+                      {giftSearchQuery ? (
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary"
+                          onClick={() => {
+                            setGiftSearchQuery('');
+                            setGiftSearchResult(null);
+                            setGiftSearchError(null);
+                          }}
+                          disabled={isGiftSearchLoading}
+                        >
+                          <i className="bi bi-x-lg" aria-hidden="true" />
+                          <span className="visually-hidden">Clear gift search</span>
+                        </button>
+                      ) : null}
+                      <button type="submit" className="btn btn-secondary" disabled={!canEdit || isGiftSearchLoading}>
+                        {isGiftSearchLoading ? 'Searching...' : 'Search'}
+                      </button>
+                    </div>
+                  </label>
+                </form>
+
+                <label className="form-label w-100 mb-0">
+                  Commitment notes
+                  <textarea
+                    className="form-control mt-2"
+                    rows={2}
+                    value={giftCommitNotes}
+                    onChange={(event) => setGiftCommitNotes(event.target.value)}
+                    placeholder="Optional notes for gifts committed from this drawer"
+                    disabled={!canEdit}
+                  />
+                </label>
+
+                {giftSearchError ? <div className="alert alert-danger mb-0">{giftSearchError}</div> : null}
+
+                {giftSearchResult ? (
+                  <div className="campaign-sponsor-gift-results">
+                    <div className="d-flex flex-wrap justify-content-between gap-2">
+                      <strong>{giftSearchResult.count} gift{giftSearchResult.count === 1 ? '' : 's'} found</strong>
+                      {giftSearchResult.parsedFilters.warnings.length > 0 ? (
+                        <span className="text-muted small">{giftSearchResult.parsedFilters.warnings[0]}</span>
+                      ) : null}
+                    </div>
+                    {giftSearchResult.items.length === 0 ? (
+                      <div className="campaign-studio__empty-note mb-0">No gifts match that search.</div>
+                    ) : (
+                      <div className="campaign-sponsor-gift-result-list">
+                        {giftSearchResult.items.slice(0, 8).map((item) => (
+                          <div key={item.wishlistItemId} className="campaign-sponsor-gift-result">
+                            <div>
+                              <strong>{item.description}</strong>
+                              <div className="text-muted small">
+                                {item.recipient?.displayLabel ?? item.recipient?.publicLabel ?? 'Recipient'}
+                                {item.recipient?.programRecipientId ? ` · ${item.recipient.programRecipientId}` : ''}
+                              </div>
+                              <div className="text-muted small">
+                                {[formatGiftRecipientAge(item.recipient), formatGender(item.recipient?.gender), item.recipient?.groupLabel, item.size]
+                                  .filter(Boolean)
+                                  .join(' · ') || 'No additional details'}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary btn-sm"
+                              onClick={() => void handleCommitGift(item)}
+                              disabled={!canEdit || !item.isAvailable || committingGiftId !== null}
+                            >
+                              <i className="bi bi-bag-check me-1" aria-hidden="true" />
+                              {committingGiftId === item.wishlistItemId ? 'Committing...' : item.isAvailable ? 'Commit' : 'Unavailable'}
+                            </button>
                           </div>
-                        </td>
-                        <td>
-                          <div className="campaign-sponsor-table__primary">
-                            <span>{item.gift?.description ?? 'Unknown gift'}</span>
-                            <span className="campaign-sponsor-table__meta">
-                              {[item.gift?.category, item.gift?.size].filter(Boolean).join(' · ') || 'No additional details'}
-                            </span>
-                          </div>
-                        </td>
-                        <td>{item.qtyCommitted}</td>
-                        <td>{item.gift?.status ?? 'Not set'}</td>
-                        <td>{formatShortDate(item.committedAt)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+                {sponsor.sponsoredItems.length === 0 ? (
+                  <div className="campaign-studio__empty-note">No gifts are linked to this sponsor yet.</div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table campaign-team-table align-middle">
+                      <thead>
+                        <tr>
+                          <th scope="col">Recipient</th>
+                          <th scope="col">Gift</th>
+                          <th scope="col">Qty</th>
+                          <th scope="col">Status</th>
+                          <th scope="col">Committed</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sponsor.sponsoredItems.map((item) => (
+                          <tr key={item.id}>
+                            <td>
+                              <div className="campaign-sponsor-table__primary">
+                                <span>{item.recipient?.displayLabel ?? 'Unknown recipient'}</span>
+                                <span className="campaign-sponsor-table__meta">{item.recipient?.programRecipientId ?? 'No person ID'}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="campaign-sponsor-table__primary">
+                                <span>{item.gift?.description ?? 'Unknown gift'}</span>
+                                <span className="campaign-sponsor-table__meta">
+                                  {[item.gift?.category, item.gift?.size].filter(Boolean).join(' · ') || 'No additional details'}
+                                </span>
+                              </div>
+                            </td>
+                            <td>{item.qtyCommitted}</td>
+                            <td>{item.gift?.status ?? 'Not set'}</td>
+                            <td>{formatShortDate(item.committedAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </CollapsibleSponsorSection>
@@ -942,7 +1089,7 @@ export function CampaignSponsorDrawer({
                       <button
                         type="button"
                         className="btn btn-secondary btn-sm"
-                        disabled={!hasCurrentPreview || isPreviewLoading || isSendingCommunication}
+                        disabled={!selectedTemplateId || isPreviewLoading || isSendingCommunication}
                         onClick={() => void handleSendCommunication()}
                       >
                         <i className={`bi ${isSendingCommunication ? 'bi-arrow-repeat' : 'bi-send'} me-2`} aria-hidden="true" />
@@ -1530,6 +1677,22 @@ function toDropoffScanOutcomeLabel(outcome: string): string {
   if (outcome === 'EXPIRED') return 'Expired link';
   if (outcome === 'NOT_FOUND') return 'Not found';
   return outcome;
+}
+
+function formatGiftRecipientAge(recipient: GiftSearchItem['recipient']) {
+  if (!recipient || recipient.age === null) {
+    return null;
+  }
+  const unit = recipient.ageUnit === 'MONTHS' ? 'mo' : 'yr';
+  return `${recipient.age} ${unit}${recipient.age === 1 ? '' : 's'}`;
+}
+
+function formatGender(value: string | null | undefined) {
+  if (value === 'F') return 'Female';
+  if (value === 'M') return 'Male';
+  if (value === 'X') return 'Nonbinary';
+  if (value === 'U') return 'Unknown';
+  return null;
 }
 
 function truncate(value: string, maxLength: number): string {
