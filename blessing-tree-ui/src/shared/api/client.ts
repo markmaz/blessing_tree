@@ -21,6 +21,20 @@ export interface ApiRequestOptions extends RequestInit {
   retryOnUnauthorized?: boolean;
 }
 
+export class ApiError extends Error {
+  readonly status: number;
+  readonly details: unknown;
+  readonly payload: unknown;
+
+  constructor(message: string, status: number, payload: unknown, details: unknown) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.payload = payload;
+    this.details = details;
+  }
+}
+
 function buildUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) {
     return path;
@@ -115,7 +129,10 @@ export async function apiFetchJson<T>(path: string, options: ApiRequestOptions =
         message = detail;
       }
     }
-    throw new Error(message);
+    const details = payload && typeof payload === 'object'
+      ? (payload as { details?: unknown }).details
+      : null;
+    throw new ApiError(message, response.status, payload, details);
   }
 
   return payload as T;

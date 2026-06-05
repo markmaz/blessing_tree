@@ -18,6 +18,7 @@ import {
   updateCommunicationSchedule,
 } from '@/features/campaigns/api/campaignStudioApi';
 import { createCampaignAssignment } from '@/features/campaigns/api/campaignStudioTeamApi';
+import { ApiError } from '@/shared/api/client';
 import type {
   CampaignStudioData,
   CommunicationTemplateTestEmailResult,
@@ -184,14 +185,14 @@ export function useCampaignStudio(campaignId: string | null) {
       setState((currentState) => ({
         ...currentState,
         isSaving: false,
-        saveMessage: `Test email sent to ${result.recipientEmail}.`,
+        saveMessage: buildTestEmailSuccessMessage(result),
       }));
       return result;
     } catch (testEmailError) {
       setState((currentState) => ({
         ...currentState,
         isSaving: false,
-        error: toErrorMessage(testEmailError, 'Unable to send test email'),
+        error: toTestEmailErrorMessage(testEmailError),
       }));
       return null;
     }
@@ -419,4 +420,36 @@ export function useCampaignStudio(campaignId: string | null) {
 
 function toErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
+}
+
+function buildTestEmailSuccessMessage(result: CommunicationTemplateTestEmailResult): string {
+  const fieldsUsed = result.mergeFieldsUsed.length;
+  if (fieldsUsed === 0) {
+    return `Test email sent to ${result.recipientEmail}. No merge fields were used.`;
+  }
+  return `Test email sent to ${result.recipientEmail}. ${fieldsUsed} merge field${fieldsUsed === 1 ? '' : 's'} rendered.`;
+}
+
+function toTestEmailErrorMessage(error: unknown): string {
+  if (error instanceof ApiError && error.details && typeof error.details === 'object') {
+    const details = error.details as {
+      diagnostic_type?: unknown;
+      failure_reason?: unknown;
+      recipient_email?: unknown;
+      user_message?: unknown;
+    };
+    if (typeof details.user_message === 'string' && details.user_message.trim()) {
+      return details.user_message;
+    }
+    if (details.diagnostic_type === 'mail_transport') {
+      const reason = typeof details.failure_reason === 'string' ? details.failure_reason : error.message;
+      return `The test email rendered, but the mail server could not send it. ${reason}`;
+    }
+    if (details.diagnostic_type === 'template_rendering') {
+      const reason = typeof details.failure_reason === 'string' ? details.failure_reason : error.message;
+      return `The test email could not be rendered. ${reason}`;
+    }
+  }
+
+  return toErrorMessage(error, 'Unable to send test email');
 }
