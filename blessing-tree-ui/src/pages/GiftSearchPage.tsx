@@ -8,6 +8,7 @@ import type { CampaignSponsor } from '@/features/campaigns/model/campaignSponsor
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 import { TablePagination } from '@/shared/ui/TablePagination';
+import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import { clampTablePage } from '@/shared/ui/tablePaginationModel';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
 import type { ReportExportPayload } from '@/features/reports/model/reportExport';
@@ -229,13 +230,11 @@ export function GiftSearchPage() {
       {error ? <div className="alert alert-danger" role="alert">{error}</div> : null}
 
       <section className="content-card">
-        <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-          <div>
-            <h2 className="h5 mb-0">Results</h2>
-            <span className="text-muted small">{result?.count ?? 0} gift{(result?.count ?? 0) === 1 ? '' : 's'}</span>
-          </div>
-          <ReportExportActions payload={giftSearchExport} formats={['pdf', 'excel']} />
-        </div>
+        <WorkspaceSectionHeader
+          title="Results"
+          meta={<span className="text-muted small">{result?.count ?? 0} gift{(result?.count ?? 0) === 1 ? '' : 's'}</span>}
+          actions={<ReportExportActions payload={giftSearchExport} formats={['pdf', 'excel']} />}
+        />
         {!result || result.items.length === 0 ? (
           <div className="campaign-studio__empty-note">No gifts match the current search.</div>
         ) : (

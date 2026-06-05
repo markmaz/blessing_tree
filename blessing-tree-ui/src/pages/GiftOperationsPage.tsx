@@ -23,6 +23,7 @@ import type {
 } from '@/features/gifts/model/giftSearchTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
+import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import { GiftTagPreview } from '@/features/gifts/ui/GiftTagPreview';
 import { exportGiftTagPrintJobPdf } from '@/features/gifts/ui/giftTagPdf';
 import '@/features/campaigns/ui/campaignStudioTeam.css';
@@ -407,15 +408,11 @@ export function GiftOperationsPage() {
       {error ? <div className="alert alert-danger" role="alert">{error}</div> : null}
 
       <section className="campaign-team-workspace__section">
-        <div className="campaign-team-workspace__section-header">
-          <div>
-            <h2 className="h5 mb-1">Operations Queue</h2>
-            <p className="text-muted mb-0">
-              Click a gift row to receive, wrap, mark ready, or flag an exception.
-            </p>
-          </div>
-          <span className="text-muted small">{items.length} visible gift{items.length === 1 ? '' : 's'}</span>
-        </div>
+        <WorkspaceSectionHeader
+          title="Operations Queue"
+          description="Click a gift row to receive, wrap, mark ready, or flag an exception."
+          actions={<span className="text-muted small">{items.length} visible gift{items.length === 1 ? '' : 's'}</span>}
+        />
 
         {isLoading && !result ? (
           <p className="text-muted mb-0">Loading gift operations...</p>

@@ -1,5 +1,6 @@
 import { usePeopleWorkspaceContext } from '@/features/campaigns/model/peopleWorkspaceContext';
 import { CampaignPeopleWorkspace } from '@/features/campaigns/ui/CampaignPeopleWorkspace';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 
 export function PeopleDirectoryPage() {
   const {
@@ -23,12 +24,10 @@ export function PeopleDirectoryPage() {
 
   return (
     <section className="campaign-page-stack">
-      <div>
-        <h1 className="h3 mb-1">People Directory</h1>
-        <p className="text-muted mb-0">
-          Search and maintain existing households, organizations, people, and wishlists for this campaign.
-        </p>
-      </div>
+      <WorkspacePageHeader
+        title="People Directory"
+        description="Search and maintain existing households, organizations, people, and wishlists for this campaign."
+      />
 
       <CampaignPeopleWorkspace
         campaignName={campaignName}

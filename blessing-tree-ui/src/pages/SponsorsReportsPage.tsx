@@ -11,6 +11,8 @@ import {
 } from '@/features/campaigns/model/campaignSponsorWorkspacePresentation';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
 import type { ReportExportPayload } from '@/features/reports/model/reportExport';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
+import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 
 export function SponsorsReportsPage() {
   const { workspace, pendingRegistrations, isLoading } = useSponsorWorkspaceContext();
@@ -132,15 +134,11 @@ export function SponsorsReportsPage() {
 
   return (
     <section className="campaign-page-stack">
-      <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
-        <div>
-          <h1 className="h3 mb-1">Sponsor Reports</h1>
-          <p className="text-muted mb-0">
-            Campaign-level visibility into sponsor coverage, public registration flow, and delivery follow-up.
-          </p>
-        </div>
-        <ReportExportActions payload={sponsorReportExport} />
-      </div>
+      <WorkspacePageHeader
+        title="Sponsor Reports"
+        description="Campaign-level visibility into sponsor coverage, public registration flow, and delivery follow-up."
+        actions={<ReportExportActions payload={sponsorReportExport} />}
+      />
 
       <div className="campaign-studio__stat-grid campaign-sponsor-stats">
         <StatCard label="Total Sponsors" value={workspace.counts.sponsorCount} />
@@ -169,10 +167,10 @@ export function SponsorsReportsPage() {
         </div>
         <div className="col-12 col-xl-6">
           <div className="content-card h-100">
-            <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
-              <h2 className="h5 mb-0">Follow-up Queue</h2>
-              <ReportExportActions payload={followUpQueueExport} formats={['pdf', 'excel']} />
-            </div>
+            <WorkspaceSectionHeader
+              title="Follow-up Queue"
+              actions={<ReportExportActions payload={followUpQueueExport} formats={['pdf', 'excel']} />}
+            />
             {followUpQueue.length === 0 ? (
               <div className="campaign-studio__empty-note mb-0">No active follow-up queue.</div>
             ) : (
@@ -194,15 +192,11 @@ export function SponsorsReportsPage() {
         </div>
         <div className="col-12">
           <div className="content-card">
-            <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
-              <div>
-                <h2 className="h5 mb-1">Unmet Commitments</h2>
-                <p className="text-muted mb-0">
-                  Sponsors marked committed who have not selected or been assigned any gifts yet.
-                </p>
-              </div>
-              <ReportExportActions payload={unmetCommitmentsExport} formats={['pdf', 'excel']} />
-            </div>
+            <WorkspaceSectionHeader
+              title="Unmet Commitments"
+              description="Sponsors marked committed who have not selected or been assigned any gifts yet."
+              actions={<ReportExportActions payload={unmetCommitmentsExport} formats={['pdf', 'excel']} />}
+            />
             {unmetCommitmentSponsors.length === 0 ? (
               <div className="campaign-studio__empty-note mb-0">No unmet sponsor commitments.</div>
             ) : (

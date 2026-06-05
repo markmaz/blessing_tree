@@ -18,6 +18,7 @@ import {
 import type { GiftPoolLine, GiftPoolMatch, GiftPoolResult } from '@/features/gifts/model/giftPoolTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
+import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import '@/features/campaigns/ui/campaignStudioTeam.css';
 import '@/features/gifts/ui/giftWorkflow.css';
 
@@ -260,15 +261,11 @@ export function GiftPoolPage() {
       {error ? <div className="alert alert-danger" role="alert">{error}</div> : null}
 
       <section className="campaign-team-workspace__section">
-        <div className="campaign-team-workspace__section-header">
-          <div>
-            <h2 className="h5 mb-1">Inventory</h2>
-            <p className="text-muted mb-0">
-              Click a row to review match suggestions and assign available donated goods.
-            </p>
-          </div>
-          <span className="text-muted small">{lines.length} visible line{lines.length === 1 ? '' : 's'}</span>
-        </div>
+        <WorkspaceSectionHeader
+          title="Inventory"
+          description="Click a row to review match suggestions and assign available donated goods."
+          actions={<span className="text-muted small">{lines.length} visible line{lines.length === 1 ? '' : 's'}</span>}
+        />
 
         {isLoading && !result ? (
           <p className="text-muted mb-0">Loading gift pool...</p>

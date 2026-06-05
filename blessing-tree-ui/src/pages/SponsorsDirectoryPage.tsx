@@ -1,5 +1,6 @@
 import { useSponsorWorkspaceContext } from '@/features/campaigns/model/sponsorWorkspaceContext';
 import { CampaignSponsorsWorkspace } from '@/features/campaigns/ui/CampaignSponsorsWorkspace';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 
 export function SponsorsDirectoryPage() {
   const {
@@ -31,12 +32,10 @@ export function SponsorsDirectoryPage() {
 
   return (
     <section className="campaign-page-stack">
-      <div>
-        <h1 className="h3 mb-1">Sponsors Directory</h1>
-        <p className="text-muted mb-0">
-          Search and maintain sponsors, campaign participation, sponsored gifts, and communication history for this campaign.
-        </p>
-      </div>
+      <WorkspacePageHeader
+        title="Sponsors Directory"
+        description="Search and maintain sponsors, campaign participation, sponsored gifts, and communication history for this campaign."
+      />
 
       <CampaignSponsorsWorkspace
         campaignName={campaignName}
