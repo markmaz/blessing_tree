@@ -20,11 +20,15 @@ Completed:
 - receiving open/uncommitted wishlist items
 - immediate mobile undo for accidentally received gifts that have not advanced
   past `RECEIVED`
+- real mobile Gift Search result cards
+- mobile Gift Search commit, release, receive, and undo actions
+- mobile Sponsor Search with committed gift summaries
+- mobile Group Search with recipient and wishlist summaries
 
 Not yet implemented:
 
-- real mobile search APIs/UI
-- mobile Gift Search commit/release/detail actions
+- camera/scanner recipient ID shortcut
+- desktop "Receive by Recipient ID" page
 
 ## Purpose
 

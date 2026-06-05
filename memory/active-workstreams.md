@@ -4,10 +4,25 @@ Last updated: 2026-06-05
 
 ## Current Phase
 
-The current feature branch is `codex/report-exports`.
+The current feature branch is `codex/mobile-operator-mode`.
 
-The most recent completed work broadened the branch from report exports into
-production deployment, semantic search, demo seeding, and operational hardening:
+The current active work is finishing Mobile Operator Mode after completing the
+report/export, production deployment, semantic search, demo seeding, and
+operational hardening branch.
+
+Recently completed mobile work:
+
+- `/mobile` lightweight protected shell with Blessing Tree styling.
+- phone-only redirect guard with full-site escape hatch.
+- mobile Receive by recipient ID, including immediate un-receive for gifts still
+  at `RECEIVED`.
+- mobile Gift Search cards with recipient/group/sponsor details plus commit,
+  release, receive, and undo actions.
+- mobile Sponsor Search cards with committed gift summaries.
+- mobile Group Search cards with recipient, wishlist, sponsor, and status
+  summaries.
+
+Recently completed broader platform work:
 
 - Reports export real PDFs and true Excel `.xlsx` workbooks.
 - Gift Search has improved query semantics and optional Qdrant-backed semantic
@@ -152,22 +167,23 @@ Recent commits pushed to `codex/report-exports`:
 
 ## Immediate Next Steps
 
-1. Merge `codex/report-exports` after review so `main` gets the self-hosted
-   runner workflow changes and seed append support.
-2. Smoke-test production after the self-hosted deploy:
+1. Complete and push `codex/mobile-operator-mode`, then merge after review.
+2. Merge `codex/report-exports` if it has not already been merged so `main`
+   gets the self-hosted runner workflow changes and seed append support.
+3. Smoke-test production after the self-hosted deploy:
    - one report PDF export
    - one report Excel export
    - one Activity Log export
    - Gift Search semantic queries after generating the gift index
-3. Use Admin Health to generate Qdrant indexes for the production walkthrough
+4. Use Admin Health to generate Qdrant indexes for the production walkthrough
    campaign after seeding/deploying.
-4. Reuse this deployment pattern for QueryForge later:
+5. Reuse this deployment pattern for QueryForge later:
    - app-local self-hosted runner on the production EC2 host
    - build on GitHub-hosted runners
    - deploy/migrate on the self-hosted runner inside AWS
    - Qdrant/Valkey internal compose services with app containers using service
      DNS names instead of localhost
-5. Continue product hardening after exports:
+6. Continue product hardening after exports:
    - operational monitoring/log review path
    - bundle-size/performance cleanup
    - more report coverage as users discover needs
