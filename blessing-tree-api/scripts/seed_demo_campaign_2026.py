@@ -6,7 +6,7 @@ import uuid
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
-from sqlalchemy import text
+from sqlalchemy import or_, text
 from sqlalchemy.orm import Session
 
 from app.db import SessionLocal
@@ -608,7 +608,7 @@ SPONSOR_ORGS = (
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Reset local data and seed the Blessing Tree Demo 2026 campaign.")
+    parser = argparse.ArgumentParser(description="Seed the Blessing Tree Demo 2026 campaign.")
     parser.add_argument("--reset", action="store_true", help="Clear operational data before seeding.")
     parser.add_argument("--yes", action="store_true", help="Required with --reset to confirm destructive local reset.")
     args = parser.parse_args()
@@ -618,6 +618,8 @@ def main() -> None:
     with SessionLocal() as db:
         if args.reset:
             reset_operational_data(db)
+        else:
+            refresh_seeded_campaign_only(db)
         summary = seed_demo(db)
         db.commit()
     print_summary(summary)
@@ -631,6 +633,27 @@ def reset_operational_data(db: Session) -> None:
             continue
         conn.execute(table.delete())
     conn.execute(text("SET FOREIGN_KEY_CHECKS=1"))
+    db.flush()
+
+
+def refresh_seeded_campaign_only(db: Session) -> None:
+    campaigns = (
+        db.query(Campaign)
+        .filter(
+            or_(
+                Campaign.id == CAMPAIGN_ID,
+                Campaign.name == CAMPAIGN_NAME,
+                Campaign.public_sponsor_slug == "blessing-tree-demo-2026",
+            )
+        )
+        .all()
+    )
+    for campaign in campaigns:
+        db.delete(campaign)
+    db.flush()
+
+    demo_sponsor_ids = [demo_uuid(f"sponsor:{index}") for index in range(1, 93)]
+    db.query(Sponsor).filter(Sponsor.id.in_(demo_sponsor_ids)).delete(synchronize_session=False)
     db.flush()
 
 
@@ -715,16 +738,17 @@ def seed_organization_types(db: Session) -> None:
         ),
         start=1,
     ):
-        db.add(
-            OrganizationType(
+        organization_type = db.query(OrganizationType).filter(OrganizationType.code == code).one_or_none()
+        if organization_type is None:
+            organization_type = OrganizationType(
                 id=demo_uuid(f"organization-type:{code}"),
                 code=code,
-                label=label,
-                recipient_category=category,
-                is_active=True,
-                sort_order=index * 10,
             )
-        )
+            db.add(organization_type)
+        organization_type.label = label
+        organization_type.recipient_category = category
+        organization_type.is_active = True
+        organization_type.sort_order = index * 10
 
 
 def seed_campaign(db: Session) -> Campaign:

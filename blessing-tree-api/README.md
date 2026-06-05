@@ -94,14 +94,19 @@ The `.env.example` contract now follows the same broad setup conventions as Quer
 For a repeatable local walkthrough dataset, run:
 
 ```bash
-PYTHONPATH=. .venv/bin/python scripts/seed_demo_campaign_2026.py --reset --yes
+PYTHONPATH=. .venv/bin/python scripts/seed_demo_campaign_2026.py
 ```
 
-This is destructive for local operational data. It preserves app users,
-auth identities, app feature flags, LLM configuration, and global readiness
-definition rows, then recreates the `Blessing Tree Demo 2026` campaign with
-families, organizations, sponsors, wishlists, milestones, teams, and email
-templates. Demo login users use `DemoPass2026!`.
+By default this refreshes only the seeded `Blessing Tree Demo 2026` campaign
+and its deterministic demo sponsors, leaving other local campaigns, users,
+settings, audit logs, and operational data in place. Demo login users use
+`DemoPass2026!`.
+
+To wipe local operational data before seeding, run:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/seed_demo_campaign_2026.py --reset --yes
+```
 
 ## Auth Routes
 
