@@ -72,6 +72,8 @@ describe('CampaignStudioCommunicationsSection', () => {
         audienceCatalog={audienceCatalog}
         templates={[]}
         isSaving={false}
+        canEditTemplates={true}
+        canSendCommunications={true}
         onCreateTemplate={onCreateTemplate}
         onUpdateTemplate={vi.fn().mockResolvedValue(true)}
         onDeleteTemplate={vi.fn().mockResolvedValue(true)}
@@ -130,6 +132,8 @@ describe('CampaignStudioCommunicationsSection', () => {
         audienceCatalog={audienceCatalog}
         templates={templates}
         isSaving={false}
+        canEditTemplates={true}
+        canSendCommunications={true}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={onUpdateTemplate}
         onDeleteTemplate={vi.fn().mockResolvedValue(true)}
@@ -171,6 +175,8 @@ describe('CampaignStudioCommunicationsSection', () => {
         audienceCatalog={audienceCatalog}
         templates={templates}
         isSaving={false}
+        canEditTemplates={true}
+        canSendCommunications={true}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onDeleteTemplate={vi.fn().mockResolvedValue(true)}
@@ -196,6 +202,8 @@ describe('CampaignStudioCommunicationsSection', () => {
         audienceCatalog={audienceCatalog}
         templates={templates}
         isSaving={false}
+        canEditTemplates={true}
+        canSendCommunications={true}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onDeleteTemplate={vi.fn().mockResolvedValue(true)}
@@ -219,6 +227,8 @@ describe('CampaignStudioCommunicationsSection', () => {
         audienceCatalog={audienceCatalog}
         templates={templates}
         isSaving={false}
+        canEditTemplates={true}
+        canSendCommunications={true}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onDeleteTemplate={vi.fn().mockResolvedValue(true)}
@@ -245,6 +255,8 @@ describe('CampaignStudioCommunicationsSection', () => {
         audienceCatalog={audienceCatalog}
         templates={[]}
         isSaving={false}
+        canEditTemplates={true}
+        canSendCommunications={true}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onDeleteTemplate={vi.fn().mockResolvedValue(true)}
@@ -268,6 +280,8 @@ describe('CampaignStudioCommunicationsSection', () => {
         audienceCatalog={audienceCatalog}
         templates={templates}
         isSaving={false}
+        canEditTemplates={true}
+        canSendCommunications={true}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onDeleteTemplate={onDeleteTemplate}
@@ -306,6 +320,8 @@ describe('CampaignStudioCommunicationsSection', () => {
         templates={templates}
         sends={[]}
         isSaving={false}
+        canEditTemplates={true}
+        canSendCommunications={true}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onDeleteTemplate={vi.fn().mockResolvedValue(true)}
@@ -350,6 +366,8 @@ describe('CampaignStudioCommunicationsSection', () => {
         templates={templates}
         sends={[]}
         isSaving={false}
+        canEditTemplates={true}
+        canSendCommunications={true}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onDeleteTemplate={vi.fn().mockResolvedValue(true)}
@@ -393,6 +411,8 @@ describe('CampaignStudioCommunicationsSection', () => {
         templates={templates}
         sends={[]}
         isSaving={false}
+        canEditTemplates={true}
+        canSendCommunications={true}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onDeleteTemplate={vi.fn().mockResolvedValue(true)}
@@ -456,6 +476,8 @@ describe('CampaignStudioCommunicationsSection', () => {
           },
         ]}
         isSaving={false}
+        canEditTemplates={true}
+        canSendCommunications={true}
         onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
         onDeleteTemplate={vi.fn().mockResolvedValue(true)}
@@ -468,5 +490,27 @@ describe('CampaignStudioCommunicationsSection', () => {
     expect(screen.getByText('Pat Volunteer')).toBeInTheDocument();
     expect(screen.getByText('pat@example.test')).toBeInTheDocument();
     expect(screen.getByText(/1 recorded/i)).toBeInTheDocument();
+  });
+
+  it('hides template edit and send actions without matching capabilities', () => {
+    render(
+      <CampaignStudioCommunicationsSection
+        audienceCatalog={audienceCatalog}
+        templates={templates}
+        sends={[]}
+        isSaving={false}
+        canEditTemplates={false}
+        canSendCommunications={false}
+        onCreateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onUpdateTemplate={vi.fn().mockResolvedValue(templates[0])}
+        onDeleteTemplate={vi.fn().mockResolvedValue(true)}
+        onSendCommunication={vi.fn().mockResolvedValue(true)}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: /save template/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /create new template file/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^send now$/i })).toBeDisabled();
+    expect(screen.getByText(/do not have permission to send campaign emails/i)).toBeInTheDocument();
   });
 });

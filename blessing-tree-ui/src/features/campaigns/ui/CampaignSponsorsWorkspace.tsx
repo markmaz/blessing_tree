@@ -16,7 +16,11 @@ import type {
   SponsorshipUpsertInput,
 } from '@/features/campaigns/model/campaignSponsorWorkspaceTypes';
 import type { CommunicationTemplate } from '@/features/campaigns/model/campaignStudioTypes';
-import { canManageSponsors } from '@/features/campaigns/model/campaignPermissions';
+import {
+  canCommitGifts,
+  canManageSponsors,
+  canSendCampaignCommunications,
+} from '@/features/campaigns/model/campaignPermissions';
 import {
   compareSponsorFollowUpQueue,
   formatShortDate,
@@ -112,6 +116,8 @@ export function CampaignSponsorsWorkspace({
   showCreateActions = true,
 }: CampaignSponsorsWorkspaceProps) {
   const canEditSponsors = canManageSponsors(access);
+  const canCommitCampaignGifts = canCommitGifts(access);
+  const canSendCommunications = canSendCampaignCommunications(access);
   const [search, setSearch] = useState('');
   const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -371,6 +377,8 @@ export function CampaignSponsorsWorkspace({
         campaignId={workspace.campaignId}
         isOpen={isCreateOpen || selectedSponsor !== null}
         canEdit={canEditSponsors}
+        canCommitGifts={canCommitCampaignGifts}
+        canSendCommunications={canSendCommunications}
         isSaving={isSaving}
         sponsor={selectedSponsor}
         communicationTemplates={communicationTemplates}

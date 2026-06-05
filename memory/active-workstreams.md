@@ -4,11 +4,14 @@ Last updated: 2026-06-05
 
 ## Current Phase
 
-The current feature branch is `codex/sponsor-dropoff-qr-workflow`.
+The current feature branch is `codex/permission-cleanup`.
 
-The current active work is finishing Mobile Operator Mode after completing the
-report/export, production deployment, semantic search, demo seeding, and
-operational hardening branch.
+The current active work is Phase 3 of the Product Polish And Hardening Plan:
+permission cleanup. The first slice adds a documented campaign role/capability
+matrix, introduces the explicit `campaign.communications.send` capability,
+aligns sponsor/campaign email send endpoints to that capability, hides several
+communication/gift/mobile actions when the user lacks the matching capability,
+and adds focused API/RBAC tests.
 
 The follow-on branch `codex/sponsor-dropoff-qr-workflow` has implemented the
 sponsor drop-off QR workflow through token revocation and scan-event tracking:

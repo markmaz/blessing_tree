@@ -155,7 +155,8 @@ Make role behavior clear, enforceable, and safe for real campaign teams.
 
 ### Deliverables
 
-- Updated role/capability matrix document.
+- Updated role/capability matrix document:
+  `docs/engineering/rbac-role-capability-matrix.md`.
 - UI action visibility cleanup.
 - API tests for major permission boundaries.
 

@@ -5,6 +5,7 @@ interface CampaignStudioTemplateLibraryProps {
   templates: CommunicationTemplate[];
   selectedTemplateId: string | null;
   isPanelOpen: boolean;
+  canEdit: boolean;
   onSelectTemplate: (templateId: string) => void;
   onCreateNew: () => void;
   onDeleteTemplate: (templateId: string) => Promise<boolean>;
@@ -15,6 +16,7 @@ export function CampaignStudioTemplateLibrary({
   templates,
   selectedTemplateId,
   isPanelOpen,
+  canEdit,
   onSelectTemplate,
   onCreateNew,
   onDeleteTemplate,
@@ -61,15 +63,17 @@ export function CampaignStudioTemplateLibrary({
         >
           <i className={`bi ${isPanelOpen ? 'bi-layout-sidebar-inset' : 'bi-files'}`} aria-hidden="true" />
         </button>
-        <button
-          type="button"
-          className="campaign-template-library-toolbar__button"
-          onClick={onCreateNew}
-          aria-label="Create new template file"
-          title="Create new template file"
-        >
-          <i className="bi bi-file-earmark-plus" aria-hidden="true" />
-        </button>
+        {canEdit ? (
+          <button
+            type="button"
+            className="campaign-template-library-toolbar__button"
+            onClick={onCreateNew}
+            aria-label="Create new template file"
+            title="Create new template file"
+          >
+            <i className="bi bi-file-earmark-plus" aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
 
       {isPanelOpen ? (
@@ -82,7 +86,7 @@ export function CampaignStudioTemplateLibrary({
           <div className="campaign-template-library-panel__list">
             {templates.length === 0 ? (
               <div className="campaign-studio__empty-note">
-                No templates yet. Create the first communication file.
+                No communication templates are available.
               </div>
             ) : (
               templates.map((template) => {
@@ -109,7 +113,8 @@ export function CampaignStudioTemplateLibrary({
                         </div>
                       </div>
                     </button>
-                    <div className="campaign-template-file__actions" ref={isMenuOpen ? menuRef : null}>
+                    {canEdit ? (
+                      <div className="campaign-template-file__actions" ref={isMenuOpen ? menuRef : null}>
                       <button
                         type="button"
                         className="campaign-template-file__menu-toggle"
@@ -139,14 +144,15 @@ export function CampaignStudioTemplateLibrary({
                           </button>
                         </div>
                       ) : null}
-                    </div>
+                      </div>
+                    ) : null}
                   </div>
                 );
               })
             )}
           </div>
 
-          {deleteTarget ? (
+          {deleteTarget && canEdit ? (
             <div className="campaign-template-library-panel__confirm">
               <div className="small text-muted">
                 Delete <strong>{deleteTarget.name}</strong>? This removes the file from the library.

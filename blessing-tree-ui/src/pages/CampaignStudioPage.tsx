@@ -7,7 +7,10 @@ import {
   type CampaignStudioSectionId,
 } from '@/features/campaigns/model/campaignStudio';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
-import { canManageCampaign } from '@/features/campaigns/model/campaignPermissions';
+import {
+  canManageCampaign,
+  canSendCampaignCommunications,
+} from '@/features/campaigns/model/campaignPermissions';
 import type { CampaignUpsertInput } from '@/features/campaigns/model/campaignTypes';
 import { CampaignStudioAiRail } from '@/features/campaigns/ui/CampaignStudioAiRail';
 import { CampaignStudioCommunicationsSection } from '@/features/campaigns/ui/CampaignStudioCommunicationsSection';
@@ -340,6 +343,8 @@ function renderStudioSection({
         sends={studio.communications.sends}
         templates={studio.communications.templates}
         isSaving={isSaving}
+        canEditTemplates={canManageCampaign(studio.access)}
+        canSendCommunications={canSendCampaignCommunications(studio.access)}
         requestedTemplateId={communicationTemplateFocusId}
         onConsumeRequestedTemplate={() => setCommunicationTemplateFocusId(null)}
         onCreateTemplate={addCommunicationTemplate}
