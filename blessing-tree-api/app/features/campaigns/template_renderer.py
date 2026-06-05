@@ -55,15 +55,17 @@ def _render_body(body_template: str, context: dict[str, str]) -> tuple[str, str]
             text_parts.append(content)
             continue
         if block_type == "image":
+            raw_src = str(block.get("src") or "")
             src = _render_text(str(block.get("src") or ""), context)
             alt_text = _render_text(str(block.get("altText") or ""), context)
             caption = _render_text(str(block.get("caption") or ""), context)
             if src:
+                image_style = _image_style(raw_src)
                 html_parts.append(
                     "".join(
                         [
                             '<figure style="margin:0 0 16px 0;">',
-                            f'<img src="{escape(src, quote=True)}" alt="{escape(alt_text, quote=True)}" style="max-width:100%;border-radius:12px;" />',
+                            f'<img src="{escape(src, quote=True)}" alt="{escape(alt_text, quote=True)}" style="{image_style}" />',
                             (
                                 f'<figcaption style="margin-top:8px;color:{COLOR_TEXT_MUTED};font-size:13px;">'
                                 f"{escape(caption)}</figcaption>"
@@ -118,6 +120,12 @@ def _render_text(template: str, context: dict[str, str]) -> str:
 def _paragraph_html(text: str) -> str:
     escaped = escape(text)
     return escaped.replace("\n", "<br />")
+
+
+def _image_style(raw_src: str) -> str:
+    if "gift.dropoff_qr_image" in raw_src:
+        return "width:180px;max-width:180px;height:auto;border-radius:8px;display:block;"
+    return "max-width:100%;border-radius:12px;"
 
 
 def _wrap_email_html(inner_html: str) -> str:
