@@ -21,6 +21,8 @@ Recently completed mobile work:
 - mobile Sponsor Search cards with committed gift summaries.
 - mobile Group Search cards with recipient, wishlist, sponsor, and status
   summaries.
+- public gift QR scan now shares the mobile scan view/styling while remaining
+  outside the authenticated `/mobile` shell.
 
 Recently completed broader platform work:
 

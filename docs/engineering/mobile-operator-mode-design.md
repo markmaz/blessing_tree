@@ -24,6 +24,8 @@ Completed:
 - mobile Gift Search commit, release, receive, and undo actions
 - mobile Sponsor Search with committed gift summaries
 - mobile Group Search with recipient and wishlist summaries
+- public gift QR scan page refactored to use the shared mobile scan view and
+  Blessing Tree mobile styling while remaining unauthenticated
 
 Not yet implemented:
 
