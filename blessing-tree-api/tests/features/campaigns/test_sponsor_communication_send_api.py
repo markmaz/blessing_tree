@@ -114,6 +114,62 @@ def test_preview_warns_when_template_has_no_matching_gifts(app, monkeypatch) -> 
     ]
 
 
+def test_preview_warns_when_qr_template_has_no_committed_gifts(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = sponsor_api_module.SessionLocal()
+    manager = seed_user(session, name="Gift Manager")
+    campaign = seed_campaign(session, name="QR Warning Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    sponsor = _seed_sponsor(session, campaign.id, email="empty-sponsor@example.com")
+    template = _seed_template(
+        session,
+        campaign.id,
+        body_template="Bring gifts with {{gift.dropoff_qr_url}} and {{gift.dropoff_qr_image}}.",
+    )
+    session.commit()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign.id}/sponsors/{sponsor.id}/communications/preview",
+        json={"template_id": str(template.id)},
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+
+    assert response.status_code == 200
+    warning_codes = [warning["code"] for warning in response.get_json()["warnings"]]
+    assert "no_committed_gifts_for_dropoff_qr" in warning_codes
+
+
+def test_preview_warns_for_missing_map_and_unknown_merge_fields(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = sponsor_api_module.SessionLocal()
+    manager = seed_user(session, name="Gift Manager")
+    campaign = seed_campaign(session, name="Merge Warning Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    sponsor, _template = _seed_sponsor_template_context(session, campaign.id)
+    template = _seed_template(
+        session,
+        campaign.id,
+        body_template="Map: {{location.map_url}}\nUnknown: {{custom.unconfigured_field}}",
+    )
+    session.commit()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign.id}/sponsors/{sponsor.id}/communications/preview",
+        json={"template_id": str(template.id)},
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+
+    assert response.status_code == 200
+    warnings = response.get_json()["warnings"]
+    assert [warning["code"] for warning in warnings] == [
+        "missing_location_map_url",
+        "unresolved_merge_fields",
+    ]
+    assert "custom.unconfigured_field" in warnings[1]["message"]
+
+
 def test_send_sponsor_communication_records_send_recipient_and_interaction(app, monkeypatch) -> None:
     install_auth(monkeypatch)
     delivered: list[dict[str, object]] = []

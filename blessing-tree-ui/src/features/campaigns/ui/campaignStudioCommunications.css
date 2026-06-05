@@ -269,6 +269,21 @@
   color: #584d44;
 }
 
+.campaign-template-badge.is-success {
+  background: rgba(24, 87, 58, 0.12);
+  color: #18573a;
+}
+
+.campaign-template-badge.is-warning {
+  background: rgba(165, 112, 30, 0.14);
+  color: #7a4d12;
+}
+
+.campaign-template-badge.is-danger {
+  background: rgba(141, 58, 50, 0.13);
+  color: #8d3a32;
+}
+
 .campaign-template-workspace__tabs {
   display: inline-flex;
   flex-wrap: wrap;
