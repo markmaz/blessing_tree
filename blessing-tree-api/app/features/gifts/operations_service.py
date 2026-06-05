@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns.service import CampaignService
 from app.models.item_event import ItemEvent
+from app.models.recipient import Recipient
 from app.models.sponsorship import Sponsorship
 from app.models.sponsorship_item import SponsorshipItem
 from app.models.wishlist import Wishlist
@@ -200,7 +201,7 @@ class GiftOperationsService:
         return (
             db.query(WishlistItem)
             .options(
-                joinedload(WishlistItem.wishlist).joinedload(Wishlist.recipient),
+                joinedload(WishlistItem.wishlist).joinedload(Wishlist.recipient).joinedload(Recipient.recipient_group),
                 joinedload(WishlistItem.fulfillment_rows),
                 joinedload(WishlistItem.sponsorship_item)
                 .joinedload(SponsorshipItem.sponsorship)

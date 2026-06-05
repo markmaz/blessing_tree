@@ -285,6 +285,103 @@ def test_campaign_detail_serializes_season_theme(
     assert payload["season_theme"] == "Grace & Renewal"
 
 
+def test_delete_campaign_requires_app_admin(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = _seed_user(session)
+    campaign = _seed_campaign(session, year=2026, name="Delete Protected Campaign")
+    _assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.delete(
+        f"/api/v1/campaigns/{campaign_id}",
+        json={"confirmation_name": "Delete Protected Campaign"},
+        headers=_auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 403
+
+
+def test_delete_campaign_requires_exact_confirmation_name(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    admin = _seed_user(session, role="ADMIN")
+    campaign = _seed_campaign(session, year=2026, name="Delete Confirmation Campaign")
+    admin_id = str(admin.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.delete(
+        f"/api/v1/campaigns/{campaign_id}",
+        json={"confirmation_name": "delete confirmation campaign"},
+        headers=_auth_header(admin_id, "ADMIN"),
+    )
+
+    assert response.status_code == 400
+    payload = response.get_json()
+    assert payload["details"]["field"] == "confirmation_name"
+
+
+def test_app_admin_can_delete_campaign_with_exact_confirmation(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    admin = _seed_user(session, role="ADMIN")
+    campaign = _seed_campaign(session, year=2026, name="Disposable Campaign")
+    group = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        group_type=RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+        group_name="Disposable Family",
+        status="ACTIVE",
+    )
+    recipient = Recipient(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        recipient_group_id=group.id,
+        recipient_kind=RECIPIENT_KIND_CHILD,
+        program_type=RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+        privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+        display_label="Disposable Kid",
+        status=RECIPIENT_STATUS_ACTIVE,
+    )
+    wishlist = Wishlist(id=uuid.uuid4(), campaign_id=campaign.id, recipient_id=recipient.id)
+    session.add_all([group, recipient, wishlist])
+    admin_id = str(admin.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.delete(
+        f"/api/v1/campaigns/{campaign_id}",
+        json={"confirmation_name": "Disposable Campaign"},
+        headers=_auth_header(admin_id, "ADMIN"),
+    )
+
+    assert response.status_code == 204
+
+    verify = campaign_api_module.SessionLocal()
+    assert verify.query(Campaign).filter(Campaign.id == campaign_id).one_or_none() is None
+    assert verify.query(AppUser).filter(AppUser.id == admin_id).one_or_none() is not None
+    assert verify.query(Wishlist).filter(Wishlist.campaign_id == campaign_id).count() == 0
+    verify.close()
+
+
 def test_season_reflection_avoids_recent_pair_ids(
     app: Flask,
     monkeypatch: pytest.MonkeyPatch,

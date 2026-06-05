@@ -3,6 +3,7 @@ import { CampaignSponsorsWorkspace } from '@/features/campaigns/ui/CampaignSpons
 
 export function SponsorsDirectoryPage() {
   const {
+    campaignName,
     access,
     workspace,
     pendingRegistrations,
@@ -36,6 +37,7 @@ export function SponsorsDirectoryPage() {
       </div>
 
       <CampaignSponsorsWorkspace
+        campaignName={campaignName}
         access={access}
         workspace={workspace}
         pendingRegistrations={pendingRegistrations}

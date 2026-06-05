@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 export interface ReportExportColumn {
   key: string;
   label: string;
+  pdfWidthWeight?: number;
 }
 
 export type ReportExportRow = Record<string, unknown>;
@@ -42,9 +43,35 @@ export function exportReportToExcel(payload: ReportExportPayload): void {
   XLSX.writeFile(workbook, `${safeFileName(payload.fileName)}.xlsx`, { bookType: 'xlsx' });
 }
 
+export function exportReportToCsv(payload: ReportExportPayload): void {
+  const csvRows: string[] = [
+    csvLine([payload.title]),
+    ...(payload.subtitle ? [csvLine([payload.subtitle])] : []),
+  ];
+
+  for (const sheet of payload.sheets) {
+    const columns = sheet.columns.length ? sheet.columns : [{ key: 'value', label: 'Value' }];
+    const rows = sheet.rows.length ? sheet.rows : [{ value: 'No rows' }];
+    csvRows.push('', csvLine([sheet.name]), csvLine(columns.map((column) => column.label)));
+    rows.forEach((row) => {
+      csvRows.push(csvLine(columns.map((column) => formatExportCell(row[column.key]))));
+    });
+  }
+
+  const blob = new Blob([csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${safeFileName(payload.fileName)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function printReportToPdf(payload: ReportExportPayload): void {
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
-  const margin = 36;
+  const margin = 24;
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const contentWidth = pageWidth - margin * 2;
@@ -52,27 +79,36 @@ export function printReportToPdf(payload: ReportExportPayload): void {
 
   pdf.setTextColor(23, 35, 29);
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(18);
-  y = drawWrappedText(pdf, payload.title, margin, y, contentWidth, 22);
+  pdf.setFontSize(16);
+  y = drawWrappedText(pdf, payload.title, margin, y, contentWidth, 18);
 
   if (payload.subtitle) {
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(95, 107, 99);
-    pdf.setFontSize(10);
-    y = drawWrappedText(pdf, payload.subtitle, margin, y + 2, contentWidth, 14);
+    pdf.setFontSize(8);
+    y = drawWrappedText(pdf, payload.subtitle, margin, y + 1, contentWidth, 10);
   }
 
   for (const sheet of payload.sheets) {
-    y = ensureSpace(pdf, y + 18, 56, margin, pageHeight);
+    y = ensureSpace(pdf, y + 12, 40, margin, pageHeight);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(23, 35, 29);
-    pdf.setFontSize(13);
+    pdf.setFontSize(10);
     pdf.text(sheet.name, margin, y);
-    y += 18;
+    y += 12;
     y = drawPdfTable(pdf, sheet, margin, y, contentWidth, pageHeight);
   }
 
   pdf.save(`${safeFileName(payload.fileName)}.pdf`);
+}
+
+function csvLine(values: unknown[]): string {
+  return values
+    .map((value) => {
+      const cell = formatExportCell(value);
+      return `"${cell.replaceAll('"', '""')}"`;
+    })
+    .join(',');
 }
 
 function formatExportCell(value: unknown): string {
@@ -129,39 +165,109 @@ function drawPdfTable(
 ): number {
   const columns = sheet.columns.length ? sheet.columns : [{ key: 'value', label: 'Value' }];
   const rows = sheet.rows.length ? sheet.rows : [{ value: 'No rows' }];
-  const rowPadding = 5;
-  const lineHeight = 10;
-  const minRowHeight = 22;
-  const columnWidth = contentWidth / columns.length;
-  let y = drawPdfHeaderRow(pdf, columns, margin, startY, columnWidth, rowPadding, lineHeight);
+  const isCompact = columns.length >= 9;
+  const rowPadding = isCompact ? 2.4 : 4;
+  const lineHeight = isCompact ? 7.2 : 9;
+  const minRowHeight = isCompact ? 13 : 20;
+  const bodyFontSize = isCompact ? 6.1 : 7.5;
+  const headerFontSize = isCompact ? 6.4 : 7.8;
+  const columnWidths = getPdfColumnWidths(columns, contentWidth);
+  const hasSectionHeaders = rows.some((row) => isSectionHeaderRow(row.__rowType));
+  let y = hasSectionHeaders
+    ? startY
+    : drawPdfHeaderRow(pdf, columns, margin, startY, columnWidths, rowPadding, lineHeight, headerFontSize);
 
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(8);
+  pdf.setFontSize(bodyFontSize);
   rows.forEach((row, rowIndex) => {
-    const cellLines = columns.map((column) =>
-      pdf.splitTextToSize(formatExportCell(row[column.key]), Math.max(columnWidth - rowPadding * 2, 20)) as string[]
+    const rowType = row.__rowType;
+    if (isSectionHeaderRow(rowType) || rowType === 'spacer') {
+      const rowText = formatExportCell(row[columns[0].key]);
+      const isPrimaryHeader = rowType === 'organizationHeader' || rowType === 'sponsorHeader';
+      const rowPaddingForHeader = isPrimaryHeader ? 6 : 5;
+      const sectionFontSize = isPrimaryHeader ? 9 : 7.4;
+      const sectionLineHeight = isPrimaryHeader ? 10.5 : 8.5;
+      const sectionLines = rowText
+        ? (pdf.splitTextToSize(rowText, Math.max(contentWidth - rowPaddingForHeader * 2, 20)) as string[])
+        : [];
+      const rowHeight = rowType === 'spacer'
+        ? 10
+        : Math.max(isPrimaryHeader ? 38 : 26, sectionLines.length * sectionLineHeight + rowPaddingForHeader * 2);
+      const headerHeightEstimate = rowType === 'spacer' ? 0 : 18;
+      y = ensureSpace(pdf, y, rowHeight + headerHeightEstimate + 18, margin, pageHeight);
+
+      if (rowType === 'spacer') {
+        y += rowHeight;
+        return;
+      }
+
+      if (rowType === 'sponsorHeader') {
+        pdf.setFillColor(238, 238, 238);
+      } else {
+        pdf.setFillColor(255, 255, 255);
+      }
+      pdf.rect(margin, y, contentWidth, rowHeight, 'F');
+      pdf.setDrawColor(0, 0, 0);
+      pdf.rect(margin, y, contentWidth, rowHeight);
+      pdf.setFont('helvetica', isPrimaryHeader ? 'bold' : 'normal');
+      pdf.setFontSize(sectionFontSize);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(sectionLines, margin + rowPaddingForHeader, y + rowPaddingForHeader + 7, {
+        maxWidth: contentWidth - rowPaddingForHeader * 2,
+      });
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(bodyFontSize);
+      y += rowHeight;
+      y = drawPdfHeaderRow(pdf, columns, margin, y, columnWidths, rowPadding, lineHeight, headerFontSize, hasSectionHeaders);
+      return;
+    }
+
+    const cellLines = columns.map((column, columnIndex) =>
+      pdf.splitTextToSize(formatExportCell(row[column.key]), Math.max(columnWidths[columnIndex] - rowPadding * 2, 16)) as string[]
     );
     const rowHeight = Math.max(minRowHeight, Math.max(...cellLines.map((lines) => lines.length)) * lineHeight + rowPadding * 2);
-    y = ensureSpace(pdf, y, rowHeight + 24, margin, pageHeight, () =>
-      drawPdfHeaderRow(pdf, columns, margin, margin, columnWidth, rowPadding, lineHeight)
+    y = ensureSpace(pdf, y, rowHeight + 18, margin, pageHeight, () =>
+      drawPdfHeaderRow(pdf, columns, margin, margin, columnWidths, rowPadding, lineHeight, headerFontSize, hasSectionHeaders)
     );
-    pdf.setFillColor(rowIndex % 2 === 0 ? 255 : 248, rowIndex % 2 === 0 ? 255 : 250, rowIndex % 2 === 0 ? 255 : 249);
+    if (hasSectionHeaders) {
+      if (rowType === 'group') {
+        pdf.setFillColor(235, 235, 235);
+      } else {
+        const shade = rowIndex % 2 === 0 ? 255 : 246;
+        pdf.setFillColor(shade, shade, shade);
+      }
+    } else if (rowType === 'group') {
+      pdf.setFillColor(245, 247, 246);
+    } else {
+      pdf.setFillColor(rowIndex % 2 === 0 ? 255 : 248, rowIndex % 2 === 0 ? 255 : 250, rowIndex % 2 === 0 ? 255 : 249);
+    }
     pdf.rect(margin, y, contentWidth, rowHeight, 'F');
-    pdf.setDrawColor(207, 216, 210);
+    if (hasSectionHeaders) {
+      pdf.setDrawColor(0, 0, 0);
+    } else {
+      pdf.setDrawColor(207, 216, 210);
+    }
     pdf.rect(margin, y, contentWidth, rowHeight);
+    pdf.setFont('helvetica', rowType === 'group' ? 'bold' : 'normal');
+    let x = margin;
     columns.forEach((_, columnIndex) => {
-      const x = margin + columnIndex * columnWidth;
+      const columnWidth = columnWidths[columnIndex];
       if (columnIndex > 0) {
         pdf.line(x, y, x, y + rowHeight);
       }
-      pdf.setTextColor(23, 35, 29);
+      pdf.setTextColor(hasSectionHeaders ? 0 : 23, hasSectionHeaders ? 0 : 35, hasSectionHeaders ? 0 : 29);
       pdf.text(cellLines[columnIndex], x + rowPadding, y + rowPadding + 8, {
         maxWidth: columnWidth - rowPadding * 2,
       });
+      x += columnWidth;
     });
     y += rowHeight;
   });
   return y;
+}
+
+function isSectionHeaderRow(rowType: unknown): boolean {
+  return rowType === 'organizationHeader' || rowType === 'familyHeader' || rowType === 'sponsorHeader';
 }
 
 function drawPdfHeaderRow(
@@ -169,32 +275,46 @@ function drawPdfHeaderRow(
   columns: ReportExportColumn[],
   margin: number,
   y: number,
-  columnWidth: number,
+  columnWidths: number[],
   rowPadding: number,
-  lineHeight: number
+  lineHeight: number,
+  fontSize: number,
+  monochrome = false
 ): number {
-  const contentWidth = columns.length * columnWidth;
-  const headerLines = columns.map((column) =>
-    pdf.splitTextToSize(column.label, Math.max(columnWidth - rowPadding * 2, 20)) as string[]
+  const contentWidth = columnWidths.reduce((total, width) => total + width, 0);
+  const headerLines = columns.map((column, columnIndex) =>
+    pdf.splitTextToSize(column.label, Math.max(columnWidths[columnIndex] - rowPadding * 2, 16)) as string[]
   );
-  const headerHeight = Math.max(24, Math.max(...headerLines.map((lines) => lines.length)) * lineHeight + rowPadding * 2);
-  pdf.setFillColor(238, 244, 240);
-  pdf.setDrawColor(207, 216, 210);
+  const headerHeight = Math.max(14, Math.max(...headerLines.map((lines) => lines.length)) * lineHeight + rowPadding * 2);
+  pdf.setFillColor(monochrome ? 242 : 255, monochrome ? 242 : 255, monochrome ? 242 : 255);
+  if (monochrome) {
+    pdf.setDrawColor(0, 0, 0);
+  } else {
+    pdf.setDrawColor(207, 216, 210);
+  }
   pdf.rect(margin, y, contentWidth, headerHeight, 'FD');
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(8);
-  pdf.setTextColor(23, 35, 29);
+  pdf.setFontSize(fontSize);
+  pdf.setTextColor(monochrome ? 0 : 23, monochrome ? 0 : 35, monochrome ? 0 : 29);
+  let x = margin;
   columns.forEach((_, columnIndex) => {
-    const x = margin + columnIndex * columnWidth;
+    const columnWidth = columnWidths[columnIndex];
     if (columnIndex > 0) {
       pdf.line(x, y, x, y + headerHeight);
     }
-    pdf.text(headerLines[columnIndex], x + rowPadding, y + rowPadding + 8, {
+    pdf.text(headerLines[columnIndex], x + rowPadding, y + rowPadding + 6, {
       maxWidth: columnWidth - rowPadding * 2,
     });
+    x += columnWidth;
   });
   pdf.setFont('helvetica', 'normal');
   return y + headerHeight;
+}
+
+function getPdfColumnWidths(columns: ReportExportColumn[], contentWidth: number): number[] {
+  const weights = columns.map((column) => column.pdfWidthWeight ?? 1);
+  const totalWeight = weights.reduce((total, weight) => total + weight, 0) || 1;
+  return weights.map((weight) => (contentWidth * weight) / totalWeight);
 }
 
 function drawWrappedText(

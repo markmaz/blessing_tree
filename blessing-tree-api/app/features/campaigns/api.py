@@ -117,6 +117,33 @@ class CampaignDetailResource(Resource):
             db.commit()
         return response
 
+    @require_app_admin()
+    def delete(self, campaign_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            campaign = _campaign_service.get_campaign(db, campaign_id)
+            before = serialize_campaign(campaign)
+            counts = _campaign_service.get_campaign_summary_counts(db, campaign_id)
+            _audit_event_service.record_event(
+                db,
+                area="campaigns",
+                action="deleted",
+                entity_type="campaign",
+                entity_id=campaign.id,
+                entity_label=campaign.name,
+                campaign_id=campaign.id,
+                actor_user_id=getattr(g, "user_id", None),
+                summary=f"Deleted campaign {campaign.name}.",
+                metadata={"previous": before, "deleted_counts": counts},
+            )
+            _campaign_service.delete_campaign(
+                db,
+                campaign,
+                confirmation_name=payload.get("confirmation_name"),
+            )
+            db.commit()
+        return "", 204
+
 
 @campaign_ns.route("/<string:campaign_id>/access")
 class CampaignAccessResource(Resource):

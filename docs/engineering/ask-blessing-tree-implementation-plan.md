@@ -1,12 +1,17 @@
 # Ask Blessing Tree Implementation Plan
 
-Last updated: 2026-05-26
+Last updated: 2026-06-01
 
 ## Status
 
-- Proposed.
+- MVP implemented and iterated.
 - Builds on `docs/engineering/queryforge-reuse-plan.md`.
-- Completes the remaining natural-language reporting foundation.
+- Ask Blessing Tree now includes help/navigation answers, report-style campaign
+  queries, calendar intelligence answers, field-level help modal integration,
+  prompt logging/review, thumbs up/down feedback, optional LLM entity
+  extraction, and optional Qdrant-backed knowledge retrieval.
+- Deterministic routing and validated report/catalog execution remain the
+  authoritative safety boundary.
 
 ## Objective
 
@@ -30,9 +35,9 @@ Recommended route:
 /campaigns/:campaignId/ask
 ```
 
-Recommended nav placement:
+Current nav placement:
 
-- top-level campaign workspace item, near Dashboard or Reports
+- top-level app/campaign workspace item above Campaigns
 - visible to users with `campaign.view`
 - report execution limited by `campaign.reports.view`
 
@@ -58,13 +63,16 @@ Example prompts:
 The first screen should be a practical work surface, not a marketing-style AI
 page.
 
-Recommended layout:
+Current layout:
 
 - header with selected campaign context
 - single prompt composer
-- suggested prompt buttons
-- result panel
-- recent questions for the current browser session
+- small curated suggested prompt buttons
+- conversation card with user/assistant chat bubbles
+- clear-chat action at the bottom of the conversation card
+- feedback controls on answers
+- screen/field help dialogs reuse the same help knowledge without forcing the
+  user to leave their current workflow
 
 ### Result Types
 
@@ -941,20 +949,20 @@ Exit criteria:
 5. Use LLM NER when configured, with deterministic fallback always available.
 6. Defer Qdrant until deterministic and LLM-assisted matching show clear gaps.
 
-## Open Decisions
+## Current Decisions
 
-Recommended defaults:
+Current defaults:
 
 - name: **Ask Blessing Tree**
 - route: `/campaigns/:campaignId/ask`
-- nav icon: `bi-stars`
-- first release: deterministic plus optional LLM NER
-- database prompt logging: off
+- nav icon: dialogue/chat bubble icon
+- first release: deterministic plus optional LLM NER and optional Qdrant
+- database prompt logging: on for reviewable prompts
 - report row limit: 100
 
-Decisions to revisit after MVP:
+Decisions to revisit after production usage:
 
-- whether to add CSV export from Ask results
 - whether to store prompt history server-side
-- whether to enable Qdrant for fuzzy catalog matching
 - whether to add broader LLM-based plan suggestions behind strict validation
+- whether Ask results need PDF/Excel export like formal report screens
+- whether Qdrant should become required infrastructure or remain optional

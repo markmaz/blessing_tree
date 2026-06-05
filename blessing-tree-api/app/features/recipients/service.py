@@ -10,6 +10,11 @@ from sqlalchemy.orm import Session, joinedload
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns.gift_policy_service import CampaignGiftPolicyService
 from app.features.campaigns.service import CampaignService
+from app.features.gifts.semantic_index_queue import (
+    enqueue_recipient_gift_reindex,
+    enqueue_wishlist_item_delete,
+    enqueue_wishlist_item_reindex,
+)
 from app.features.recipients.organization_type_service import OrganizationTypeService
 from app.features.recipients.validation import (
     parse_bool,
@@ -45,6 +50,7 @@ from app.models.pickup_item import PickupItem
 from app.models.recipient import Recipient
 from app.models.recipient_group import RecipientGroup
 from app.models.sponsorship_item import SponsorshipItem
+from app.models.sponsorship import Sponsorship
 from app.models.wishlist import Wishlist
 from app.models.wishlist_item import WishlistItem
 from app.models.fulfillment import Fulfillment
@@ -512,6 +518,7 @@ class CampaignRecipientService:
         if group_changed and _is_child_program(original_program_type):
             self._renumber_child_recipients(db, original_group_id)
         self._commit_with_duplicate_handling(db)
+        enqueue_recipient_gift_reindex(recipient.id)
         return self.get_recipient(db, campaign_id, recipient_id)
 
     def delete_recipient(self, db: Session, campaign_id: str, recipient_id: str) -> None:
@@ -588,6 +595,7 @@ class CampaignRecipientService:
         )
         db.add(item)
         db.commit()
+        enqueue_wishlist_item_reindex(item.id)
         return self._get_wishlist_item(db, wishlist.id, str(item.id))
 
     def update_wishlist_item(
@@ -625,13 +633,16 @@ class CampaignRecipientService:
         if "notes" in payload:
             item.notes = validate_optional_long_text(payload.get("notes"), "notes")
         db.commit()
+        enqueue_wishlist_item_reindex(item.id)
         return self._get_wishlist_item(db, wishlist.id, item_id)
 
     def delete_wishlist_item(self, db: Session, campaign_id: str, recipient_id: str, item_id: str) -> None:
         wishlist = self.get_wishlist(db, campaign_id, recipient_id)
         item = self._get_wishlist_item(db, wishlist.id, item_id)
+        item_uuid = item.id
         db.delete(item)
         db.commit()
+        enqueue_wishlist_item_delete(item_uuid)
 
     def _get_contact(self, db: Session, group_id: uuid.UUID, contact_id: str) -> GroupContact:
         contact = (
@@ -1054,7 +1065,8 @@ class CampaignRecipientService:
     def _wishlist_item_load_options():
         return (
             joinedload(WishlistItem.sponsorship_item)
-            .joinedload(SponsorshipItem.sponsorship),
+            .joinedload(SponsorshipItem.sponsorship)
+            .joinedload(Sponsorship.sponsor),
             joinedload(WishlistItem.fulfillment_rows)
             .joinedload(Fulfillment.donation_line),
             joinedload(WishlistItem.label_print_items),

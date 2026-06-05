@@ -17,11 +17,18 @@ export function AdminHealthServiceCard({
   iconClass,
   check,
   metrics,
+  action,
 }: {
   title: string;
   iconClass: string;
   check: AdminHealthCheck;
   metrics: Array<{ label: string; value: string | number | null | undefined }>;
+  action?: {
+    label: string;
+    iconClass: string;
+    isBusy?: boolean;
+    onClick: () => void;
+  };
 }) {
   return (
     <div className="content-card admin-health-card h-100">
@@ -50,8 +57,23 @@ export function AdminHealthServiceCard({
       {check.workers?.length ? (
         <div className="admin-health-card__meta">Workers: {check.workers.join(', ')}</div>
       ) : null}
+      {check.expectedCollections?.length ? (
+        <div className="admin-health-card__meta">Expected collections: {check.expectedCollections.join(', ')}</div>
+      ) : null}
+      {check.collections?.length ? (
+        <div className="admin-health-card__meta">Available collections: {check.collections.join(', ')}</div>
+      ) : null}
       {check.model ? <div className="admin-health-card__meta">Model: {check.model}</div> : null}
       {check.provider ? <div className="admin-health-card__meta">Provider: {check.provider}</div> : null}
+      {check.url ? <div className="admin-health-card__meta">URL: {check.url}</div> : null}
+      {action ? (
+        <div className="mt-3">
+          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={action.onClick} disabled={action.isBusy}>
+            <i className={`bi ${action.iconClass} me-2`} aria-hidden="true" />
+            {action.isBusy ? 'Working...' : action.label}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

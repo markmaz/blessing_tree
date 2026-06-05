@@ -380,7 +380,7 @@ def build_document() -> None:
     add_heading(doc, "People Directory", level=2)
     add_body(
         doc,
-        "Use the directory when someone is already in the system. Search for a family, organization, child, or adult, then click the row to open the drawer. The drawer is also where staff can add another child or adult to an existing household, add a family under an organization, edit contacts, and manage wishlist details.",
+        "Use the directory when someone is already in the system. Search for a family, organization, child, or adult, then click the row to open the drawer. The drawer is also where staff can add another child or adult to an existing household, add a family under an organization, edit contacts, and manage wishlist details. Directory tables include sortable recipient IDs, program abbreviation quick filters, gift descriptions, gift sizes/details, and committed sponsor names. Use Expand All or Collapse All on the left and PDF or Excel export buttons in the upper right when staff need a printed operating list.",
     )
     add_workflow(
         doc,
@@ -447,7 +447,28 @@ def build_document() -> None:
     add_heading(doc, "Gift Search", level=2)
     add_body(
         doc,
-        "Gift Search helps staff or eligible sponsors find gifts to reserve or commit to. The search supports natural-language prompts such as 'girls age 8 to 10 who need coats' and returns matching wishlist items. From there, a user with the right access can commit a sponsor to a gift.",
+        "Gift Search helps staff or eligible sponsors find gifts to reserve or commit to. The search supports natural-language prompts such as 'girls age 8 to 10 who need coats' and can use Qdrant semantic matching for broader terms such as toys, Batman gifts, or video games when the wishlist uses a more specific description. Search chips show inferred filters and can be cleared. Results are paginated and can be exported to PDF or Excel from the upper right of the results container.",
+    )
+    add_workflow(
+        doc,
+        "Commit a Gift to a Sponsor",
+        [
+            "Open Gift Search or Gift Status.",
+            "Select the gift and open the commit action.",
+            "Search for the sponsor by name, email, phone, or organization.",
+            "Click the sponsor result so the selected sponsor appears below the search bar.",
+            "Add optional notes for the commitment.",
+            "Choose Commit.",
+        ],
+    )
+    add_workflow(
+        doc,
+        "Review or Release a Committed Gift",
+        [
+            "Click a recipient in Gift Search to review recipient and gift details.",
+            "Click a sponsor name on a committed gift to open the sponsor drawer.",
+            "To make a committed gift available again, choose Release and confirm the sponsor shown in the modal.",
+        ],
     )
     add_heading(doc, "Gift Operations", level=2)
     add_bullets(

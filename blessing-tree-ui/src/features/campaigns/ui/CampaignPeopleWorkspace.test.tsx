@@ -309,6 +309,7 @@ const workspaceFixture: CampaignPeopleWorkspaceData = {
             status: 'OPEN',
             qtyFulfilled: 0,
             notes: null,
+            sponsor: null,
             giftWorkflow: {
               sponsorshipStatus: 'UNSPONSORED',
               sponsorshipId: null,
@@ -466,7 +467,8 @@ describe('CampaignPeopleWorkspace', () => {
     const [groupTable, peopleTable] = screen.getAllByRole('table');
 
     expect(within(groupTable).queryByText('Child One')).not.toBeInTheDocument();
-    expect(within(peopleTable).queryByText('Art kit')).not.toBeInTheDocument();
+    expect(within(peopleTable).getByText('Art kit')).toBeInTheDocument();
+    expect(within(peopleTable).getByText(/Unsponsored/)).toBeInTheDocument();
 
     await user.click(within(groupTable).getByRole('button', { name: 'Expand Johnson Household' }));
     await user.click(within(groupTable).getByRole('button', { name: 'Expand Maple Grove West Wing' }));
@@ -477,8 +479,8 @@ describe('CampaignPeopleWorkspace', () => {
     expect(within(groupTable).getByText('8 years')).toBeInTheDocument();
     expect(within(groupTable).getByText('MGWW-001')).toBeInTheDocument();
     expect(within(peopleTable).getByText('MGWW-001')).toBeInTheDocument();
-    expect(within(peopleTable).getByText('Art kit')).toBeInTheDocument();
-    expect(within(peopleTable).getByText('Open')).toBeInTheDocument();
+    expect(within(peopleTable).getAllByText('Art kit')).toHaveLength(2);
+    expect(within(peopleTable).getAllByText('Open').length).toBeGreaterThan(0);
   });
 
   it('opens the person drawer when a recipient row is selected', async () => {

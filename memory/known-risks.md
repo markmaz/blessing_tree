@@ -1,22 +1,63 @@
 # Known Risks
 
-## Auth Mismatch
+Last updated: 2026-06-01
 
-- Local login, OAuth callback completion, and reload-time session restoration now match the backend.
-- The frontend still lacks automatic access-token refresh during active API use after a 401 response.
-- Risk: authenticated reload and provider sign-in are improved, but future data-heavy screens may still need a refresh-on-401 client layer.
+## Production Smoke After Dependency Changes
 
-## Environment Reproducibility
+- Report exports now depend on `xlsx` in the frontend bundle.
+- Risk: deployment will fail if `package-lock.json` and production build are
+  not in sync, or if the Docker image is built from an older branch.
+- Mitigation: `package-lock.json` was updated and local `npm run build` passed;
+  smoke-test PDF and Excel export after deploy.
 
-- Dependency manifests and `.env.example` exist now.
-- Risk: startup instructions are improved and the documented backend entrypoint now works again, but full clean-room app validation across backend and frontend still needs to be exercised end to end.
+## Bundle Size
 
-## Script Environment Drift
+- The frontend build passes but still reports the known large Vite chunk
+  warning.
+- Risk: slower first load as the app grows, especially for non-technical users
+  on older machines.
+- Mitigation: later split heavy surfaces such as builders, Ask, report export
+  libraries, and admin pages with route-level lazy loading.
 
-- Backend helper scripts rely on `pytest` and `ruff` from `PATH`.
-- Risk: local shell tools may differ from the project virtualenv.
+## Ask Blessing Tree Expectations
 
-## Unimplemented Business Surface
+- Ask now answers help, navigation, field-level, report, and calendar questions,
+  with optional LLM/Qdrant enhancement.
+- Risk: users may expect free-form data analysis beyond the validated report
+  catalog.
+- Mitigation: keep deterministic/report catalog paths authoritative, log failed
+  prompts, and promote repeated misses into curated help/report handlers.
 
-- Many domain models exist, but business APIs and real UI pages are still incomplete.
-- Risk: the project can look further along than it actually is if only the schema and shells are considered.
+## Qdrant Optional Runtime
+
+- Qdrant improves fuzzy help retrieval but should not be required for the app
+  to function.
+- Risk: enabling Qdrant without correct env/service setup can create confusing
+  degraded behavior.
+- Mitigation: deterministic Ask fallback must remain enabled; health/admin docs
+  should make Qdrant status visible.
+
+## Audit Log Scope
+
+- Activity Log now records many high-value workflows, but it is still explicit
+  service-level event writing rather than database-level change capture.
+- Risk: newly added workflows may be missed unless developers remember to add
+  audit writers.
+- Mitigation: treat audit writer updates as part of definition of done for new
+  mutating workflows.
+
+## Report Export Scope
+
+- Report and Activity Log exports use the currently loaded/filter-visible row
+  set rather than silently exporting every possible row.
+- Risk: users may expect "all matching rows" across pagination.
+- Mitigation: documentation now explains export scope; future server-side export
+  endpoints can be added if users need large exports.
+
+## Production Monitoring
+
+- Admin Health and local/cloud-ready logging exist, but the app does not yet
+  have a polished admin-facing log viewer beyond Activity Log.
+- Risk: technical runtime issues may still require SSH/log access.
+- Mitigation: keep local logs structured and plan CloudWatch/log viewer work if
+  operational support load increases.

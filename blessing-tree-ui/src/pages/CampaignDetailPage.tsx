@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { buildCampaignStudioPath, routes } from '@/app/routes';
-import { updateCampaign } from '@/features/campaigns/api/campaignApi';
+import { deleteCampaign, updateCampaign } from '@/features/campaigns/api/campaignApi';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
-import { canManageCampaign } from '@/features/campaigns/model/campaignPermissions';
+import { canManageCampaign, isAppAdminRole } from '@/features/campaigns/model/campaignPermissions';
 import type { CampaignUpsertInput } from '@/features/campaigns/model/campaignTypes';
 import { CampaignEditorForm } from '@/features/campaigns/ui/CampaignEditorForm';
 import { useCampaignOverview } from '@/features/campaigns/model/useCampaignOverview';
 import { CampaignStatusBadge } from '@/features/campaigns/ui/CampaignStatusBadge';
 import { CampaignSummaryGrid } from '@/features/campaigns/ui/CampaignSummaryGrid';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
+import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 
 function metadataValue(value: string | null): string {
   return value || 'Not set';
@@ -17,9 +18,13 @@ function metadataValue(value: string | null): string {
 
 export function CampaignDetailPage() {
   const { campaignId = null } = useParams();
+  const navigate = useNavigate();
   const { campaigns, selectedCampaignId, selectCampaign, reloadCampaigns } = useCampaigns();
   const { campaign, access, summary, isLoading, error, reload } = useCampaignOverview(campaignId);
   const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
@@ -52,6 +57,7 @@ export function CampaignDetailPage() {
   const isCurrentCampaign = selectedCampaignId === campaignId;
   const otherCampaignCount = Math.max(campaigns.length - 1, 0);
   const showAdminEditor = canManageCampaign(access);
+  const showDeleteCampaign = isAppAdminRole(access.globalAppRole);
 
   const handleUpdateCampaign = async (input: CampaignUpsertInput) => {
     setIsEditing(true);
@@ -72,6 +78,30 @@ export function CampaignDetailPage() {
       return false;
     } finally {
       setIsEditing(false);
+    }
+  };
+
+  const handleDeleteCampaign = async () => {
+    setIsDeleting(true);
+    setSaveError(null);
+
+    try {
+      await deleteCampaign(campaignId, deleteConfirmation);
+      setIsDeleteModalOpen(false);
+      setDeleteConfirmation('');
+      if (isCurrentCampaign) {
+        selectCampaign(null);
+      }
+      await reloadCampaigns();
+      navigate(routes.CAMPAIGNS);
+    } catch (deleteCampaignError) {
+      setSaveError(
+        deleteCampaignError instanceof Error
+          ? deleteCampaignError.message
+          : 'Unable to delete campaign'
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -149,9 +179,35 @@ export function CampaignDetailPage() {
             title="Edit Campaign Setup"
             description="Managers and app admins can update the campaign metadata, lifecycle, and operating dates here."
             submitLabel="Save Campaign"
-            isSaving={isEditing}
+            isSaving={isEditing || isDeleting}
             onSubmit={handleUpdateCampaign}
           />
+        </section>
+      ) : null}
+
+      {showDeleteCampaign ? (
+        <section className="campaign-surface-card border border-danger-subtle">
+          <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div>
+              <div className="text-uppercase small text-danger fw-semibold mb-1">Danger Zone</div>
+              <h2 className="h5 mb-2">Delete Campaign</h2>
+              <p className="text-muted mb-0">
+                Permanently delete this campaign and its operational data. Archive the campaign instead when historical access is needed.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline-danger btn-sm"
+              disabled={isDeleting}
+              onClick={() => {
+                setDeleteConfirmation('');
+                setIsDeleteModalOpen(true);
+              }}
+            >
+              <i className="bi bi-trash3 me-2" aria-hidden="true" />
+              Delete Campaign
+            </button>
+          </div>
         </section>
       ) : null}
 
@@ -195,6 +251,42 @@ export function CampaignDetailPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        open={isDeleteModalOpen}
+        title="Delete Campaign Permanently"
+        message="This cannot be undone. Type the campaign name exactly to confirm deletion."
+        detailsHeading="This will permanently delete"
+        details={[
+          `${campaign.name} (${campaign.year})`,
+          `${summary.counts.recipients} recipients`,
+          `${summary.counts.wishlistItems} wishlist items`,
+          `${summary.counts.sponsorships} sponsorship records`,
+          `${summary.counts.donations} donations`,
+        ]}
+        confirmLabel={isDeleting ? 'Deleting...' : 'Delete Campaign'}
+        tone="danger"
+        isSubmitting={isDeleting}
+        confirmDisabled={deleteConfirmation !== campaign.name}
+        onClose={() => {
+          if (!isDeleting) {
+            setIsDeleteModalOpen(false);
+            setDeleteConfirmation('');
+          }
+        }}
+        onConfirm={handleDeleteCampaign}
+      >
+        <label className="form-label w-100 mb-0">
+          Campaign name
+          <input
+            className="form-control mt-2"
+            value={deleteConfirmation}
+            onChange={(event) => setDeleteConfirmation(event.target.value)}
+            placeholder={campaign.name}
+            autoComplete="off"
+          />
+        </label>
+      </ConfirmationModal>
     </section>
   );
 }

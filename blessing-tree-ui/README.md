@@ -6,7 +6,8 @@ The frontend is a React 19 + TypeScript + Vite application with:
 
 - authenticated routing
 - a protected app shell
-- pages for dashboard, campaign-aware people, donations, reports, and admin
+- pages for dashboard, campaign-aware people, sponsors, gifts, reports, Ask
+  Blessing Tree, and admin
 - Bootstrap-based styling
 - a direct local-login flow bridged to the Flask backend auth routes
 
@@ -15,7 +16,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - `src/app/App.tsx` uses nested protected routes with `AppLayout`.
 - `src/shared/api/authApi.ts` already calls the backend local login route.
 - The frontend now completes local login directly on `/login` and includes backend refresh-cookie handling.
-- The invite onboarding page at `/auth/register` now supports Google, Yahoo, and local password from the same invitation funnel.
+- The invite onboarding page at `/auth/register` supports local password setup from the invitation funnel.
 - The invite onboarding page now also distinguishes pending vs already-completed invitations and routes already-onboarded users back to sign-in cleanly.
 - The frontend now has Playwright browser E2E coverage for invite onboarding, create-from-previous-campaign, and communications template save flows against the local running stack.
 - The frontend now consumes the protected campaign APIs through a campaign provider, top-bar switcher, campaign list, campaign detail page, and a campaign-aware dashboard.
@@ -124,19 +125,11 @@ Invitation sequence:
 1. app admin creates a user from `/admin`
 2. backend creates an invitation and sends a signed accept link
 3. invited user opens `/auth/register?token=...`
-4. invited user chooses Google, Yahoo, or local password
-5. the first successful auth binding marks the invitation accepted
+4. invited user sets up a local password
+5. successful password setup marks the invitation accepted
 6. backend issues the refresh cookie and the frontend completes session bootstrap normally
 
 If the invite was already accepted, the page now switches into a completion state and sends the user back to standard sign-in instead of showing onboarding controls again.
-
-OAuth sequence:
-
-1. user starts provider login from `/login`
-2. provider returns to the backend callback route
-3. backend issues the refresh cookie and redirects to `/auth/callback`
-4. frontend callback route calls `POST /api/v1/auth/refresh`
-5. frontend stores the returned access token and enters the protected app
 
 Active API calls should now be built on `src/shared/api/client.ts`, which retries once through `POST /api/v1/auth/refresh` after a 401 and keeps local auth storage synchronized.
 

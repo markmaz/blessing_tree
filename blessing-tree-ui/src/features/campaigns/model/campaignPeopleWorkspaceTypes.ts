@@ -76,9 +76,19 @@ export interface CampaignWishlistItem {
   status: string;
   qtyFulfilled: number;
   notes: string | null;
+  sponsor: CampaignWishlistItemSponsor | null;
   giftWorkflow: CampaignGiftWorkflowSummary;
   createdAt: string | null;
   updatedAt: string | null;
+}
+
+export interface CampaignWishlistItemSponsor {
+  id: string;
+  displayName: string;
+  email: string | null;
+  phone: string | null;
+  sponsorshipId: string;
+  dropOffStatus: string | null;
 }
 
 export interface CampaignGiftWorkflowSummary {

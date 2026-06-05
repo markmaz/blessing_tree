@@ -81,11 +81,29 @@ export interface AdminHealthCheck {
   status: string;
   message?: string;
   latencyMs?: number;
+  url?: string;
   provider?: string;
   model?: string;
+  collections?: string[];
+  expectedCollections?: string[];
   workers?: string[];
   workerHeartbeat?: boolean;
   configured?: boolean;
+}
+
+export interface AdminQdrantReindexPayload {
+  status: string;
+  message: string;
+  latencyMs?: number;
+  ask?: {
+    indexedItems: number;
+    collection: string;
+  };
+  giftSearch?: {
+    campaigns: number;
+    indexedItems: number;
+    collection: string;
+  };
 }
 
 export interface AdminHealthPayload {
@@ -95,6 +113,7 @@ export interface AdminHealthPayload {
     database: AdminHealthCheck;
     celery: AdminHealthCheck;
     llm: AdminHealthCheck;
+    qdrant: AdminHealthCheck;
   };
 }
 

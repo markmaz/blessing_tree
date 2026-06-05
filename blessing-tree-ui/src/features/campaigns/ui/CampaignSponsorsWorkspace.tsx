@@ -17,15 +17,21 @@ import type {
 import type { CommunicationTemplate } from '@/features/campaigns/model/campaignStudioTypes';
 import { canManageSponsors } from '@/features/campaigns/model/campaignPermissions';
 import {
+  compareSponsorFollowUpQueue,
   formatShortDate,
-  summarizeFollowUp,
+  needsSponsorFollowUp,
+  summarizeSponsorFollowUpQueue,
   toSponsorDropOffStatusLabel,
+  toSponsorStatusLabel,
 } from '@/features/campaigns/model/campaignSponsorWorkspacePresentation';
 import { CampaignSponsorDrawer } from '@/features/campaigns/ui/CampaignSponsorDrawer';
 import { CampaignSponsorTable } from '@/features/campaigns/ui/CampaignSponsorTable';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
+import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
+import type { ReportExportPayload, ReportExportRow } from '@/features/reports/model/reportExport';
 
 interface CampaignSponsorsWorkspaceProps {
+  campaignName: string;
   access: CampaignAccess | null;
   workspace: CampaignSponsorWorkspaceData | null;
   pendingRegistrations: PendingSponsorRegistration[];
@@ -73,6 +79,7 @@ interface CampaignSponsorsWorkspaceProps {
 }
 
 export function CampaignSponsorsWorkspace({
+  campaignName,
   access,
   workspace,
   pendingRegistrations,
@@ -127,6 +134,10 @@ export function CampaignSponsorsWorkspace({
 
   const selectedSponsor = workspace?.sponsors.find((item) => item.id === selectedSponsorId) ?? null;
   const pendingDeleteSponsor = workspace?.sponsors.find((item) => item.id === pendingDeleteSponsorId) ?? null;
+  const sponsorDirectoryExport = useMemo(
+    () => buildSponsorDirectoryExport(campaignName, filteredSponsors),
+    [campaignName, filteredSponsors]
+  );
   const deleteDetails = useMemo(() => {
     if (!pendingDeleteSponsor) {
       return [];
@@ -145,9 +156,14 @@ export function CampaignSponsorsWorkspace({
       return [];
     }
     return workspace.sponsors
-      .filter((sponsor) => sponsor.recentInteractions.some((interaction) => interaction.followUpAt))
-      .slice(0, 5);
+      .filter(needsSponsorFollowUp)
+      .sort(compareSponsorFollowUpQueue)
+      .slice(0, 15);
   }, [workspace]);
+  const followUpQueueExport = useMemo(
+    () => buildSponsorFollowUpQueueExport(campaignName, followUpSponsors),
+    [campaignName, followUpSponsors]
+  );
 
   if (isLoading && !workspace) {
     return <p className="text-muted">Loading Sponsors workspace...</p>;
@@ -191,19 +207,22 @@ export function CampaignSponsorsWorkspace({
                 Search sponsors, review campaign participation, and open the full sponsor record for notes, gifts, and communication history.
               </p>
             </div>
-            {canEditSponsors && showCreateActions ? (
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm campaign-team-workspace__section-action"
-                onClick={() => {
-                  setSelectedSponsorId(null);
-                  setIsCreateOpen(true);
-                }}
-              >
-                <i className="bi bi-person-plus" aria-hidden="true" />
-                <span>Add Sponsor</span>
-              </button>
-            ) : null}
+            <div className="d-flex flex-wrap justify-content-end gap-2">
+              <ReportExportActions payload={sponsorDirectoryExport} formats={['pdf', 'excel']} />
+              {canEditSponsors && showCreateActions ? (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm campaign-team-workspace__section-action"
+                  onClick={() => {
+                    setSelectedSponsorId(null);
+                    setIsCreateOpen(true);
+                  }}
+                >
+                  <i className="bi bi-person-plus" aria-hidden="true" />
+                  <span>Add Sponsor</span>
+                </button>
+              ) : null}
+            </div>
           </div>
 
           <div className="campaign-team-table-toolbar">
@@ -309,7 +328,10 @@ export function CampaignSponsorsWorkspace({
             </div>
             <div className="col-12 col-xl-6">
               <div className="content-card h-100">
-                <h3 className="h6 mb-3">Follow-up Queue</h3>
+                <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+                  <h3 className="h6 mb-0">Follow-up Queue</h3>
+                  <ReportExportActions payload={followUpQueueExport} formats={['pdf', 'excel']} />
+                </div>
                 {followUpSponsors.length === 0 ? (
                   <div className="campaign-studio__empty-note mb-0">No sponsors currently need follow-up.</div>
                 ) : (
@@ -326,7 +348,7 @@ export function CampaignSponsorsWorkspace({
                       >
                         <div>
                           <strong>{sponsor.displayName}</strong>
-                          <div className="text-muted small">{summarizeFollowUp(sponsor.recentInteractions)}</div>
+                          <div className="text-muted small">{summarizeSponsorFollowUpQueue(sponsor)}</div>
                         </div>
                         <span className="campaign-chip campaign-chip-muted">
                           <i className="bi bi-truck" aria-hidden="true" />
@@ -407,4 +429,140 @@ function StatCard({ label, value }: { label: string; value: number }) {
       <div className="campaign-studio__stat-value">{value}</div>
     </div>
   );
+}
+
+function buildSponsorDirectoryExport(
+  campaignName: string,
+  sponsors: CampaignSponsor[]
+): ReportExportPayload {
+  return {
+    title: 'Sponsors Directory',
+    subtitle: campaignName,
+    fileName: `${campaignName}-sponsors-directory`,
+    sheets: [
+      {
+        name: 'Sponsors',
+        columns: [
+          { key: 'recipient', label: 'Recipient', pdfWidthWeight: 1.45 },
+          { key: 'recipientId', label: 'ID', pdfWidthWeight: 0.75 },
+          { key: 'gift', label: 'Gift', pdfWidthWeight: 2 },
+          { key: 'size', label: 'Size', pdfWidthWeight: 0.85 },
+          { key: 'qty', label: 'Qty', pdfWidthWeight: 0.55 },
+          { key: 'giftStatus', label: 'Gift Status', pdfWidthWeight: 1 },
+          { key: 'committedAt', label: 'Committed', pdfWidthWeight: 0.9 },
+          { key: 'notes', label: 'Notes', pdfWidthWeight: 1.2 },
+        ],
+        rows: buildSponsorDirectoryRows(sponsors),
+      },
+    ],
+  };
+}
+
+function buildSponsorDirectoryRows(sponsors: CampaignSponsor[]) {
+  return sponsors.flatMap((sponsor, sponsorIndex) => {
+    const rows: ReportExportRow[] = [
+      {
+        __rowType: 'sponsorHeader',
+        recipient: formatSponsorHeader(sponsor),
+      },
+    ];
+
+    if (sponsor.sponsoredItems.length === 0) {
+      rows.push({
+        recipient: '',
+        recipientId: '',
+        gift: 'No sponsored gifts linked',
+        size: '',
+        qty: '',
+        giftStatus: '',
+        committedAt: '',
+        notes: '',
+      });
+    } else {
+      rows.push(
+        ...sponsor.sponsoredItems.map((item) => ({
+          recipient: item.recipient?.displayLabel ?? 'Unknown recipient',
+          recipientId: item.recipient?.programRecipientId ?? '',
+          gift: formatSponsorGiftName(item),
+          size: item.gift?.size ?? '',
+          qty: item.qtyCommitted,
+          giftStatus: formatSponsorGiftStatus(item.gift?.status),
+          committedAt: formatShortDate(item.committedAt),
+          notes: item.notes ?? '',
+        }))
+      );
+    }
+
+    if (sponsorIndex < sponsors.length - 1) {
+      rows.push({ __rowType: 'spacer', recipient: '' });
+    }
+
+    return rows;
+  });
+}
+
+function formatSponsorHeader(sponsor: CampaignSponsor) {
+  const contactParts = [
+    sponsor.email ? `Email: ${sponsor.email}` : null,
+    sponsor.phone ? `Phone: ${sponsor.phone}` : null,
+    sponsor.city && sponsor.state ? `${sponsor.city}, ${sponsor.state}` : null,
+  ].filter(Boolean);
+
+  return [
+    sponsor.displayName,
+    sponsor.organizationName ? `Organization: ${sponsor.organizationName}` : null,
+    contactParts.join(' | ') || 'No contact details',
+  ].filter(Boolean).join('\n');
+}
+
+function formatSponsorGiftName(item: CampaignSponsor['sponsoredItems'][number]) {
+  return [item.gift?.description ?? 'Unknown gift', item.gift?.category].filter(Boolean).join(' | ');
+}
+
+function buildSponsorFollowUpQueueExport(
+  campaignName: string,
+  sponsors: CampaignSponsor[]
+): ReportExportPayload {
+  return {
+    title: 'Sponsor Follow-up Queue',
+    subtitle: campaignName,
+    fileName: `${campaignName}-sponsor-follow-up-queue`,
+    sheets: [
+      {
+        name: 'Follow-up Queue',
+        columns: [
+          { key: 'sponsor', label: 'Sponsor', pdfWidthWeight: 1.5 },
+          { key: 'organization', label: 'Organization', pdfWidthWeight: 1.2 },
+          { key: 'email', label: 'Email', pdfWidthWeight: 1.5 },
+          { key: 'phone', label: 'Phone' },
+          { key: 'queueReason', label: 'Queue Reason', pdfWidthWeight: 1.5 },
+          { key: 'status', label: 'Status' },
+          { key: 'dropOff', label: 'Drop-off' },
+          { key: 'sponsoredItems', label: 'Gifts' },
+          { key: 'lastContacted', label: 'Last Contacted' },
+        ],
+        rows: sponsors.map((sponsor) => ({
+          sponsor: sponsor.displayName,
+          organization: sponsor.organizationName ?? '',
+          email: sponsor.email ?? '',
+          phone: sponsor.phone ?? '',
+          queueReason: summarizeSponsorFollowUpQueue(sponsor),
+          status: toSponsorStatusLabel(sponsor.participation.status),
+          dropOff: toSponsorDropOffStatusLabel(sponsor.participation.dropOffStatus),
+          sponsoredItems: sponsor.sponsoredItemCount,
+          lastContacted: formatShortDate(sponsor.lastContactedAt),
+        })),
+      },
+    ],
+  };
+}
+
+function formatSponsorGiftStatus(value: string | null | undefined) {
+  if (!value) {
+    return 'Not set';
+  }
+  return value
+    .split('_')
+    .map((segment) => `${segment.slice(0, 1)}${segment.slice(1).toLowerCase()}`)
+    .join(' ');
 }

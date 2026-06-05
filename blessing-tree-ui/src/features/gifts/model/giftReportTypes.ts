@@ -39,6 +39,7 @@ export interface GiftWorkflowReportRecipient {
     id: string;
     name: string;
     type: string;
+    programAbbreviation: string | null;
   } | null;
   wishlist: {
     id: string;

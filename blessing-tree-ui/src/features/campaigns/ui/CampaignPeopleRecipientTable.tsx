@@ -18,7 +18,7 @@ interface CampaignPeopleRecipientTableProps {
   onRequestDeleteRecipient: (recipientId: string) => void;
 }
 
-type RecipientSortKey = 'person' | 'program' | 'group' | 'age' | 'wishlist' | 'status';
+type RecipientSortKey = 'person' | 'personId' | 'program' | 'group' | 'age' | 'wishlist' | 'status';
 
 export function CampaignPeopleRecipientTable({
   recipients,
@@ -39,13 +39,11 @@ export function CampaignPeopleRecipientTable({
       const leftValue = getRecipientSortValue(left, sortKey);
       const rightValue = getRecipientSortValue(right, sortKey);
 
-      if (leftValue < rightValue) {
-        return sortDirection === 'asc' ? -1 : 1;
+      const comparison = compareSortValues(leftValue, rightValue);
+      if (comparison !== 0) {
+        return sortDirection === 'asc' ? comparison : -comparison;
       }
-      if (leftValue > rightValue) {
-        return sortDirection === 'asc' ? 1 : -1;
-      }
-      return left.displayLabel.localeCompare(right.displayLabel);
+      return compareSortValues(left.displayLabel, right.displayLabel);
     });
 
     return sorted;
@@ -56,6 +54,8 @@ export function CampaignPeopleRecipientTable({
   const pagedRecipients = useMemo(() => {
     return sortedRecipients.slice((safePage - 1) * pageSize, safePage * pageSize);
   }, [pageSize, safePage, sortedRecipients]);
+
+  const hasExpandableRecipients = sortedRecipients.some((recipient) => (recipient.wishlist?.items.length ?? 0) > 0);
 
   const handleSort = (nextKey: RecipientSortKey) => {
     if (sortKey === nextKey) {
@@ -71,12 +71,38 @@ export function CampaignPeopleRecipientTable({
     setOpenRecipientIds((currentValue) => ({ ...currentValue, [recipientId]: !currentValue[recipientId] }));
   };
 
+  const expandAll = () => {
+    setOpenRecipientIds(
+      Object.fromEntries(
+        sortedRecipients
+          .filter((recipient) => (recipient.wishlist?.items.length ?? 0) > 0)
+          .map((recipient) => [recipient.id, true])
+      )
+    );
+  };
+
+  const collapseAll = () => {
+    setOpenRecipientIds({});
+  };
+
   if (recipients.length === 0) {
     return <div className="campaign-studio__empty-note">No people match the current search.</div>;
   }
 
   return (
     <>
+      {hasExpandableRecipients ? (
+        <div className="campaign-people-table-controls">
+          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={expandAll}>
+            <i className="bi bi-arrows-expand me-2" aria-hidden="true" />
+            Expand All
+          </button>
+          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={collapseAll}>
+            <i className="bi bi-arrows-collapse me-2" aria-hidden="true" />
+            Collapse All
+          </button>
+        </div>
+      ) : null}
       <div className="campaign-team-table-wrap">
         <table className="table campaign-team-table mb-0">
         <thead>
@@ -89,7 +115,13 @@ export function CampaignPeopleRecipientTable({
               direction={sortDirection}
               onSort={handleSort}
             />
-            <th>Person ID</th>
+            <SortableHeader
+              label="Person ID"
+              sortKey="personId"
+              activeKey={sortKey}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
             <SortableHeader
               label="Program"
               sortKey="program"
@@ -182,8 +214,8 @@ export function CampaignPeopleRecipientTable({
                   <td>{recipient.group?.groupName ?? 'No group'}</td>
                   <td>{formatRecipientAge(recipient.age, recipient.ageUnit)}</td>
                   <td>
-                    {recipient.wishlist ? (
-                      <strong>{recipient.wishlist.items.length} item{recipient.wishlist.items.length === 1 ? '' : 's'}</strong>
+                    {recipient.wishlist?.items.length ? (
+                      <GiftSummaryList items={recipient.wishlist.items} />
                     ) : (
                       <span className="text-muted">No wishlist yet</span>
                     )}
@@ -213,8 +245,10 @@ export function CampaignPeopleRecipientTable({
                           <thead>
                             <tr>
                               <th>Gift</th>
+                              <th>Size</th>
                               <th>Type</th>
                               <th>Requested</th>
+                              <th>Sponsor</th>
                               <th>Status</th>
                               <th>Label</th>
                               <th>Last Updated</th>
@@ -229,8 +263,19 @@ export function CampaignPeopleRecipientTable({
                                     {item.category ? <span>{item.category}</span> : null}
                                   </div>
                                 </td>
+                                <td>{item.size ?? '—'}</td>
                                 <td>{item.itemType.replaceAll('_', ' ')}</td>
                                 <td>{item.qtyRequested}</td>
+                                <td>
+                                  {item.sponsor ? (
+                                    <div className="campaign-people-group-child-primary">
+                                      <strong>{item.sponsor.displayName}</strong>
+                                      {item.sponsor.phone ? <span>{item.sponsor.phone}</span> : null}
+                                    </div>
+                                  ) : (
+                                    <span className="text-muted">Unsponsored</span>
+                                  )}
+                                </td>
                                 <td>
                                   {toGiftWorkflowStatusLabel(
                                     item.giftWorkflow.isPickedUp,
@@ -266,6 +311,36 @@ export function CampaignPeopleRecipientTable({
         }}
       />
     </>
+  );
+}
+
+function GiftSummaryList({
+  items,
+}: {
+  items: NonNullable<CampaignRecipient['wishlist']>['items'];
+}) {
+  return (
+    <div className="campaign-people-gift-summary-list">
+      {items.map((item) => (
+        <div key={item.id} className="campaign-people-gift-summary-line">
+          <span className="campaign-people-gift-summary-line__gift">
+            {item.description}
+            {item.size ? ` (${item.size})` : ''}
+          </span>
+          <span className="campaign-people-gift-summary-line__meta">
+            {item.sponsor?.displayName ?? 'Unsponsored'}
+            {item.sponsor?.phone ? ` · ${item.sponsor.phone}` : ''}
+            {' · '}
+            {toGiftWorkflowStatusLabel(
+              item.giftWorkflow.isPickedUp,
+              item.giftWorkflow.isFullyFulfilled,
+              item.giftWorkflow.sponsorshipStatus
+            )}
+            {item.giftWorkflow.isPickedUp ? ' · Picked up' : ''}
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -311,8 +386,17 @@ function getRecipientSortValue(recipient: CampaignRecipient, sortKey: RecipientS
       return recipient.wishlist?.items.length ?? -1;
     case 'status':
       return toRecipientStatusLabel(recipient.status);
+    case 'personId':
+      return recipient.programRecipientId ?? '';
     case 'person':
     default:
       return recipient.displayLabel;
   }
+}
+
+function compareSortValues(left: string | number, right: string | number) {
+  if (typeof left === 'number' && typeof right === 'number') {
+    return left - right;
+  }
+  return String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: 'base' });
 }

@@ -19,6 +19,7 @@ from app.models.gift_reservation import (
     GiftReservation,
 )
 from app.models.pending_sponsor_registration import PendingSponsorRegistration
+from app.models.recipient import Recipient
 from app.models.sponsor import Sponsor
 from app.models.sponsorship import Sponsorship
 from app.models.sponsorship_item import SponsorshipItem
@@ -101,7 +102,7 @@ class GiftReservationService:
         item_ids = [uuid.UUID(item_id) for item_id in selected_item_ids]
         items = (
             db.query(WishlistItem)
-            .options(joinedload(WishlistItem.wishlist).joinedload(Wishlist.recipient))
+            .options(joinedload(WishlistItem.wishlist).joinedload(Wishlist.recipient).joinedload(Recipient.recipient_group))
             .join(Wishlist, Wishlist.id == WishlistItem.wishlist_id)
             .outerjoin(SponsorshipItem, SponsorshipItem.wishlist_item_id == WishlistItem.id)
             .outerjoin(
@@ -292,7 +293,10 @@ class GiftReservationService:
     ) -> WishlistItem:
         item = (
             db.query(WishlistItem)
-            .options(joinedload(WishlistItem.sponsorship_item), joinedload(WishlistItem.wishlist))
+            .options(
+                joinedload(WishlistItem.sponsorship_item),
+                joinedload(WishlistItem.wishlist).joinedload(Wishlist.recipient).joinedload(Recipient.recipient_group),
+            )
             .join(Wishlist, Wishlist.id == WishlistItem.wishlist_id)
             .filter(Wishlist.campaign_id == campaign_id, WishlistItem.id == wishlist_item_id)
             .one_or_none()
@@ -321,7 +325,10 @@ class GiftReservationService:
     ) -> WishlistItem:
         item = (
             db.query(WishlistItem)
-            .options(joinedload(WishlistItem.wishlist), joinedload(WishlistItem.sponsorship_item))
+            .options(
+                joinedload(WishlistItem.wishlist).joinedload(Wishlist.recipient).joinedload(Recipient.recipient_group),
+                joinedload(WishlistItem.sponsorship_item),
+            )
             .join(Wishlist, Wishlist.id == WishlistItem.wishlist_id)
             .filter(
                 Wishlist.campaign_id == campaign_id,

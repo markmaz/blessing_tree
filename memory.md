@@ -22,6 +22,7 @@ At the start of a session, agents should read:
 - `docs/engineering/testing-strategy.md` - current verification expectations for backend and frontend
 - `docs/engineering/security-tenancy.md` - auth, cookies, secrets, and trust-boundary guidance
 - `docs/engineering/compatibility-versioning.md` - migration, env, API, and compatibility expectations
+- `docs/engineering/report-export-design.md` - current PDF/Excel export behavior and scope
 
 ## Operational Memory
 

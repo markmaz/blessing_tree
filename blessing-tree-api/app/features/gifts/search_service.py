@@ -1,25 +1,47 @@
 from __future__ import annotations
 
 import uuid
+from typing import Protocol
 
-from sqlalchemy import func, or_
+from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns.service import CampaignService
-from app.features.gifts.search_parser import GiftSearchFilters, parse_gift_search_text
+from app.features.gifts.search_parser import GiftSearchFilters, gift_category_search_terms, parse_gift_search_text
+from app.features.gifts.semantic_search_service import GiftSemanticSearchService
 from app.models.campaign import Campaign
 from app.models.gift_reservation import GiftReservation
 from app.models.recipient import Recipient
+from app.models.recipient_group import RecipientGroup
 from app.models.recipient_constants import WISHLIST_STATUS_READY
+from app.models.sponsor import Sponsor
+from app.models.sponsorship import Sponsorship
 from app.models.sponsorship_item import SponsorshipItem
 from app.models.wishlist import Wishlist
 from app.models.wishlist_item import WishlistItem
 
 
+class GiftSemanticSearchCandidateService(Protocol):
+    def candidate_scores(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        query: str,
+        limit: int,
+    ) -> dict[uuid.UUID, float]:
+        ...
+
+
 class GiftSearchService:
-    def __init__(self, campaign_service: CampaignService | None = None) -> None:
+    def __init__(
+        self,
+        campaign_service: CampaignService | None = None,
+        semantic_service: GiftSemanticSearchCandidateService | None = None,
+    ) -> None:
         self.campaigns = campaign_service or CampaignService()
+        self.semantic_service = semantic_service or GiftSemanticSearchService()
 
     def parse(self, query: object) -> GiftSearchFilters:
         return parse_gift_search_text(query)
@@ -76,16 +98,30 @@ class GiftSearchService:
         query = (
             db.query(WishlistItem)
             .options(
-                joinedload(WishlistItem.wishlist).joinedload(Wishlist.recipient),
-                joinedload(WishlistItem.sponsorship_item),
+                joinedload(WishlistItem.wishlist).joinedload(Wishlist.recipient).joinedload(Recipient.recipient_group),
+                joinedload(WishlistItem.sponsorship_item).joinedload(SponsorshipItem.sponsorship).joinedload(Sponsorship.sponsor),
                 joinedload(WishlistItem.fulfillment_rows),
             )
             .join(Wishlist, Wishlist.id == WishlistItem.wishlist_id)
             .join(Recipient, Recipient.id == Wishlist.recipient_id)
+            .join(RecipientGroup, RecipientGroup.id == Recipient.recipient_group_id)
             .outerjoin(SponsorshipItem, SponsorshipItem.wishlist_item_id == WishlistItem.id)
+            .outerjoin(Sponsorship, Sponsorship.id == SponsorshipItem.sponsorship_id)
+            .outerjoin(Sponsor, Sponsor.id == Sponsorship.sponsor_id)
             .outerjoin(GiftReservation, GiftReservation.active_wishlist_item_id == WishlistItem.id)
             .filter(Wishlist.campaign_id == campaign_id)
         )
+        semantic_scores = (
+            self.semantic_service.candidate_scores(
+                db,
+                campaign_id=campaign_id,
+                query=parsed.query,
+                limit=max(limit * 4, 40),
+            )
+            if self._should_use_semantic_candidates(parsed)
+            else {}
+        )
+        semantic_candidate_ids = list(semantic_scores)
 
         if public:
             query = query.filter(
@@ -104,14 +140,20 @@ class GiftSearchService:
         if parsed.item_types and not parsed.categories:
             query = query.filter(WishlistItem.item_type.in_(parsed.item_types))
         if parsed.categories:
-            category_filters = [
-                func.lower(func.coalesce(WishlistItem.category, "")).like(f"%{category.replace('_', ' ')}%")
-                for category in parsed.categories
-            ]
-            category_filters.extend(
-                func.lower(WishlistItem.description).like(f"%{category.replace('_', ' ')}%")
-                for category in parsed.categories
-            )
+            category_filters = []
+            for category in parsed.categories:
+                for term in gift_category_search_terms(category):
+                    pattern = f"%{term.lower()}%"
+                    category_filters.extend(
+                        [
+                            func.lower(func.coalesce(WishlistItem.category, "")).like(pattern),
+                            func.lower(WishlistItem.description).like(pattern),
+                        ]
+                    )
+                    if not public:
+                        category_filters.append(func.lower(func.coalesce(WishlistItem.recipient_note, "")).like(pattern))
+            if semantic_candidate_ids:
+                category_filters.append(WishlistItem.id.in_(semantic_candidate_ids))
             if parsed.item_types:
                 category_filters.append(WishlistItem.item_type.in_(parsed.item_types))
             query = query.filter(or_(*category_filters))
@@ -129,21 +171,23 @@ class GiftSearchService:
         text_terms = list(parsed.terms)
         if parsed.query and not text_terms and not self._has_structured_filters(parsed):
             text_terms = [parsed.query]
-        for term in text_terms:
-            pattern = f"%{term.lower()}%"
-            text_filters = [
-                func.lower(WishlistItem.description).like(pattern),
-                func.lower(func.coalesce(WishlistItem.category, "")).like(pattern),
-                func.lower(func.coalesce(WishlistItem.size, "")).like(pattern),
-            ]
-            if not public:
-                text_filters.extend(
-                    [
-                        func.lower(func.coalesce(WishlistItem.recipient_note, "")).like(pattern),
-                        func.lower(func.coalesce(WishlistItem.notes, "")).like(pattern),
-                    ]
-                )
+        text_filters = self._text_filters(text_terms, public=public)
+        if semantic_candidate_ids:
+            text_filters.append(WishlistItem.id.in_(semantic_candidate_ids))
+        if text_filters:
             query = query.filter(or_(*text_filters))
+
+        if semantic_scores:
+            semantic_rank = case(
+                {wishlist_item_id: rank for rank, wishlist_item_id in enumerate(semantic_candidate_ids, start=1)},
+                value=WishlistItem.id,
+                else_=len(semantic_candidate_ids) + 1,
+            )
+            return (
+                query.order_by(semantic_rank.asc(), WishlistItem.priority.desc(), WishlistItem.created_at.asc())
+                .limit(max(1, min(limit, 250)))
+                .all()
+            )
 
         return (
             query.order_by(WishlistItem.priority.desc(), WishlistItem.created_at.asc())
@@ -194,6 +238,63 @@ class GiftSearchService:
                 parsed.max_cost_cents is not None,
             ]
         )
+
+    def _should_use_semantic_candidates(self, parsed: GiftSearchFilters) -> bool:
+        return bool(
+            parsed.query
+            and (
+                parsed.categories
+                or parsed.terms
+                or not self._has_structured_filters(parsed)
+            )
+        )
+
+    def _text_filters(self, terms: list[str], *, public: bool) -> list[object]:
+        filters: list[object] = []
+        for term in terms:
+            pattern = f"%{term.lower()}%"
+            filters.extend(
+                [
+                    func.lower(WishlistItem.description).like(pattern),
+                    func.lower(func.coalesce(WishlistItem.category, "")).like(pattern),
+                    func.lower(func.coalesce(WishlistItem.size, "")).like(pattern),
+                    func.lower(WishlistItem.item_type).like(pattern),
+                ]
+            )
+
+            if public:
+                filters.extend(
+                    [
+                        func.lower(func.coalesce(Recipient.public_label, "")).like(pattern),
+                        func.lower(Recipient.recipient_kind).like(pattern),
+                        func.lower(Recipient.program_type).like(pattern),
+                    ]
+                )
+            else:
+                filters.extend(
+                    [
+                        func.lower(func.coalesce(WishlistItem.recipient_note, "")).like(pattern),
+                        func.lower(func.coalesce(WishlistItem.notes, "")).like(pattern),
+                        func.lower(func.coalesce(WishlistItem.label_code, "")).like(pattern),
+                        func.lower(func.coalesce(Recipient.display_label, "")).like(pattern),
+                        func.lower(func.coalesce(Recipient.first_name, "")).like(pattern),
+                        func.lower(func.coalesce(Recipient.last_name, "")).like(pattern),
+                        func.lower(func.coalesce(Recipient.program_recipient_id, "")).like(pattern),
+                        func.lower(Recipient.recipient_kind).like(pattern),
+                        func.lower(Recipient.program_type).like(pattern),
+                        func.lower(func.coalesce(Recipient.subgroup_label, "")).like(pattern),
+                        func.lower(func.coalesce(Recipient.facility_room, "")).like(pattern),
+                        func.lower(func.coalesce(Recipient.notes, "")).like(pattern),
+                        func.lower(func.coalesce(RecipientGroup.group_name, "")).like(pattern),
+                        func.lower(func.coalesce(RecipientGroup.program_abbreviation, "")).like(pattern),
+                        func.lower(func.coalesce(RecipientGroup.external_reference, "")).like(pattern),
+                        func.lower(func.coalesce(Sponsor.display_name, "")).like(pattern),
+                        func.lower(func.coalesce(Sponsor.organization_name, "")).like(pattern),
+                        func.lower(func.coalesce(Sponsor.email, "")).like(pattern),
+                        func.lower(func.coalesce(Sponsor.phone, "")).like(pattern),
+                    ]
+                )
+        return filters
 
 
 def _optional_int(value: object, default: int | None) -> int | None:

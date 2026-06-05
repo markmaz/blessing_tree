@@ -586,6 +586,15 @@ class AdminHealthResource(Resource):
             return _health_service.get_health(db), 200
 
 
+@admin_ns.route("/health/qdrant/reindex")
+class AdminQdrantReindexResource(Resource):
+    @token_required
+    @require_app_admin()
+    def post(self):
+        with SessionLocal() as db:
+            return _health_service.rebuild_qdrant_indexes(db), 200
+
+
 @admin_ns.route("/features")
 class AdminFeatureFlagsResource(Resource):
     @token_required

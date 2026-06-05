@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from app.features.campaigns import api as campaign_api_module
 from app.features.campaigns.studio_service import CampaignStudioService
 from app.features.gifts.search_parser import parse_gift_search_text
+from app.features.gifts.search_service import GiftSearchService
 from app.models.campaign_gift_policy import CampaignGiftPolicy
 from app.models.campaign_gift_reminder_rule import CampaignGiftReminderRule
 from app.models.audit_event import AuditEvent
@@ -49,6 +50,14 @@ from tests.features.campaigns.studio_test_support import (
 pytest_plugins = ("tests.features.campaigns.studio_test_support",)
 
 
+class _FakeSemanticSearchService:
+    def __init__(self, scores):
+        self.scores = scores
+
+    def candidate_scores(self, db, *, campaign_id, query, limit):
+        return self.scores
+
+
 def test_parse_gift_search_text_extracts_core_filters() -> None:
     parsed = parse_gift_search_text("warm coat for a girl age 8 under $50 size youth medium")
 
@@ -59,6 +68,39 @@ def test_parse_gift_search_text_extracts_core_filters() -> None:
     assert "CLOTHING" in parsed.item_types
     assert parsed.max_cost_cents == 5000
     assert "youth medium" in parsed.sizes
+
+
+def test_parse_gift_search_text_treats_plain_under_amount_as_cost() -> None:
+    parsed = parse_gift_search_text("gift cards under 25")
+
+    assert parsed.age_min is None
+    assert parsed.age_max is None
+    assert parsed.max_cost_cents == 2500
+
+
+def test_parse_gift_search_text_treats_child_context_under_as_age() -> None:
+    parsed = parse_gift_search_text("toys for boys under 8")
+
+    assert parsed.gender == "M"
+    assert parsed.age_min is None
+    assert parsed.age_max == 7
+    assert parsed.max_cost_cents is None
+    assert "toy" in parsed.categories
+
+
+def test_parse_gift_search_text_supports_inclusive_number_first_age_phrases() -> None:
+    parsed = parse_gift_search_text("toys for boys 8 and under")
+
+    assert parsed.gender == "M"
+    assert parsed.age_min is None
+    assert parsed.age_max == 8
+    assert parsed.max_cost_cents is None
+    assert "toy" in parsed.categories
+
+    parsed = parse_gift_search_text("video games for kids 12 or older")
+
+    assert parsed.age_min == 12
+    assert parsed.age_max is None
 
 
 def test_staff_gift_search_filters_natural_language(app, monkeypatch) -> None:
@@ -87,6 +129,102 @@ def test_staff_gift_search_filters_natural_language(app, monkeypatch) -> None:
     assert item["recipient"]["program_recipient_id"] == "CH-001"
     assert item["label_code"] == "gift-search-coat"
     assert item["recipient_note"] == "Prefers blue or purple."
+
+
+def test_staff_gift_search_uses_broad_toy_synonyms(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Gift Manager")
+    campaign = seed_campaign(session, name="Gift Search Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    _seed_gifts(session, campaign.id, age=7, gender="M")
+    session.commit()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/gifts/search?q=toys for boys under 8&limit=20",
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["parsed_filters"]["age_max"] == 7
+    assert payload["parsed_filters"]["gender"] == "M"
+    descriptions = [item["description"] for item in payload["items"]]
+    assert "Building blocks" in descriptions
+
+
+def test_staff_gift_search_matches_recipient_group_and_sponsor_text(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Gift Manager")
+    campaign = seed_campaign(session, name="Gift Search Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    _seed_gifts(session, campaign.id)
+    session.commit()
+
+    client = app.test_client()
+    headers = auth_header(str(manager.id), "ADMIN")
+
+    recipient_response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/gifts/search?q=CH-001&limit=20",
+        headers=headers,
+    )
+    assert recipient_response.status_code == 200
+    recipient_descriptions = [item["description"] for item in recipient_response.get_json()["items"]]
+    assert "Winter coat" in recipient_descriptions
+    assert "Art kit" in recipient_descriptions
+
+    group_response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/gifts/search?q=Johnson Family&limit=20",
+        headers=headers,
+    )
+    assert group_response.status_code == 200
+    assert group_response.get_json()["count"] >= 3
+
+    sponsor_response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/gifts/search?q=Sponsor One&limit=20",
+        headers=headers,
+    )
+    assert sponsor_response.status_code == 200
+    assert [item["description"] for item in sponsor_response.get_json()["items"]] == ["Building blocks"]
+
+
+def test_staff_gift_search_uses_semantic_candidates_for_intent_matches(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Gift Manager")
+    campaign = seed_campaign(session, name="Semantic Gift Search Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    gifts = _seed_gifts(session, campaign.id)
+    wishlist_id = session.query(WishlistItem).filter(WishlistItem.id == gifts["coat_id"]).one().wishlist_id
+    batman = WishlistItem(
+        id=uuid.uuid4(),
+        wishlist_id=wishlist_id,
+        category="Character",
+        item_type=WISHLIST_ITEM_TYPE_GIFT,
+        description="Batman action figure",
+        qty_requested=1,
+        priority="HIGH",
+        allow_substitute=True,
+        status="OPEN",
+        qty_fulfilled=0,
+        label_code="gift-search-batman",
+        label_version=1,
+    )
+    session.add(batman)
+    session.commit()
+
+    service = GiftSearchService(semantic_service=_FakeSemanticSearchService({batman.id: 0.91}))
+    parsed, results = service.search_staff_gifts(
+        session,
+        str(campaign.id),
+        query="superhero toys",
+        limit=20,
+    )
+
+    assert "toy" in parsed.categories
+    assert [item.description for item in results] == ["Batman action figure"]
 
 
 def test_public_gift_search_filters_and_hides_private_recipient_fields(app) -> None:
@@ -822,7 +960,7 @@ def test_gift_reminder_readiness_flags_missing_template_and_milestone(app, monke
     assert "missing_gift_reminder_milestone" in codes
 
 
-def _seed_gifts(session, campaign_id):
+def _seed_gifts(session, campaign_id, *, age=8, gender="F"):
     group = RecipientGroup(
         id=uuid.uuid4(),
         campaign_id=campaign_id,
@@ -842,9 +980,9 @@ def _seed_gifts(session, campaign_id):
         last_name="Johnson",
         display_label="Ava Johnson",
         program_recipient_id="CH-001",
-        age=8,
+        age=age,
         age_unit="YEARS",
-        gender="F",
+        gender=gender,
         status=RECIPIENT_STATUS_ACTIVE,
     )
     wishlist = Wishlist(

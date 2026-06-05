@@ -266,6 +266,17 @@ export async function updateCampaign(
   return mapCampaign(response);
 }
 
+export async function deleteCampaign(
+  campaignId: string,
+  confirmationName: string
+): Promise<void> {
+  await apiFetchJson(`/api/v1/campaigns/${campaignId}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ confirmation_name: confirmationName }),
+  });
+}
+
 function mapCampaign(campaign: CampaignResponse): Campaign {
   return {
     id: campaign.id,

@@ -89,6 +89,20 @@ The `.env.example` contract now follows the same broad setup conventions as Quer
 - Valkey connection settings
 - frontend URL and mail-related links
 
+## Demo Campaign Seed
+
+For a repeatable local walkthrough dataset, run:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/seed_demo_campaign_2026.py --reset --yes
+```
+
+This is destructive for local operational data. It preserves app users,
+auth identities, app feature flags, LLM configuration, and global readiness
+definition rows, then recreates the `Blessing Tree Demo 2026` campaign with
+families, organizations, sponsors, wishlists, milestones, teams, and email
+templates. Demo login users use `DemoPass2026!`.
+
 ## Auth Routes
 
 Current routes under `/api/v1/auth`:
@@ -326,6 +340,7 @@ Config cleanup notes:
 - Celery now uses a dedicated default queue named `bt`, even when sharing the same local Valkey broker with other projects.
 - Scheduled communication delivery requires working SMTP settings; otherwise the worker will still execute schedules, but it will log failed delivery attempts instead of sending mail.
 - Admin LLM health checks can probe an OpenAI-compatible `/models` endpoint when an API key and base URL are configured.
+- Semantic gift search uses Qdrant when `BT_GIFT_VECTOR_ENABLED=true`, `QDRANT_URL` is reachable, and the global Admin LLM configuration can produce embeddings. SQL remains the source of truth for campaign scope, availability, and authorization.
 
 ## Versioning
 

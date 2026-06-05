@@ -1,83 +1,65 @@
 # Blessing Tree Roadmap
 
-This roadmap reflects the current codebase as of 2026-05-19.
+Last updated: 2026-06-01
 
-## Phase 1: Stabilize the Project Surface
+This roadmap reflects the current codebase after the Ask Blessing Tree,
+calendar intelligence, Activity Log, report export, gift tag builder, sponsor
+communications, user access, and deployment work.
 
-Goal: make the current repo understandable and runnable without tribal knowledge.
+## Completed Foundation
 
-- Keep docs accurate and minimal.
-- Add a checked-in backend dependency manifest.
-- Add an `.env.example` for the backend.
-- Verify local startup for both API and UI from clean instructions.
+- Project structure, dependency manifests, environment examples, and setup docs.
+- Flask API, React/Vite UI, MySQL migrations, Celery worker/beat, and Valkey
+  queueing.
+- Docker/Caddy/EC2 deployment support with GitHub Actions.
+- Local/password authentication, password reset, keep-signed-in, profile/user
+  settings, and admin-managed user lifecycle.
+- Campaign-scoped access control with user-friendly Admin User Management.
+- Admin Health, LLM Configuration, App Capabilities, Organization Types,
+  Campaign Operations, Ask Review, and Activity Log.
 
-## Phase 2: Align Authentication End to End
+## Completed Product Areas
 
-Goal: remove the current auth mismatch between backend behavior and frontend UX.
+- Campaign Library and Campaign Studio.
+- Campaign settings, readiness, milestones, gift policies, calendar/schedule,
+  team/roster, communications, flyer builder, and gift tag builder.
+- People Intake, People Directory, organization types, families under
+  organizations, recipients, contacts, wishlists, and People Reports.
+- Sponsor Intake, Sponsor Directory, Sponsor Reports, public sponsor
+  registration/verification, sponsor interaction logs, and sponsor-specific
+  communication sends.
+- Gift Search, Gift Status visual report, gift operations, gift pool, QR scan
+  actions, reminder rules, tag printing, manual tags, and public/mobile pickup
+  actions.
+- Ask Blessing Tree help, navigation, field help, report questions, calendar
+  questions, prompt logging/review, optional LLM NER, and optional Qdrant
+  retrieval.
+- Report exports to PDF and true `.xlsx`, including Admin Activity Log export.
+- Detailed generated user guide with refreshed screenshots and downloadable PDF.
 
-Options:
+## Current Near-Term Focus
 
-1. Finish direct auth alignment.
-   Keep local login one-step and align OAuth callback completion with the frontend.
-2. Implement real second-factor auth later if required.
-   Add backend OTP or TOTP generation, delivery, verification, expiry, and failure handling.
+1. Merge and deploy the report export/user-guide branch.
+2. Production smoke-test:
+   - report PDF export
+   - report Excel export
+   - Activity Log PDF/Excel export
+   - downloadable user guide PDF
+3. Watch Ask Blessing Tree prompt logs and promote repeated misses into the
+   field/help/report catalogs.
+4. Validate Activity Log coverage with real user workflows and add event writers
+   for any new mutating workflow.
+5. Continue production hardening around logs, CloudWatch, health visibility,
+   and bundle-size/performance cleanup.
 
-Recommended path:
+## Likely Next Product Enhancements
 
-- Keep the simplified one-step local login flow.
-- Keep OAuth callback handling and reload-time session restoration aligned with the frontend.
-- Keep refresh/logout behavior and cookie handling.
-- Route future authenticated UI API calls through the shared refresh-on-401 client.
-- Add tests around login, refresh, logout, and callback completion.
-
-## Phase 3: Build the First Real Domain Slice
-
-Goal: move from scaffold to working application behavior.
-
-Before or alongside the first slice, put the lightweight RBAC framework in
-place so campaign and feature access are enforced from the first real APIs.
-
-Recommended first slice:
-
-1. Campaigns
-2. Recipient groups
-3. Recipients
-4. Wishlists and wishlist items
-
-Deliverables:
-
-- campaign-scoped RBAC enforcement infrastructure on top of the existing foundation
-- backend CRUD/read endpoints
-- typed frontend API client
-- list/detail/create/edit screens
-- validation and error handling
-- basic happy-path tests
-
-## Phase 4: Replace Placeholder Pages with Real Data
-
-Goal: make the app shell useful for staff/volunteers.
-
-- Dashboard: show live campaign and workload metrics
-- People: connect to recipient groups, recipients, and wishlists
-- Donations: connect to donation and fulfillment data
-- Reports: start with campaign-aware operational summaries and exports
-- Admin: auth/user/campaign controls
-
-## Phase 5: Operational Hardening
-
-Goal: make the project safer to evolve.
-
-- Add backend test coverage around auth and model behavior
-- Add frontend tests for auth and route protection
-- Standardize logging, error responses, and environment config
-- Add import workflows only when the target data model is settled
-
-## Immediate Next Ticket
-
-If momentum matters, start here:
-
-1. Expand the next real domain slice into recipient groups, recipients, and wishlists.
-2. Decide whether campaign setup editing should also be available from the dashboard or remain centered on detail/studio.
-3. Decide whether team assignment editing should add role changes and deactivation directly in Studio.
-
-The directory/search flow for Studio team assignment is now complete. The remaining sequence opens the path from campaign setup into the first real operating data slice.
+- Server-side large-report export if users need "all matching rows" instead of
+  currently loaded rows.
+- More polished operational monitoring/log review beyond Admin Health.
+- More Ask Blessing Tree report prompts from real staff usage.
+- Better campaign asset/theme management if users need controlled flyer/gift
+  tag image libraries.
+- Import tools only after production users confirm the expected spreadsheet
+  shapes.
+- Additional report screens as real operational questions emerge.

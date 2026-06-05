@@ -3,6 +3,9 @@
 ## Status
 
 - Proposed and accepted for implementation on 2026-05-20
+- Core campaign APIs are implemented, including campaign list/detail/create/update,
+  selected-campaign context, access summaries, campaign cloning, Campaign Studio
+  support, and campaign-scoped operational APIs.
 
 ## Summary
 
@@ -13,7 +16,7 @@ It is the primary boundary for:
 - campaign lifecycle
 - user access
 - reporting scope
-- recipient, wishlist, donation, sponsor, gift, and pickup operations
+- recipient, wishlist, sponsor, gift, gift-pool, and pickup/distribution operations
 
 The API should support:
 
@@ -525,7 +528,7 @@ Recommended left-rail sections:
 - Access
 - Recipients
 - Wishlists
-- Donations
+- Gift Pool / Donated Inventory
 - Sponsors
 - Gifts
 - Pickups
@@ -554,8 +557,8 @@ Examples:
 - Access drawer
   - role assignments
   - capability preview
-- Donations drawer
-  - donation configuration notes
+- Gift Pool / Donated Inventory drawer
+  - donated inventory configuration notes
 - Pickup drawer
   - pickup readiness notes
 

@@ -111,6 +111,16 @@ class AdminLlmRuntimeService:
             response = requests.post(endpoint, headers=headers, json=payload, timeout=45)
             response.raise_for_status()
         except RequestException as exc:
+            status_code = getattr(getattr(exc, "response", None), "status_code", None)
+            if status_code == 403:
+                raise LlmRuntimeUnavailableError(
+                    "Configured embedding request was forbidden. Check that the Admin LLM API key's OpenAI project "
+                    f"has access to embedding model `{payload['model']}` and that the key is not restricted away from embeddings."
+                ) from exc
+            if status_code == 401:
+                raise LlmRuntimeUnavailableError(
+                    "Configured embedding request was unauthorized. Check the Admin LLM API key."
+                ) from exc
             raise LlmRuntimeUnavailableError(f"Configured embedding request failed: {exc}") from exc
 
         try:

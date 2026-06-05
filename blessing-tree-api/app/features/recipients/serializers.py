@@ -45,6 +45,8 @@ def serialize_group_contact(contact: GroupContact) -> dict[str, Any]:
 
 def serialize_wishlist_item(item: WishlistItem) -> dict[str, Any]:
     sponsorship_item = item.sponsorship_item
+    sponsorship = sponsorship_item.sponsorship if sponsorship_item is not None else None
+    sponsor = sponsorship.sponsor if sponsorship is not None else None
     fulfillment_rows = list(item.fulfillment_rows or [])
     pickup_item = item.pickup_item
     label_print_items = list(item.label_print_items or [])
@@ -67,6 +69,18 @@ def serialize_wishlist_item(item: WishlistItem) -> dict[str, Any]:
         "status": item.status,
         "qty_fulfilled": item.qty_fulfilled,
         "notes": item.notes,
+        "sponsor": (
+            {
+                "id": str(sponsor.id),
+                "display_name": sponsor.display_name,
+                "email": sponsor.email,
+                "phone": sponsor.phone,
+                "sponsorship_id": str(sponsorship.id),
+                "drop_off_status": sponsorship.drop_off_status,
+            }
+            if sponsor is not None and sponsorship is not None
+            else None
+        ),
         "gift_workflow": {
             "sponsorship_status": "SPONSORED" if sponsorship_item is not None else "UNSPONSORED",
             "sponsorship_id": str(sponsorship_item.sponsorship_id) if sponsorship_item is not None else None,

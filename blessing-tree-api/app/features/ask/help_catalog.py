@@ -227,10 +227,71 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
         ),
     ),
     HelpTopic(
+        key="print_people_directory",
+        title="Print or export a people directory",
+        phrases=(
+            "print people directory",
+            "print organization directory",
+            "export people directory",
+            "export organization directory",
+            "download people directory",
+            "download organization directory",
+            "pdf people directory",
+            "excel people directory",
+            "organization directory gifts",
+            "people directory sponsor gifts",
+        ),
+        answer=(
+            "Open People Directory, choose Households or Organizations, apply any program abbreviation filters, expand "
+            "or collapse the groups you want, then use the PDF or Excel buttons in the upper right of the directory container. "
+            "The printed directory includes group information plus recipient IDs, recipient details, gift descriptions, sizes, and sponsors."
+        ),
+        steps=(
+            "Open People, then Directory.",
+            "Choose the Households or Organizations view.",
+            "Use program abbreviation chips or search to narrow the list.",
+            "Use Expand All or Collapse All on the left to control the visible rows.",
+            "Use PDF or Excel in the upper right to print or download the current directory.",
+        ),
+        actions=(
+            AskAction(
+                label="Open People Directory",
+                route_name="campaign_people_directory",
+                required_capability="campaign.recipients.view",
+            ),
+        ),
+    ),
+    HelpTopic(
         key="search_gifts",
         title="Search gifts",
-        phrases=("search gifts", "find gifts", "gift search", "available gifts", "choose gifts"),
-        answer="Open Gift Search and type what you are looking for, such as coats for girls age 8.",
+        phrases=(
+            "search gifts",
+            "find gifts",
+            "gift search",
+            "available gifts",
+            "choose gifts",
+            "toys for boys under 8",
+            "search for toys",
+            "semantic gift search",
+            "qdrant gift search",
+            "broad gift search",
+            "clear gift search",
+            "clear search chips",
+            "remove search pills",
+            "print gift search",
+            "export gift search",
+        ),
+        answer=(
+            "Open Gift Search and type what you are looking for, such as coats for girls age 8 or toys for boys under 8. "
+            "Gift Search uses exact filters plus optional Qdrant semantic matching for broader terms and synonyms. Clear the search chips to remove inferred filters, use pagination for more results, and use PDF or Excel in the upper right to export."
+        ),
+        steps=(
+            "Open Gifts, then Gift Search.",
+            "Type a natural-language search or specific recipient, gift, sponsor, size, age, or status term.",
+            "Review the search chips and clear any chip that should not apply.",
+            "Use pagination to move through result pages.",
+            "Use PDF or Excel in the upper right to print or download the result set.",
+        ),
         actions=(
             AskAction(
                 label="Open Gift Search",
@@ -242,8 +303,29 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
     HelpTopic(
         key="commit_gift",
         title="Commit a gift",
-        phrases=("commit gift", "reserve gift", "assign gift to sponsor", "sponsor a gift"),
-        answer="Open Gift Search or Gift Status, select the gift, choose a sponsor, and commit the gift.",
+        phrases=(
+            "commit gift",
+            "reserve gift",
+            "assign gift to sponsor",
+            "sponsor a gift",
+            "search sponsor while committing",
+            "sponsor search in commit drawer",
+            "select sponsor for gift",
+            "selected sponsor",
+            "commit notes",
+        ),
+        answer=(
+            "Open Gift Search or Gift Status, select the gift, search for the sponsor in the commit drawer, click the sponsor result so the selected sponsor appears below the search bar, add optional notes, and commit the gift."
+        ),
+        steps=(
+            "Open Gift Search or Gift Status.",
+            "Select the gift and open the commit action.",
+            "Search for the sponsor by name, email, phone, or organization.",
+            "Click the sponsor result to select it.",
+            "Confirm the selected sponsor appears below the search bar.",
+            "Add notes if needed.",
+            "Choose Commit.",
+        ),
         actions=(
             AskAction(
                 label="Open Gift Search",
@@ -254,6 +336,70 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
                 label="Open Gift Status",
                 route_name="campaign_gifts_reports",
                 required_capability="campaign.reports.view",
+            ),
+        ),
+    ),
+    HelpTopic(
+        key="release_gift_commitment",
+        title="Release a committed gift",
+        phrases=(
+            "release gift",
+            "release sponsor",
+            "remove sponsor from gift",
+            "uncommit gift",
+            "make gift available",
+            "make gift available again",
+            "cancel gift commitment",
+        ),
+        answer=(
+            "Open the committed gift, choose Release, and confirm the modal. The confirmation shows the sponsor being released and makes the gift available again."
+        ),
+        steps=(
+            "Open Gift Search or Gift Status.",
+            "Select the committed gift.",
+            "Choose Release.",
+            "Read the confirmation modal.",
+            "Confirm to remove the sponsor and return the gift to available status.",
+        ),
+        actions=(
+            AskAction(
+                label="Open Gift Search",
+                route_name="campaign_gifts_search",
+                required_capability="campaign.gifts.commit",
+            ),
+            AskAction(
+                label="Open Gift Status",
+                route_name="campaign_gifts_reports",
+                required_capability="campaign.reports.view",
+            ),
+        ),
+    ),
+    HelpTopic(
+        key="review_gift_recipient_or_sponsor",
+        title="Review recipient or sponsor details from a gift",
+        phrases=(
+            "gift recipient details",
+            "recipient drawer from gift",
+            "click recipient gift search",
+            "sponsor drawer from gift",
+            "click sponsor on committed gift",
+            "see sponsor for committed gift",
+            "gift details drawer",
+        ),
+        answer=(
+            "On Gift Search, click the recipient to open recipient and gift details. For committed gifts, click the sponsor name to open the sponsor drawer and review contact information, interactions, and commitments."
+        ),
+        steps=(
+            "Open Gift Search.",
+            "Find the gift.",
+            "Click the recipient name or recipient row to review recipient and gift details.",
+            "If a sponsor is shown, click the sponsor name to open sponsor details.",
+        ),
+        actions=(
+            AskAction(
+                label="Open Gift Search",
+                route_name="campaign_gifts_search",
+                required_capability="campaign.gifts.search",
             ),
         ),
     ),
