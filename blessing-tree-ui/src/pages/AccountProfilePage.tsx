@@ -6,6 +6,7 @@ import {
 } from '@/features/account/api/accountApi';
 import type { AccountProfile } from '@/features/account/model/accountTypes';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 
 export function AccountProfilePage() {
   const [profile, setProfile] = useState<AccountProfile | null>(null);
@@ -98,14 +99,10 @@ export function AccountProfilePage() {
 
   return (
     <div className="vstack gap-4">
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <div>
-          <h1 className="h3 mb-1">Profile</h1>
-          <p className="text-muted mb-0">
-            Manage the account identity currently signed in to Blessing Tree.
-          </p>
-        </div>
-      </div>
+      <WorkspacePageHeader
+        title="Profile"
+        description="Manage the account identity currently signed in to Blessing Tree."
+      />
 
       {success ? (
         <AutoDismissAlert
