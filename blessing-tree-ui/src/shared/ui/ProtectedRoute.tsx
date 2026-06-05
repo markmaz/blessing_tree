@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/model/authContext';
 import { getToken } from '@/shared/lib/auth';
 import { routes } from '@/app/routes';
@@ -14,6 +14,7 @@ export interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const location = useLocation();
   const { bootstrapped, isAuthenticated } = useAuth();
   const hasToken = isAuthenticated || !!getToken();
 
@@ -29,7 +30,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!hasToken) {
-    return <Navigate to={routes.LOGIN} replace />;
+    return <Navigate to={routes.LOGIN} replace state={{ from: location.pathname }} />;
   }
 
   return <>{children}</>;

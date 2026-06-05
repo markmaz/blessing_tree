@@ -17,12 +17,17 @@ interface LoginFormInputs {
   keepSignedIn: boolean;
 }
 
+interface LoginLocationState {
+  from?: string;
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login: contextLogin } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const redirectTo = getSafeRedirectPath((location.state as LoginLocationState | null)?.from);
 
   const {
     register,
@@ -50,7 +55,7 @@ export function LoginPage() {
     try {
       const response = await login(data.email, data.password, data.keepSignedIn);
       contextLogin(response.userId, response.email, response.token, response.role);
-      navigate(routes.HOME);
+      navigate(redirectTo);
     } catch (error) {
       setApiError(
         error instanceof Error ? error.message : 'Login failed. Please try again.'
@@ -197,4 +202,18 @@ export function LoginPage() {
       </div>
     </div>
   );
+}
+
+function getSafeRedirectPath(value: string | undefined): string {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) {
+    return routes.HOME;
+  }
+  if (
+    value === routes.LOGIN ||
+    value === routes.AUTH_FORGOT_PASSWORD ||
+    value === routes.AUTH_RESET_PASSWORD
+  ) {
+    return routes.HOME;
+  }
+  return value;
 }
