@@ -76,6 +76,18 @@ const previewContext: Record<string, string> = {
   'event.title': 'Volunteer Orientation',
   'event.start_at': 'November 3, 2026 at 6:00 PM',
   'location.map_url': 'https://maps.example.com/pickup-warehouse',
+  'gift.commitment_count': '3',
+  'gift.commitment_summary': '3 committed gifts.',
+  'gift.all_list': '- BT-001: Winter coat (Committed, Qty 1)',
+  'gift.items_list': '- BT-001: Winter coat (Committed, Qty 1)',
+  'gift.awaiting_turn_in_list': '- BT-001: Winter coat (Committed, Qty 1)',
+  'gift.received_or_later_list': '- BT-002: Board game (Received, Qty 1)',
+  'gift.recipient_names': 'BT-001, BT-002',
+  'gift.due_date': 'December 18, 2026',
+  'gift.dropoff_qr_url': 'https://example.com/mobile/receive/dropoff/demo-token',
+  'gift.dropoff_qr_image': 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=demo',
+  'gift.dropoff_recipient_ids': 'BT-001, BT-002',
+  'gift.dropoff_recipient_summary': '- BT-001: Winter coat\n- BT-002: Board game',
 };
 
 export const communicationTemplateMergeFieldGroups: TemplateMergeFieldGroup[] = [
@@ -111,6 +123,23 @@ export const communicationTemplateMergeFieldGroups: TemplateMergeFieldGroup[] = 
       'event.title',
       'event.start_at',
       'location.map_url',
+    ],
+  },
+  {
+    label: 'Sponsor Gifts',
+    fields: [
+      'gift.commitment_count',
+      'gift.commitment_summary',
+      'gift.all_list',
+      'gift.items_list',
+      'gift.awaiting_turn_in_list',
+      'gift.received_or_later_list',
+      'gift.recipient_names',
+      'gift.due_date',
+      'gift.dropoff_qr_url',
+      'gift.dropoff_qr_image',
+      'gift.dropoff_recipient_ids',
+      'gift.dropoff_recipient_summary',
     ],
   },
 ];

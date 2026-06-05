@@ -13,6 +13,7 @@ from app.features.campaigns.service import CampaignService
 from app.features.campaigns.recipient_resolver import CampaignRecipientResolver, ResolvedCampaignRecipient
 from app.features.campaigns.studio_constants import COMMUNICATION_AUDIENCE_SPONSOR
 from app.features.campaigns.template_renderer import CampaignTemplateRenderer
+from app.features.gifts.sponsor_dropoff_service import SponsorDropoffService, build_dropoff_qr_url
 from app.models.campaign_communication_send import (
     COMMUNICATION_SEND_STATUS_FAILED,
     COMMUNICATION_SEND_STATUS_PARTIAL,
@@ -74,10 +75,12 @@ class CampaignCommunicationSendService:
         campaign_service: CampaignService | None = None,
         template_renderer: CampaignTemplateRenderer | None = None,
         recipient_resolver: CampaignRecipientResolver | None = None,
+        sponsor_dropoff_service: SponsorDropoffService | None = None,
     ) -> None:
         self.campaigns = campaign_service or CampaignService()
         self.template_renderer = template_renderer or CampaignTemplateRenderer()
         self.recipient_resolver = recipient_resolver or CampaignRecipientResolver()
+        self.sponsor_dropoff = sponsor_dropoff_service or SponsorDropoffService()
 
     def preview_sponsor_send(
         self,
@@ -86,13 +89,19 @@ class CampaignCommunicationSendService:
         campaign_id: str,
         sponsor_id: str,
         template_id: str,
+        created_by_user_id: str | uuid.UUID | None = None,
     ) -> dict[str, object]:
         campaign = self.campaigns.get_campaign(db, campaign_id)
         sponsorship = self._get_sponsorship(db, campaign_id, sponsor_id)
         template = self._get_sponsor_template(db, campaign_id, template_id)
         recipient_email = self._sponsor_email(sponsorship)
 
-        merge_context = self._build_sponsor_merge_context(db, sponsorship=sponsorship, template=template)
+        merge_context = self._build_sponsor_merge_context(
+            db,
+            sponsorship=sponsorship,
+            template=template,
+            created_by_user_id=created_by_user_id,
+        )
         subject, html_body, text_body = self.template_renderer.render(
             campaign_name=campaign.name,
             campaign_year=campaign.year,
@@ -125,6 +134,7 @@ class CampaignCommunicationSendService:
             campaign_id=campaign_id,
             sponsor_id=sponsor_id,
             template_id=template_id,
+            created_by_user_id=created_by_user_id,
         )
         sponsorship = self._get_sponsorship(db, campaign_id, sponsor_id)
         template = self._get_sponsor_template(db, campaign_id, template_id)
@@ -475,6 +485,7 @@ class CampaignCommunicationSendService:
         *,
         sponsorship: Sponsorship,
         template: CommunicationTemplate,
+        created_by_user_id: str | uuid.UUID | None = None,
     ) -> SponsorGiftMergeContext:
         sponsor = sponsorship.sponsor
         gift_rows = self._gift_rows(sponsorship)
@@ -482,6 +493,15 @@ class CampaignCommunicationSendService:
         received_rows = [row for row in gift_rows if _status_index(row["status"]) >= _RECEIVED_STATUS_INDEX]
         due_date = self._gift_turn_in_due(db, campaign_id=sponsorship.campaign_id)
         referenced_fields = _referenced_fields(template)
+        dropoff_url = self.sponsor_dropoff.dropoff_url_for_sponsorship(
+            db,
+            sponsorship=sponsorship,
+            created_by_user_id=created_by_user_id,
+        )
+        dropoff_token = dropoff_url.rstrip("/").rsplit("/", 1)[-1]
+        dropoff_qr_url = build_dropoff_qr_url(dropoff_token)
+        recipient_ids = _dropoff_recipient_ids(gift_rows)
+        recipient_summary = _dropoff_recipient_summary(gift_rows)
 
         merge_fields = {
             "sponsor.first_name": _first_name(sponsor.display_name),
@@ -490,6 +510,8 @@ class CampaignCommunicationSendService:
             "sponsor.phone": str(sponsor.phone or ""),
             "gift.commitment_count": str(len(gift_rows)),
             "gift.commitment_summary": _commitment_summary(gift_rows),
+            "gift.all_list": _format_gift_list(gift_rows),
+            "gift.all_table": _format_gift_list(gift_rows),
             "gift.items_list": _format_gift_list(gift_rows),
             "gift.items_table": _format_gift_list(gift_rows),
             "gift.awaiting_turn_in_list": _format_gift_list(awaiting_rows),
@@ -499,6 +521,11 @@ class CampaignCommunicationSendService:
             "gift.recipient_names": ", ".join(_unique(row["recipient_label"] for row in gift_rows)),
             "gift.due_date": due_date,
             "gift.dropoff_instructions": "",
+            "gift.dropoff_qr_url": dropoff_url,
+            "gift.dropoff_qr_image": dropoff_qr_url,
+            "gift.dropoff_qr_image_url": dropoff_qr_url,
+            "gift.dropoff_recipient_ids": recipient_ids,
+            "gift.dropoff_recipient_summary": recipient_summary,
         }
         warnings = _build_gift_warnings(
             referenced_fields=referenced_fields,
@@ -522,6 +549,7 @@ class CampaignCommunicationSendService:
             rows.append(
                 {
                     "recipient_label": _public_safe_recipient_label(recipient),
+                    "recipient_id": recipient.program_recipient_id if recipient is not None else "",
                     "group_name": group.group_name if isinstance(group, RecipientGroup) else "",
                     "description": item.description,
                     "status": item.status,
@@ -628,7 +656,7 @@ def _build_gift_warnings(
     due_date: str,
 ) -> list[dict[str, str]]:
     warnings: list[dict[str, str]] = []
-    if referenced_fields.intersection({"gift.items_list", "gift.items_table", "gift.commitment_summary"}) and all_count == 0:
+    if referenced_fields.intersection({"gift.all_list", "gift.all_table", "gift.items_list", "gift.items_table", "gift.commitment_summary"}) and all_count == 0:
         warnings.append({"code": "no_committed_gifts", "message": "This sponsor has no committed gifts."})
     if referenced_fields.intersection({"gift.awaiting_turn_in_list", "gift.awaiting_turn_in_table"}) and awaiting_count == 0:
         warnings.append({"code": "no_awaiting_turn_in_gifts", "message": "This sponsor has no gifts awaiting turn-in."})
@@ -656,6 +684,20 @@ def _commitment_summary(rows: list[dict[str, str]]) -> str:
         return "No committed gifts are currently assigned."
     count = len(rows)
     return f"{count} committed gift{'s' if count != 1 else ''}."
+
+
+def _dropoff_recipient_ids(rows: list[dict[str, str]]) -> str:
+    return ", ".join(_unique(row.get("recipient_id", "") for row in rows))
+
+
+def _dropoff_recipient_summary(rows: list[dict[str, str]]) -> str:
+    if not rows:
+        return "No committed gifts are currently assigned."
+    grouped: dict[str, list[str]] = {}
+    for row in rows:
+        label = row.get("recipient_id") or row.get("recipient_label") or "Recipient"
+        grouped.setdefault(label, []).append(row.get("description") or "Gift")
+    return "\n".join(f"- {label}: {', '.join(gifts)}" for label, gifts in grouped.items())
 
 
 def _public_safe_recipient_label(recipient: Recipient | None) -> str:

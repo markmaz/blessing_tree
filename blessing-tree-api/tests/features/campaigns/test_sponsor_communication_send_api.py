@@ -26,6 +26,8 @@ from app.models.recipient_constants import (
 )
 from app.models.recipient_group import RecipientGroup
 from app.models.sponsor import Sponsor
+from app.models.sponsor_dropoff_scan_event import SponsorDropoffScanEvent
+from app.models.sponsor_dropoff_token import SponsorDropoffToken
 from app.models.sponsor_interaction import SponsorInteraction
 from app.models.sponsorship import Sponsorship
 from app.models.sponsorship_item import SponsorshipItem
@@ -63,6 +65,12 @@ def test_preview_sponsor_communication_renders_gift_merge_fields(app, monkeypatc
     assert payload["recipient_email"] == "sponsor@example.com"
     assert payload["subject"] == "Reminder: gifts for Blessing Tree 2026"
     assert payload["merge_fields"]["gift.commitment_count"] == "2"
+    assert payload["merge_fields"]["gift.dropoff_qr_url"].startswith("http://localhost:5173/mobile/receive/dropoff/")
+    assert payload["merge_fields"]["gift.dropoff_qr_image"].startswith(
+        "http://localhost:5173/api/v1/campaigns/mobile/dropoff-qr/"
+    )
+    assert payload["merge_fields"]["gift.dropoff_qr_image_url"] == payload["merge_fields"]["gift.dropoff_qr_image"]
+    assert payload["merge_fields"]["gift.dropoff_recipient_summary"]
     assert "Ava Public: Winter coat" in payload["text"]
     assert "Noah Display: Board game" in payload["text"]
     assert payload["merge_fields"]["gift.due_date"] == "2026-12-10"
@@ -126,6 +134,12 @@ def test_send_sponsor_communication_records_send_recipient_and_interaction(app, 
     assert payload["status"] == "SENT"
     assert delivered[0]["recipients"] == ["sponsor@example.com"]
     assert "Winter coat" in delivered[0]["text_body"]
+    assert session.query(SponsorDropoffToken).count() == 1
+    token_row = session.query(SponsorDropoffToken).one()
+    assert token_row.campaign_id == campaign.id
+    assert token_row.sponsor_id == sponsor.id
+    assert token_row.created_by_user_id == manager.id
+    assert token_row.token_hash not in delivered[0]["text_body"]
 
     send = session.query(CampaignCommunicationSend).one()
     assert str(send.id) == payload["send_id"]
@@ -144,6 +158,63 @@ def test_send_sponsor_communication_records_send_recipient_and_interaction(app, 
     assert interaction.origin_type == "CAMPAIGN_COMMUNICATION"
     assert interaction.outcome == "COMPLETED"
     assert interaction.related_delivery_attempt_id == str(send.id)
+
+
+def test_mobile_dropoff_token_resolves_committed_gifts(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = sponsor_api_module.SessionLocal()
+    manager = seed_user(session, name="Gift Manager")
+    campaign = seed_campaign(session, name="Mobile Dropoff Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    sponsor, _template = _seed_sponsor_template_context(session, campaign.id)
+    sponsorship = (
+        session.query(Sponsorship)
+        .filter(Sponsorship.campaign_id == campaign.id, Sponsorship.sponsor_id == sponsor.id)
+        .one()
+    )
+    from app.features.gifts.sponsor_dropoff_service import SponsorDropoffService
+
+    raw_token, token_row = SponsorDropoffService().get_or_create_active_token(session, sponsorship=sponsorship)
+    session.commit()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/mobile/dropoff/{raw_token}",
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["sponsor"]["display_name"] == "Jane Sponsor"
+    assert payload["sponsorship"]["drop_off_status"] == "NOT_STARTED"
+    assert [recipient["program_recipient_id"] for recipient in payload["recipients"]] == [None, None]
+    gift_descriptions = [
+        gift["description"]
+        for recipient in payload["recipients"]
+        for gift in recipient["gifts"]
+    ]
+    assert gift_descriptions == ["Winter coat", "Board game"]
+    assert payload["recipients"][0]["gifts"][0]["can_receive"] is True
+    assert payload["recipients"][1]["gifts"][0]["can_unreceive"] is True
+    session.expire(token_row)
+    assert token_row.last_scanned_at is not None
+    scan_event = session.query(SponsorDropoffScanEvent).one()
+    assert scan_event.token_id == token_row.id
+    assert scan_event.campaign_id == campaign.id
+    assert scan_event.sponsor_id == sponsor.id
+    assert scan_event.scanned_by_user_id == manager.id
+    assert scan_event.outcome == "RESOLVED"
+
+
+def test_mobile_dropoff_qr_endpoint_returns_png(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+
+    client = app.test_client()
+    response = client.get("/api/v1/campaigns/mobile/dropoff-qr/test-token.png")
+
+    assert response.status_code == 200
+    assert response.content_type == "image/png"
+    assert response.data.startswith(b"\x89PNG")
 
 
 def test_send_rejects_non_sponsor_template(app, monkeypatch) -> None:

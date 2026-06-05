@@ -51,6 +51,7 @@ def app(monkeypatch: pytest.MonkeyPatch) -> Generator[Flask, None, None]:
     monkeypatch.setattr("app.features.campaigns.sponsor_api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.campaigns.studio_api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.campaigns.team_api.SessionLocal", session_manager)
+    monkeypatch.setattr("app.features.campaigns.mobile_dropoff_api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.gifts.api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.gifts.public_api.SessionLocal", session_manager)
     monkeypatch.setattr("app.features.public.sponsor_public_api.SessionLocal", session_manager)

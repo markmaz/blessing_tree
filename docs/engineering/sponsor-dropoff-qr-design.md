@@ -4,7 +4,34 @@ Last updated: 2026-06-05
 
 ## Status
 
-Planned. No implementation has been started.
+Phase 3 implemented on branch `codex/sponsor-dropoff-qr-workflow`.
+
+Implemented:
+
+- sponsor drop-off token table and SQLAlchemy model
+- opaque token generation with hashed token storage
+- authenticated campaign-scoped drop-off payload API
+- protected `/mobile/receive/dropoff/:token` page
+- mobile sponsor drop-off receive and immediate un-receive actions
+- sponsor communication merge fields for drop-off URL, QR image, recipient IDs,
+  and recipient/gift summary
+- demo sponsor drop-off reminder template with QR image block and URL fallback
+- Campaign Studio merge-field drawer entries for sponsor gift/drop-off fields
+- protected `/mobile/scan` in-app QR scanner
+- lazy-loaded browser QR decoder for scanner startup only
+- Scan action on mobile Receive
+- scanner routing for sponsor drop-off QR URLs, existing gift label scan URLs,
+  and typed recipient IDs
+- manual scanner fallback for recipient IDs or QR URLs
+- focused mobile scanner parser tests
+- sponsor drop-off scan-event table and model
+- scan events recorded whenever an authenticated drop-off token is resolved
+- sponsor drawer drop-off QR link metadata section
+- explicit sponsor drop-off QR link revocation with confirmation and audit log
+
+Not yet implemented:
+
+- phone-camera/manual QA against a real delivered email
 
 This design builds on:
 
@@ -125,12 +152,16 @@ Store only a hash of the token. The plain token is only used in the email URL.
 Create or reuse an active token when rendering/sending a sponsor drop-off
 communication.
 
-Recommended lifecycle:
+Implemented lifecycle:
 
-- create token on first email render/send for a sponsorship
-- reuse active non-expired token for repeat sends
+- create a fresh token when a sponsor communication is rendered/sent
+- revoke older active tokens for the same sponsorship when creating a new token
 - expire after the campaign ends or after a configurable number of days
 - allow explicit revocation later if needed
+
+Because only token hashes are stored, the app cannot reconstruct an older plain
+token for repeat email rendering. Creating a fresh token per send preserves the
+hashed-token security property and keeps the latest email authoritative.
 
 If the sponsor's commitments change after email send, the token should resolve
 the current committed gift state, not stale email-time data.
@@ -197,15 +228,39 @@ Example shape:
 
 ### Record Scan
 
-Resolving the payload should update `last_scanned_at`. A separate scan event
-table is optional but useful later.
+Resolving the payload updates `last_scanned_at` and writes a
+`sponsor_dropoff_scan_event` row with the token, campaign, sponsorship, sponsor,
+actor user, scan timestamp, outcome, and user agent.
 
-If adding scan events now, use:
+Implemented event table:
 
-`POST /api/v1/campaigns/:campaignId/mobile/dropoff/:token/scan`
+- `id`
+- `token_id`
+- `campaign_id`
+- `sponsorship_id`
+- `sponsor_id`
+- `scanned_by_user_id`
+- `scanned_at`
+- `outcome`
+- `user_agent`
+- `created_at`
 
-For first implementation, updating `last_scanned_at` on successful resolve is
-enough.
+No separate scan endpoint is needed for now because resolving the drop-off
+payload is the operational scan action.
+
+### Revoke Drop-Off Token
+
+`POST /api/v1/campaigns/:campaignId/sponsors/:sponsorId/dropoff-tokens/:tokenId/revoke`
+
+Permission:
+
+- `campaign.sponsors.manage`
+
+Response:
+
+- updated sponsor drawer payload with token status set to `REVOKED`
+
+Raw tokens and token hashes are not returned to the frontend.
 
 ### Gift Operations
 
@@ -283,24 +338,25 @@ Gift row:
 
 ## In-App Scanner
 
-The sponsor email QR can work immediately through the phone's native camera
-because it is a URL. A built-in scanner is useful but should be a later layer.
+The sponsor email QR can work through the phone's native camera because it is a
+URL. The app also includes a protected in-app scanner at `/mobile/scan`.
 
-When added:
+Implemented behavior:
 
 - add a Scan action on `/mobile/receive`
 - request camera permission only after the user taps Scan
 - scan QR URLs and route internally
-- scan recipient IDs or gift label QR codes later through the same scanner
-  component
+- route sponsor drop-off QR URLs to `/mobile/receive/dropoff/:token`
+- route existing gift label QR URLs to the current scan page
+- route typed recipient IDs back to `/mobile/receive` and auto-run lookup
 - provide manual entry fallback if camera permission fails
 
-Recommended library requirements:
+Library requirements:
 
 - maintained browser QR decoder
 - works in iOS Safari and Android Chrome
 - no heavy desktop-only dependencies
-- can be lazy-loaded so normal mobile pages stay light
+- lazy-loaded so normal mobile pages stay light
 
 ## Audit And Traceability
 
@@ -310,8 +366,8 @@ Additional audit/logging should capture:
 
 - token created
 - sponsor reminder sent with QR
-- token resolved/scanned
-- token revoked if revocation is added
+- token resolved/scanned through `sponsor_dropoff_scan_event`
+- token revoked through sponsor audit events
 
 The receiving action itself should continue to record the actor user ID, not
 the sponsor.

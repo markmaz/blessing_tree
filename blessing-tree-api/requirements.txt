@@ -11,6 +11,7 @@ passlib==1.7.4
 PyJWT==2.11.0
 PyMySQL>=1.1,<2
 python-dotenv==1.2.1
+qrcode[pil]==8.2
 redis==7.2.1
 requests==2.32.5
 SQLAlchemy==2.0.46

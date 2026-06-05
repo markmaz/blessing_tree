@@ -4,11 +4,34 @@ Last updated: 2026-06-05
 
 ## Current Phase
 
-The current feature branch is `codex/mobile-operator-mode`.
+The current feature branch is `codex/sponsor-dropoff-qr-workflow`.
 
 The current active work is finishing Mobile Operator Mode after completing the
 report/export, production deployment, semantic search, demo seeding, and
 operational hardening branch.
+
+The follow-on branch `codex/sponsor-dropoff-qr-workflow` has implemented the
+sponsor drop-off QR workflow through token revocation and scan-event tracking:
+
+- added hashed sponsor drop-off tokens and migration `V046`
+- added authenticated mobile drop-off payload API
+- added `/mobile/receive/dropoff/:token`
+- added sponsor email merge fields for drop-off URL, QR image, recipient IDs,
+  and recipient/gift summary
+- updated the demo drop-off reminder template to include the QR image and URL
+  fallback
+- added focused backend tests for sponsor QR merge fields and payload resolve
+- added `/mobile/scan` with a lazy-loaded browser QR decoder
+- added a Scan action to mobile Receive
+- scanner routing supports sponsor drop-off QR URLs, existing gift label scan
+  URLs, and typed recipient IDs
+- added focused mobile scanner parser tests
+- added `sponsor_dropoff_scan_event` migration/model and scan-event recording
+  when authenticated staff open a drop-off QR link
+- added sponsor drawer drop-off QR link metadata with active/revoked/expired
+  status, scan counts, and last-scan timestamps
+- added explicit sponsor drop-off QR revocation with confirmation and sponsor
+  audit event recording
 
 Recently completed mobile work:
 

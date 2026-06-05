@@ -1,6 +1,7 @@
 import { apiFetchJson } from '@/shared/api/client';
 import type {
   CampaignSponsor,
+  CampaignSponsorDropoffToken,
   CampaignSponsorInteraction,
   CampaignSponsorWorkspaceData,
   PendingSponsorRegistration,
@@ -53,6 +54,31 @@ interface SponsorInteractionResponse {
   external_message_id: string | null;
 }
 
+interface SponsorDropoffTokenResponse {
+  id: string;
+  sponsorship_id: string;
+  sponsor_id: string;
+  status: CampaignSponsorDropoffToken['status'];
+  expires_at: string | null;
+  revoked_at: string | null;
+  last_scanned_at: string | null;
+  created_by_user_id: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  scan_count: number;
+  latest_scan_at: string | null;
+  scan_events: SponsorDropoffScanEventResponse[];
+}
+
+interface SponsorDropoffScanEventResponse {
+  id: string;
+  token_id: string;
+  scanned_by_user_id: string | null;
+  scanned_at: string | null;
+  outcome: string;
+  user_agent: string | null;
+}
+
 interface SponsorResponse {
   id: string;
   campaign_id: string;
@@ -93,6 +119,7 @@ interface SponsorResponse {
   open_follow_up_count: number;
   recent_interactions: SponsorInteractionResponse[];
   sponsored_items: SponsoredItemResponse[];
+  dropoff_tokens: SponsorDropoffTokenResponse[];
   created_at: string | null;
   updated_at: string | null;
 }
@@ -306,6 +333,18 @@ export async function sendSponsorCommunication(
   return mapSponsorCommunicationSend(response);
 }
 
+export async function revokeCampaignSponsorDropoffToken(
+  campaignId: string,
+  sponsorId: string,
+  tokenId: string
+): Promise<CampaignSponsor> {
+  const response = await apiFetchJson<SponsorResponse>(
+    `/api/v1/campaigns/${campaignId}/sponsors/${sponsorId}/dropoff-tokens/${tokenId}/revoke`,
+    { method: 'POST' }
+  );
+  return mapSponsor(response);
+}
+
 export async function getPendingSponsorRegistrations(
   campaignId: string
 ): Promise<PendingSponsorRegistration[]> {
@@ -443,8 +482,34 @@ function mapSponsor(response: SponsorResponse): CampaignSponsor {
           }
         : null,
     })),
+    dropoffTokens: response.dropoff_tokens.map(mapSponsorDropoffToken),
     createdAt: response.created_at,
     updatedAt: response.updated_at,
+  };
+}
+
+function mapSponsorDropoffToken(response: SponsorDropoffTokenResponse): CampaignSponsorDropoffToken {
+  return {
+    id: response.id,
+    sponsorshipId: response.sponsorship_id,
+    sponsorId: response.sponsor_id,
+    status: response.status,
+    expiresAt: response.expires_at,
+    revokedAt: response.revoked_at,
+    lastScannedAt: response.last_scanned_at,
+    createdByUserId: response.created_by_user_id,
+    createdAt: response.created_at,
+    updatedAt: response.updated_at,
+    scanCount: response.scan_count,
+    latestScanAt: response.latest_scan_at,
+    scanEvents: (response.scan_events ?? []).map((event) => ({
+      id: event.id,
+      tokenId: event.token_id,
+      scannedByUserId: event.scanned_by_user_id,
+      scannedAt: event.scanned_at,
+      outcome: event.outcome,
+      userAgent: event.user_agent,
+    })),
   };
 }
 

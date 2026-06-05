@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from app.models.pending_sponsor_registration import PendingSponsorRegistration
+from app.models.sponsor_dropoff_scan_event import SponsorDropoffScanEvent
+from app.models.sponsor_dropoff_token import SponsorDropoffToken
 from app.models.sponsor_interaction import SponsorInteraction
 from app.models.sponsorship import Sponsorship
 from app.models.sponsorship_item import SponsorshipItem
@@ -68,6 +71,42 @@ def serialize_sponsor_interaction(interaction: SponsorInteraction) -> dict[str, 
     }
 
 
+def serialize_sponsor_dropoff_token(token: SponsorDropoffToken) -> dict[str, Any]:
+    scan_events = list(token.scan_events or [])
+    latest_scan = max((event.scanned_at for event in scan_events if event.scanned_at), default=None)
+    sorted_scan_events = sorted(
+        scan_events,
+        key=lambda event: event.scanned_at,
+        reverse=True,
+    )
+    return {
+        "id": str(token.id),
+        "sponsorship_id": str(token.sponsorship_id),
+        "sponsor_id": str(token.sponsor_id),
+        "status": _dropoff_token_status(token),
+        "expires_at": _serialize_datetime(token.expires_at),
+        "revoked_at": _serialize_datetime(token.revoked_at),
+        "last_scanned_at": _serialize_datetime(token.last_scanned_at),
+        "created_by_user_id": str(token.created_by_user_id) if token.created_by_user_id else None,
+        "created_at": _serialize_datetime(token.created_at),
+        "updated_at": _serialize_datetime(token.updated_at),
+        "scan_count": len(scan_events),
+        "latest_scan_at": _serialize_datetime(latest_scan),
+        "scan_events": [serialize_sponsor_dropoff_scan_event(event) for event in sorted_scan_events],
+    }
+
+
+def serialize_sponsor_dropoff_scan_event(event: SponsorDropoffScanEvent) -> dict[str, Any]:
+    return {
+        "id": str(event.id),
+        "token_id": str(event.token_id),
+        "scanned_by_user_id": str(event.scanned_by_user_id) if event.scanned_by_user_id else None,
+        "scanned_at": _serialize_datetime(event.scanned_at),
+        "outcome": event.outcome,
+        "user_agent": event.user_agent,
+    }
+
+
 def serialize_pending_sponsor_registration(registration: PendingSponsorRegistration) -> dict[str, Any]:
     return {
         "id": str(registration.id),
@@ -108,6 +147,11 @@ def serialize_workspace_sponsor(sponsorship: Sponsorship) -> dict[str, Any]:
         if str(interaction.campaign_id) == str(sponsorship.campaign_id)
     ]
     items = list(sponsorship.items or [])
+    dropoff_tokens = sorted(
+        list(sponsorship.dropoff_tokens or []),
+        key=lambda value: value.created_at,
+        reverse=True,
+    )
     return {
         "id": str(sponsor.id),
         "campaign_id": str(sponsorship.campaign_id),
@@ -151,6 +195,7 @@ def serialize_workspace_sponsor(sponsorship: Sponsorship) -> dict[str, Any]:
             for interaction in sorted(campaign_interactions, key=lambda value: value.occurred_at, reverse=True)[:5]
         ],
         "sponsored_items": [serialize_sponsorship_item(item) for item in items],
+        "dropoff_tokens": [serialize_sponsor_dropoff_token(token) for token in dropoff_tokens],
         "created_at": _serialize_datetime(sponsor.created_at),
         "updated_at": _serialize_datetime(sponsor.updated_at),
     }
@@ -240,3 +285,11 @@ def _serialize_datetime(value) -> str | None:
     if value is None:
         return None
     return value.isoformat()
+
+
+def _dropoff_token_status(token: SponsorDropoffToken) -> str:
+    if token.revoked_at is not None:
+        return "REVOKED"
+    if token.expires_at <= datetime.utcnow():
+        return "EXPIRED"
+    return "ACTIVE"

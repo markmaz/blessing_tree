@@ -93,3 +93,29 @@ def test_campaign_template_renderer_wraps_template_email_in_branded_layout() -> 
     assert LOGO_URL in html
     assert "Hello Alex, gifts are due soon." in html
     assert text == "Hello Alex, gifts are due soon."
+
+
+def test_campaign_template_renderer_keeps_dropoff_qr_image_compact() -> None:
+    body_template = (
+        '__bt_template_blocks_v1__::{"version":1,"blocks":['
+        '{"id":"qr","type":"image","src":"{{gift.dropoff_qr_image}}","altText":"QR","caption":"Scan at drop-off"},'
+        '{"id":"map","type":"image","src":"{{location.map_url}}","altText":"Map","caption":"Warehouse map"}'
+        "]}"
+    )
+
+    _, html, text = CampaignTemplateRenderer().render(
+        campaign_name="Christmas Giving",
+        campaign_year=2026,
+        subject_template="Drop-off",
+        body_template=body_template,
+        merge_fields={
+            "gift.dropoff_qr_image": "https://example.com/api/v1/campaigns/mobile/dropoff-qr/demo-token.png",
+            "location.map_url": "https://example.com/map.png",
+        },
+    )
+
+    assert 'src="https://example.com/api/v1/campaigns/mobile/dropoff-qr/demo-token.png"' in html
+    assert "width:180px;max-width:180px;height:auto;border-radius:8px;display:block;" in html
+    assert 'src="https://example.com/map.png"' in html
+    assert "max-width:100%;border-radius:12px;" in html
+    assert text == "Scan at drop-off\n\nWarehouse map"
