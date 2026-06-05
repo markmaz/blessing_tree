@@ -27,6 +27,7 @@ import {
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
+import { DrawerActions } from '@/shared/ui/DrawerActions';
 
 interface CampaignPeopleRecipientDrawerProps {
   campaignId?: string | null;
@@ -489,7 +490,7 @@ export function CampaignPeopleRecipientDrawer({
         />
       ) : null}
       {recipient ? (
-        <div className="campaign-team-drawer__actions mb-3">
+        <DrawerActions className="mb-3">
           <button
             type="button"
             className="btn btn-secondary btn-sm"
@@ -513,7 +514,7 @@ export function CampaignPeopleRecipientDrawer({
               {nextRecipientButtonLabel}
             </button>
           ) : null}
-        </div>
+        </DrawerActions>
       ) : null}
       <div className="campaign-team-drawer__stack">
         <section className="campaign-team-drawer__section">
@@ -1051,7 +1052,7 @@ export function CampaignPeopleRecipientDrawer({
             </div>
           )}
 
-          <div className="campaign-team-drawer__actions mt-3">
+          <DrawerActions className="mt-3">
             {recipient ? (
               <button
                 type="button"
@@ -1074,7 +1075,7 @@ export function CampaignPeopleRecipientDrawer({
               <i className="bi bi-floppy me-2" aria-hidden="true" />
               {recipient ? `Save ${recipientRecordLabel}` : `Create ${recipientRecordLabel}`}
             </button>
-          </div>
+          </DrawerActions>
         </section>
 
         <section className="campaign-team-drawer__section">
@@ -1221,7 +1222,7 @@ export function CampaignPeopleRecipientDrawer({
                 )}
 
                 {onStartAnotherRecipient ? (
-                  <div className="campaign-team-drawer__actions mt-3">
+                  <DrawerActions className="mt-3">
                     <button
                       type="button"
                       className="btn btn-outline-secondary btn-sm"
@@ -1234,7 +1235,7 @@ export function CampaignPeopleRecipientDrawer({
                       <i className="bi bi-person-plus me-2" aria-hidden="true" />
                       {nextRecipientButtonLabel}
                     </button>
-                  </div>
+                  </DrawerActions>
                 ) : null}
               </div>
             </>
@@ -1554,7 +1555,7 @@ export function CampaignPeopleRecipientDrawer({
                   ) : null}
                 </div>
 
-                <div className="campaign-team-drawer__actions mt-3">
+                <DrawerActions className="mt-3">
                   {editingItemId ? (
                     <button
                       type="button"
@@ -1588,7 +1589,7 @@ export function CampaignPeopleRecipientDrawer({
                     <i className={`bi ${editingItemId ? 'bi-floppy' : 'bi-plus-square'} me-2`} aria-hidden="true" />
                     {editingItemId ? 'Save Item' : 'Add Item'}
                   </button>
-                </div>
+                </DrawerActions>
               </div>
             </div>,
             document.body

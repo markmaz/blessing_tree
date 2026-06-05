@@ -23,6 +23,7 @@ import {
 import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
+import { DrawerActions } from '@/shared/ui/DrawerActions';
 
 interface CampaignPeopleGroupDrawerProps {
   campaignId?: string | null;
@@ -1151,7 +1152,7 @@ export function CampaignPeopleGroupDrawer({
             </div>
           )}
 
-          <div className="campaign-team-drawer__actions mt-3">
+          <DrawerActions className="mt-3">
             {group ? (
               <button
                 type="button"
@@ -1174,7 +1175,7 @@ export function CampaignPeopleGroupDrawer({
               <i className="bi bi-floppy me-2" aria-hidden="true" />
               {groupSaveButtonLabel}
             </button>
-          </div>
+          </DrawerActions>
         </section>
 
         {group?.groupType === 'ORGANIZATION' ? (
@@ -1627,7 +1628,7 @@ export function CampaignPeopleGroupDrawer({
                 </label>
               </div>
 
-              <div className="campaign-team-drawer__actions mt-3">
+              <DrawerActions className="mt-3">
                 {editingContact ? (
                   <button
                     type="button"
@@ -1650,7 +1651,7 @@ export function CampaignPeopleGroupDrawer({
                   <i className={`bi ${editingContact ? 'bi-floppy' : 'bi-person-plus'} me-2`} aria-hidden="true" />
                   {editingContact ? 'Save Contact' : 'Add Contact'}
                 </button>
-              </div>
+              </DrawerActions>
             </>
           )}
         </section>
