@@ -20,6 +20,7 @@ export function SponsorsIntakePage() {
     onPreviewCommunication,
     onSendCommunication,
     onRevokeDropoffToken,
+    onCommitGift,
     onSaveSponsor,
     onDeleteSponsor,
     onSaveInteraction,
@@ -206,6 +207,7 @@ export function SponsorsIntakePage() {
         onPreviewCommunication={onPreviewCommunication}
         onSendCommunication={onSendCommunication}
         onRevokeDropoffToken={onRevokeDropoffToken}
+        onCommitGift={onCommitGift}
         onSaveSponsor={onSaveSponsor}
         onDeleteSponsor={onDeleteSponsor}
         onSaveInteraction={onSaveInteraction}

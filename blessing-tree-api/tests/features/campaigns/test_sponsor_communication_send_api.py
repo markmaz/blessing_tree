@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import date
+from urllib.parse import parse_qs, urlparse
 
+from app.features.campaigns import mobile_dropoff_api
 from app.features.campaigns import sponsor_api as sponsor_api_module
 from app.features.campaigns.studio_service import CampaignStudioService
 from app.models.campaign_communication_send import CampaignCommunicationSend
@@ -65,10 +67,14 @@ def test_preview_sponsor_communication_renders_gift_merge_fields(app, monkeypatc
     assert payload["recipient_email"] == "sponsor@example.com"
     assert payload["subject"] == "Reminder: gifts for Blessing Tree 2026"
     assert payload["merge_fields"]["gift.commitment_count"] == "2"
-    assert payload["merge_fields"]["gift.dropoff_qr_url"].startswith("http://localhost:5173/mobile/receive/dropoff/")
-    assert payload["merge_fields"]["gift.dropoff_qr_image"].startswith(
-        "http://localhost:5173/api/v1/campaigns/mobile/dropoff-qr/"
-    )
+    assert "/mobile/receive/dropoff/" in payload["merge_fields"]["gift.dropoff_qr_url"]
+    assert f"campaignId={campaign.id}" in payload["merge_fields"]["gift.dropoff_qr_url"]
+    assert "/api/v1/campaigns/mobile/dropoff-qr/" in payload["merge_fields"]["gift.dropoff_qr_image"]
+    assert f"campaignId={campaign.id}" in payload["merge_fields"]["gift.dropoff_qr_image"]
+    qr_image_url = urlparse(payload["merge_fields"]["gift.dropoff_qr_image"])
+    assert qr_image_url.path.endswith(".png")
+    assert "?" not in qr_image_url.path
+    assert parse_qs(qr_image_url.query)["campaignId"] == [str(campaign.id)]
     assert payload["merge_fields"]["gift.dropoff_qr_image_url"] == payload["merge_fields"]["gift.dropoff_qr_image"]
     assert payload["merge_fields"]["gift.dropoff_recipient_summary"]
     assert "Ava Public: Winter coat" in payload["text"]
@@ -208,13 +214,21 @@ def test_mobile_dropoff_token_resolves_committed_gifts(app, monkeypatch) -> None
 
 def test_mobile_dropoff_qr_endpoint_returns_png(app, monkeypatch) -> None:
     install_auth(monkeypatch)
+    encoded_values: list[str] = []
+
+    def fake_qr_png_bytes(value: str) -> bytes:
+        encoded_values.append(value)
+        return b"\x89PNG\r\n\x1a\nfake"
+
+    monkeypatch.setattr(mobile_dropoff_api, "qr_png_bytes", fake_qr_png_bytes)
 
     client = app.test_client()
-    response = client.get("/api/v1/campaigns/mobile/dropoff-qr/test-token.png")
+    response = client.get("/api/v1/campaigns/mobile/dropoff-qr/test-token.png?campaignId=campaign-123")
 
     assert response.status_code == 200
     assert response.content_type == "image/png"
     assert response.data.startswith(b"\x89PNG")
+    assert encoded_values[0].endswith("/mobile/receive/dropoff/test-token?campaignId=campaign-123")
 
 
 def test_send_rejects_non_sponsor_template(app, monkeypatch) -> None:

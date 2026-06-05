@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  commitCampaignGift,
+} from '@/features/gifts/api/giftSearchApi';
+import {
   cancelPendingSponsorRegistration,
   createCampaignSponsor,
   createCampaignSponsorInteraction,
@@ -258,6 +261,26 @@ export function useCampaignSponsorWorkspace(campaignId: string | null) {
     [campaignId, performMutation]
   );
 
+  const commitGiftToSponsor = useCallback(
+    async (sponsorId: string, wishlistItemId: string, notes?: string): Promise<CampaignSponsor | null> => {
+      if (!campaignId) {
+        return null;
+      }
+      await commitCampaignGift(campaignId, wishlistItemId, sponsorId, notes);
+      const workspace = await getCampaignSponsorWorkspace(campaignId);
+      setState((currentState) => ({
+        ...currentState,
+        workspace,
+        isLoading: false,
+        isSaving: false,
+        error: null,
+        saveMessage: 'Gift committed to sponsor.',
+      }));
+      return workspace.sponsors.find((sponsor) => sponsor.id === sponsorId) ?? null;
+    },
+    [campaignId]
+  );
+
   const saveSponsor = useCallback(
     async (
       sponsor: SponsorUpsertInput,
@@ -405,6 +428,7 @@ export function useCampaignSponsorWorkspace(campaignId: string | null) {
     previewCommunication,
     sendCommunication,
     revokeDropoffToken,
+    commitGiftToSponsor,
     saveSponsor,
     removeSponsor,
     saveInteraction,

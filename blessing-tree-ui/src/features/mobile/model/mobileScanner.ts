@@ -22,7 +22,7 @@ export function resolveMobileScanDestination(value: string): MobileScanDestinati
     if (dropoffMatch?.[1]) {
       return {
         type: 'dropoff',
-        path: buildMobileReceiveDropoffPath(decodeURIComponent(dropoffMatch[1])),
+        path: buildMobileReceiveDropoffPath(decodeURIComponent(dropoffMatch[1]), parsedUrl.searchParams.get('campaignId')),
       };
     }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import {
   getSponsorDropoffPayload,
   updateCampaignGiftOperation,
@@ -9,7 +9,9 @@ import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 
 export function MobileSponsorDropoffPage() {
   const { token = '' } = useParams();
+  const [searchParams] = useSearchParams();
   const { selectedCampaignId } = useCampaigns();
+  const dropoffCampaignId = searchParams.get('campaignId') || selectedCampaignId;
   const [payload, setPayload] = useState<SponsorDropoffPayload | null>(null);
   const [activeNoteItemId, setActiveNoteItemId] = useState<string | null>(null);
   const [receiveNote, setReceiveNote] = useState('');
@@ -19,34 +21,34 @@ export function MobileSponsorDropoffPage() {
   const [error, setError] = useState<string | null>(null);
 
   const loadDropoff = useCallback(async () => {
-    if (!selectedCampaignId || !token) {
+    if (!dropoffCampaignId || !token) {
       return;
     }
     setIsLoading(true);
     setError(null);
     setMessage(null);
     try {
-      setPayload(await getSponsorDropoffPayload(selectedCampaignId, token));
+      setPayload(await getSponsorDropoffPayload(dropoffCampaignId, token));
     } catch (loadError) {
       setPayload(null);
       setError(loadError instanceof Error ? loadError.message : 'Unable to open sponsor drop-off link.');
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCampaignId, token]);
+  }, [dropoffCampaignId, token]);
 
   useEffect(() => {
     void loadDropoff();
   }, [loadDropoff]);
 
   async function handleReceive(gift: SponsorDropoffGift) {
-    if (!selectedCampaignId || !gift.canReceive) return;
+    if (!dropoffCampaignId || !gift.canReceive) return;
     setBusyGiftId(gift.wishlistItemId);
     setError(null);
     setMessage(null);
     try {
       const updated = await updateCampaignGiftOperation(
-        selectedCampaignId,
+        dropoffCampaignId,
         gift.wishlistItemId,
         'receive',
         activeNoteItemId === gift.wishlistItemId ? receiveNote : undefined
@@ -63,13 +65,13 @@ export function MobileSponsorDropoffPage() {
   }
 
   async function handleUnreceive(gift: SponsorDropoffGift) {
-    if (!selectedCampaignId || !gift.canUnreceive) return;
+    if (!dropoffCampaignId || !gift.canUnreceive) return;
     setBusyGiftId(gift.wishlistItemId);
     setError(null);
     setMessage(null);
     try {
       const updated = await updateCampaignGiftOperation(
-        selectedCampaignId,
+        dropoffCampaignId,
         gift.wishlistItemId,
         'unreceive',
         'Corrected accidental sponsor drop-off receive.'
@@ -118,7 +120,7 @@ export function MobileSponsorDropoffPage() {
         </p>
       </div>
 
-      {!selectedCampaignId ? (
+      {!dropoffCampaignId ? (
         <div className="mobile-alert mobile-alert--danger">Select a campaign before receiving gifts.</div>
       ) : null}
       {isLoading ? <div className="mobile-alert mobile-scan-notice">Loading sponsor drop-off...</div> : null}

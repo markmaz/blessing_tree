@@ -30,7 +30,7 @@ class CampaignMobileDropoffResource(Resource):
 @campaign_ns.route("/mobile/dropoff-qr/<string:token>.png")
 class CampaignMobileDropoffQrResource(Resource):
     def get(self, token: str):
-        image_bytes = qr_png_bytes(build_dropoff_url(token))
+        image_bytes = qr_png_bytes(build_dropoff_url(token, campaign_id=request.args.get("campaignId")))
         if not image_bytes:
             return {"error": "QR code could not be generated"}, 500
         return Response(
