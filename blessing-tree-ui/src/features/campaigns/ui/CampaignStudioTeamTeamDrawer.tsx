@@ -8,6 +8,8 @@ import type {
 } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 import { CampaignStudioTeamMembershipSection } from '@/features/campaigns/ui/CampaignStudioTeamMembershipSection';
 import { CampaignStudioTeamTeamRolesSection } from '@/features/campaigns/ui/CampaignStudioTeamTeamRolesSection';
+import { DrawerActions } from '@/shared/ui/DrawerActions';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 
 interface CampaignStudioTeamTeamDrawerProps {
   isOpen: boolean;
@@ -80,15 +82,10 @@ export function CampaignStudioTeamTeamDrawer({
       onClose={onClose}
     >
       <form className="campaign-team-drawer__stack" onSubmit={handleSubmit}>
-        <section className="campaign-team-drawer__section">
-          <div className="campaign-team-drawer__section-header">
-            <div>
-              <h4 className="h6 mb-1">Team Setup</h4>
-              <p className="text-muted mb-0">
-                Define the team itself here before changing who belongs to it.
-              </p>
-            </div>
-          </div>
+        <DrawerSection
+          title="Team Setup"
+          description="Define the team itself here before changing who belongs to it."
+        >
           <div className="campaign-team-form-grid">
             <label className="form-label campaign-team-form-grid__span-2">
               Team Name
@@ -134,7 +131,7 @@ export function CampaignStudioTeamTeamDrawer({
               <span>Team is active</span>
             </label>
           </div>
-        </section>
+        </DrawerSection>
 
         {team ? (
           <>
@@ -159,7 +156,7 @@ export function CampaignStudioTeamTeamDrawer({
           </>
         ) : null}
 
-        <div className="campaign-team-drawer__actions">
+        <DrawerActions>
           <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
             <i className="bi bi-x-lg me-2" aria-hidden="true" />
             Cancel
@@ -173,7 +170,7 @@ export function CampaignStudioTeamTeamDrawer({
               {isSaving ? 'Saving...' : team ? 'Save Team' : 'Create Team'}
             </button>
           ) : null}
-        </div>
+        </DrawerActions>
       </form>
     </CampaignStudioDrawer>
   );

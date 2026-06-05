@@ -3,6 +3,7 @@ import type {
 } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 import { getCampaignTeamGlossaryEntry } from '@/features/campaigns/model/campaignTeamWorkspaceGlossary';
 import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 
 interface CampaignStudioTeamMemberTeamsSectionProps {
   member: CampaignTeamWorkspaceMember;
@@ -20,19 +21,16 @@ export function CampaignStudioTeamMemberTeamsSection({
   const teamsHelp = getCampaignTeamGlossaryEntry('teams');
 
   return (
-    <section className="campaign-team-drawer__section">
-      <div className="campaign-team-drawer__section-header">
-        <div>
-          <h4 className="h6 mb-1">
-            Team Memberships
-            <InlineHelpPopover title={teamsHelp.label} body={teamsHelp.description} />
-          </h4>
-          <p className="text-muted mb-0">
-            Team setup and membership changes are managed from the team workspace so everything
-            about a team stays in one place.
-          </p>
-        </div>
-        {canManageTeam ? (
+    <DrawerSection
+      title={
+        <>
+          Team Memberships
+          <InlineHelpPopover title={teamsHelp.label} body={teamsHelp.description} />
+        </>
+      }
+      description="Team setup and membership changes are managed from the team workspace so everything about a team stays in one place."
+      actions={
+        canManageTeam ? (
           <button
             type="button"
             className="btn btn-outline-secondary btn-sm"
@@ -41,8 +39,9 @@ export function CampaignStudioTeamMemberTeamsSection({
             <i className="bi bi-people-fill me-2" aria-hidden="true" />
             New Team
           </button>
-        ) : null}
-      </div>
+        ) : null
+      }
+    >
 
       <div className="campaign-team-inline-list">
         {member.teams.length === 0 ? (
@@ -73,6 +72,6 @@ export function CampaignStudioTeamMemberTeamsSection({
           ))
         )}
       </div>
-    </section>
+    </DrawerSection>
   );
 }

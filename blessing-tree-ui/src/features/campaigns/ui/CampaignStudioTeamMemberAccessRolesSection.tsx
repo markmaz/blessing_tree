@@ -8,6 +8,7 @@ import type {
   CampaignTeamWorkspaceMember,
 } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 
 interface CampaignStudioTeamMemberAccessRolesSectionProps {
   member: CampaignTeamWorkspaceMember;
@@ -34,21 +35,18 @@ export function CampaignStudioTeamMemberAccessRolesSection({
 }: CampaignStudioTeamMemberAccessRolesSectionProps) {
   const accessRolesHelp = getCampaignTeamGlossaryEntry('app_access_roles');
   return (
-    <section className="campaign-team-drawer__section">
-      <div className="campaign-team-drawer__section-header">
-        <div>
-          <h4 className="h6 mb-1">
-            App Access Roles
+    <DrawerSection
+      title={
+        <>
+          App Access Roles
             <InlineHelpPopover
               title={accessRolesHelp.label}
               body={accessRolesHelp.description}
             />
-          </h4>
-          <p className="text-muted mb-0">
-            Access roles are fixed permission bundles. Use teams for custom communication groups.
-          </p>
-        </div>
-      </div>
+        </>
+      }
+      description="Access roles are fixed permission bundles. Use teams for custom communication groups."
+    >
 
       <div className="campaign-team-add-inline">
         <select
@@ -121,6 +119,6 @@ export function CampaignStudioTeamMemberAccessRolesSection({
           ))
         )}
       </div>
-    </section>
+    </DrawerSection>
   );
 }

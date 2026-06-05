@@ -5,6 +5,7 @@ import type {
   CampaignTeamRoleUpsertInput,
 } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 
 interface CampaignStudioTeamTeamRolesSectionProps {
   teamId: string;
@@ -56,22 +57,18 @@ export function CampaignStudioTeamTeamRolesSection({
   };
 
   return (
-    <section className="campaign-team-drawer__section">
-      <div className="campaign-team-drawer__section-header">
-        <div>
-          <h4 className="h6 mb-1">
-            Team Roles
+    <DrawerSection
+      title={
+        <>
+          Team Roles
             <InlineHelpPopover
               title={teamRolesHelp.label}
               body={teamRolesHelp.description}
             />
-          </h4>
-          <p className="text-muted mb-0">
-            Define operational responsibilities inside this team. Leave a person on plain
-            <strong> Member</strong> status if the team itself is enough.
-          </p>
-        </div>
-      </div>
+        </>
+      }
+      description="Define operational responsibilities inside this team. Leave a person on plain Member status if the team itself is enough."
+    >
 
       <div className="campaign-team-role-form">
         <label className="form-label campaign-team-role-form__name">
@@ -209,6 +206,6 @@ export function CampaignStudioTeamTeamRolesSection({
           ))
         )}
       </div>
-    </section>
+    </DrawerSection>
   );
 }

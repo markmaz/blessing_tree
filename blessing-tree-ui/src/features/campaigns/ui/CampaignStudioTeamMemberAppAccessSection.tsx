@@ -10,6 +10,7 @@ import type {
 } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
 import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 
 interface CampaignStudioTeamMemberAppAccessSectionProps {
   member: CampaignTeamWorkspaceMember;
@@ -52,18 +53,15 @@ export function CampaignStudioTeamMemberAppAccessSection({
   const selectedDirectoryUser = directoryUsers.find((user) => user.id === selectedDirectoryUserId);
 
   return (
-    <section className="campaign-team-drawer__section">
-      <div className="campaign-team-drawer__section-header">
-        <div>
-          <h4 className="h6 mb-1">
-            App Access
-            <InlineHelpPopover title={appAccessHelp.label} body={appAccessHelp.description} />
-          </h4>
-          <p className="text-muted mb-0">
-            Link to an app user, prepare an invite, or keep this person roster-only.
-          </p>
-        </div>
-      </div>
+    <DrawerSection
+      title={
+        <>
+          App Access
+          <InlineHelpPopover title={appAccessHelp.label} body={appAccessHelp.description} />
+        </>
+      }
+      description="Link to an app user, prepare an invite, or keep this person roster-only."
+    >
 
       <div className="campaign-chip-row mb-3">
         <span className="campaign-chip campaign-chip-muted">
@@ -177,6 +175,6 @@ export function CampaignStudioTeamMemberAppAccessSection({
           />
         ) : null}
       </div>
-    </section>
+    </DrawerSection>
   );
 }

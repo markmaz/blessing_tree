@@ -7,6 +7,7 @@ import type {
 } from '@/features/campaigns/model/campaignTeamWorkspaceTypes';
 import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
 import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 
 interface CampaignStudioTeamMembershipSectionProps {
   team: CampaignTeamWorkspaceTeam;
@@ -60,19 +61,15 @@ export function CampaignStudioTeamMembershipSection({
   }, [members, team.memberships]);
 
   return (
-    <section className="campaign-team-drawer__section">
-      <div className="campaign-team-drawer__section-header">
-        <div>
-          <h4 className="h6 mb-1">
-            Membership Management
-            <InlineHelpPopover title={teamsHelp.label} body={teamsHelp.description} />
-          </h4>
-          <p className="text-muted mb-0">
-            Add people to this team and optionally give them a team role. Leaving the role blank
-            keeps them as a plain member.
-          </p>
-        </div>
-      </div>
+    <DrawerSection
+      title={
+        <>
+          Membership Management
+          <InlineHelpPopover title={teamsHelp.label} body={teamsHelp.description} />
+        </>
+      }
+      description="Add people to this team and optionally give them a team role. Leaving the role blank keeps them as a plain member."
+    >
 
       {canManageTeam ? (
         <div className="campaign-team-add-inline campaign-team-add-inline--stacked">
@@ -184,6 +181,6 @@ export function CampaignStudioTeamMembershipSection({
           })
         )}
       </div>
-    </section>
+    </DrawerSection>
   );
 }
