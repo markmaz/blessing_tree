@@ -63,6 +63,52 @@
   background: rgba(248, 245, 239, 0.48);
 }
 
+.campaign-sponsor-dropoff-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.campaign-sponsor-dropoff-diagnostic {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid rgba(24, 87, 58, 0.18);
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+  background: rgba(244, 249, 246, 0.86);
+}
+
+.campaign-sponsor-dropoff-diagnostic > div:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.campaign-sponsor-dropoff-diagnostic > div:first-child span {
+  color: var(--blessing-text-light);
+  font-size: 0.84rem;
+}
+
+.campaign-sponsor-dropoff-diagnostic__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.campaign-sponsor-dropoff-diagnostic__row > span {
+  min-width: 0;
+  border: 1px solid rgba(226, 218, 205, 0.72);
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.65rem;
+  background: #fffdf9;
+  color: #4d4355;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
 .campaign-sponsor-communication-send {
   display: flex;
   flex-direction: column;
@@ -297,6 +343,10 @@
   .campaign-sponsor-gift-result {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .campaign-sponsor-dropoff-diagnostic__row {
+    grid-template-columns: 1fr;
   }
 
   .campaign-sponsor-modal__backdrop {

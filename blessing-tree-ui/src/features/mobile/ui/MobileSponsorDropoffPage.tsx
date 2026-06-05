@@ -6,6 +6,7 @@ import {
 } from '@/features/gifts/api/giftSearchApi';
 import type { GiftOperationsItem, SponsorDropoffGift, SponsorDropoffPayload } from '@/features/gifts/model/giftSearchTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
+import { ApiError } from '@/shared/api/client';
 
 export function MobileSponsorDropoffPage() {
   const { token = '' } = useParams();
@@ -31,7 +32,7 @@ export function MobileSponsorDropoffPage() {
       setPayload(await getSponsorDropoffPayload(dropoffCampaignId, token));
     } catch (loadError) {
       setPayload(null);
-      setError(loadError instanceof Error ? loadError.message : 'Unable to open sponsor drop-off link.');
+      setError(toDropoffLoadErrorMessage(loadError));
     } finally {
       setIsLoading(false);
     }
@@ -257,6 +258,24 @@ export function MobileSponsorDropoffPage() {
 
 function isReceivedOrLater(status: string): boolean {
   return ['RECEIVED', 'WRAPPED', 'TAGGED', 'READY_FOR_DISTRIBUTION', 'DISTRIBUTED', 'PICKED_UP'].includes(status);
+}
+
+function toDropoffLoadErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : '';
+  const normalized = message.toLowerCase();
+  if (error instanceof ApiError && error.status === 410 && normalized.includes('revoked')) {
+    return 'This sponsor QR link was revoked. Ask a campaign manager to regenerate and resend the sponsor drop-off link.';
+  }
+  if (error instanceof ApiError && error.status === 410 && normalized.includes('expired')) {
+    return 'This sponsor QR link is expired. Ask a campaign manager to regenerate and resend the sponsor drop-off link.';
+  }
+  if (error instanceof ApiError && error.status === 404) {
+    return 'This sponsor QR link was not found. Confirm the sponsor email is the latest one, or ask a campaign manager to regenerate the link.';
+  }
+  if (error instanceof ApiError && error.status === 403) {
+    return 'You do not have permission to receive gifts for this campaign. Ask a campaign manager to update your access.';
+  }
+  return message || 'Unable to open sponsor drop-off link.';
 }
 
 function toStatusLabel(status: string): string {

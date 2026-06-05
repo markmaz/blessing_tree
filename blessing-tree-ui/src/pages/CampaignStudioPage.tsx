@@ -78,7 +78,7 @@ export function CampaignStudioPage() {
     return <p className="text-muted">Loading campaign studio...</p>;
   }
 
-  if (error || !studio) {
+  if (!studio) {
     return (
       <div className="alert alert-danger" role="alert">
         {error ?? 'Unable to load campaign studio.'}
@@ -155,6 +155,11 @@ export function CampaignStudioPage() {
           {updateError ? (
             <div className="alert alert-danger" role="alert">
               {updateError}
+            </div>
+          ) : null}
+          {error ? (
+            <div className="alert alert-danger" role="alert">
+              {error}
             </div>
           ) : null}
           {renderStudioSection({

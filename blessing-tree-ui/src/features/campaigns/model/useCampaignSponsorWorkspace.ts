@@ -12,6 +12,7 @@ import {
   getCampaignSponsorWorkspace,
   getPendingSponsorRegistrations,
   previewSponsorCommunication,
+  regenerateCampaignSponsorDropoffToken,
   resendPendingSponsorRegistration,
   revokeCampaignSponsorDropoffToken,
   sendSponsorCommunication,
@@ -22,6 +23,7 @@ import {
 import { listCommunicationTemplates } from '@/features/campaigns/api/campaignStudioApi';
 import type {
   CampaignSponsor,
+  CampaignSponsorDropoffRegenerateResult,
   CampaignSponsorInteraction,
   CampaignSponsorWorkspaceData,
   PendingSponsorRegistration,
@@ -261,6 +263,19 @@ export function useCampaignSponsorWorkspace(campaignId: string | null) {
     [campaignId, performMutation]
   );
 
+  const regenerateDropoffToken = useCallback(
+    async (sponsorId: string): Promise<CampaignSponsorDropoffRegenerateResult | null> => {
+      if (!campaignId) {
+        return null;
+      }
+      return performMutation(
+        () => regenerateCampaignSponsorDropoffToken(campaignId, sponsorId),
+        'Sponsor drop-off QR link regenerated.'
+      );
+    },
+    [campaignId, performMutation]
+  );
+
   const commitGiftToSponsor = useCallback(
     async (sponsorId: string, wishlistItemId: string, notes?: string): Promise<CampaignSponsor | null> => {
       if (!campaignId) {
@@ -428,6 +443,7 @@ export function useCampaignSponsorWorkspace(campaignId: string | null) {
     previewCommunication,
     sendCommunication,
     revokeDropoffToken,
+    regenerateDropoffToken,
     commitGiftToSponsor,
     saveSponsor,
     removeSponsor,

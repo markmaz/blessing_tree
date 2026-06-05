@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import re
+import socket
+import smtplib
 import uuid
 from collections.abc import Mapping
 
@@ -45,6 +48,8 @@ from app.models.recipient_group import RecipientGroup
 from app.models.sponsor import Sponsor
 from app.models.sponsorship import Sponsorship
 from app.models.app_user import AppUser
+
+_MERGE_FIELD_PATTERN = re.compile(r"{{\s*([A-Za-z0-9_.-]+)\s*}}")
 
 
 class CampaignStudioService:
@@ -342,24 +347,55 @@ class CampaignStudioService:
         if "@" not in target_email or len(target_email) > 255:
             raise ServiceError("A valid test recipient email is required", status_code=400, details={"field": "recipient_email"})
 
-        subject, html_body, text_body = self.template_renderer.render(
-            campaign_name=campaign.name,
-            campaign_year=campaign.year,
-            subject_template=template.subject_template,
-            body_template=template.body_template,
-            merge_fields=_sample_template_merge_fields(user.display_name),
-        )
+        merge_fields = _sample_template_merge_fields(user.display_name)
+        try:
+            subject, html_body, text_body = self.template_renderer.render(
+                campaign_name=campaign.name,
+                campaign_year=campaign.year,
+                subject_template=template.subject_template,
+                body_template=template.body_template,
+                merge_fields=merge_fields,
+            )
+        except Exception as exc:
+            raise ServiceError(
+                "Test email could not be rendered",
+                status_code=422,
+                details={
+                    "diagnostic_type": "template_rendering",
+                    "template_id": str(template.id),
+                    "template_name": template.name,
+                    "failure_reason": str(exc),
+                    "user_message": "The template could not be rendered. Check the template content and merge fields, then try again.",
+                },
+            ) from exc
         test_subject = f"[Test] {subject}"
-        send_email_message(
-            recipients=[target_email],
-            subject=test_subject,
-            html=html_body,
-            text_body=text_body,
-        )
+        try:
+            send_email_message(
+                recipients=[target_email],
+                subject=test_subject,
+                html=html_body,
+                text_body=text_body,
+            )
+        except Exception as exc:
+            diagnostic_type = _test_email_failure_type(exc)
+            raise ServiceError(
+                "Test email could not be sent",
+                status_code=502,
+                details={
+                    "diagnostic_type": diagnostic_type,
+                    "template_id": str(template.id),
+                    "template_name": template.name,
+                    "recipient_email": target_email,
+                    "subject": test_subject,
+                    "failure_reason": str(exc),
+                    "user_message": _test_email_user_message(diagnostic_type, str(exc)),
+                },
+            ) from exc
         return {
             "template_id": str(template.id),
             "recipient_email": target_email,
             "subject": test_subject,
+            "merge_fields_used": sorted(_referenced_template_fields(template)),
         }
 
     def list_schedules(self, db: Session, campaign_id: str) -> list[CampaignCommunicationSchedule]:
@@ -608,6 +644,39 @@ def _sample_template_merge_fields(manager_name: str) -> dict[str, str]:
         "event.start_at": "November 3, 2026 at 6:00 PM",
         "location.map_url": "https://maps.example.com/pickup-warehouse",
     }
+
+
+def _referenced_template_fields(template: CommunicationTemplate) -> set[str]:
+    values = [template.subject_template or "", template.body_template or ""]
+    fields: set[str] = set()
+    for value in values:
+        fields.update(match.group(1) for match in _MERGE_FIELD_PATTERN.finditer(value))
+    return fields
+
+
+def _test_email_failure_type(exc: Exception) -> str:
+    if isinstance(
+        exc,
+        (
+            ConnectionError,
+            TimeoutError,
+            socket.timeout,
+            socket.gaierror,
+            ConnectionRefusedError,
+            smtplib.SMTPException,
+        ),
+    ):
+        return "mail_transport"
+    return "mail_unknown"
+
+
+def _test_email_user_message(diagnostic_type: str, failure_reason: str) -> str:
+    if diagnostic_type == "mail_transport":
+        return (
+            "The template rendered, but the mail server could not be reached or rejected the send. "
+            f"Check SMTP host, port, credentials, and network access. Detail: {failure_reason}"
+        )
+    return f"The template rendered, but the email could not be sent. Detail: {failure_reason}"
 
 
 def _contact_name(contact: GroupContact) -> str:

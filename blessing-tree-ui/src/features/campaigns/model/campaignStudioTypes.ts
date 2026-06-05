@@ -409,6 +409,7 @@ export interface CommunicationTemplateTestEmailResult {
   templateId: string;
   recipientEmail: string;
   subject: string;
+  mergeFieldsUsed: string[];
 }
 
 export interface CreateCampaignAssignmentInput {

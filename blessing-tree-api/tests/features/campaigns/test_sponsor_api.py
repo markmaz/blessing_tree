@@ -424,12 +424,146 @@ def test_sponsor_dropoff_token_metadata_and_revoke(app, monkeypatch: pytest.Monk
     assert revoked["status"] == "REVOKED"
     assert revoked["revoked_at"] is not None
 
+    revoked_scan_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/mobile/dropoff/{raw_token}",
+        headers=auth_header(manager_id, "ADMIN"),
+    )
+    assert revoked_scan_response.status_code == 410
+
+    post_revoke_workspace_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/sponsor-workspace",
+        headers=auth_header(manager_id, "ADMIN"),
+    )
+    assert post_revoke_workspace_response.status_code == 200
+    post_revoke_token = post_revoke_workspace_response.get_json()["sponsors"][0]["dropoff_tokens"][0]
+    assert post_revoke_token["scan_count"] == 2
+    assert post_revoke_token["scan_events"][0]["outcome"] == "REVOKED"
+    assert post_revoke_token["scan_events"][1]["outcome"] == "RESOLVED"
+
     verify_session = campaign_api_module.SessionLocal()
     try:
         token_row = verify_session.query(SponsorDropoffToken).filter(SponsorDropoffToken.id == token_uuid).one()
         assert token_row.revoked_at is not None
     finally:
         verify_session.close()
+
+
+def test_regenerate_sponsor_dropoff_token_returns_one_time_link_diagnostics(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Campaign Manager")
+    campaign = seed_campaign(session, name="Dropoff Recovery Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    sponsor = Sponsor(
+        id=uuid.uuid4(),
+        first_name="Taylor",
+        last_name="Reed",
+        display_name="Taylor Reed",
+        email="taylor@example.com",
+        preferred_contact="EMAIL",
+        source="STAFF_ENTRY",
+        is_active=True,
+    )
+    session.add(sponsor)
+    session.flush()
+    sponsorship = Sponsorship(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        sponsor_id=sponsor.id,
+        status="ACTIVE",
+        interest_status="COMMITTED",
+        drop_off_status="NOT_STARTED",
+        self_registered=False,
+        sponsor_code="SP-QR",
+    )
+    session.add(sponsorship)
+    campaign_id = str(campaign.id)
+    sponsor_id = str(sponsor.id)
+    manager_id = str(manager.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/sponsors/{sponsor_id}/dropoff-tokens/regenerate",
+        headers=auth_header(manager_id, "ADMIN"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    link = payload["dropoff_link"]
+    assert link["token_id"]
+    assert f"/mobile/receive/dropoff/" in link["dropoff_url"]
+    assert f"campaignId={campaign_id}" in link["dropoff_url"]
+    assert f"/api/v1/campaigns/mobile/dropoff-qr/" in link["qr_image_url"]
+    assert f"campaignId={campaign_id}" in link["qr_image_url"]
+    assert link["expires_at"] is not None
+    assert payload["sponsor"]["id"] == sponsor_id
+    assert payload["sponsor"]["dropoff_tokens"][0]["id"] == link["token_id"]
+    assert payload["sponsor"]["dropoff_tokens"][0]["status"] == "ACTIVE"
+    assert "token_hash" not in payload["sponsor"]["dropoff_tokens"][0]
+
+
+def test_expired_sponsor_dropoff_token_scan_is_recorded(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Campaign Manager")
+    campaign = seed_campaign(session, name="Expired Dropoff Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    sponsor = Sponsor(
+        id=uuid.uuid4(),
+        first_name="Taylor",
+        last_name="Reed",
+        display_name="Taylor Reed",
+        email="taylor@example.com",
+        preferred_contact="EMAIL",
+        source="STAFF_ENTRY",
+        is_active=True,
+    )
+    session.add(sponsor)
+    session.flush()
+    sponsorship = Sponsorship(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        sponsor_id=sponsor.id,
+        status="ACTIVE",
+        interest_status="COMMITTED",
+        drop_off_status="NOT_STARTED",
+        self_registered=False,
+        sponsor_code="SP-QR",
+    )
+    session.add(sponsorship)
+    session.flush()
+    raw_token, token = SponsorDropoffService().get_or_create_active_token(
+        session,
+        sponsorship=sponsorship,
+        created_by_user_id=manager.id,
+    )
+    token.expires_at = datetime.utcnow() - timedelta(minutes=5)
+    campaign_id = str(campaign.id)
+    manager_id = str(manager.id)
+    token_id = str(token.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/mobile/dropoff/{raw_token}",
+        headers=auth_header(manager_id, "ADMIN"),
+    )
+    assert response.status_code == 410
+
+    workspace_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/sponsor-workspace",
+        headers=auth_header(manager_id, "ADMIN"),
+    )
+    assert workspace_response.status_code == 200
+    token_payload = workspace_response.get_json()["sponsors"][0]["dropoff_tokens"][0]
+    assert token_payload["id"] == token_id
+    assert token_payload["status"] == "EXPIRED"
+    assert token_payload["scan_count"] == 1
+    assert token_payload["scan_events"][0]["outcome"] == "EXPIRED"
+    assert token_payload["scan_events"][0]["scanned_by_user_id"] == manager_id
 
 
 def test_delete_sponsor_reopens_sponsored_wishlist_items(app, monkeypatch: pytest.MonkeyPatch) -> None:

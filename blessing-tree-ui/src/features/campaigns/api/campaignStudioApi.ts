@@ -189,6 +189,7 @@ interface CommunicationTemplateTestEmailResponse {
   template_id: string;
   recipient_email: string;
   subject: string;
+  merge_fields_used?: string[];
 }
 
 interface CommunicationSendResultResponse {
@@ -495,6 +496,7 @@ export async function sendCommunicationTemplateTestEmail(
     templateId: response.template_id,
     recipientEmail: response.recipient_email,
     subject: response.subject,
+    mergeFieldsUsed: response.merge_fields_used ?? [],
   };
 }
 

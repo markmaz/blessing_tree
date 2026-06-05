@@ -62,6 +62,14 @@ _WISHLIST_STATUS_ORDER = {
     "EXCEPTION": 9,
     "CANCELLED": 10,
 }
+_DEFAULT_TEMPLATE_FIELDS = {"campaign.name", "campaign.year", "organization.name"}
+_SPONSOR_QR_FIELDS = {
+    "gift.dropoff_qr_url",
+    "gift.dropoff_qr_image",
+    "gift.dropoff_qr_image_url",
+    "gift.dropoff_recipient_ids",
+    "gift.dropoff_recipient_summary",
+}
 
 
 @dataclass(frozen=True)
@@ -530,6 +538,7 @@ class CampaignCommunicationSendService:
         }
         warnings = _build_gift_warnings(
             referenced_fields=referenced_fields,
+            merge_fields=merge_fields,
             all_count=len(gift_rows),
             awaiting_count=len(awaiting_rows),
             received_count=len(received_rows),
@@ -651,6 +660,7 @@ def _dedupe_resolved_recipients(
 def _build_gift_warnings(
     *,
     referenced_fields: set[str],
+    merge_fields: dict[str, str],
     all_count: int,
     awaiting_count: int,
     received_count: int,
@@ -665,6 +675,23 @@ def _build_gift_warnings(
         warnings.append({"code": "no_received_gifts", "message": "This sponsor has no received gifts yet."})
     if "gift.due_date" in referenced_fields and not due_date:
         warnings.append({"code": "missing_gift_turn_in_due", "message": "Gift Turn-In Due milestone is not set."})
+    if referenced_fields.intersection(_SPONSOR_QR_FIELDS) and all_count == 0:
+        warnings.append({
+            "code": "no_committed_gifts_for_dropoff_qr",
+            "message": "This template includes sponsor QR fields, but this sponsor has no committed gifts.",
+        })
+    unresolved_fields = sorted(referenced_fields - set(merge_fields) - _DEFAULT_TEMPLATE_FIELDS)
+    if "location.map_url" in unresolved_fields:
+        warnings.append({
+            "code": "missing_location_map_url",
+            "message": "This template uses {{location.map_url}}, but no drop-off map URL is configured for this sponsor email.",
+        })
+        unresolved_fields.remove("location.map_url")
+    if unresolved_fields:
+        warnings.append({
+            "code": "unresolved_merge_fields",
+            "message": f"These merge fields do not have values for this sponsor email: {', '.join(unresolved_fields)}.",
+        })
     return warnings
 
 

@@ -504,10 +504,69 @@ def test_post_template_test_email_renders_and_sends_to_requested_address(
     payload = response.get_json()
     assert payload["recipient_email"] == "reviewer@example.com"
     assert payload["subject"] == "[Test] Hello Taylor for Christmas Giving"
+    assert payload["merge_fields_used"] == [
+        "campaign.name",
+        "milestone.date",
+        "sponsor.first_name",
+        "sponsor.full_name",
+    ]
     assert len(sent_messages) == 1
     assert sent_messages[0]["recipients"] == ["reviewer@example.com"]
     assert "Taylor Reed" in sent_messages[0]["html"]
     assert "December 19, 2026" in sent_messages[0]["text_body"]
+
+
+def test_post_template_test_email_reports_mail_transport_diagnostics(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+
+    def _fail_send_email_message(*, recipients, subject, html, text_body=None) -> None:
+        raise ConnectionRefusedError("[Errno 61] Connection refused")
+
+    monkeypatch.setattr(
+        "app.features.campaigns.studio_service.send_email_message",
+        _fail_send_email_message,
+    )
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session, name="Christmas Giving")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    template = CommunicationTemplate(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        template_key="sponsor_test",
+        name="Sponsor Test",
+        audience="SPONSOR",
+        channel="EMAIL",
+        subject_template="Hello {{sponsor.first_name}}",
+        body_template="Dear {{sponsor.full_name}}",
+        is_active=True,
+        created_by_user_id=manager.id,
+    )
+    session.add(template)
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    template_id = str(template.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/communications/templates/{template_id}/test-email",
+        json={"recipient_email": "reviewer@example.com"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 502
+    payload = response.get_json()
+    assert payload["error"] == "Test email could not be sent"
+    assert payload["details"]["diagnostic_type"] == "mail_transport"
+    assert payload["details"]["recipient_email"] == "reviewer@example.com"
+    assert payload["details"]["template_name"] == "Sponsor Test"
+    assert "Connection refused" in payload["details"]["failure_reason"]
+    assert "SMTP host, port, credentials, and network access" in payload["details"]["user_message"]
 
 
 def test_post_template_test_email_renders_sample_sponsor_gift_merge_fields(

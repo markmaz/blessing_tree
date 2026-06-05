@@ -605,7 +605,7 @@ function CampaignCommunicationHistoryPanel({ sends }: { sends: CommunicationSend
                   <td>{send.subject}</td>
                   <td>{formatTargetMode(send.targetMode)}</td>
                   <td>
-                    <span className={`campaign-template-badge ${send.status === 'SENT' ? '' : 'is-muted'}`}>
+                    <span className={`campaign-template-badge ${communicationSendStatusClass(send.status)}`}>
                       {send.deliveredCount}/{send.recipientCount} {send.status.toLowerCase()}
                     </span>
                     {send.failedCount > 0 ? (
@@ -706,7 +706,7 @@ function CampaignCommunicationHistoryDrawer({
                   ) : null}
                 </div>
                 <div className="campaign-template-history-drawer__recipient-status">
-                  <span className={`campaign-template-badge ${recipient.status === 'SENT' ? '' : 'is-muted'}`}>
+                  <span className={`campaign-template-badge ${communicationSendStatusClass(recipient.status)}`}>
                     {recipient.status.toLowerCase()}
                   </span>
                   <span className="text-muted small">{formatTargetMode(recipient.recipientType)}</span>
@@ -729,6 +729,13 @@ function formatTargetMode(value: string): string {
     .split('_')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+function communicationSendStatusClass(status: string): string {
+  if (status === 'SENT') return 'is-success';
+  if (status === 'PARTIAL') return 'is-warning';
+  if (status === 'FAILED') return 'is-danger';
+  return 'is-muted';
 }
 
 function formatCommunicationDate(value: string | null): string {
