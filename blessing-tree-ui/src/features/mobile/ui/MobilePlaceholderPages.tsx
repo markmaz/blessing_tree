@@ -5,8 +5,48 @@ import {
   buildMobileReceivePath,
   buildMobileSponsorsPath,
 } from '@/app/routes';
+import { useCampaigns } from '@/features/campaigns/model/campaignContext';
+import {
+  campaignCapabilities,
+  giftOperationsCapabilities,
+  hasAnyCampaignCapability,
+  hasCampaignCapability,
+} from '@/features/campaigns/model/campaignPermissions';
 
 export function MobileHomePage() {
+  const { selectedCampaign } = useCampaigns();
+  const access = selectedCampaign?.userAccess ?? null;
+  const quickLinks = [
+    {
+      to: buildMobileReceivePath(),
+      icon: 'bi-check2-square',
+      label: 'Receive',
+      detail: 'Find a recipient ID and mark gifts received.',
+      isVisible: hasAnyCampaignCapability(access, giftOperationsCapabilities),
+    },
+    {
+      to: buildMobileGiftsPath(),
+      icon: 'bi-search-heart',
+      label: 'Gifts',
+      detail: 'Search gifts, recipients, and sponsors.',
+      isVisible: hasCampaignCapability(access, campaignCapabilities.giftSearch),
+    },
+    {
+      to: buildMobileSponsorsPath(),
+      icon: 'bi-person-heart',
+      label: 'Sponsors',
+      detail: 'Look up sponsor commitments.',
+      isVisible: hasCampaignCapability(access, campaignCapabilities.sponsorsView),
+    },
+    {
+      to: buildMobileGroupsPath(),
+      icon: 'bi-people',
+      label: 'Groups',
+      detail: 'Find households and organizations.',
+      isVisible: hasCampaignCapability(access, campaignCapabilities.peopleView),
+    },
+  ].filter((link) => link.isVisible);
+
   return (
     <section className="mobile-page">
       <div className="mobile-page__hero">
@@ -19,30 +59,21 @@ export function MobileHomePage() {
       </div>
 
       <div className="mobile-quick-grid">
-        <MobileQuickLink
-          to={buildMobileReceivePath()}
-          icon="bi-check2-square"
-          label="Receive"
-          detail="Find a recipient ID and mark gifts received."
-        />
-        <MobileQuickLink
-          to={buildMobileGiftsPath()}
-          icon="bi-search-heart"
-          label="Gifts"
-          detail="Search gifts, recipients, and sponsors."
-        />
-        <MobileQuickLink
-          to={buildMobileSponsorsPath()}
-          icon="bi-person-heart"
-          label="Sponsors"
-          detail="Look up sponsor commitments."
-        />
-        <MobileQuickLink
-          to={buildMobileGroupsPath()}
-          icon="bi-people"
-          label="Groups"
-          detail="Find households and organizations."
-        />
+        {quickLinks.length > 0 ? (
+          quickLinks.map((link) => (
+            <MobileQuickLink
+              key={link.to}
+              to={link.to}
+              icon={link.icon}
+              label={link.label}
+              detail={link.detail}
+            />
+          ))
+        ) : (
+          <div className="mobile-alert mobile-scan-notice">
+            No mobile sections are available for your current campaign role.
+          </div>
+        )}
       </div>
     </section>
   );

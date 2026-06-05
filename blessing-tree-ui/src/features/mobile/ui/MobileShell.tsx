@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import {
@@ -101,7 +101,11 @@ export function MobileShell() {
         <Outlet />
       </main>
 
-      <nav className="mobile-shell__tabs" aria-label="Mobile sections">
+      <nav
+        className="mobile-shell__tabs"
+        aria-label="Mobile sections"
+        style={{ '--mobile-tab-count': Math.max(visibleTabs.length, 1) } as CSSProperties}
+      >
         {visibleTabs.length > 0 ? (
           visibleTabs.map((tab) => (
             <NavLink
