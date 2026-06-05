@@ -28,6 +28,7 @@ import { CampaignPeopleRecipientTable } from '@/features/campaigns/ui/CampaignPe
 import { CampaignPeopleGroupDrawer } from '@/features/campaigns/ui/CampaignPeopleGroupDrawer';
 import { CampaignPeopleRecipientDrawer } from '@/features/campaigns/ui/CampaignPeopleRecipientDrawer';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
 import type { ReportExportPayload } from '@/features/reports/model/reportExport';
@@ -258,27 +259,19 @@ export function CampaignPeopleWorkspace({
     <section className="campaign-page-stack">
       {showHero ? (
         <div className="campaign-hero-card mb-4">
-          <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
-            <div>
-              <div className="campaign-chip-row mb-3">
-                <span className="campaign-chip campaign-chip-muted">
-                  {campaignName}
-                </span>
-                <span className="campaign-chip campaign-chip-muted">
-                  People
-                </span>
+          <WorkspacePageHeader
+            title="People"
+            description="Manage households, organizations, contacts, people, and wishlists for this campaign."
+            chips={
+              <>
+                <span className="campaign-chip campaign-chip-muted">{campaignName}</span>
+                <span className="campaign-chip campaign-chip-muted">People</span>
                 {heroContextLabel ? (
-                  <span className="campaign-chip campaign-chip-muted">
-                    {heroContextLabel}
-                  </span>
+                  <span className="campaign-chip campaign-chip-muted">{heroContextLabel}</span>
                 ) : null}
-              </div>
-              <h1 className="h3 mb-1">People</h1>
-              <p className="text-muted mb-0">
-                Manage households, organizations, contacts, people, and wishlists for this campaign.
-              </p>
-            </div>
-          </div>
+              </>
+            }
+          />
         </div>
       ) : null}
 

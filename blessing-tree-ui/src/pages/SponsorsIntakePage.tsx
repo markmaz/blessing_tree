@@ -3,6 +3,7 @@ import { canManageSponsors } from '@/features/campaigns/model/campaignPermission
 import { useSponsorWorkspaceContext } from '@/features/campaigns/model/sponsorWorkspaceContext';
 import { formatShortDate, toSponsorStatusLabel } from '@/features/campaigns/model/campaignSponsorWorkspacePresentation';
 import { CampaignSponsorDrawer } from '@/features/campaigns/ui/CampaignSponsorDrawer';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import '@/features/campaigns/ui/campaignSponsors.css';
 
 export function SponsorsIntakePage() {
@@ -72,12 +73,10 @@ export function SponsorsIntakePage() {
         </div>
       ) : null}
 
-      <div>
-        <h1 className="h3 mb-1">Sponsors Intake</h1>
-        <p className="text-muted mb-0">
-          Add staff-entered sponsors quickly, then return to the directory for broader maintenance and reporting.
-        </p>
-      </div>
+      <WorkspacePageHeader
+        title="Sponsors Intake"
+        description="Add staff-entered sponsors quickly, then return to the directory for broader maintenance and reporting."
+      />
 
       <div className="campaign-people-intake-grid">
         <button
