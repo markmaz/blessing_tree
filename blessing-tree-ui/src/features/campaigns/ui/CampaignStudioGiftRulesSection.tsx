@@ -6,6 +6,7 @@ import type {
 } from '@/features/campaigns/model/campaignStudioTypes';
 import { FieldHelpButton } from '@/features/ask/ui/FieldHelpButton';
 import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudioSectionCard';
+import { DrawerActions } from '@/shared/ui/DrawerActions';
 
 interface CampaignStudioGiftRulesSectionProps {
   campaignId?: string | null;
@@ -145,12 +146,12 @@ export function CampaignStudioGiftRulesSection({
             <span className="form-check-label">Allow partial sponsor commitments</span>
           </label>
 
-          <div className="campaign-team-drawer__actions campaign-team-form-grid__span-2">
+          <DrawerActions className="campaign-team-form-grid__span-2">
             <button type="submit" className="btn btn-secondary btn-sm" disabled={!canEdit || isSaving}>
               <i className={`bi ${isSaving ? 'bi-arrow-repeat' : 'bi-floppy'} me-2`} aria-hidden="true" />
               Save Gift Rules
             </button>
-          </div>
+          </DrawerActions>
         </form>
       </CampaignStudioSectionCard>
     </div>

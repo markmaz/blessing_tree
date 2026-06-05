@@ -8,6 +8,7 @@ import {
   toRecipientStatusLabel,
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
 import type { CampaignRecipient } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
+import { ExpandCollapseControls } from '@/shared/ui/ExpandCollapseControls';
 import { TablePagination } from '@/shared/ui/TablePagination';
 import { clampTablePage } from '@/shared/ui/tablePaginationModel';
 
@@ -92,16 +93,7 @@ export function CampaignPeopleRecipientTable({
   return (
     <>
       {hasExpandableRecipients ? (
-        <div className="campaign-people-table-controls">
-          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={expandAll}>
-            <i className="bi bi-arrows-expand me-2" aria-hidden="true" />
-            Expand All
-          </button>
-          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={collapseAll}>
-            <i className="bi bi-arrows-collapse me-2" aria-hidden="true" />
-            Collapse All
-          </button>
-        </div>
+        <ExpandCollapseControls onExpandAll={expandAll} onCollapseAll={collapseAll} />
       ) : null}
       <div className="campaign-team-table-wrap">
         <table className="table campaign-team-table mb-0">

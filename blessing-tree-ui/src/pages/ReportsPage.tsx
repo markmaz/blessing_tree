@@ -9,6 +9,7 @@ import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import type { CampaignPeopleWorkspaceData } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 import { useCampaignPeopleWorkspace } from '@/features/campaigns/model/useCampaignPeopleWorkspace';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import '@/features/campaigns/ui/campaignPeople.css';
 
 function countWishlistsByStatus(
@@ -130,18 +131,17 @@ export function ReportsPage() {
 
   return (
     <section className="campaign-page-stack">
-      <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
-        <div>
-          <div className="campaign-chip-row mb-3">
+      <WorkspacePageHeader
+        title="People Reports"
+        description="Track intake coverage, wishlist readiness, and coordination health for the current campaign community."
+        chips={
+          <div className="campaign-chip-row">
             <span className="campaign-chip campaign-chip-muted">{selectedCampaign.name}</span>
             <span className="campaign-chip campaign-chip-muted">Reports</span>
           </div>
-          <h1 className="h3 mb-1">People Reports</h1>
-          <p className="text-muted mb-0">
-            Track intake coverage, wishlist readiness, and coordination health for the current campaign community.
-          </p>
-        </div>
-        <div className="d-flex flex-wrap gap-2">
+        }
+        actions={
+          <>
           <ReportExportActions payload={peopleReportExport} />
           <Link to={buildCampaignPeopleIntakePath(selectedCampaignId)} className="btn btn-outline-secondary btn-sm">
             <i className="bi bi-clipboard-plus me-2" aria-hidden="true" />
@@ -151,8 +151,9 @@ export function ReportsPage() {
             <i className="bi bi-people me-2" aria-hidden="true" />
             Open Directory
           </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="campaign-studio__stat-grid campaign-people-stats">
         <StatCard label="Total Groups" value={workspace.counts.groupCount} />

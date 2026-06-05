@@ -27,6 +27,7 @@ import {
 import { CampaignSponsorDrawer } from '@/features/campaigns/ui/CampaignSponsorDrawer';
 import { CampaignSponsorTable } from '@/features/campaigns/ui/CampaignSponsorTable';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
+import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
 import type { ReportExportPayload, ReportExportRow } from '@/features/reports/model/reportExport';
 
@@ -204,14 +205,11 @@ export function CampaignSponsorsWorkspace({
 
       <div className="campaign-team-workspace">
         <section className="campaign-team-workspace__section">
-          <div className="campaign-team-workspace__section-header">
-            <div>
-              <h2 className="h5 mb-1">Sponsors Directory</h2>
-              <p className="text-muted mb-0">
-                Search sponsors, review campaign participation, and open the full sponsor record for notes, gifts, and communication history.
-              </p>
-            </div>
-            <div className="d-flex flex-wrap justify-content-end gap-2">
+          <WorkspaceSectionHeader
+            title="Sponsors Directory"
+            description="Search sponsors, review campaign participation, and open the full sponsor record for notes, gifts, and communication history."
+            actions={
+              <>
               <ReportExportActions payload={sponsorDirectoryExport} formats={['pdf', 'excel']} />
               {canEditSponsors && showCreateActions ? (
                 <button
@@ -226,8 +224,9 @@ export function CampaignSponsorsWorkspace({
                   <span>Add Sponsor</span>
                 </button>
               ) : null}
-            </div>
-          </div>
+              </>
+            }
+          />
 
           <div className="campaign-team-table-toolbar">
             <label className="form-label campaign-team-toolbar__search mb-0">
@@ -253,14 +252,10 @@ export function CampaignSponsorsWorkspace({
         </section>
 
         <section className="campaign-team-workspace__section">
-          <div className="campaign-team-workspace__section-header">
-            <div>
-              <h2 className="h5 mb-1">Operational Snapshot</h2>
-              <p className="text-muted mb-0">
-                Quick visibility into public registrations, drop-off readiness, and sponsor follow-up needs.
-              </p>
-            </div>
-          </div>
+          <WorkspaceSectionHeader
+            title="Operational Snapshot"
+            description="Quick visibility into public registrations, drop-off readiness, and sponsor follow-up needs."
+          />
 
           <div className="row g-4">
             <div className="col-12 col-xl-6">

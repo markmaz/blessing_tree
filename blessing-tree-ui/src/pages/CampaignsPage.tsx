@@ -8,6 +8,7 @@ import { isAppAdminRole } from '@/features/campaigns/model/campaignPermissions';
 import type { CampaignUpsertInput } from '@/features/campaigns/model/campaignTypes';
 import { CampaignEditorForm } from '@/features/campaigns/ui/CampaignEditorForm';
 import { CampaignStatusBadge } from '@/features/campaigns/ui/CampaignStatusBadge';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 
 function formatWindow(startDate: string | null, endDate: string | null): string {
   if (!startDate && !endDate) {
@@ -99,18 +100,15 @@ export function CampaignsPage() {
 
   return (
     <section className="campaign-page-stack">
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-        <div>
-          <h1 className="h3 mb-1">Campaigns</h1>
-          <p className="text-muted mb-0">
-            Choose the operating season you want to work in, then open its
-            detail workspace.
-          </p>
-        </div>
-        <div className="campaign-chip campaign-chip-muted">
-          {campaigns.length} accessible campaign{campaigns.length === 1 ? '' : 's'}
-        </div>
-      </div>
+      <WorkspacePageHeader
+        title="Campaigns"
+        description="Choose the operating season you want to work in, then open its detail workspace."
+        actions={
+          <div className="campaign-chip campaign-chip-muted">
+            {campaigns.length} accessible campaign{campaigns.length === 1 ? '' : 's'}
+          </div>
+        }
+      />
 
       {isAppAdmin ? (
         <section className="campaign-surface-card">

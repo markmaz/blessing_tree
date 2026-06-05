@@ -28,6 +28,8 @@ import { CampaignPeopleRecipientTable } from '@/features/campaigns/ui/CampaignPe
 import { CampaignPeopleGroupDrawer } from '@/features/campaigns/ui/CampaignPeopleGroupDrawer';
 import { CampaignPeopleRecipientDrawer } from '@/features/campaigns/ui/CampaignPeopleRecipientDrawer';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
+import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
 import type { ReportExportPayload } from '@/features/reports/model/reportExport';
 
@@ -257,27 +259,19 @@ export function CampaignPeopleWorkspace({
     <section className="campaign-page-stack">
       {showHero ? (
         <div className="campaign-hero-card mb-4">
-          <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
-            <div>
-              <div className="campaign-chip-row mb-3">
-                <span className="campaign-chip campaign-chip-muted">
-                  {campaignName}
-                </span>
-                <span className="campaign-chip campaign-chip-muted">
-                  People
-                </span>
+          <WorkspacePageHeader
+            title="People"
+            description="Manage households, organizations, contacts, people, and wishlists for this campaign."
+            chips={
+              <>
+                <span className="campaign-chip campaign-chip-muted">{campaignName}</span>
+                <span className="campaign-chip campaign-chip-muted">People</span>
                 {heroContextLabel ? (
-                  <span className="campaign-chip campaign-chip-muted">
-                    {heroContextLabel}
-                  </span>
+                  <span className="campaign-chip campaign-chip-muted">{heroContextLabel}</span>
                 ) : null}
-              </div>
-              <h1 className="h3 mb-1">People</h1>
-              <p className="text-muted mb-0">
-                Manage households, organizations, contacts, people, and wishlists for this campaign.
-              </p>
-            </div>
-          </div>
+              </>
+            }
+          />
         </div>
       ) : null}
 
@@ -306,14 +300,11 @@ export function CampaignPeopleWorkspace({
 
       <div className="campaign-team-workspace">
         <section className="campaign-team-workspace__section">
-          <div className="campaign-team-workspace__section-header">
-            <div>
-              <h2 className="h5 mb-1">Households &amp; Organizations</h2>
-              <p className="text-muted mb-0">
-                Shared intake containers for parents, guardians, coordinators, staff contacts, and the people they represent.
-              </p>
-            </div>
-            <div className="d-flex flex-wrap justify-content-end gap-2">
+          <WorkspaceSectionHeader
+            title="Households & Organizations"
+            description="Shared intake containers for parents, guardians, coordinators, staff contacts, and the people they represent."
+            actions={
+              <>
               <ReportExportActions payload={groupDirectoryExport} formats={['pdf', 'excel']} />
               {canEditPeople && showCreateActions ? (
                 <>
@@ -343,8 +334,9 @@ export function CampaignPeopleWorkspace({
                   </button>
                 </>
               ) : null}
-            </div>
-          </div>
+              </>
+            }
+          />
 
           {programFilterOptions.length > 0 ? (
             <div className="campaign-program-filter-row" aria-label="Program filters">
@@ -405,14 +397,11 @@ export function CampaignPeopleWorkspace({
         </section>
 
         <section className="campaign-team-workspace__section">
-          <div className="campaign-team-workspace__section-header">
-            <div>
-              <h2 className="h5 mb-1">People</h2>
-              <p className="text-muted mb-0">
-                Each row is an actual gift recipient, with a campaign-specific wishlist and program context.
-              </p>
-            </div>
-            <div className="d-flex flex-wrap justify-content-end gap-2">
+          <WorkspaceSectionHeader
+            title="People"
+            description="Each row is an actual gift recipient, with a campaign-specific wishlist and program context."
+            actions={
+              <>
               <ReportExportActions payload={peopleDirectoryExport} formats={['pdf', 'excel']} />
               {canEditPeople && showCreateActions ? (
                 <button
@@ -428,8 +417,9 @@ export function CampaignPeopleWorkspace({
                   <span>Add Person</span>
                 </button>
               ) : null}
-            </div>
-          </div>
+              </>
+            }
+          />
 
           <div className="campaign-team-table-toolbar">
             <label className="form-label campaign-team-toolbar__search mb-0">

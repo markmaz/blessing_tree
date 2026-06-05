@@ -21,6 +21,7 @@ import { useCampaignStudio } from '@/features/campaigns/model/useCampaignStudio'
 import { CampaignStudioSectionCard } from '@/features/campaigns/ui/CampaignStudioSectionCard';
 import { CampaignEditorForm } from '@/features/campaigns/ui/CampaignEditorForm';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import { useAppFeatures } from '@/features/admin/model/appFeaturesContext';
 
 export function CampaignStudioPage() {
@@ -87,15 +88,11 @@ export function CampaignStudioPage() {
 
   return (
     <section>
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-        <div>
-          <h1 className="h3 mb-1">Campaign Studio</h1>
-          <p className="text-muted mb-0">
-            Build the campaign in one visible workspace with cards, section
-            rails, and an AI planning panel.
-          </p>
-        </div>
-        <div className="d-flex flex-wrap gap-2">
+      <WorkspacePageHeader
+        title="Campaign Studio"
+        description="Build the campaign in one visible workspace with cards, section rails, and an AI planning panel."
+        actions={
+          <div className="d-flex flex-wrap gap-2">
           {campaignAiEnabled ? (
             <button
               type="button"
@@ -130,7 +127,8 @@ export function CampaignStudioPage() {
             <span>Flyer Builder</span>
           </Link>
         </div>
-      </div>
+        }
+      />
 
       <div className="campaign-studio">
       <CampaignStudioRail

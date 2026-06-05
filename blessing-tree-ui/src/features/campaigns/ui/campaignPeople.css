@@ -117,13 +117,6 @@
   box-shadow: 0 0.35rem 0.8rem rgba(42, 78, 60, 0.16);
 }
 
-.campaign-people-table-controls {
-  display: flex;
-  justify-content: flex-start;
-  gap: 0.5rem;
-  padding-bottom: 0.75rem;
-}
-
 .campaign-people-metadata-details {
   border: 1px solid rgba(226, 218, 205, 0.9);
   border-radius: 0.95rem;

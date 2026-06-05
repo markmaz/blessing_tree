@@ -7,6 +7,7 @@ import {
 } from '@/features/gifts/api/giftSearchApi';
 import type { GiftScanAction, GiftScanLookup } from '@/features/gifts/model/giftSearchTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import '@/features/campaigns/ui/campaignStudioTeam.css';
 import '@/features/gifts/ui/giftWorkflow.css';
 
@@ -72,13 +73,11 @@ export function GiftScanPage() {
 
   return (
     <div className="campaign-studio-page gift-workflow-page">
-      <div className="campaign-studio-page__header">
-        <div>
-          <div className="text-uppercase small text-muted fw-semibold mb-1">Gift Scan</div>
-          <h1 className="h3 mb-1">{labelCode}</h1>
-          <p className="text-muted mb-0">{selectedCampaign?.name ?? 'Selected campaign'} label workflow.</p>
-        </div>
-      </div>
+      <WorkspacePageHeader
+        title={labelCode}
+        description={`${selectedCampaign?.name ?? 'Selected campaign'} label workflow.`}
+        chips={<span className="campaign-chip campaign-chip-muted">Gift Scan</span>}
+      />
 
       {message ? <div className="alert alert-success" role="status">{message}</div> : null}
       {error ? <div className="alert alert-danger" role="alert">{error}</div> : null}

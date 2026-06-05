@@ -5,6 +5,7 @@ import {
 } from '@/features/account/api/accountApi';
 import type { AccountSettings } from '@/features/account/model/accountTypes';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 
 const defaultSettings: AccountSettings = {
   timezone: 'America/Chicago',
@@ -71,14 +72,10 @@ export function AccountSettingsPage() {
 
   return (
     <div className="vstack gap-4">
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <div>
-          <h1 className="h3 mb-1">Settings</h1>
-          <p className="text-muted mb-0">
-            Manage account-level preferences for your Blessing Tree session.
-          </p>
-        </div>
-      </div>
+      <WorkspacePageHeader
+        title="Settings"
+        description="Manage account-level preferences for your Blessing Tree session."
+      />
 
       {success ? (
         <AutoDismissAlert

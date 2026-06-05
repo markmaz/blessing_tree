@@ -70,3 +70,86 @@ body {
   font-size: 0.88rem;
   line-height: 1.45;
 }
+
+.app-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.app-page-header__copy {
+  min-width: 0;
+}
+
+.app-page-header__chips {
+  margin-bottom: 1rem;
+}
+
+.app-page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.app-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.app-section-header__copy {
+  min-width: 0;
+}
+
+.app-section-header__meta {
+  margin-bottom: 0.45rem;
+}
+
+.app-section-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.app-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.app-expand-collapse-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding-bottom: 0.9rem;
+}
+
+@media (max-width: 767.98px) {
+  .app-page-header {
+    flex-direction: column;
+  }
+
+  .app-page-header__actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .app-section-header {
+    flex-direction: column;
+  }
+
+  .app-section-header__actions,
+  .app-export-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+}

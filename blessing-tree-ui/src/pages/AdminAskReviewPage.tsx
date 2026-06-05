@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchAdminAskReview, markAdminAskPromptReviewed } from '@/features/admin/api/adminApi';
 import type { AdminAskReviewLog } from '@/features/admin/model/adminTypes';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 
 export function AdminAskReviewPage() {
   const [logs, setLogs] = useState<AdminAskReviewLog[]>([]);
@@ -73,18 +74,17 @@ export function AdminAskReviewPage() {
 
   return (
     <section className="vstack gap-4">
-      <div className="campaign-studio-page__header">
-        <div>
-          <div className="campaign-chip-row mb-3">
+      <WorkspacePageHeader
+        title="Ask Review"
+        description="Review failed, low-confidence, and negatively rated Ask Blessing Tree answers."
+        chips={
+          <>
             <span className="campaign-chip campaign-chip-muted">Admin</span>
             <span className="campaign-chip campaign-chip-muted">Ask Blessing Tree</span>
-          </div>
-          <h1 className="h3 mb-1">Ask Review</h1>
-          <p className="text-muted mb-0">
-            Review failed, low-confidence, and negatively rated Ask Blessing Tree answers.
-          </p>
-        </div>
-        <div className="btn-group" role="group" aria-label="Ask review filter">
+          </>
+        }
+        actions={
+          <div className="btn-group" role="group" aria-label="Ask review filter">
           <button
             type="button"
             className={`btn btn-sm ${reviewOnly ? 'btn-primary' : 'btn-outline-secondary'}`}
@@ -100,7 +100,8 @@ export function AdminAskReviewPage() {
             All Prompts
           </button>
         </div>
-      </div>
+        }
+      />
 
       <div className="row g-3">
         <AskReviewStat label="Negative Feedback" value={stats.negativeCount} />

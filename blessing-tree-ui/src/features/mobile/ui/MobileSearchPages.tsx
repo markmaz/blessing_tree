@@ -499,6 +499,16 @@ function MobileSearchForm({
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
         />
+        {value ? (
+          <button
+            type="button"
+            className="mobile-search-card__clear"
+            onClick={() => onChange('')}
+            aria-label={`Clear ${label.toLowerCase()}`}
+          >
+            <i className="bi bi-x-lg" aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
       <button type="submit" className="mobile-primary-action" disabled={isSearching || !value.trim()}>
         {isSearching ? 'Searching...' : 'Search'}

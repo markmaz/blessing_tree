@@ -27,6 +27,8 @@ import {
 } from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
+import { DrawerActions } from '@/shared/ui/DrawerActions';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 
 interface CampaignPeopleRecipientDrawerProps {
   campaignId?: string | null;
@@ -489,7 +491,7 @@ export function CampaignPeopleRecipientDrawer({
         />
       ) : null}
       {recipient ? (
-        <div className="campaign-team-drawer__actions mb-3">
+        <DrawerActions className="mb-3">
           <button
             type="button"
             className="btn btn-secondary btn-sm"
@@ -513,11 +515,11 @@ export function CampaignPeopleRecipientDrawer({
               {nextRecipientButtonLabel}
             </button>
           ) : null}
-        </div>
+        </DrawerActions>
       ) : null}
       <div className="campaign-team-drawer__stack">
-        <section className="campaign-team-drawer__section">
-          <div className="campaign-team-drawer__section-header">
+        <DrawerSection
+          header={
             <div className="campaign-people-section-heading">
               <button
                 type="button"
@@ -552,7 +554,8 @@ export function CampaignPeopleRecipientDrawer({
                 </p>
               </div>
             </div>
-          </div>
+          }
+        >
 
           {recipientError ? <div className="alert alert-danger py-2" role="alert">{recipientError}</div> : null}
           {!recipient && possibleDuplicateRecipients.length > 0 ? (
@@ -1051,7 +1054,7 @@ export function CampaignPeopleRecipientDrawer({
             </div>
           )}
 
-          <div className="campaign-team-drawer__actions mt-3">
+          <DrawerActions className="mt-3">
             {recipient ? (
               <button
                 type="button"
@@ -1074,11 +1077,11 @@ export function CampaignPeopleRecipientDrawer({
               <i className="bi bi-floppy me-2" aria-hidden="true" />
               {recipient ? `Save ${recipientRecordLabel}` : `Create ${recipientRecordLabel}`}
             </button>
-          </div>
-        </section>
+          </DrawerActions>
+        </DrawerSection>
 
-        <section className="campaign-team-drawer__section">
-          <div className="campaign-team-drawer__section-header">
+        <DrawerSection
+          header={
             <div className="campaign-people-section-heading">
               <button
                 type="button"
@@ -1097,7 +1100,8 @@ export function CampaignPeopleRecipientDrawer({
                 <p className="text-muted mb-0">Keep one gift wishlist per person, with structured items ready for sponsorship and fulfillment.</p>
               </div>
             </div>
-          </div>
+          }
+        >
 
           {!recipient ? (
             <div className="campaign-studio__empty-note">Save the person before editing the wishlist.</div>
@@ -1221,7 +1225,7 @@ export function CampaignPeopleRecipientDrawer({
                 )}
 
                 {onStartAnotherRecipient ? (
-                  <div className="campaign-team-drawer__actions mt-3">
+                  <DrawerActions className="mt-3">
                     <button
                       type="button"
                       className="btn btn-outline-secondary btn-sm"
@@ -1234,7 +1238,7 @@ export function CampaignPeopleRecipientDrawer({
                       <i className="bi bi-person-plus me-2" aria-hidden="true" />
                       {nextRecipientButtonLabel}
                     </button>
-                  </div>
+                  </DrawerActions>
                 ) : null}
               </div>
             </>
@@ -1256,7 +1260,7 @@ export function CampaignPeopleRecipientDrawer({
               </div>
             </div>
           )}
-        </section>
+        </DrawerSection>
       </div>
       {recipient ? (
         <details
@@ -1554,7 +1558,7 @@ export function CampaignPeopleRecipientDrawer({
                   ) : null}
                 </div>
 
-                <div className="campaign-team-drawer__actions mt-3">
+                <DrawerActions className="mt-3">
                   {editingItemId ? (
                     <button
                       type="button"
@@ -1588,7 +1592,7 @@ export function CampaignPeopleRecipientDrawer({
                     <i className={`bi ${editingItemId ? 'bi-floppy' : 'bi-plus-square'} me-2`} aria-hidden="true" />
                     {editingItemId ? 'Save Item' : 'Add Item'}
                   </button>
-                </div>
+                </DrawerActions>
               </div>
             </div>,
             document.body

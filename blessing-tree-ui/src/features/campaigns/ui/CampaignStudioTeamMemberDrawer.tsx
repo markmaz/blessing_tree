@@ -14,6 +14,8 @@ import { CampaignStudioTeamMemberAccessRolesSection } from '@/features/campaigns
 import { CampaignStudioTeamMemberAppAccessSection } from '@/features/campaigns/ui/CampaignStudioTeamMemberAppAccessSection';
 import { CampaignStudioTeamMemberTeamsSection } from '@/features/campaigns/ui/CampaignStudioTeamMemberTeamsSection';
 import { InlineHelpPopover } from '@/shared/ui/InlineHelpPopover';
+import { DrawerActions } from '@/shared/ui/DrawerActions';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 
 interface CampaignStudioTeamMemberDrawerProps {
   isOpen: boolean;
@@ -112,15 +114,10 @@ export function CampaignStudioTeamMemberDrawer({
       width="wide"
     >
       <form className="campaign-team-drawer__stack" onSubmit={handleSubmit}>
-        <section className="campaign-team-drawer__section">
-          <div className="campaign-team-drawer__section-header">
-            <div>
-              <h4 className="h6 mb-1">Profile</h4>
-              <p className="text-muted mb-0">
-                Campaign people do not need app access to exist in the roster.
-              </p>
-            </div>
-          </div>
+        <DrawerSection
+          title="Profile"
+          description="Campaign people do not need app access to exist in the roster."
+        >
           <div className="campaign-team-form-grid">
             <label className="form-label">
               Display Name
@@ -215,7 +212,7 @@ export function CampaignStudioTeamMemberDrawer({
               />
             </label>
           </div>
-        </section>
+        </DrawerSection>
 
         {member ? (
           <>
@@ -254,7 +251,7 @@ export function CampaignStudioTeamMemberDrawer({
           </>
         ) : null}
 
-        <div className="campaign-team-drawer__actions">
+        <DrawerActions>
           <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
             <i className="bi bi-x-lg me-2" aria-hidden="true" />
             Cancel
@@ -268,7 +265,7 @@ export function CampaignStudioTeamMemberDrawer({
               {isSaving ? 'Saving...' : member ? 'Save Person' : 'Create Person'}
             </button>
           ) : null}
-        </div>
+        </DrawerActions>
       </form>
     </CampaignStudioDrawer>
   );

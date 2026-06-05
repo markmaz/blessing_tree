@@ -19,7 +19,7 @@ export function ReportExportActions({
   const hasRows = payload.sheets.some((sheet) => sheet.rows.length > 0);
   const isDisabled = disabled || !hasRows;
   return (
-    <div className="d-flex flex-wrap gap-2">
+    <div className="app-export-actions" aria-label="Report export actions">
       {formats.includes('pdf') ? (
         <button
           type="button"

@@ -11,6 +11,7 @@ import type {
 } from '@/features/admin/model/adminTypes';
 import { AdminWorkspaceDrawer } from '@/features/admin/ui/AdminWorkspaceDrawer';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import '@/features/admin/ui/adminUsers.css';
 import '@/features/admin/ui/adminCampaignOperations.css';
 
@@ -188,18 +189,17 @@ export function AdminActivityLogPage() {
 
   return (
     <section className="admin-campaign-ops">
-      <div className="campaign-studio-page__header">
-        <div>
-          <div className="campaign-chip-row mb-3">
+      <WorkspacePageHeader
+        title="Activity Log"
+        description="Review recent changes across users, campaigns, people, sponsors, gifts, and communications."
+        chips={
+          <>
             <span className="campaign-chip campaign-chip-muted">Admin</span>
             <span className="campaign-chip campaign-chip-muted">Activity Log</span>
-          </div>
-          <h1 className="h3 mb-1">Activity Log</h1>
-          <p className="text-muted mb-0">
-            Review recent changes across users, campaigns, people, sponsors, gifts, and communications.
-          </p>
-        </div>
-        <div className="d-flex flex-wrap gap-2">
+          </>
+        }
+        actions={
+          <div className="d-flex flex-wrap gap-2">
           <ReportExportActions payload={exportPayload} disabled={isLoading || events.length === 0} />
           <button
             type="button"
@@ -211,7 +211,8 @@ export function AdminActivityLogPage() {
             Refresh
           </button>
         </div>
-      </div>
+        }
+      />
 
       <div className="content-card">
         <div className="row g-3 align-items-end">

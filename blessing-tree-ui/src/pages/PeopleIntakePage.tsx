@@ -4,6 +4,7 @@ import type { RecipientGroupType } from '@/features/campaigns/model/campaignPeop
 import { usePeopleWorkspaceContext } from '@/features/campaigns/model/peopleWorkspaceContext';
 import { CampaignPeopleGroupDrawer } from '@/features/campaigns/ui/CampaignPeopleGroupDrawer';
 import { CampaignPeopleRecipientDrawer } from '@/features/campaigns/ui/CampaignPeopleRecipientDrawer';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import '@/features/campaigns/ui/campaignPeople.css';
 
 export function PeopleIntakePage() {
@@ -83,12 +84,10 @@ export function PeopleIntakePage() {
         </div>
       ) : null}
 
-      <div>
-        <h1 className="h3 mb-1">People Intake</h1>
-        <p className="text-muted mb-0">
-          Choose the type of intake you are entering, then stay in that flow to add children or adults and their wishlists.
-        </p>
-      </div>
+      <WorkspacePageHeader
+        title="People Intake"
+        description="Choose the type of intake you are entering, then stay in that flow to add children or adults and their wishlists."
+      />
 
       <div className="campaign-people-intake-grid">
         <button
