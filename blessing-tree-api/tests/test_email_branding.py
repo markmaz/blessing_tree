@@ -109,12 +109,12 @@ def test_campaign_template_renderer_keeps_dropoff_qr_image_compact() -> None:
         subject_template="Drop-off",
         body_template=body_template,
         merge_fields={
-            "gift.dropoff_qr_image": "data:image/png;base64,qr",
+            "gift.dropoff_qr_image": "https://example.com/api/v1/campaigns/mobile/dropoff-qr/demo-token.png",
             "location.map_url": "https://example.com/map.png",
         },
     )
 
-    assert 'src="data:image/png;base64,qr"' in html
+    assert 'src="https://example.com/api/v1/campaigns/mobile/dropoff-qr/demo-token.png"' in html
     assert "width:180px;max-width:180px;height:auto;border-radius:8px;display:block;" in html
     assert 'src="https://example.com/map.png"' in html
     assert "max-width:100%;border-radius:12px;" in html

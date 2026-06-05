@@ -13,7 +13,7 @@ from app.features.campaigns.service import CampaignService
 from app.features.campaigns.recipient_resolver import CampaignRecipientResolver, ResolvedCampaignRecipient
 from app.features.campaigns.studio_constants import COMMUNICATION_AUDIENCE_SPONSOR
 from app.features.campaigns.template_renderer import CampaignTemplateRenderer
-from app.features.gifts.sponsor_dropoff_service import SponsorDropoffService, qr_data_uri
+from app.features.gifts.sponsor_dropoff_service import SponsorDropoffService, build_dropoff_qr_url
 from app.models.campaign_communication_send import (
     COMMUNICATION_SEND_STATUS_FAILED,
     COMMUNICATION_SEND_STATUS_PARTIAL,
@@ -498,6 +498,8 @@ class CampaignCommunicationSendService:
             sponsorship=sponsorship,
             created_by_user_id=created_by_user_id,
         )
+        dropoff_token = dropoff_url.rstrip("/").rsplit("/", 1)[-1]
+        dropoff_qr_url = build_dropoff_qr_url(dropoff_token)
         recipient_ids = _dropoff_recipient_ids(gift_rows)
         recipient_summary = _dropoff_recipient_summary(gift_rows)
 
@@ -520,7 +522,8 @@ class CampaignCommunicationSendService:
             "gift.due_date": due_date,
             "gift.dropoff_instructions": "",
             "gift.dropoff_qr_url": dropoff_url,
-            "gift.dropoff_qr_image": qr_data_uri(dropoff_url),
+            "gift.dropoff_qr_image": dropoff_qr_url,
+            "gift.dropoff_qr_image_url": dropoff_qr_url,
             "gift.dropoff_recipient_ids": recipient_ids,
             "gift.dropoff_recipient_summary": recipient_summary,
         }

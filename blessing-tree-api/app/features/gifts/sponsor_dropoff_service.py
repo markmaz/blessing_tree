@@ -219,18 +219,28 @@ def build_dropoff_url(token: str) -> str:
     return f"{_frontend_base()}/mobile/receive/dropoff/{token}"
 
 
-def qr_data_uri(value: str) -> str:
+def build_dropoff_qr_url(token: str) -> str:
+    return f"{_frontend_base()}/api/v1/campaigns/mobile/dropoff-qr/{token}.png"
+
+
+def qr_png_bytes(value: str) -> bytes:
     if not value:
-        return ""
+        return b""
     try:
         import qrcode
     except ImportError:
-        return ""
+        return b""
 
     image = qrcode.make(value)
     buffer = BytesIO()
     image.save(buffer, format="PNG")
-    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return buffer.getvalue()
+
+
+def qr_data_uri(value: str) -> str:
+    if not value:
+        return ""
+    encoded = base64.b64encode(qr_png_bytes(value)).decode("ascii")
     return f"data:image/png;base64,{encoded}"
 
 

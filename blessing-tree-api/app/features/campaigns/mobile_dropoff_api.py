@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from flask import g, request
+from flask import Response, g, request
 from flask_restx import Resource
 
 from app.db import SessionLocal
 from app.features.campaigns import campaign_ns
-from app.features.gifts.sponsor_dropoff_service import SponsorDropoffService
+from app.features.gifts.sponsor_dropoff_service import SponsorDropoffService, build_dropoff_url, qr_png_bytes
 from app.features.rbac.decorators import require_campaign_capability
 
 _sponsor_dropoff_service = SponsorDropoffService()
@@ -25,3 +25,19 @@ class CampaignMobileDropoffResource(Resource):
             )
             db.commit()
             return payload, 200
+
+
+@campaign_ns.route("/mobile/dropoff-qr/<string:token>.png")
+class CampaignMobileDropoffQrResource(Resource):
+    def get(self, token: str):
+        image_bytes = qr_png_bytes(build_dropoff_url(token))
+        if not image_bytes:
+            return {"error": "QR code could not be generated"}, 500
+        return Response(
+            image_bytes,
+            mimetype="image/png",
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "Content-Disposition": 'inline; filename="sponsor-dropoff-qr.png"',
+            },
+        )

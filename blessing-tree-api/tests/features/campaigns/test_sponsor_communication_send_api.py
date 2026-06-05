@@ -66,6 +66,10 @@ def test_preview_sponsor_communication_renders_gift_merge_fields(app, monkeypatc
     assert payload["subject"] == "Reminder: gifts for Blessing Tree 2026"
     assert payload["merge_fields"]["gift.commitment_count"] == "2"
     assert payload["merge_fields"]["gift.dropoff_qr_url"].startswith("http://localhost:5173/mobile/receive/dropoff/")
+    assert payload["merge_fields"]["gift.dropoff_qr_image"].startswith(
+        "http://localhost:5173/api/v1/campaigns/mobile/dropoff-qr/"
+    )
+    assert payload["merge_fields"]["gift.dropoff_qr_image_url"] == payload["merge_fields"]["gift.dropoff_qr_image"]
     assert payload["merge_fields"]["gift.dropoff_recipient_summary"]
     assert "Ava Public: Winter coat" in payload["text"]
     assert "Noah Display: Board game" in payload["text"]
@@ -200,6 +204,17 @@ def test_mobile_dropoff_token_resolves_committed_gifts(app, monkeypatch) -> None
     assert scan_event.sponsor_id == sponsor.id
     assert scan_event.scanned_by_user_id == manager.id
     assert scan_event.outcome == "RESOLVED"
+
+
+def test_mobile_dropoff_qr_endpoint_returns_png(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+
+    client = app.test_client()
+    response = client.get("/api/v1/campaigns/mobile/dropoff-qr/test-token.png")
+
+    assert response.status_code == 200
+    assert response.content_type == "image/png"
+    assert response.data.startswith(b"\x89PNG")
 
 
 def test_send_rejects_non_sponsor_template(app, monkeypatch) -> None:
