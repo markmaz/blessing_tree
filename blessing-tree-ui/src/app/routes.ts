@@ -11,6 +11,11 @@ export const routes = {
   PUBLIC_CAMPAIGN_SPONSOR: '/public/campaigns/:publicSlug/sponsor',
   PUBLIC_CAMPAIGN_SPONSOR_VERIFY: '/public/campaigns/:publicSlug/sponsor/verify',
   PUBLIC_GIFT_SCAN: '/public/gifts/scan/:labelCode',
+  MOBILE: '/mobile',
+  MOBILE_GIFTS: '/mobile/gifts',
+  MOBILE_RECEIVE: '/mobile/receive',
+  MOBILE_SPONSORS: '/mobile/sponsors',
+  MOBILE_GROUPS: '/mobile/groups',
   HOME: '/',
   DASHBOARD: '/',
   CAMPAIGNS: '/campaigns',
@@ -128,4 +133,24 @@ export function buildPublicCampaignSponsorPath(publicSlug: string): string {
 
 export function buildPublicCampaignSponsorVerifyPath(publicSlug: string): string {
   return `/public/campaigns/${publicSlug}/sponsor/verify`;
+}
+
+export function buildMobilePath(): string {
+  return '/mobile';
+}
+
+export function buildMobileGiftsPath(): string {
+  return '/mobile/gifts';
+}
+
+export function buildMobileReceivePath(): string {
+  return '/mobile/receive';
+}
+
+export function buildMobileSponsorsPath(): string {
+  return '/mobile/sponsors';
+}
+
+export function buildMobileGroupsPath(): string {
+  return '/mobile/groups';
 }

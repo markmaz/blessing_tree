@@ -4,7 +4,22 @@ Last updated: 2026-06-05
 
 ## Status
 
-Planned. No implementation has been started.
+Phase 1 implemented on branch `codex/mobile-operator-mode`.
+
+Completed:
+
+- `/mobile` route namespace
+- separate protected mobile shell
+- Blessing Tree-styled mobile header and bottom tabs
+- placeholder pages for Gifts, Receive, Sponsors, and Groups
+- full-site escape hatch preference write
+
+Not yet implemented:
+
+- phone auto-redirect guard
+- real mobile search APIs/UI
+- receive-by-recipient-ID workflow
+- commit/release/receive actions
 
 ## Purpose
 

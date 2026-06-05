@@ -38,6 +38,14 @@ import { GiftOperationsPage } from '@/pages/GiftOperationsPage';
 import { GiftPoolPage } from '@/pages/GiftPoolPage';
 import { GiftSearchPage } from '@/pages/GiftSearchPage';
 import { GiftWorkflowReportPage } from '@/pages/GiftWorkflowReportPage';
+import {
+  MobileGiftsPage,
+  MobileGroupsPage,
+  MobileHomePage,
+  MobileReceivePage,
+  MobileSponsorsPage,
+} from '@/features/mobile/ui/MobilePlaceholderPages';
+import { MobileShell } from '@/features/mobile/ui/MobileShell';
 import { PeopleDirectoryPage } from '@/pages/PeopleDirectoryPage';
 import { PeopleIntakePage } from '@/pages/PeopleIntakePage';
 import { PeoplePage } from '@/pages/PeoplePage';
@@ -81,6 +89,21 @@ export function App() {
               <Route path={routes.PUBLIC_CAMPAIGN_SPONSOR_VERIFY} element={<PublicSponsorVerifyPage />} />
               <Route path={routes.PUBLIC_GIFT_SCAN} element={<PublicGiftScanPage />} />
               <Route path={routes.SCAN_GIFT} element={<PublicGiftScanPage />} />
+
+              <Route
+                path={`${routes.MOBILE}/*`}
+                element={
+                  <ProtectedRoute>
+                    <MobileShell />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<MobileHomePage />} />
+                <Route path="gifts" element={<MobileGiftsPage />} />
+                <Route path="receive" element={<MobileReceivePage />} />
+                <Route path="sponsors" element={<MobileSponsorsPage />} />
+                <Route path="groups" element={<MobileGroupsPage />} />
+              </Route>
 
               <Route
                 path={routes.HOME}
