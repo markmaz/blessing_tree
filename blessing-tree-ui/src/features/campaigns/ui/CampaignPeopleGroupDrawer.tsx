@@ -24,6 +24,7 @@ import { InlineConfirmAction } from '@/shared/ui/InlineConfirmAction';
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 import { DrawerActions } from '@/shared/ui/DrawerActions';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 
 interface CampaignPeopleGroupDrawerProps {
   campaignId?: string | null;
@@ -554,7 +555,7 @@ export function CampaignPeopleGroupDrawer({
       ) : null}
       <div className="campaign-team-drawer__stack">
         {group && (canAddDirectRecipient || onAddFamilyToOrganization) ? (
-          <section className="campaign-team-drawer__section campaign-people-quick-actions">
+          <DrawerSection className="campaign-people-quick-actions">
             <div>
               <h4 className="h6 mb-1">Quick Actions</h4>
               <p className="text-muted mb-0">
@@ -592,11 +593,11 @@ export function CampaignPeopleGroupDrawer({
                 </button>
               ) : null}
             </div>
-          </section>
+          </DrawerSection>
         ) : null}
 
-        <section className="campaign-team-drawer__section">
-          <div className="campaign-team-drawer__section-header">
+        <DrawerSection
+          header={
             <div className="campaign-people-section-heading">
               <button
                 type="button"
@@ -621,7 +622,8 @@ export function CampaignPeopleGroupDrawer({
                 </p>
               </div>
             </div>
-          </div>
+          }
+        >
 
           {groupError ? <div className="alert alert-danger py-2" role="alert">{groupError}</div> : null}
           {!group && possibleDuplicateGroups.length > 0 ? (
@@ -1176,18 +1178,14 @@ export function CampaignPeopleGroupDrawer({
               {groupSaveButtonLabel}
             </button>
           </DrawerActions>
-        </section>
+        </DrawerSection>
 
         {group?.groupType === 'ORGANIZATION' ? (
-          <section className="campaign-team-drawer__section">
-            <div className="campaign-team-drawer__section-header">
-              <div>
-                <h4 className="h6 mb-1">Families</h4>
-                <p className="text-muted mb-0">
-                  Link families that were referred by or managed through this organization. Children still stay on the family record.
-                </p>
-              </div>
-              {onAddFamilyToOrganization ? (
+          <DrawerSection
+            title="Families"
+            description="Link families that were referred by or managed through this organization. Children still stay on the family record."
+            actions={
+              onAddFamilyToOrganization ? (
                 <button
                   type="button"
                   className="btn btn-outline-secondary btn-sm"
@@ -1197,8 +1195,9 @@ export function CampaignPeopleGroupDrawer({
                   <i className="bi bi-house-heart me-2" aria-hidden="true" />
                   Add Family
                 </button>
-              ) : null}
-            </div>
+              ) : null
+            }
+          >
 
             <div className="campaign-team-inline-list">
               {linkedFamilyGroups.length === 0 ? (
@@ -1235,26 +1234,20 @@ export function CampaignPeopleGroupDrawer({
                 ))
               )}
             </div>
-          </section>
+          </DrawerSection>
         ) : null}
 
         {group && canAddDirectRecipient ? (
-          <section className="campaign-team-drawer__section">
-            <div className="campaign-team-drawer__section-header">
-              <div>
-                <h4 className="h6 mb-1">
-                  {group.groupType === 'HOUSEHOLD'
-                    ? 'Children'
-                    : groupRecipientLabelPlural}
-                </h4>
-                <p className="text-muted mb-0">
-                  {group.groupType === 'HOUSEHOLD'
-                    ? 'Capture the children in this family, then open each child to add or refine their wishlist.'
-                    : groupRecipientLabel === 'Child'
-                      ? 'Capture the children in this program, then open each child to add or refine their wishlist.'
-                      : 'Capture the adults in this program, then open each person to add or refine their wishlist and optional direct contact details.'}
-                </p>
-              </div>
+          <DrawerSection
+            title={group.groupType === 'HOUSEHOLD' ? 'Children' : groupRecipientLabelPlural}
+            description={
+              group.groupType === 'HOUSEHOLD'
+                ? 'Capture the children in this family, then open each child to add or refine their wishlist.'
+                : groupRecipientLabel === 'Child'
+                  ? 'Capture the children in this program, then open each child to add or refine their wishlist.'
+                  : 'Capture the adults in this program, then open each person to add or refine their wishlist and optional direct contact details.'
+            }
+            actions={
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
@@ -1271,7 +1264,8 @@ export function CampaignPeopleGroupDrawer({
                 />
                 Add {groupRecipientLabel}
               </button>
-            </div>
+            }
+          >
 
             <div className="campaign-team-inline-list">
               {group.recipients.length === 0 ? (
@@ -1324,11 +1318,11 @@ export function CampaignPeopleGroupDrawer({
                 ))
               )}
             </div>
-          </section>
+          </DrawerSection>
         ) : null}
 
-        <section className="campaign-team-drawer__section">
-          <div className="campaign-team-drawer__section-header">
+        <DrawerSection
+          header={
             <div className="campaign-people-section-heading">
               <button
                 type="button"
@@ -1351,7 +1345,8 @@ export function CampaignPeopleGroupDrawer({
                 </p>
               </div>
             </div>
-          </div>
+          }
+        >
 
           {!group ? (
             <div className="campaign-studio__empty-note">Save the group before adding contacts.</div>
@@ -1654,7 +1649,7 @@ export function CampaignPeopleGroupDrawer({
               </DrawerActions>
             </>
           )}
-        </section>
+        </DrawerSection>
       </div>
       {group ? (
         <ConfirmationModal

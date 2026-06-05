@@ -28,6 +28,7 @@ import {
 import { AutoDismissAlert } from '@/shared/ui/AutoDismissAlert';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 import { DrawerActions } from '@/shared/ui/DrawerActions';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 
 interface CampaignPeopleRecipientDrawerProps {
   campaignId?: string | null;
@@ -517,8 +518,8 @@ export function CampaignPeopleRecipientDrawer({
         </DrawerActions>
       ) : null}
       <div className="campaign-team-drawer__stack">
-        <section className="campaign-team-drawer__section">
-          <div className="campaign-team-drawer__section-header">
+        <DrawerSection
+          header={
             <div className="campaign-people-section-heading">
               <button
                 type="button"
@@ -553,7 +554,8 @@ export function CampaignPeopleRecipientDrawer({
                 </p>
               </div>
             </div>
-          </div>
+          }
+        >
 
           {recipientError ? <div className="alert alert-danger py-2" role="alert">{recipientError}</div> : null}
           {!recipient && possibleDuplicateRecipients.length > 0 ? (
@@ -1076,10 +1078,10 @@ export function CampaignPeopleRecipientDrawer({
               {recipient ? `Save ${recipientRecordLabel}` : `Create ${recipientRecordLabel}`}
             </button>
           </DrawerActions>
-        </section>
+        </DrawerSection>
 
-        <section className="campaign-team-drawer__section">
-          <div className="campaign-team-drawer__section-header">
+        <DrawerSection
+          header={
             <div className="campaign-people-section-heading">
               <button
                 type="button"
@@ -1098,7 +1100,8 @@ export function CampaignPeopleRecipientDrawer({
                 <p className="text-muted mb-0">Keep one gift wishlist per person, with structured items ready for sponsorship and fulfillment.</p>
               </div>
             </div>
-          </div>
+          }
+        >
 
           {!recipient ? (
             <div className="campaign-studio__empty-note">Save the person before editing the wishlist.</div>
@@ -1257,7 +1260,7 @@ export function CampaignPeopleRecipientDrawer({
               </div>
             </div>
           )}
-        </section>
+        </DrawerSection>
       </div>
       {recipient ? (
         <details
