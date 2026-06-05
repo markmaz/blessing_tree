@@ -108,6 +108,16 @@ To wipe local operational data before seeding, run:
 PYTHONPATH=. .venv/bin/python scripts/seed_demo_campaign_2026.py --reset --yes
 ```
 
+To create a separate seeded campaign without replacing an existing demo
+campaign, use `--append` with a unique name and slug:
+
+```bash
+PYTHONPATH=. .venv/bin/python scripts/seed_demo_campaign_2026.py \
+  --append \
+  --campaign-name "Blessing Tree Walkthrough Demo 2026" \
+  --campaign-slug "blessing-tree-walkthrough-demo-2026"
+```
+
 ## Auth Routes
 
 Current routes under `/api/v1/auth`:
