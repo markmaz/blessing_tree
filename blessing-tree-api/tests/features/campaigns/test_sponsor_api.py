@@ -408,6 +408,10 @@ def test_sponsor_dropoff_token_metadata_and_revoke(app, monkeypatch: pytest.Monk
     assert token_payload["status"] == "ACTIVE"
     assert token_payload["scan_count"] == 1
     assert token_payload["last_scanned_at"] is not None
+    assert token_payload["scan_events"][0]["token_id"] == token_id
+    assert token_payload["scan_events"][0]["outcome"] == "RESOLVED"
+    assert token_payload["scan_events"][0]["scanned_by_user_id"] == manager_id
+    assert token_payload["scan_events"][0]["scanned_at"] is not None
     assert "token_hash" not in token_payload
 
     revoke_response = client.post(

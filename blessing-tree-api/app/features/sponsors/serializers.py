@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any
 
 from app.models.pending_sponsor_registration import PendingSponsorRegistration
+from app.models.sponsor_dropoff_scan_event import SponsorDropoffScanEvent
 from app.models.sponsor_dropoff_token import SponsorDropoffToken
 from app.models.sponsor_interaction import SponsorInteraction
 from app.models.sponsorship import Sponsorship
@@ -73,6 +74,11 @@ def serialize_sponsor_interaction(interaction: SponsorInteraction) -> dict[str, 
 def serialize_sponsor_dropoff_token(token: SponsorDropoffToken) -> dict[str, Any]:
     scan_events = list(token.scan_events or [])
     latest_scan = max((event.scanned_at for event in scan_events if event.scanned_at), default=None)
+    sorted_scan_events = sorted(
+        scan_events,
+        key=lambda event: event.scanned_at,
+        reverse=True,
+    )
     return {
         "id": str(token.id),
         "sponsorship_id": str(token.sponsorship_id),
@@ -86,6 +92,18 @@ def serialize_sponsor_dropoff_token(token: SponsorDropoffToken) -> dict[str, Any
         "updated_at": _serialize_datetime(token.updated_at),
         "scan_count": len(scan_events),
         "latest_scan_at": _serialize_datetime(latest_scan),
+        "scan_events": [serialize_sponsor_dropoff_scan_event(event) for event in sorted_scan_events],
+    }
+
+
+def serialize_sponsor_dropoff_scan_event(event: SponsorDropoffScanEvent) -> dict[str, Any]:
+    return {
+        "id": str(event.id),
+        "token_id": str(event.token_id),
+        "scanned_by_user_id": str(event.scanned_by_user_id) if event.scanned_by_user_id else None,
+        "scanned_at": _serialize_datetime(event.scanned_at),
+        "outcome": event.outcome,
+        "user_agent": event.user_agent,
     }
 
 

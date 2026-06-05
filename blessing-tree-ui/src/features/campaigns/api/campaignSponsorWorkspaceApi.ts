@@ -67,6 +67,16 @@ interface SponsorDropoffTokenResponse {
   updated_at: string | null;
   scan_count: number;
   latest_scan_at: string | null;
+  scan_events: SponsorDropoffScanEventResponse[];
+}
+
+interface SponsorDropoffScanEventResponse {
+  id: string;
+  token_id: string;
+  scanned_by_user_id: string | null;
+  scanned_at: string | null;
+  outcome: string;
+  user_agent: string | null;
 }
 
 interface SponsorResponse {
@@ -492,6 +502,14 @@ function mapSponsorDropoffToken(response: SponsorDropoffTokenResponse): Campaign
     updatedAt: response.updated_at,
     scanCount: response.scan_count,
     latestScanAt: response.latest_scan_at,
+    scanEvents: (response.scan_events ?? []).map((event) => ({
+      id: event.id,
+      tokenId: event.token_id,
+      scannedByUserId: event.scanned_by_user_id,
+      scannedAt: event.scanned_at,
+      outcome: event.outcome,
+      userAgent: event.user_agent,
+    })),
   };
 }
 

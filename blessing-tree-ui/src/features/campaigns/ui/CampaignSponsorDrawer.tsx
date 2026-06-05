@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { Fragment, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
 import { FieldHelpButton } from '@/features/ask/ui/FieldHelpButton';
 import type {
@@ -787,37 +787,67 @@ export function CampaignSponsorDrawer({
                   </thead>
                   <tbody>
                     {sponsor.dropoffTokens.map((token) => (
-                      <tr key={token.id}>
-                        <td>
-                          <span className="campaign-chip campaign-chip-muted">
-                            <i className={`bi ${dropoffTokenIcon(token.status)}`} aria-hidden="true" />
-                            <span>{toDropoffTokenStatusLabel(token.status)}</span>
-                          </span>
-                        </td>
-                        <td>{formatSponsorDateTime(token.createdAt)}</td>
-                        <td>{formatSponsorDateTime(token.expiresAt)}</td>
-                        <td>{token.scanCount}</td>
-                        <td>{formatSponsorDateTime(token.latestScanAt ?? token.lastScannedAt)}</td>
-                        {canEdit ? (
-                          <td className="text-end">
-                            {token.status === 'ACTIVE' ? (
-                              <button
-                                type="button"
-                                className="btn btn-outline-danger btn-sm"
-                                onClick={() => setPendingRevokeToken(token)}
-                              >
-                                <i className="bi bi-slash-circle me-2" aria-hidden="true" />
-                                Revoke
-                              </button>
-                            ) : (
-                              <span className="campaign-chip campaign-chip-muted">
-                                <i className="bi bi-lock" aria-hidden="true" />
-                                <span>Closed</span>
-                              </span>
-                            )}
+                      <Fragment key={token.id}>
+                        <tr>
+                          <td>
+                            <span className="campaign-chip campaign-chip-muted">
+                              <i className={`bi ${dropoffTokenIcon(token.status)}`} aria-hidden="true" />
+                              <span>{toDropoffTokenStatusLabel(token.status)}</span>
+                            </span>
                           </td>
-                        ) : null}
-                      </tr>
+                          <td>{formatSponsorDateTime(token.createdAt)}</td>
+                          <td>{formatSponsorDateTime(token.expiresAt)}</td>
+                          <td>{token.scanCount}</td>
+                          <td>{formatSponsorDateTime(token.latestScanAt ?? token.lastScannedAt)}</td>
+                          {canEdit ? (
+                            <td className="text-end">
+                              {token.status === 'ACTIVE' ? (
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-danger btn-sm"
+                                  onClick={() => setPendingRevokeToken(token)}
+                                >
+                                  <i className="bi bi-slash-circle me-2" aria-hidden="true" />
+                                  Revoke
+                                </button>
+                              ) : (
+                                <span className="campaign-chip campaign-chip-muted">
+                                  <i className="bi bi-lock" aria-hidden="true" />
+                                  <span>Closed</span>
+                                </span>
+                              )}
+                            </td>
+                          ) : null}
+                        </tr>
+                        <tr className="campaign-sponsor-scan-history-row">
+                          <td colSpan={canEdit ? 6 : 5}>
+                            <details className="campaign-sponsor-scan-history">
+                              <summary className="campaign-sponsor-scan-history__summary">
+                                <i className="bi bi-clock-history" aria-hidden="true" />
+                                <span>Detailed scan history</span>
+                              </summary>
+                              {token.scanEvents.length === 0 ? (
+                                <div className="campaign-studio__empty-note mt-2">No scans recorded for this QR link.</div>
+                              ) : (
+                                <div className="campaign-sponsor-scan-history__list">
+                                  {token.scanEvents.map((event) => (
+                                    <div key={event.id} className="campaign-sponsor-scan-history__item">
+                                      <div>
+                                        <strong>{formatSponsorDateTime(event.scannedAt)}</strong>
+                                        <span>{toDropoffScanOutcomeLabel(event.outcome)}</span>
+                                      </div>
+                                      <div>
+                                        <span>{event.scannedByUserId ? `Staff ${event.scannedByUserId.slice(0, 8)}` : 'No staff user recorded'}</span>
+                                        <span>{event.userAgent ? truncate(event.userAgent, 110) : 'No device details recorded'}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </details>
+                          </td>
+                        </tr>
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -1492,6 +1522,14 @@ function dropoffTokenIcon(status: CampaignSponsorDropoffToken['status']): string
   if (status === 'ACTIVE') return 'bi-shield-check';
   if (status === 'REVOKED') return 'bi-slash-circle';
   return 'bi-hourglass-bottom';
+}
+
+function toDropoffScanOutcomeLabel(outcome: string): string {
+  if (outcome === 'RESOLVED') return 'Resolved';
+  if (outcome === 'REVOKED') return 'Revoked link';
+  if (outcome === 'EXPIRED') return 'Expired link';
+  if (outcome === 'NOT_FOUND') return 'Not found';
+  return outcome;
 }
 
 function truncate(value: string, maxLength: number): string {
