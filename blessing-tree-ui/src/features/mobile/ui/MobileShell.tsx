@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import {
@@ -6,6 +7,7 @@ import {
   hasAnyCampaignCapability,
   hasCampaignCapability,
 } from '@/features/campaigns/model/campaignPermissions';
+import { setPrefersFullSite } from '@/features/mobile/model/mobileMode';
 import {
   buildMobileGiftsPath,
   buildMobileGroupsPath,
@@ -13,8 +15,6 @@ import {
   buildMobileSponsorsPath,
   routes,
 } from '@/app/routes';
-
-const FULL_SITE_PREFERENCE_KEY = 'bt-mobile-full-site';
 
 type MobileTab = {
   label: string;
@@ -26,6 +26,10 @@ type MobileTab = {
 export function MobileShell() {
   const { isLoading, selectedCampaign } = useCampaigns();
   const access = selectedCampaign?.userAccess ?? null;
+
+  useEffect(() => {
+    setPrefersFullSite(false);
+  }, []);
 
   const tabs: MobileTab[] = [
     {
@@ -57,11 +61,7 @@ export function MobileShell() {
   const visibleTabs = tabs.filter((tab) => tab.isVisible);
 
   const handleFullSiteClick = () => {
-    try {
-      window.localStorage.setItem(FULL_SITE_PREFERENCE_KEY, 'true');
-    } catch {
-      // Ignore storage failures; the link still navigates to the full site.
-    }
+    setPrefersFullSite(true);
   };
 
   return (

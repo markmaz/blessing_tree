@@ -45,6 +45,7 @@ import {
   MobileReceivePage,
   MobileSponsorsPage,
 } from '@/features/mobile/ui/MobilePlaceholderPages';
+import { MobileAppRedirectGuard } from '@/features/mobile/ui/MobileAppRedirectGuard';
 import { MobileShell } from '@/features/mobile/ui/MobileShell';
 import { PeopleDirectoryPage } from '@/pages/PeopleDirectoryPage';
 import { PeopleIntakePage } from '@/pages/PeopleIntakePage';
@@ -109,7 +110,9 @@ export function App() {
                 path={routes.HOME}
                 element={
                   <ProtectedRoute>
-                    <AppLayout />
+                    <MobileAppRedirectGuard>
+                      <AppLayout />
+                    </MobileAppRedirectGuard>
                   </ProtectedRoute>
                 }
               >

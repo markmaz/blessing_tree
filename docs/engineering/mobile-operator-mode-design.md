@@ -13,10 +13,11 @@ Completed:
 - Blessing Tree-styled mobile header and bottom tabs
 - placeholder pages for Gifts, Receive, Sponsors, and Groups
 - full-site escape hatch preference write
+- phone auto-redirect guard for protected full-app routes
+- conservative phone detection that avoids narrow desktop and tablet redirects
 
 Not yet implemented:
 
-- phone auto-redirect guard
 - real mobile search APIs/UI
 - receive-by-recipient-ID workflow
 - commit/release/receive actions
