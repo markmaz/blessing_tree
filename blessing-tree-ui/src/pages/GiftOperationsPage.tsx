@@ -25,6 +25,7 @@ import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
 import { DrawerActions } from '@/shared/ui/DrawerActions';
 import { DrawerSection } from '@/shared/ui/DrawerSection';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import { GiftTagPreview } from '@/features/gifts/ui/GiftTagPreview';
 import { exportGiftTagPrintJobPdf } from '@/features/gifts/ui/giftTagPdf';
@@ -320,15 +321,12 @@ export function GiftOperationsPage() {
 
   return (
     <div className="campaign-studio-page gift-workflow-page">
-      <div className="campaign-studio-page__header">
-        <div>
-          <div className="text-uppercase small text-muted fw-semibold mb-1">Gift Workflow</div>
-          <h1 className="h3 mb-1">Gift Operations</h1>
-          <p className="text-muted mb-0">
-            {campaign?.name ?? 'Campaign'} receiving, wrapping, exception handling, and distribution readiness.
-          </p>
-        </div>
-        <div className="d-flex flex-wrap gap-2">
+      <WorkspacePageHeader
+        title="Gift Operations"
+        description={`${campaign?.name ?? 'Campaign'} receiving, wrapping, exception handling, and distribution readiness.`}
+        chips={<span className="campaign-chip campaign-chip-muted">Gift Workflow</span>}
+        actions={
+          <div className="d-flex flex-wrap gap-2">
           <div className="input-group gift-workflow-page__blank-tags">
             <span className="input-group-text">Blank</span>
             <input
@@ -362,7 +360,8 @@ export function GiftOperationsPage() {
             Print Visible Tags
           </button>
         </div>
-      </div>
+        }
+      />
 
       <div className="campaign-studio__stat-grid campaign-team-stats">
         <StatCard label="Total In Process" value={countStatus(result, 'TOTAL')} />

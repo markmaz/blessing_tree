@@ -10,6 +10,7 @@ import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 import { DrawerActions } from '@/shared/ui/DrawerActions';
 import { DrawerSection } from '@/shared/ui/DrawerSection';
 import { TablePagination } from '@/shared/ui/TablePagination';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import { clampTablePage } from '@/shared/ui/tablePaginationModel';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
@@ -160,15 +161,11 @@ export function GiftSearchPage() {
 
   return (
     <div className="campaign-studio-page gift-workflow-page">
-      <div className="campaign-studio-page__header">
-        <div>
-          <div className="text-uppercase small text-muted fw-semibold mb-1">Gift Workflow</div>
-          <h1 className="h3 mb-1">Gift Search</h1>
-          <p className="text-muted mb-0">
-            {campaign?.name ?? 'Campaign'} gift discovery for sponsor matching and staff operations.
-          </p>
-        </div>
-      </div>
+      <WorkspacePageHeader
+        title="Gift Search"
+        description={`${campaign?.name ?? 'Campaign'} gift discovery for sponsor matching and staff operations.`}
+        chips={<span className="campaign-chip campaign-chip-muted">Gift Workflow</span>}
+      />
 
       <section className="content-card">
         <form

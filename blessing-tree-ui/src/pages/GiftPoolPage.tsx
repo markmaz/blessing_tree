@@ -20,6 +20,7 @@ import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
 import { DrawerActions } from '@/shared/ui/DrawerActions';
 import { DrawerSection } from '@/shared/ui/DrawerSection';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import '@/features/campaigns/ui/campaignStudioTeam.css';
 import '@/features/gifts/ui/giftWorkflow.css';
@@ -203,19 +204,17 @@ export function GiftPoolPage() {
 
   return (
     <div className="campaign-studio-page gift-workflow-page">
-      <div className="campaign-studio-page__header">
-        <div>
-          <div className="text-uppercase small text-muted fw-semibold mb-1">Gift Workflow</div>
-          <h1 className="h3 mb-1">Gift Pool</h1>
-          <p className="text-muted mb-0">
-            {campaign?.name ?? 'Campaign'} donated inventory intake and wishlist matching.
-          </p>
-        </div>
-        <button type="button" className="btn btn-secondary" onClick={() => setIsIntakeOpen(true)}>
-          <i className="bi bi-plus-lg me-2" aria-hidden="true" />
-          Add Inventory
-        </button>
-      </div>
+      <WorkspacePageHeader
+        title="Gift Pool"
+        description={`${campaign?.name ?? 'Campaign'} donated inventory intake and wishlist matching.`}
+        chips={<span className="campaign-chip campaign-chip-muted">Gift Workflow</span>}
+        actions={
+          <button type="button" className="btn btn-secondary" onClick={() => setIsIntakeOpen(true)}>
+            <i className="bi bi-plus-lg me-2" aria-hidden="true" />
+            Add Inventory
+          </button>
+        }
+      />
 
       <div className="campaign-studio__stat-grid campaign-team-stats">
         <StatCard label="Total Lines" value={countStatus(result, 'TOTAL')} />
