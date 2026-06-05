@@ -32,6 +32,11 @@ At the start of a session, agents should read:
 - `memory/known-risks.md` - current architectural, operational, and delivery risks
 - `memory/fragile-areas.md` - code paths and contracts that need extra care
 
+The current operational memory includes the production EC2 self-hosted GitHub
+Actions runner pattern, private Docker Compose Qdrant setup, production shared
+environment rules, and append-only demo seeding flow. Reuse those notes when
+setting up QueryForge in the same style.
+
 ## Maintenance Rule
 
 Keep durable guidance stable and low-noise. Put temporary coordination,
