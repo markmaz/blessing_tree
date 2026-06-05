@@ -29,6 +29,8 @@ import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { GiftTagPreview } from '@/features/gifts/ui/GiftTagPreview';
 import { exportGiftTagPrintJobPdf } from '@/features/gifts/ui/giftTagPdf';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
+import { DrawerActions } from '@/shared/ui/DrawerActions';
+import { DrawerSection } from '@/shared/ui/DrawerSection';
 import '@/features/gifts/ui/giftWorkflow.css';
 import '@/features/gifts/ui/giftWorkflowReport.css';
 
@@ -577,7 +579,7 @@ export function GiftWorkflowReportPage() {
       >
         {selectedGift ? (
           <div className="campaign-team-drawer__stack">
-            <section className="campaign-team-drawer__section">
+            <DrawerSection>
               <div className="row g-3">
                 <DrawerDetail label="Recipient" value={selectedGift.recipient.displayLabel} />
                 <DrawerDetail label="Group" value={selectedGift.recipient.group?.name ?? 'No group'} />
@@ -586,9 +588,9 @@ export function GiftWorkflowReportPage() {
                 <DrawerDetail label="Status" value={statusLabel(selectedGift.gift.status)} />
                 <DrawerDetail label="Quantity" value={`${selectedGift.gift.quantityFulfilled}/${selectedGift.gift.quantityRequested}`} />
               </div>
-            </section>
+            </DrawerSection>
 
-            <section className="campaign-team-drawer__section">
+            <DrawerSection>
               <label className="form-label">
                 Action Notes
                 <textarea
@@ -599,7 +601,7 @@ export function GiftWorkflowReportPage() {
                   placeholder="Optional status or sponsor note"
                 />
               </label>
-              <div className="campaign-team-drawer__actions">
+              <DrawerActions>
                 <button
                   type="button"
                   className="btn btn-outline-secondary"
@@ -632,17 +634,14 @@ export function GiftWorkflowReportPage() {
                     Mark Distributed
                   </button>
                 ) : null}
-              </div>
-            </section>
+              </DrawerActions>
+            </DrawerSection>
 
             {canCommitGift(selectedGift.gift) ? (
-              <section className="campaign-team-drawer__section">
-                <div className="campaign-team-drawer__section-header">
-                  <div>
-                    <h4 className="h6 mb-1">Commit to Sponsor</h4>
-                    <p className="text-muted mb-0">Assign this wishlist gift to an active sponsor.</p>
-                  </div>
-                </div>
+              <DrawerSection
+                title="Commit to Sponsor"
+                description="Assign this wishlist gift to an active sponsor."
+              >
                 <label className="form-label">
                   Sponsor
                   <select
@@ -667,7 +666,7 @@ export function GiftWorkflowReportPage() {
                   <i className="bi bi-bag-check me-2" aria-hidden="true" />
                   Commit Gift
                 </button>
-              </section>
+              </DrawerSection>
             ) : null}
           </div>
         ) : null}
@@ -682,17 +681,16 @@ export function GiftWorkflowReportPage() {
       >
         {printJob ? (
           <div className="campaign-team-drawer__stack">
-            <section className="campaign-team-drawer__section">
-              <div className="campaign-team-drawer__section-header">
-                <div>
-                  <h4 className="h6 mb-1">Print Job</h4>
-                  <p className="text-muted mb-0">Export a letter-size PDF for the current tag batch.</p>
-                </div>
+            <DrawerSection
+              title="Print Job"
+              description="Export a letter-size PDF for the current tag batch."
+              actions={
                 <button type="button" className="btn btn-secondary btn-sm" disabled={isExportingPdf} onClick={() => void handleExportPrintJobPdf()}>
                   <i className="bi bi-printer me-2" aria-hidden="true" />
                   {isExportingPdf ? 'Exporting...' : 'Export PDF'}
                 </button>
-              </div>
+              }
+            >
               <div className="row g-3">
                 {printJob.items.map((item) => (
                   <div key={item.id} className="col-12 col-md-6 col-xl-4">
@@ -700,7 +698,7 @@ export function GiftWorkflowReportPage() {
                   </div>
                 ))}
               </div>
-            </section>
+            </DrawerSection>
           </div>
         ) : null}
       </CampaignStudioDrawer>
