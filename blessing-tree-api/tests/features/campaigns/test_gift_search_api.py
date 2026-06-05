@@ -469,6 +469,40 @@ def test_gift_operations_receive_wrap_ready_and_update_sponsor_dropoff(app, monk
     assert event_types == ["RECEIVED", "WRAPPED", "STATUS_CHANGED", "STATUS_CHANGED"]
 
 
+def test_gift_operations_can_receive_uncommitted_open_gift(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Ops Manager")
+    campaign = seed_campaign(session, name="Uncommitted Gift Receive Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    gifts = _seed_gifts(session, campaign.id)
+    session.commit()
+
+    client = app.test_client()
+    receive_response = client.post(
+        f"/api/v1/campaigns/{campaign.id}/gifts/{gifts['coat_id']}/receive",
+        json={"notes": "Received at mobile intake table."},
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+
+    assert receive_response.status_code == 200
+    payload = receive_response.get_json()
+    assert payload["gift"]["status"] == "RECEIVED"
+    assert payload["gift"]["qty_fulfilled"] == 1
+    assert payload["gift"]["sponsorship_status"] == "UNSPONSORED"
+
+    second_receive_response = client.post(
+        f"/api/v1/campaigns/{campaign.id}/gifts/{gifts['coat_id']}/receive",
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+    assert second_receive_response.status_code == 409
+
+    session.expire_all()
+    item = session.query(WishlistItem).filter(WishlistItem.id == gifts["coat_id"]).one()
+    assert item.status == "RECEIVED"
+    assert session.query(ItemEvent).filter(ItemEvent.wishlist_item_id == gifts["coat_id"], ItemEvent.event_type == "RECEIVED").count() == 1
+
+
 def test_gift_operations_exception_blocks_receive_until_resolved(app, monkeypatch) -> None:
     install_auth(monkeypatch)
     session = campaign_api_module.SessionLocal()

@@ -42,10 +42,10 @@ import {
   MobileGiftsPage,
   MobileGroupsPage,
   MobileHomePage,
-  MobileReceivePage,
   MobileSponsorsPage,
 } from '@/features/mobile/ui/MobilePlaceholderPages';
 import { MobileAppRedirectGuard } from '@/features/mobile/ui/MobileAppRedirectGuard';
+import { MobileReceivePage } from '@/features/mobile/ui/MobileReceivePage';
 import { MobileShell } from '@/features/mobile/ui/MobileShell';
 import { PeopleDirectoryPage } from '@/pages/PeopleDirectoryPage';
 import { PeopleIntakePage } from '@/pages/PeopleIntakePage';

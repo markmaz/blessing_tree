@@ -80,8 +80,10 @@ class GiftOperationsService:
         notes: str | None = None,
     ) -> WishlistItem:
         item = self._load_operations_item(db, campaign_id, wishlist_item_id)
-        if item.status not in {"COMMITTED", "EXCEPTION"}:
-            raise ServiceError("Gift must be committed before it can be received", status_code=409)
+        if item.status in RECEIVED_OR_LATER_STATUSES:
+            raise ServiceError("Gift has already been received", status_code=409)
+        if item.status == "CANCELLED":
+            raise ServiceError("Cancelled gifts cannot be received", status_code=409)
         item.status = "RECEIVED"
         item.qty_fulfilled = max(item.qty_fulfilled or 0, item.qty_requested or 1)
         item.received_at = _now()
@@ -216,8 +218,19 @@ class GiftOperationsService:
 
     def _load_operations_item(self, db: Session, campaign_id: uuid.UUID, wishlist_item_id: uuid.UUID) -> WishlistItem:
         item = (
-            self._base_operations_query(db, campaign_id)
-            .filter(WishlistItem.id == wishlist_item_id)
+            db.query(WishlistItem)
+            .options(
+                joinedload(WishlistItem.wishlist).joinedload(Wishlist.recipient).joinedload(Recipient.recipient_group),
+                joinedload(WishlistItem.fulfillment_rows),
+                joinedload(WishlistItem.sponsorship_item)
+                .joinedload(SponsorshipItem.sponsorship)
+                .joinedload(Sponsorship.sponsor),
+            )
+            .join(Wishlist, Wishlist.id == WishlistItem.wishlist_id)
+            .filter(
+                Wishlist.campaign_id == campaign_id,
+                WishlistItem.id == wishlist_item_id,
+            )
             .one_or_none()
         )
         if item is None:

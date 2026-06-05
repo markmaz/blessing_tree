@@ -77,24 +77,6 @@ export function MobileGiftsPage() {
   );
 }
 
-export function MobileReceivePage() {
-  return (
-    <MobilePlaceholderPage
-      eyebrow="Receive Gifts"
-      title="Receive by recipient ID"
-      description="Enter a recipient ID, review the wishlist, and mark received items without opening the full app."
-      icon="bi-check2-square"
-      primaryLabel="Recipient ID"
-      inputPlaceholder="BT-001"
-      upcoming={[
-        'Recipient summary with age, gender, family, and program',
-        'Checklist-style wishlist rows',
-        'Optional note when the received item differs from the request',
-      ]}
-    />
-  );
-}
-
 export function MobileSponsorsPage() {
   return (
     <MobilePlaceholderPage

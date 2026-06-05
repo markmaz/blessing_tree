@@ -15,12 +15,14 @@ Completed:
 - full-site escape hatch preference write
 - phone auto-redirect guard for protected full-app routes
 - conservative phone detection that avoids narrow desktop and tablet redirects
+- receive-by-recipient-ID workflow
+- mobile receive note capture without changing wishlist descriptions
+- receiving open/uncommitted wishlist items
 
 Not yet implemented:
 
 - real mobile search APIs/UI
-- receive-by-recipient-ID workflow
-- commit/release/receive actions
+- mobile Gift Search commit/release/detail actions
 
 ## Purpose
 
