@@ -19,8 +19,8 @@ env:
   BT_MIGRATION_COMMAND: ${{ vars.BT_MIGRATION_COMMAND || '' }}
 
 jobs:
-  deploy:
-    name: Build and deploy
+  build:
+    name: Build release
     runs-on: ubuntu-latest
     environment: production
 
@@ -75,36 +75,39 @@ jobs:
 
           tar -czf "$RELEASE_NAME" -C release .
 
-      - name: Configure SSH
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_deploy_key
-          chmod 600 ~/.ssh/ec2_deploy_key
-          ssh-keyscan -p "$EC2_PORT" -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blessing-tree-release
+          path: |
+            ${{ env.RELEASE_NAME }}
+            scripts/deploy/ec2_deploy_release.sh
+          if-no-files-found: error
 
-      - name: Upload release
-        run: |
-          set -euo pipefail
-          ssh -i ~/.ssh/ec2_deploy_key -p "$EC2_PORT" "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "mkdir -p /tmp/blessing-tree-deploy"
-          scp -i ~/.ssh/ec2_deploy_key -P "$EC2_PORT" "$RELEASE_NAME" \
-            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/blessing-tree-deploy/$RELEASE_NAME"
-          scp -i ~/.ssh/ec2_deploy_key -P "$EC2_PORT" scripts/deploy/ec2_deploy_release.sh \
-            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/blessing-tree-deploy/ec2_deploy_release.sh"
+  deploy:
+    name: Deploy on EC2
+    needs: build
+    runs-on: [self-hosted, prod-blessing-tree]
+    environment: production
+
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: blessing-tree-release
+          path: /tmp/blessing-tree-deploy
 
       - name: Activate release
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/ec2_deploy_key -p "$EC2_PORT" "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "chmod +x /tmp/blessing-tree-deploy/ec2_deploy_release.sh && \
-             BT_APP_DIR='$EC2_DEPLOY_PATH' \
-             BT_API_SERVICE='$EC2_API_SERVICE' \
-             BT_CELERY_SERVICE='$EC2_CELERY_SERVICE' \
-             BT_CELERY_BEAT_SERVICE='$EC2_CELERY_BEAT_SERVICE' \
-             BT_KEEP_RELEASES='$BT_KEEP_RELEASES' \
-             BT_RUN_MIGRATIONS='$BT_RUN_MIGRATIONS' \
-             BT_MIGRATION_COMMAND='$BT_MIGRATION_COMMAND' \
-             /tmp/blessing-tree-deploy/ec2_deploy_release.sh \
-               '/tmp/blessing-tree-deploy/$RELEASE_NAME' \
-               '$EC2_DEPLOY_PATH'"
+          chmod +x /tmp/blessing-tree-deploy/scripts/deploy/ec2_deploy_release.sh
+          BT_APP_DIR="$EC2_DEPLOY_PATH" \
+          BT_API_SERVICE="$EC2_API_SERVICE" \
+          BT_CELERY_SERVICE="$EC2_CELERY_SERVICE" \
+          BT_CELERY_BEAT_SERVICE="$EC2_CELERY_BEAT_SERVICE" \
+          BT_KEEP_RELEASES="$BT_KEEP_RELEASES" \
+          BT_RUN_MIGRATIONS="$BT_RUN_MIGRATIONS" \
+          BT_MIGRATION_COMMAND="$BT_MIGRATION_COMMAND" \
+          /tmp/blessing-tree-deploy/scripts/deploy/ec2_deploy_release.sh \
+            "/tmp/blessing-tree-deploy/$RELEASE_NAME" \
+            "$EC2_DEPLOY_PATH"

@@ -23,10 +23,14 @@ env:
   BT_HTTPS_PORT: ${{ vars.BT_HTTPS_PORT || '443' }}
 
 jobs:
-  build-and-deploy:
-    name: Build images and deploy
+  build:
+    name: Build images
     runs-on: ubuntu-latest
     environment: production
+
+    outputs:
+      api-image: ${{ steps.images.outputs.api }}
+      ui-image: ${{ steps.images.outputs.ui }}
 
     steps:
       - name: Checkout
@@ -75,40 +79,36 @@ jobs:
           echo "api=${IMAGE_PREFIX}-api:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
           echo "ui=${IMAGE_PREFIX}-ui:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
-      - name: Configure SSH
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_deploy_key
-          chmod 600 ~/.ssh/ec2_deploy_key
-          ssh-keyscan -p "$EC2_PORT" -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+  deploy:
+    name: Deploy on EC2
+    needs: build
+    runs-on: [self-hosted, prod-blessing-tree]
+    environment: production
 
-      - name: Upload compose files
-        run: |
-          set -euo pipefail
-          ssh -i ~/.ssh/ec2_deploy_key -p "$EC2_PORT" "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "mkdir -p '$EC2_DEPLOY_PATH/compose' /tmp/blessing-tree-deploy"
-          scp -i ~/.ssh/ec2_deploy_key -P "$EC2_PORT" \
-            docker-compose.yml docker-compose.prod.yml \
-            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:$EC2_DEPLOY_PATH/compose/"
-          ssh -i ~/.ssh/ec2_deploy_key -p "$EC2_PORT" "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "mkdir -p '$EC2_DEPLOY_PATH/compose/deploy/docker/caddy'"
-          scp -i ~/.ssh/ec2_deploy_key -P "$EC2_PORT" deploy/docker/caddy/Caddyfile \
-            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:$EC2_DEPLOY_PATH/compose/deploy/docker/caddy/Caddyfile"
-          scp -i ~/.ssh/ec2_deploy_key -P "$EC2_PORT" scripts/deploy/ec2_docker_deploy.sh \
-            "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/tmp/blessing-tree-deploy/ec2_docker_deploy.sh"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Deploy on EC2
+      - name: Stage compose files
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/ec2_deploy_key -p "$EC2_PORT" "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" \
-            "chmod +x /tmp/blessing-tree-deploy/ec2_docker_deploy.sh && \
-             BT_APP_DIR='$EC2_DEPLOY_PATH' \
-             BT_RELEASE_ID='${{ github.sha }}' \
-             BT_API_IMAGE='${{ steps.images.outputs.api }}' \
-             BT_UI_IMAGE='${{ steps.images.outputs.ui }}' \
-             BT_HTTP_PORT='$BT_HTTP_PORT' \
-             BT_HTTPS_PORT='$BT_HTTPS_PORT' \
-             GHCR_USERNAME='${{ secrets.GHCR_USERNAME }}' \
-             GHCR_TOKEN='${{ secrets.GHCR_TOKEN }}' \
-             /tmp/blessing-tree-deploy/ec2_docker_deploy.sh"
+          sudo mkdir -p "$EC2_DEPLOY_PATH/compose/deploy/docker/caddy"
+          sudo cp docker-compose.yml docker-compose.prod.yml "$EC2_DEPLOY_PATH/compose/"
+          sudo cp deploy/docker/caddy/Caddyfile "$EC2_DEPLOY_PATH/compose/deploy/docker/caddy/Caddyfile"
+          sudo chown -R "$(id -u):$(id -g)" "$EC2_DEPLOY_PATH/compose"
+          mkdir -p /tmp/blessing-tree-deploy
+          cp scripts/deploy/ec2_docker_deploy.sh /tmp/blessing-tree-deploy/ec2_docker_deploy.sh
+          chmod +x /tmp/blessing-tree-deploy/ec2_docker_deploy.sh
+
+      - name: Deploy
+        run: |
+          set -euo pipefail
+          BT_APP_DIR="$EC2_DEPLOY_PATH" \
+          BT_RELEASE_ID="${{ github.sha }}" \
+          BT_API_IMAGE="${{ needs.build.outputs.api-image }}" \
+          BT_UI_IMAGE="${{ needs.build.outputs.ui-image }}" \
+          BT_HTTP_PORT="$BT_HTTP_PORT" \
+          BT_HTTPS_PORT="$BT_HTTPS_PORT" \
+          GHCR_USERNAME="${{ secrets.GHCR_USERNAME }}" \
+          GHCR_TOKEN="${{ secrets.GHCR_TOKEN }}" \
+          /tmp/blessing-tree-deploy/ec2_docker_deploy.sh
