@@ -4,7 +4,7 @@ Last updated: 2026-06-05
 
 ## Status
 
-Phase 2 implemented on branch `codex/sponsor-dropoff-qr-workflow`.
+Phase 3 implemented on branch `codex/sponsor-dropoff-qr-workflow`.
 
 Implemented:
 
@@ -24,11 +24,13 @@ Implemented:
   and typed recipient IDs
 - manual scanner fallback for recipient IDs or QR URLs
 - focused mobile scanner parser tests
+- sponsor drop-off scan-event table and model
+- scan events recorded whenever an authenticated drop-off token is resolved
+- sponsor drawer drop-off QR link metadata section
+- explicit sponsor drop-off QR link revocation with confirmation and audit log
 
 Not yet implemented:
 
-- explicit token revocation UI
-- separate scan-event table for sponsor drop-off links
 - phone-camera/manual QA against a real delivered email
 
 This design builds on:
@@ -226,15 +228,39 @@ Example shape:
 
 ### Record Scan
 
-Resolving the payload should update `last_scanned_at`. A separate scan event
-table is optional but useful later.
+Resolving the payload updates `last_scanned_at` and writes a
+`sponsor_dropoff_scan_event` row with the token, campaign, sponsorship, sponsor,
+actor user, scan timestamp, outcome, and user agent.
 
-If adding scan events now, use:
+Implemented event table:
 
-`POST /api/v1/campaigns/:campaignId/mobile/dropoff/:token/scan`
+- `id`
+- `token_id`
+- `campaign_id`
+- `sponsorship_id`
+- `sponsor_id`
+- `scanned_by_user_id`
+- `scanned_at`
+- `outcome`
+- `user_agent`
+- `created_at`
 
-For first implementation, updating `last_scanned_at` on successful resolve is
-enough.
+No separate scan endpoint is needed for now because resolving the drop-off
+payload is the operational scan action.
+
+### Revoke Drop-Off Token
+
+`POST /api/v1/campaigns/:campaignId/sponsors/:sponsorId/dropoff-tokens/:tokenId/revoke`
+
+Permission:
+
+- `campaign.sponsors.manage`
+
+Response:
+
+- updated sponsor drawer payload with token status set to `REVOKED`
+
+Raw tokens and token hashes are not returned to the frontend.
 
 ### Gift Operations
 
@@ -340,8 +366,8 @@ Additional audit/logging should capture:
 
 - token created
 - sponsor reminder sent with QR
-- token resolved/scanned
-- token revoked if revocation is added
+- token resolved/scanned through `sponsor_dropoff_scan_event`
+- token revoked through sponsor audit events
 
 The receiving action itself should continue to record the actor user ID, not
 the sponsor.

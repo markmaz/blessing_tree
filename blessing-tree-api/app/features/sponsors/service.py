@@ -33,6 +33,7 @@ from app.models.sponsor_constants import (
     SPONSOR_INTERACTION_ORIGIN_PUBLIC_SIGNUP,
 )
 from app.models.sponsor_interaction import SponsorInteraction
+from app.models.sponsor_dropoff_token import SponsorDropoffToken
 from app.models.sponsor_reminder import SponsorReminder
 from app.models.sponsorship import Sponsorship
 from app.models.sponsorship_item import SponsorshipItem
@@ -1063,6 +1064,7 @@ class CampaignSponsorService:
             .joinedload(SponsorshipItem.wishlist_item)
             .joinedload(WishlistItem.wishlist)
             .joinedload(Wishlist.recipient),
+            joinedload(Sponsorship.dropoff_tokens).joinedload(SponsorDropoffToken.scan_events),
         )
 
     def _commit_with_conflict_handling(self, db: Session) -> None:

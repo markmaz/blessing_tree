@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns import api as campaign_api_module
+from app.features.gifts.sponsor_dropoff_service import SponsorDropoffService
 from app.features.sponsors.service import CampaignSponsorService
 from app.models.campaign_milestone import CampaignMilestone
 from app.models.pending_sponsor_registration import PendingSponsorRegistration
@@ -23,6 +24,7 @@ from app.models.recipient_constants import (
 )
 from app.models.recipient_group import RecipientGroup
 from app.models.sponsor import Sponsor
+from app.models.sponsor_dropoff_token import SponsorDropoffToken
 from app.models.sponsorship import Sponsorship
 from app.models.sponsorship_item import SponsorshipItem
 from app.models.wishlist import Wishlist
@@ -343,6 +345,87 @@ def test_sponsor_interaction_crud_and_delete(app, monkeypatch: pytest.MonkeyPatc
         headers=auth_header(manager_id, "VOLUNTEER"),
     )
     assert delete_sponsor.status_code == 204
+
+
+def test_sponsor_dropoff_token_metadata_and_revoke(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Campaign Manager")
+    campaign = seed_campaign(session, name="Dropoff Token Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    sponsor = Sponsor(
+        id=uuid.uuid4(),
+        first_name="Taylor",
+        last_name="Reed",
+        display_name="Taylor Reed",
+        email="taylor@example.com",
+        preferred_contact="EMAIL",
+        source="STAFF_ENTRY",
+        is_active=True,
+    )
+    session.add(sponsor)
+    session.flush()
+    sponsorship = Sponsorship(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        sponsor_id=sponsor.id,
+        status="ACTIVE",
+        interest_status="COMMITTED",
+        drop_off_status="NOT_STARTED",
+        self_registered=False,
+        sponsor_code="SP-QR",
+    )
+    session.add(sponsorship)
+    session.flush()
+    raw_token, token = SponsorDropoffService().get_or_create_active_token(
+        session,
+        sponsorship=sponsorship,
+        created_by_user_id=manager.id,
+    )
+    campaign_id = str(campaign.id)
+    sponsor_id = str(sponsor.id)
+    token_uuid = token.id
+    token_id = str(token.id)
+    manager_id = str(manager.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    resolve_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/mobile/dropoff/{raw_token}",
+        headers=auth_header(manager_id, "ADMIN"),
+    )
+    assert resolve_response.status_code == 200
+
+    workspace_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/sponsor-workspace",
+        headers=auth_header(manager_id, "ADMIN"),
+    )
+    assert workspace_response.status_code == 200
+    payload = workspace_response.get_json()
+    token_payload = payload["sponsors"][0]["dropoff_tokens"][0]
+    assert token_payload["id"] == token_id
+    assert token_payload["status"] == "ACTIVE"
+    assert token_payload["scan_count"] == 1
+    assert token_payload["last_scanned_at"] is not None
+    assert "token_hash" not in token_payload
+
+    revoke_response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/sponsors/{sponsor_id}/dropoff-tokens/{token_id}/revoke",
+        headers=auth_header(manager_id, "ADMIN"),
+    )
+    assert revoke_response.status_code == 200
+    revoked = revoke_response.get_json()["dropoff_tokens"][0]
+    assert revoked["id"] == token_id
+    assert revoked["status"] == "REVOKED"
+    assert revoked["revoked_at"] is not None
+
+    verify_session = campaign_api_module.SessionLocal()
+    try:
+        token_row = verify_session.query(SponsorDropoffToken).filter(SponsorDropoffToken.id == token_uuid).one()
+        assert token_row.revoked_at is not None
+    finally:
+        verify_session.close()
 
 
 def test_delete_sponsor_reopens_sponsored_wishlist_items(app, monkeypatch: pytest.MonkeyPatch) -> None:

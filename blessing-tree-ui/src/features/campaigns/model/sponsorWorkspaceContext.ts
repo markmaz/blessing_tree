@@ -44,6 +44,7 @@ export interface SponsorWorkspaceOutletContext {
     sponsorId: string,
     templateId: string
   ) => Promise<SponsorCommunicationSendResult | null>;
+  onRevokeDropoffToken: (sponsorId: string, tokenId: string) => Promise<CampaignSponsor | null>;
   onSaveSponsor: (
     sponsor: SponsorUpsertInput,
     participation: SponsorshipUpsertInput,

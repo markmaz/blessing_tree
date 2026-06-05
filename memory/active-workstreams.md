@@ -11,7 +11,7 @@ report/export, production deployment, semantic search, demo seeding, and
 operational hardening branch.
 
 The follow-on branch `codex/sponsor-dropoff-qr-workflow` has implemented the
-sponsor drop-off QR workflow through the in-app scanner phase:
+sponsor drop-off QR workflow through token revocation and scan-event tracking:
 
 - added hashed sponsor drop-off tokens and migration `V046`
 - added authenticated mobile drop-off payload API
@@ -26,6 +26,12 @@ sponsor drop-off QR workflow through the in-app scanner phase:
 - scanner routing supports sponsor drop-off QR URLs, existing gift label scan
   URLs, and typed recipient IDs
 - added focused mobile scanner parser tests
+- added `sponsor_dropoff_scan_event` migration/model and scan-event recording
+  when authenticated staff open a drop-off QR link
+- added sponsor drawer drop-off QR link metadata with active/revoked/expired
+  status, scan counts, and last-scan timestamps
+- added explicit sponsor drop-off QR revocation with confirmation and sponsor
+  audit event recording
 
 Recently completed mobile work:
 

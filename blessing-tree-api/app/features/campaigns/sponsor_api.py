@@ -7,6 +7,7 @@ from app.db import SessionLocal
 from app.features.admin.audit_service import AuditEventService, build_changes
 from app.features.campaigns import campaign_ns
 from app.features.campaigns.communication_send_service import CampaignCommunicationSendService
+from app.features.gifts.sponsor_dropoff_service import SponsorDropoffService
 from app.features.rbac.decorators import require_campaign_capability
 from app.features.sponsors import (
     CampaignSponsorService,
@@ -20,6 +21,7 @@ from app.features.sponsors.email_delivery import send_public_sponsor_verificatio
 
 _sponsor_service = CampaignSponsorService()
 _communication_send_service = CampaignCommunicationSendService()
+_sponsor_dropoff_service = SponsorDropoffService()
 _audit_event_service = AuditEventService()
 
 SPONSOR_FIELD_MAP = {
@@ -257,6 +259,36 @@ class CampaignSponsorCommunicationSendResource(Resource):
                 template_id=str(payload.get("template_id") or ""),
                 created_by_user_id=getattr(g, "user_id", None),
             ), 200
+
+
+@campaign_ns.route("/<string:campaign_id>/sponsors/<string:sponsor_id>/dropoff-tokens/<string:token_id>/revoke")
+class CampaignSponsorDropoffTokenRevokeResource(Resource):
+    @require_campaign_capability("campaign.sponsors.manage")
+    def post(self, campaign_id: str, sponsor_id: str, token_id: str):
+        with SessionLocal() as db:
+            token = _sponsor_dropoff_service.revoke_token(
+                db,
+                campaign_id=campaign_id,
+                sponsor_id=sponsor_id,
+                token_id=token_id,
+            )
+            sponsorship = _sponsor_service.get_sponsor(db, campaign_id, sponsor_id)
+            response = serialize_workspace_sponsor(sponsorship)
+            _record_sponsor_event(
+                db,
+                campaign_id=campaign_id,
+                action="revoked",
+                entity_type="sponsor_dropoff_token",
+                entity_id=token.id,
+                entity_label=sponsorship.sponsor.display_name,
+                summary=f"Revoked sponsor drop-off QR link for {sponsorship.sponsor.display_name}.",
+                metadata={
+                    "sponsor_id": sponsor_id,
+                    "sponsorship_id": str(token.sponsorship_id),
+                    "token_id": token_id,
+                },
+            )
+        return response, 200
 
 
 @campaign_ns.route("/<string:campaign_id>/pending-sponsor-registrations")

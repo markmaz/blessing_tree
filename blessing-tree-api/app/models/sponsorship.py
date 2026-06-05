@@ -18,6 +18,7 @@ from .uuid_bin import UUIDBin
 if TYPE_CHECKING:
     from .campaign import Campaign
     from .sponsor import Sponsor
+    from .sponsor_dropoff_token import SponsorDropoffToken
     from .sponsorship_item import SponsorshipItem
 
 
@@ -65,6 +66,11 @@ class Sponsorship(Base):
     sponsor: Mapped["Sponsor"] = relationship(back_populates="sponsorships")
 
     items: Mapped[List["SponsorshipItem"]] = relationship(
+        back_populates="sponsorship",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    dropoff_tokens: Mapped[List["SponsorDropoffToken"]] = relationship(
         back_populates="sponsorship",
         cascade="all, delete-orphan",
         passive_deletes=True,

@@ -57,6 +57,7 @@ from .recipient import Recipient
 from .recipient_group import RecipientGroup
 from .scan_event import ScanEvent
 from .sponsor import Sponsor
+from .sponsor_dropoff_scan_event import SponsorDropoffScanEvent
 from .sponsor_interaction import SponsorInteraction
 from .sponsor_dropoff_token import SponsorDropoffToken
 from .sponsor_reminder import SponsorReminder
@@ -115,6 +116,7 @@ __all__ = [
     "RecipientGroup",
     "ScanEvent",
     "Sponsor",
+    "SponsorDropoffScanEvent",
     "SponsorDropoffToken",
     "SponsorInteraction",
     "SponsorReminder",

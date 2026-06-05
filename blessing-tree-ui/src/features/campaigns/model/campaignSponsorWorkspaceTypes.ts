@@ -39,6 +39,23 @@ export interface CampaignSponsoredGift {
   } | null;
 }
 
+export type CampaignSponsorDropoffTokenStatus = 'ACTIVE' | 'REVOKED' | 'EXPIRED';
+
+export interface CampaignSponsorDropoffToken {
+  id: string;
+  sponsorshipId: string;
+  sponsorId: string;
+  status: CampaignSponsorDropoffTokenStatus;
+  expiresAt: string | null;
+  revokedAt: string | null;
+  lastScannedAt: string | null;
+  createdByUserId: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  scanCount: number;
+  latestScanAt: string | null;
+}
+
 export interface CampaignSponsorInteraction {
   id: string;
   campaignId: string;
@@ -126,6 +143,7 @@ export interface CampaignSponsor {
   openFollowUpCount: number;
   recentInteractions: CampaignSponsorInteraction[];
   sponsoredItems: CampaignSponsoredGift[];
+  dropoffTokens: CampaignSponsorDropoffToken[];
   createdAt: string | null;
   updatedAt: string | null;
 }

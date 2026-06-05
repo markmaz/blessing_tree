@@ -15,6 +15,7 @@ from app.exceptions.service_error import ServiceError
 from app.models.campaign import Campaign
 from app.models.recipient import Recipient
 from app.models.recipient_group import RecipientGroup
+from app.models.sponsor_dropoff_scan_event import SponsorDropoffScanEvent
 from app.models.sponsor_dropoff_token import SponsorDropoffToken
 from app.models.sponsorship import Sponsorship
 from app.models.sponsorship_item import SponsorshipItem
@@ -84,7 +85,39 @@ class SponsorDropoffService:
             return build_dropoff_url(raw_token)
         raise ServiceError("Unable to create sponsor drop-off link", status_code=500)
 
-    def resolve_payload(self, db: Session, *, campaign_id: str, token: str) -> dict[str, object]:
+    def revoke_token(
+        self,
+        db: Session,
+        *,
+        campaign_id: str,
+        sponsor_id: str,
+        token_id: str,
+    ) -> SponsorDropoffToken:
+        row = (
+            db.query(SponsorDropoffToken)
+            .filter(
+                SponsorDropoffToken.id == uuid.UUID(str(token_id)),
+                SponsorDropoffToken.campaign_id == uuid.UUID(str(campaign_id)),
+                SponsorDropoffToken.sponsor_id == uuid.UUID(str(sponsor_id)),
+            )
+            .one_or_none()
+        )
+        if row is None:
+            raise ServiceError("Drop-off link not found", status_code=404)
+        if row.revoked_at is None:
+            row.revoked_at = datetime.utcnow()
+            db.flush()
+        return row
+
+    def resolve_payload(
+        self,
+        db: Session,
+        *,
+        campaign_id: str,
+        token: str,
+        scanned_by_user_id: str | uuid.UUID | None = None,
+        user_agent: str | None = None,
+    ) -> dict[str, object]:
         now = datetime.utcnow()
         row = (
             db.query(SponsorDropoffToken)
@@ -112,6 +145,19 @@ class SponsorDropoffService:
             raise ServiceError("This drop-off link is expired.", status_code=410)
 
         row.last_scanned_at = now
+        db.add(
+            SponsorDropoffScanEvent(
+                id=uuid.uuid4(),
+                token_id=row.id,
+                campaign_id=row.campaign_id,
+                sponsorship_id=row.sponsorship_id,
+                sponsor_id=row.sponsor_id,
+                scanned_by_user_id=uuid.UUID(str(scanned_by_user_id)) if scanned_by_user_id else None,
+                scanned_at=now,
+                outcome="RESOLVED",
+                user_agent=_truncate_user_agent(user_agent),
+            )
+        )
         db.flush()
         return serialize_dropoff_payload(row)
 
@@ -227,3 +273,9 @@ def _gift_sort_key(item: WishlistItem | None) -> tuple[str, str, str]:
         str(recipient.display_label or ""),
         str(item.description or ""),
     )
+
+
+def _truncate_user_agent(value: str | None) -> str | None:
+    if not value:
+        return None
+    return value[:512]

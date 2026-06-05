@@ -26,6 +26,7 @@ from app.models.recipient_constants import (
 )
 from app.models.recipient_group import RecipientGroup
 from app.models.sponsor import Sponsor
+from app.models.sponsor_dropoff_scan_event import SponsorDropoffScanEvent
 from app.models.sponsor_dropoff_token import SponsorDropoffToken
 from app.models.sponsor_interaction import SponsorInteraction
 from app.models.sponsorship import Sponsorship
@@ -193,6 +194,12 @@ def test_mobile_dropoff_token_resolves_committed_gifts(app, monkeypatch) -> None
     assert payload["recipients"][1]["gifts"][0]["can_unreceive"] is True
     session.expire(token_row)
     assert token_row.last_scanned_at is not None
+    scan_event = session.query(SponsorDropoffScanEvent).one()
+    assert scan_event.token_id == token_row.id
+    assert scan_event.campaign_id == campaign.id
+    assert scan_event.sponsor_id == sponsor.id
+    assert scan_event.scanned_by_user_id == manager.id
+    assert scan_event.outcome == "RESOLVED"
 
 
 def test_send_rejects_non_sponsor_template(app, monkeypatch) -> None:

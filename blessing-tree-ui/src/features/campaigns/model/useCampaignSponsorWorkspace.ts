@@ -10,6 +10,7 @@ import {
   getPendingSponsorRegistrations,
   previewSponsorCommunication,
   resendPendingSponsorRegistration,
+  revokeCampaignSponsorDropoffToken,
   sendSponsorCommunication,
   updateCampaignSponsor,
   updateCampaignSponsorInteraction,
@@ -244,6 +245,19 @@ export function useCampaignSponsorWorkspace(campaignId: string | null) {
     [campaignId, performMutation, refreshSponsorInteractions]
   );
 
+  const revokeDropoffToken = useCallback(
+    async (sponsorId: string, tokenId: string): Promise<CampaignSponsor | null> => {
+      if (!campaignId) {
+        return null;
+      }
+      return performMutation(
+        () => revokeCampaignSponsorDropoffToken(campaignId, sponsorId, tokenId),
+        'Sponsor drop-off QR link revoked.'
+      );
+    },
+    [campaignId, performMutation]
+  );
+
   const saveSponsor = useCallback(
     async (
       sponsor: SponsorUpsertInput,
@@ -390,6 +404,7 @@ export function useCampaignSponsorWorkspace(campaignId: string | null) {
     loadSponsorInteractions: refreshSponsorInteractions,
     previewCommunication,
     sendCommunication,
+    revokeDropoffToken,
     saveSponsor,
     removeSponsor,
     saveInteraction,
