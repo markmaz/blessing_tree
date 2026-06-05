@@ -965,55 +965,49 @@ def seed_campaign_setup(db: Session, campaign: Campaign, manager_user_id: uuid.U
 
 
 def seed_templates(db: Session, campaign: Campaign, manager_user_id: uuid.UUID) -> None:
-    dropoff_body = "__bt_template_blocks_v1__::" + json.dumps(
-        {
-            "version": 1,
-            "blocks": [
-                {
-                    "id": "dropoff-heading",
-                    "type": "heading",
-                    "content": "Gift drop-off reminder",
-                },
-                {
-                    "id": "dropoff-main",
-                    "type": "text",
-                    "content": (
-                        "Hi {{sponsor.first_name}},\n\n"
-                        "This is a reminder that gifts are due by {{gift.due_date}}.\n\n"
-                        "{{gift.awaiting_turn_in_list}}\n\n"
-                        "Recipient IDs for check-in: {{gift.dropoff_recipient_ids}}"
-                    ),
-                },
-                {
-                    "id": "dropoff-qr",
-                    "type": "image",
-                    "src": "{{gift.dropoff_qr_image}}",
-                    "altText": "Sponsor drop-off QR code",
-                    "caption": "Staff can scan this QR code at drop-off to open your gift list.",
-                },
-                {
-                    "id": "dropoff-location",
-                    "type": "text",
-                    "content": (
-                        "Drop-off location:\n"
-                        "Blessing Tree Demo Warehouse\n"
-                        "1212 Giving Ln\n"
-                        "Houston, TX 77024\n"
-                        "Map: https://maps.example.com/blessing-tree-demo-warehouse\n\n"
-                        "Plain link fallback: {{gift.dropoff_qr_url}}\n\n"
-                        "Please label each gift with the recipient ID if possible."
-                    ),
-                },
-            ],
-        },
-        separators=(",", ":"),
+    gift_summary_body = sponsor_qr_email_body(
+        "Your Blessing Tree gift commitments",
+        (
+            "Hi {{sponsor.first_name}},\n\n"
+            "Thank you for supporting {{campaign.name}}. Here are the gifts currently assigned to you:\n\n"
+            "{{gift.all_list}}\n\n"
+            "Recipient IDs for drop-off check-in: {{gift.dropoff_recipient_ids}}"
+        ),
+        (
+            "Keep this QR code with you when you shop and when you drop off gifts. "
+            "Staff can scan it to open your committed gift list."
+        ),
+        "If anything changes, reply to this message so our sponsor team can help.",
+    )
+    dropoff_body = sponsor_qr_email_body(
+        "Gift drop-off reminder",
+        (
+            "Hi {{sponsor.first_name}},\n\n"
+            "This is a reminder that gifts are due by {{gift.due_date}}.\n\n"
+            "{{gift.awaiting_turn_in_list}}\n\n"
+            "Recipient IDs for check-in: {{gift.dropoff_recipient_ids}}"
+        ),
+        "Staff can scan this QR code at drop-off to open your gift list.",
+        "Please label each gift with the recipient ID if possible.",
+    )
+    final_reminder_body = sponsor_qr_email_body(
+        "Final sponsor reminder",
+        (
+            "Hi {{sponsor.first_name}},\n\n"
+            "This is the final reminder for your {{campaign.name}} commitments. "
+            "Please bring remaining gifts by {{gift.due_date}} or contact us right away.\n\n"
+            "{{gift.awaiting_turn_in_list}}\n\n"
+            "Recipient IDs for drop-off check-in: {{gift.dropoff_recipient_ids}}"
+        ),
+        "Bring this QR code with your gifts so staff can quickly confirm your drop-off.",
+        "Thank you for helping make the Giving and Love campaign possible.",
     )
     templates = (
         (
             "sponsor_gift_summary",
             "Sponsor Gift Summary",
             "Your {{campaign.name}} gift commitments",
-            "Hi {{sponsor.first_name}},\n\nThank you for supporting {{campaign.name}}. Here are the gifts currently assigned to you:\n\n{{gift.all_list}}\n\nPlease keep this email handy when shopping. If anything changes, reply to this message so our sponsor team can help.",
+            gift_summary_body,
         ),
         (
             "sponsor_drop_off_reminder",
@@ -1025,7 +1019,7 @@ def seed_templates(db: Session, campaign: Campaign, manager_user_id: uuid.UUID) 
             "final_sponsor_reminder",
             "Final Sponsor Reminder",
             "Final reminder: {{campaign.name}} gifts are due soon",
-            "Hi {{sponsor.first_name}},\n\nThis is the final reminder for your {{campaign.name}} commitments. Please bring remaining gifts by {{gift.due_date}} or contact us right away.\n\n{{gift.awaiting_turn_in_list}}\n\nThank you for helping make the Giving and Love campaign possible.",
+            final_reminder_body,
         ),
         (
             "sponsor_thank_you",
@@ -1049,6 +1043,47 @@ def seed_templates(db: Session, campaign: Campaign, manager_user_id: uuid.UUID) 
                 created_by_user_id=manager_user_id,
             )
         )
+
+
+def sponsor_qr_email_body(heading: str, main_content: str, qr_caption: str, closing_content: str) -> str:
+    return "__bt_template_blocks_v1__::" + json.dumps(
+        {
+            "version": 1,
+            "blocks": [
+                {
+                    "id": "sponsor-qr-heading",
+                    "type": "heading",
+                    "content": heading,
+                },
+                {
+                    "id": "sponsor-qr-main",
+                    "type": "text",
+                    "content": main_content,
+                },
+                {
+                    "id": "sponsor-qr-image",
+                    "type": "image",
+                    "src": "{{gift.dropoff_qr_image}}",
+                    "altText": "Sponsor drop-off QR code",
+                    "caption": qr_caption,
+                },
+                {
+                    "id": "sponsor-qr-location",
+                    "type": "text",
+                    "content": (
+                        "Drop-off location:\n"
+                        "Blessing Tree Demo Warehouse\n"
+                        "1212 Giving Ln\n"
+                        "Houston, TX 77024\n"
+                        "Map: https://maps.example.com/blessing-tree-demo-warehouse\n\n"
+                        "Plain link fallback: {{gift.dropoff_qr_url}}\n\n"
+                        f"{closing_content}"
+                    ),
+                },
+            ],
+        },
+        separators=(",", ":"),
+    )
 
 
 def seed_teams(db: Session, campaign: Campaign) -> None:
