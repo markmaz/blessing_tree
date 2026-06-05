@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/features/auth/model/authContext';
 import { isAppAdminRole } from '@/features/campaigns/model/campaignPermissions';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 
 export function AdminPage() {
   const { role } = useAuth();
@@ -18,14 +19,10 @@ export function AdminPage() {
 
   return (
     <div className="vstack gap-4">
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <div>
-          <h1 className="h3 mb-1">Admin</h1>
-          <p className="text-muted mb-0">
-            Manage users, campaign operations, LLM runtime settings, and system health from the admin menu.
-          </p>
-        </div>
-      </div>
+      <WorkspacePageHeader
+        title="Admin"
+        description="Manage users, campaign operations, LLM runtime settings, and system health from the admin menu."
+      />
 
       <Outlet />
     </div>
