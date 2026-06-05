@@ -50,6 +50,14 @@ interface WishlistItemResponse {
   status: string;
   qty_fulfilled: number;
   notes: string | null;
+  sponsor: {
+    id: string;
+    display_name: string;
+    email: string | null;
+    phone: string | null;
+    sponsorship_id: string;
+    drop_off_status: string | null;
+  } | null;
   gift_workflow: {
     sponsorship_status: CampaignWishlistItem['giftWorkflow']['sponsorshipStatus'];
     sponsorship_id: string | null;
@@ -632,6 +640,16 @@ function mapWishlistItem(response: WishlistItemResponse): CampaignWishlistItem {
     status: response.status,
     qtyFulfilled: response.qty_fulfilled,
     notes: response.notes,
+    sponsor: response.sponsor
+      ? {
+          id: response.sponsor.id,
+          displayName: response.sponsor.display_name,
+          email: response.sponsor.email,
+          phone: response.sponsor.phone,
+          sponsorshipId: response.sponsor.sponsorship_id,
+          dropOffStatus: response.sponsor.drop_off_status,
+        }
+      : null,
     giftWorkflow: {
       sponsorshipStatus: response.gift_workflow.sponsorship_status,
       sponsorshipId: response.gift_workflow.sponsorship_id,

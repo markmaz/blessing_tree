@@ -10,10 +10,9 @@ Blessing Tree is a split frontend/backend application for managing a church gift
 
 ## Important Reality Check
 
-- The frontend and backend are partially integrated, but auth is not fully finished yet.
+- The frontend and backend are integrated for the main operating workflows.
 - `blessing-tree-ui/src/shared/api/authApi.ts` calls the real backend local login route.
 - Local login now completes directly against the backend auth routes.
-- OAuth callbacks now round-trip through the backend, set the refresh cookie, and complete in the frontend callback route.
 - Reload-time session restoration now uses the backend refresh cookie.
 - The frontend now has a shared authenticated API client with refresh-on-401 handling for future data screens.
 - The frontend now has a campaign switcher, campaign library, campaign detail flow, and a dashboard that follows the selected campaign.
@@ -22,8 +21,8 @@ Blessing Tree is a split frontend/backend application for managing a church gift
 - Campaign Studio AI now uses the configured admin LLM first for draft generation and falls back to the deterministic rules engine when the LLM is missing, disabled, unavailable, or returns an invalid structured draft.
 - The admin user-management area now uses a Query Forge-style workspace with a searchable/sortable user table, row actions, and drawers for invite/create and user details.
 - Admins can now also activate and deactivate users directly from the user-management row action menu.
-- Generic Google/Yahoo sign-in is now restricted to already-linked returning users, while invitation onboarding now lets invited users choose Google, Yahoo, or a local password from the invite page.
-- Invitation validation now distinguishes pending vs already-accepted onboarding state, and the invite/callback UI now shows clearer completion and error messaging.
+- Normal user sign-in is local email/password only, with forgot-password and keep-signed-in support. Google/Yahoo buttons were removed from the sign-in screen because the target users found them confusing.
+- Invitation validation now distinguishes pending vs already-accepted onboarding state, and invited users complete local password setup from the invitation flow.
 - The Communications section is now template-only and uses a Query Forge-inspired template-builder workspace with a collapsible tool rail, heading/text/image content blocks, inline uploads for small embedded images such as maps, a builder-side merge-field drawer, and a stronger rendered-preview surface; the Studio AI panel is now hidden by default and opens as a right-side drawer when needed.
 - The Schedule section is now calendar-first, with a Calendar Intelligence overview, critical date strip, warning list, and direct date-click and item-click modal editing for manual events, milestones, and communication schedules on top of the unified backend schedule APIs.
 - Ask Blessing Tree and the Dashboard now reuse the same calendar intelligence service for campaign date questions, upcoming calendar events, missing blockers, follow-up due items, and scheduled communications.

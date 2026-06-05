@@ -34,6 +34,7 @@ interface GiftWorkflowReportRecipientResponse {
     id: string;
     name: string;
     type: string;
+    program_abbreviation: string | null;
   } | null;
   wishlist: {
     id: string;
@@ -97,7 +98,14 @@ function mapRecipient(recipient: GiftWorkflowReportRecipientResponse): GiftWorkf
     age: recipient.age,
     ageUnit: recipient.age_unit,
     gender: recipient.gender,
-    group: recipient.group,
+    group: recipient.group
+      ? {
+          id: recipient.group.id,
+          name: recipient.group.name,
+          type: recipient.group.type,
+          programAbbreviation: recipient.group.program_abbreviation,
+        }
+      : null,
     wishlist: recipient.wishlist,
     counts: recipient.counts,
     coverage: {

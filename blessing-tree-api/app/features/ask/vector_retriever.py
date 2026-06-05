@@ -75,13 +75,37 @@ class AskVectorKnowledgeRetriever:
     def _ensure_index(self, db: Session, documents: tuple[AskKnowledgeDocument, ...]) -> None:
         if self._indexed:
             return
+        self.rebuild_index(db, documents=documents)
+        self._indexed = True
+
+    def rebuild_index(
+        self,
+        db: Session,
+        documents: tuple[AskKnowledgeDocument, ...] | None = None,
+    ) -> dict[str, object]:
+        if not self.config.enabled:
+            return {
+                "indexed_items": 0,
+                "collection": self.config.collection,
+                "message": "Ask vector retrieval is disabled.",
+            }
+        documents = documents or build_ask_knowledge_documents()
         texts = [f"{doc.title}\n{doc.section}\n{doc.content}" for doc in documents]
         embeddings = self.runtime.embed_texts(db, texts=texts, model=self.config.embedding_model)
         if not embeddings:
-            return
+            return {
+                "indexed_items": 0,
+                "collection": self.config.collection,
+                "message": "No Ask embeddings were generated.",
+            }
         self._ensure_collection(vector_size=len(embeddings[0]))
         self._upsert_documents(documents, embeddings)
         self._indexed = True
+        return {
+            "indexed_items": len(documents),
+            "collection": self.config.collection,
+            "message": "Ask knowledge index generated.",
+        }
 
     def _ensure_collection(self, *, vector_size: int) -> None:
         response = requests.get(

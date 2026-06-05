@@ -676,6 +676,44 @@ def test_llm_config_and_health(
     )
     assert health_response.status_code == 200
     assert "checks" in health_response.get_json()
+    assert "qdrant" in health_response.get_json()["checks"]
+
+
+def test_admin_can_generate_qdrant_indexes(
+    app: Flask,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    from app.features.admin import api as admin_api
+
+    monkeypatch.setattr(
+        admin_api._health_service,
+        "rebuild_qdrant_indexes",
+        lambda db: {
+            "status": "ok",
+            "latency_ms": 12,
+            "ask": {"indexed_items": 4, "collection": "blessing_tree_ask_knowledge"},
+            "gift_search": {"campaigns": 2, "indexed_items": 18, "collection": "bt_gift_search_v1"},
+            "message": "Qdrant indexes generated.",
+        },
+    )
+
+    with admin_api.SessionLocal() as db:
+        admin_user = seed_user(db, email="admin-qdrant@blessingtree.test", role="ADMIN", name="Admin User")
+        admin_user_id = str(admin_user.id)
+        db.commit()
+
+    response = client.post(
+        "/api/v1/admin/health/qdrant/reindex",
+        headers=auth_header(admin_user_id, "ADMIN"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["status"] == "ok"
+    assert payload["ask"]["indexed_items"] == 4
+    assert payload["gift_search"]["indexed_items"] == 18
 
 
 def test_llm_test_surfaces_model_access_failure(

@@ -1,6 +1,6 @@
 # Admin Activity Log Design
 
-Last updated: 2026-05-29
+Last updated: 2026-06-01
 
 ## Status
 
@@ -64,8 +64,9 @@ Phase 6 final campaign workflow event writers implemented on 2026-05-29:
 - staff and public QR scan actions
 
 The MVP audit coverage is complete. Future additions should be incremental
-writers for newly introduced workflows, plus optional export/retention policies
-if users ask for them.
+writers for newly introduced workflows, plus optional retention policies if
+users ask for them. Activity Log PDF and Excel exports were added after the
+initial MVP and now follow the shared report export helpers.
 
 This document describes a durable, user-friendly audit/activity log for the
 Admin section. The current backend captures request-level audit metadata into
@@ -113,7 +114,6 @@ event. It is also not the right durable source for long-term history.
 - Showing every low-value field or internal-only update.
 - Restoring records from audit history.
 - User-managed audit retention policies.
-- Exporting audit logs in the first pass.
 - Diffing large rich-document payloads such as full flyer JSON or email HTML.
 
 ## Current State
@@ -639,26 +639,24 @@ Manual QA:
 ### Step 5: Production Hardening
 
 - Add retention policy decision.
-- Add export if users request it.
 - Add campaign-manager scoped visibility if needed.
 - Add quick links from activity event to entity screen when route context is
   available.
+- Keep PDF/Excel export aligned with shared report export behavior.
 
 ## Open Questions
 
-1. Should campaign managers see only their campaign activity, or should the MVP
-   stay app-admin only?
+1. Should campaign managers see only their campaign activity, or should the
+   screen stay app-admin only?
 2. How long should audit records be retained once the app is in broad
    production?
-3. Should report exports be logged in MVP, or only after reports contain more
-   sensitive operational data?
-4. Should public QR scan actions be shown in Admin Activity Log, Gift Status
-   history, or both?
-5. Should the Activity Log eventually support Excel/PDF export like reports?
+3. Should report/export events themselves be audit logged, or is the business
+   action history enough for the first production release?
+4. Should quick links back to edited records be added broadly, or only for
+   high-value areas such as sponsors, recipients, gifts, and users?
 
 ## Recommendation
 
-Implement the foundation, API, and Admin UI first, then add event writers to the
-highest-value workflows. This gives users immediate visibility into important
-admin and campaign changes without delaying the whole feature until every table
-is instrumented.
+Keep Activity Log app-admin focused for now, continue adding event writers as
+new workflows are introduced, and revisit retention plus campaign-scoped
+visibility after production usage shows how users rely on the log.

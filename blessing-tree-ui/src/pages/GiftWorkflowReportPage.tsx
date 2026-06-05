@@ -65,6 +65,7 @@ export function GiftWorkflowReportPage() {
   const { selectedCampaignId, selectCampaign } = useCampaigns();
   const [report, setReport] = useState<GiftWorkflowReport | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
+  const [programFilter, setProgramFilter] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [sponsors, setSponsors] = useState<CampaignSponsor[]>([]);
   const [selectedGift, setSelectedGift] = useState<{
@@ -182,6 +183,7 @@ export function GiftWorkflowReportPage() {
     const rows = report?.recipients ?? [];
     const normalizedQuery = query.trim().toLowerCase();
     return rows
+      .filter((recipient) => !programFilter || recipient.group?.programAbbreviation === programFilter)
       .map((recipient) => ({
         ...recipient,
         gifts: recipient.gifts.filter((gift) => {
@@ -199,7 +201,17 @@ export function GiftWorkflowReportPage() {
         }),
       }))
       .filter((recipient) => recipient.gifts.length > 0 || (!statusFilter && !normalizedQuery));
-  }, [query, report, statusFilter]);
+  }, [programFilter, query, report, statusFilter]);
+
+  const programFilterOptions = useMemo(() => {
+    return Array.from(
+      new Set(
+        (report?.recipients ?? [])
+          .map((recipient) => recipient.group?.programAbbreviation?.trim())
+          .filter((value): value is string => !!value)
+      )
+    ).sort((left, right) => left.localeCompare(right, undefined, { numeric: true, sensitivity: 'base' }));
+  }, [report]);
 
   const giftReportExport = useMemo(() => {
     const flatGiftRows = recipients.flatMap((recipient) =>
@@ -480,6 +492,30 @@ export function GiftWorkflowReportPage() {
       </div>
 
       <section className="gift-workflow-report__toolbar">
+        {programFilterOptions.length > 0 ? (
+          <div className="campaign-program-filter-row" aria-label="Program filters">
+            <span className="small text-uppercase text-muted fw-semibold">Program</span>
+            <div className="campaign-program-filter-row__chips" role="group" aria-label="Filter by program abbreviation">
+              <button
+                type="button"
+                className={`campaign-program-filter-chip${programFilter === null ? ' is-active' : ''}`}
+                onClick={() => setProgramFilter(null)}
+              >
+                All
+              </button>
+              {programFilterOptions.map((abbreviation) => (
+                <button
+                  key={abbreviation}
+                  type="button"
+                  className={`campaign-program-filter-chip${programFilter === abbreviation ? ' is-active' : ''}`}
+                  onClick={() => setProgramFilter(abbreviation)}
+                >
+                  {abbreviation}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <div className="d-flex flex-column flex-lg-row gap-2 flex-grow-1">
           <label className="visually-hidden" htmlFor="gift-report-search">Search gift report</label>
           <input

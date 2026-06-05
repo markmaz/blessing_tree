@@ -448,6 +448,35 @@ class CampaignService:
         db.refresh(campaign)
         return campaign
 
+    def delete_campaign(
+        self,
+        db: Session,
+        campaign: Campaign,
+        *,
+        confirmation_name: object,
+    ) -> None:
+        if str(confirmation_name or "") != campaign.name:
+            raise ServiceError(
+                "Campaign delete confirmation must match the campaign name exactly.",
+                status_code=400,
+                details={"field": "confirmation_name", "required_value": campaign.name},
+            )
+        wishlist_ids = [row[0] for row in db.query(Wishlist.id).filter(Wishlist.campaign_id == campaign.id).all()]
+        if wishlist_ids:
+            wishlist_item_ids = [
+                row[0]
+                for row in db.query(WishlistItem.id)
+                .filter(WishlistItem.wishlist_id.in_(wishlist_ids))
+                .all()
+            ]
+            if wishlist_item_ids:
+                db.query(Fulfillment).filter(Fulfillment.wishlist_item_id.in_(wishlist_item_ids)).delete(synchronize_session=False)
+                db.query(SponsorshipItem).filter(SponsorshipItem.wishlist_item_id.in_(wishlist_item_ids)).delete(synchronize_session=False)
+                db.query(WishlistItem).filter(WishlistItem.id.in_(wishlist_item_ids)).delete(synchronize_session=False)
+            db.query(Wishlist).filter(Wishlist.id.in_(wishlist_ids)).delete(synchronize_session=False)
+        db.delete(campaign)
+        db.flush()
+
     @staticmethod
     def _count(db: Session, query) -> int:
         return int(query.with_entities(func.count()).scalar() or 0)

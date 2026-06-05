@@ -73,6 +73,7 @@ def serialize_gift_search_item(item: WishlistItem, *, public: bool) -> dict[str,
         payload["label_code"] = item.label_code
         payload["recipient_note"] = item.recipient_note
         payload["notes"] = item.notes
+        payload["sponsor"] = _serialize_gift_sponsor(sponsorship_item)
     return payload
 
 
@@ -91,25 +92,25 @@ def serialize_gift_operations_response(
 
 def serialize_gift_operations_item(item: WishlistItem) -> dict[str, Any]:
     payload = serialize_gift_search_item(item, public=False)
-    sponsorship_item = item.sponsorship_item
-    sponsorship = sponsorship_item.sponsorship if sponsorship_item is not None else None
-    sponsor = sponsorship.sponsor if sponsorship is not None else None
     payload["received_at"] = _serialize_datetime(item.received_at)
     payload["wrapped_at"] = _serialize_datetime(item.wrapped_at)
     payload["storage_location_id"] = str(item.storage_location_id) if item.storage_location_id else None
-    payload["sponsor"] = (
-        {
-            "id": str(sponsor.id),
-            "display_name": sponsor.display_name,
-            "email": sponsor.email,
-            "phone": sponsor.phone,
-            "sponsorship_id": str(sponsorship.id),
-            "drop_off_status": sponsorship.drop_off_status,
-        }
-        if sponsor is not None and sponsorship is not None
-        else None
-    )
     return payload
+
+
+def _serialize_gift_sponsor(sponsorship_item: SponsorshipItem | None) -> dict[str, Any] | None:
+    sponsorship = sponsorship_item.sponsorship if sponsorship_item is not None else None
+    sponsor = sponsorship.sponsor if sponsorship is not None else None
+    if sponsor is None or sponsorship is None:
+        return None
+    return {
+        "id": str(sponsor.id),
+        "display_name": sponsor.display_name,
+        "email": sponsor.email,
+        "phone": sponsor.phone,
+        "sponsorship_id": str(sponsorship.id),
+        "drop_off_status": sponsorship.drop_off_status,
+    }
 
 
 def serialize_gift_pool_response(
@@ -334,6 +335,7 @@ def serialize_gift_workflow_recipient(row: dict[str, Any]) -> dict[str, Any]:
             "id": str(group.id),
             "name": group.group_name,
             "type": group.group_type,
+            "program_abbreviation": group.program_abbreviation,
         } if group is not None else None,
         "wishlist": {
             "id": str(wishlist.id),
@@ -490,6 +492,7 @@ def _serialize_public_recipient(recipient) -> dict[str, Any]:
 
 
 def _serialize_staff_recipient(recipient) -> dict[str, Any]:
+    group = recipient.recipient_group
     return {
         "id": str(recipient.id),
         "display_label": recipient.display_label,
@@ -500,6 +503,7 @@ def _serialize_staff_recipient(recipient) -> dict[str, Any]:
         "age_unit": recipient.age_unit,
         "gender": recipient.gender,
         "group_id": str(recipient.recipient_group_id),
+        "group_label": group.group_name if group is not None else None,
     }
 
 

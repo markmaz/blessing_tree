@@ -1,207 +1,138 @@
 # Active Workstreams
 
-Last updated: 2026-05-25
+Last updated: 2026-06-01
 
 ## Current Phase
 
-- Active roadmap phase: Phase 3
-- Current step: Gift workflow and sponsor self-registration polish is in progress. User access implementation is complete for the current phase, and the latest work moved public sponsor gift selection behind email verification, added explicit Sponsor Flyer navigation, relabeled `Season Theme` as `Campaign Purpose`, and added near-real-time polling to the Gift Status page.
+The current feature branch is `codex/report-exports`.
 
-## Recently Completed
+The most recent completed work adds true report exports and updates user
+documentation:
 
-- Consolidated docs into a canonical set
-- Added backend dependency manifests
-- Verified backend lint and tests against the manifest-backed virtualenv
-- Added backend `.env.example` and aligned setup/config naming with the reusable Query Forge pattern
-- Documented the backend bootstrap flow around `requirements*.txt` and `.env.example`
-- Removed the fake OTP local-login step so the frontend now matches the real backend local auth contract
-- Completed OAuth callback handoff through the frontend and added reload-time session restoration via the refresh cookie
-- Added a shared frontend API client with refresh-on-401 handling and auth-storage synchronization
-- Fixed the backend `python app/main.py` entrypoint so it no longer fails on the local `app/celery.py` import shadowing issue
-- Added RBAC design and implementation planning docs for campaign-scoped roles plus capability-based feature access
-- Implemented RBAC foundation with campaign role persistence, a capability matrix, an authorization service, backend version.json, and backend tests
-- Applied and verified the RBAC migration against the local MySQL `blessing_tree` database
-- Implemented RBAC enforcement helpers for app-admin gating, campaign capability gating, and campaign scope resolution, with backend tests
-- Documented the concrete campaign API design, AI-assisted campaign draft flow, and Campaign Studio direction
-- Locked the remaining campaign design decisions: immediate `description`, expanded summary counts, and transient AI drafts
-- Implemented the first campaign backend feature slice with protected list, detail, access, summary, create, and update endpoints
-- Added and applied the campaign metadata migration to local MySQL, allowing `description` and multiple campaigns per year
-- Exposed the first campaign APIs in the frontend through a campaign provider, campaign switcher, campaign list/detail routes, and a campaign-aware dashboard
-- Documented Campaign Studio as a concrete card-based campaign-building surface with a persistent AI builder rail, team/communications/milestone/readiness cards, and a `/campaigns/:campaignId/studio` primary route
-- Implemented Campaign Studio phase 1 with the primary studio route, left-rail section navigation, overview cards driven by existing campaign/access/summary data, placeholder section canvases, and a non-destructive AI builder rail
-- Implemented Campaign Studio backend support with protected assignment, communication template/schedule, milestone, readiness, and aggregate studio endpoints
-- Applied and verified the Campaign Studio support migration against the local MySQL `blessing_tree` database
-- Live-smoke-tested the new Campaign Studio backend routes against the running Blessing Tree API
-- Wired Campaign Studio Team, Communications, Schedule, and Readiness sections to the new backend APIs
-- Added frontend template and schedule creation flows inside Campaign Studio
-- Added frontend milestone save wiring inside Campaign Studio
-- Live-verified the Studio section rendering and communications create flows against the running Blessing Tree stack
-- Added app-admin campaign creation UI on the campaign library page
-- Added campaign update UI on the detail page and Studio settings section
-- Live-verified the campaign create/update backend paths against the running Blessing Tree stack
-- Added a campaign-scoped user directory search endpoint for Team assignment creation
-- Wired Campaign Studio Team to search active users and create campaign assignments without raw IDs
-- Live-verified the directory search and assignment creation flow against the running Blessing Tree backend
-- Added a Vitest + Testing Library frontend test harness
-- Added the first automated UI test coverage for the Campaign Studio Team assignment flow
-- Locked frontend automated tests as mandatory for new UI behavior
-- Documented concrete Campaign Schedule design with `campaign_event`, unified schedule reads, and `Timeline | Calendar | Milestones` Studio views
-- Implemented backend `campaign_event` persistence and unified schedule APIs
-- Applied and verified the `campaign_event` migration against local MySQL `blessing_tree`
-- Added backend test coverage for manual event CRUD and unified schedule reads
-- Replaced Studio `Dates` with `Schedule` in the frontend and added `Timeline | Calendar | Milestones` views
-- Added frontend manual event create/edit/delete flows on top of the unified schedule APIs
-- Added frontend automated test coverage for the new Schedule section behavior
-- Connected schedule quality into backend readiness with warnings for missing manual planning events and missing milestone-linked communication timing
-- Connected the Studio AI rail to schedule readiness so schedule prompts are now contextual instead of generic
-- Reworked Studio Schedule into a calendar-first planner with direct date-click and item-click modal editing
-- Added shared modal editing for manual events, milestones, and communication schedules from the calendar surface
-- Added a prompt-driven AI draft/apply path for schedule events, milestones, and communications
-- Tightened Campaign Studio responsiveness by collapsing the section rail to icons at medium widths and preventing schedule/AI card content from bleeding outside their containers
-- Reworked the AI draft-type picker in the Studio rail into a compact horizontal segmented control with shared helper copy so the narrow rail no longer chops the option text
-- Reworked Studio Communications into a template-only builder with a saved-template rail, metadata/content editing tabs, and rendered email preview based on the Query Forge template-builder interaction pattern
-- Expanded the Studio Communications builder to support heading, text, and image blocks through a persisted frontend block envelope, and made the saved-template rail collapsible so the editor has more room
-- Tightened the Communications builder workspace spacing and added inline upload support for small embedded images inside email templates
-- Reworked the Communications preview into a stronger rendered surface and moved merge fields into a slide-out drawer so the preview column has more room
-- Reworked Communications again so merge fields now open from the builder side, the saved-template rail behaves more like a tool rail, and the Studio AI panel opens as a hidden right drawer instead of staying permanently visible
-- Added a protected-app footer that displays `QueryForge, LLC` copyright plus live frontend/backend versions, backed by a new `/api/v1/meta/version` endpoint
-- Documented the Campaign Team redesign: campaign roster separate from app users, fixed access roles for RBAC, user-defined teams for operations/email targeting, and a table-plus-drawer Team workspace
-- Documented the Campaign Team implementation plan, including the incremental migration path from direct `campaign_user_role` assignments to a member-centric roster, team, and access-role model
-- Implemented Team redesign phase 1 with the `campaign_member` model, relationships, migration, backend tests, and local MySQL verification against `blessing_tree`
-- Implemented Team redesign phase 2 with the `campaign_member_access_role` model, member-first authorization resolution, backend tests, and local MySQL verification against `blessing_tree`
-- Implemented Team redesign phase 3 with `campaign_team`, `campaign_team_member`, a backend team service, backend tests, and local MySQL verification against `blessing_tree`
-- Implemented Team redesign phase 4 with member, access-role, team, membership, app-access, and aggregate Team workspace APIs plus backend tests
-- Implemented Team redesign phase 5 with a member-centric Team Studio frontend workspace, roster table, team panel, Query Forge-style drawers, and automated frontend tests
-- Revised the Team design and implementation plan so teams can carry their own operational roles separately from app access roles, and so plain team membership without a role is valid
-- Implemented team-scoped team roles in the backend and Team Studio drawer, including role-aware membership assignment plus role-less `Member` participation
-- Fixed the Teams search row so its input stretches the full available width like the People search row
-- Added inline Team glossary help in the workspace and mirrored those definitions into the Studio AI drawer for Team prompts
-- Finished the Team workspace role-catalog cutover so frontend app access role labels and descriptions now come from the backend `team-workspace` payload
-- Fixed local backend CORS so both `localhost:5173` and `127.0.0.1:5173` can call campaign APIs during development
-- Refined the Team workspace so team setup and membership management now live in the team drawer instead of being duplicated across both person and team flows
-- Reworked the Team workspace layout so People and Teams now render as separate first-class tables instead of a people table plus side team rail
-- Simplified the Team workspace again so the top stats are smaller and the People/Teams cards now rely on search plus click-sort instead of a larger filter bar
-- Reworked the Campaign Studio AI drawer so it now follows a more Query Forge-like panel pattern with a threaded prompt history, prompt copy action, suggestion cards, and a generic composer that works cleanly on non-schedule sections like Team
-- Documented Campaign Studio AI as a structured draft/review/apply action system with a backend draft endpoint, normalized action cards, multi-action bundles, and apply-through-existing-feature-APIs instead of direct AI writes
-- Implemented Campaign Studio AI phase 1 with a real backend `ai/draft` contract, normalized schedule action payloads, and frontend AI action-card rendering/apply wiring for schedule actions
-- Implemented Campaign Studio AI phase 2 with Communications template creation drafts, optional linked calendar communication drafts, and best-effort apply-all sequencing that resolves new template IDs before placing dependent communication schedules
-- Implemented Campaign Studio AI phase 3 with Team bundles that can draft a new team, its team roles, a roster member, and a dependent member-to-team assignment, while keeping explanatory Team prompts advisory
-- Implemented Campaign Studio AI phase 4 with Readiness fix bundles that can draft cross-section actions for settings, milestones, templates, and planned communications, while rendering blocked fix-plan cards when the app still lacks enough information to apply a safe automated fix
-- Implemented Campaign Studio AI phase 5 with real Settings drafts, readiness-aware lifecycle/status suggestions, and inline edit-before-apply for scalar campaign setting changes in the AI drawer
-- Wired Campaign Studio AI to the configured admin LLM so draft generation now uses the saved model/base URL first and falls back to deterministic drafting when the LLM path fails or returns invalid structured actions
-- Tightened Campaign Studio AI normalization so configured-LLM communications drafts can recover common alias fields like `subject` and `body` without falling back when the model omits the exact `subject_template` and `body_template` keys
-- Tightened admin LLM validation so `Test Connection` now exercises the configured model on the same generation path used by Campaign Studio AI instead of only checking provider reachability at `/models`
-- Added a provider-backed Admin LLM model catalog endpoint and wired the LLM page to use it for a combo/input model field when available, with explicit warning text when the provider catalog cannot be loaded and the UI is using fallback presets
-- Changed communication templates from a global/shared model to a campaign-scoped model so each campaign owns and can clone its own communication set
-- Added create-from-previous-campaign support so a new campaign can clone setup from an earlier campaign, including roster, teams, campaign communications, milestones, schedules, and manual events
-- Added configurable SMTP TLS/SSL flags plus a local SMTP sink so invitation emails and scheduled communications can be exercised end to end in development without external SMTP credentials
-- Added Playwright browser E2E coverage for invite onboarding, create-from-previous-campaign, and the communications template builder
-- Tightened campaign visibility and campaign-creator setup so member/access-role visibility is the preferred path and newly created campaigns always seed the creator as a campaign member with `CAMPAIGN_MANAGER`
-- Documented the concrete recipient-domain direction: keep a unified campaign-scoped recipient model, treat parents/guardians/staff/coordinators as contacts rather than recipients, and evolve the schema toward explicit `program_type` support for `CHILD_FAMILY`, `ORGANIZATION_CHILD`, and `ORGANIZATION_ADULT`
-- Documented the concrete recipient implementation sequence, from schema refinement through APIs, the campaign-aware `People` workspace, wishlist/fulfillment alignment, and communications audience integration
-- Implemented recipient phase 1 backend refinement with `V014__Recipient_Refinement.sql`, refined ORM models, recipient-domain constants, and backend model tests
-- Implemented recipient backend phases 2 and 3 with a new recipient feature package, aggregate `people-workspace` payload, and campaign-scoped group/contact/recipient/wishlist CRUD APIs
-- Implemented recipient phase 4 with a campaign-aware `People` workspace, selected-campaign `People` navigation, sortable group and People tables, right-side group/recipient drawers, contact management, and recipient-centered wishlist editing
-- Implemented recipient phase 5 with gift-workflow visibility in the People workflow, including sponsorship, fulfillment, label, pickup, and authorized-pickup-contact readiness surfaced directly in wishlist items and group/recipient drawers
-- Refined the People intake UX so family/facility entry now feels more like connected intake work: group drawers expose `Children`/`Residents` directly, and contextual recipient drawers hide non-applicable fields such as child direct-contact details
-- Split the People section into child `Intake` and `Directory` views so new family/facility entry starts from a simple workflow launcher while search and maintenance stay in a separate directory surface
-- Updated the recipient design and implementation docs again so the long-term model now explicitly supports a generic `ORGANIZATION` path plus a first-class `organization_type`
-- Implemented recipient phase 6 by expanding the Communications audience model to include household contacts, facility contacts, primary group contacts, and direct adult recipients, wiring those audiences through the backend resolver, automation dispatch path, Studio payload, template builder, and frontend presentation
-- Collapsed the short-lived facility-vs-partner-program split back into one non-household model, including recipient-level direct-contact/address fields, context-aware People intake/directory/reporting copy, validation that blocks household-child direct-contact data while allowing organization recipient direct-contact data, and an organization-contact communications audience design direction
-- Documented a concrete lifecycle-aware Campaign Readiness design with grouped rule categories, phase gating, action labels, and future automation-health checks
-- Implemented the lifecycle-aware Campaign Readiness redesign across backend rule families, grouped/phase-aware API output, Studio UI grouping, and AI prompt integration
-- Replaced the old placeholder automation warning with a real execution layer:
-  - Celery task package
-  - due communication dispatch
-  - lifecycle advancement
-  - execution logging in `campaign_automation_execution`
-  - worker heartbeat-backed readiness health
-  - a dedicated `bt` queue to isolate Blessing Tree from Query Forge on shared local Valkey
-- Added an admin runtime slice with:
-  - Query Forge-style user invitation creation/resend plus invite acceptance
-  - global LLM configuration storage and health testing
-  - runtime health visibility for database, Celery, and the configured LLM
-  - app feature flag reads/toggles for frontend route and UI gating
-- Split the admin frontend into left-sidebar child sections under `Admin` so user management, LLM configuration, health checks, and app capabilities are no longer stacked on one screen
-- Reworked Admin → User Management into a Query Forge-style workspace with a searchable/sortable user table, row action menu, and invite/detail drawers
-- Added real activate/deactivate user controls to Admin → User Management through a backend status endpoint plus row action menu wiring
-- Added Query Forge-style `All`, `Active`, and `Invited` filter cards to Admin → User Management
-- Refined Admin → LLM Configuration so the `OpenAI` provider now uses a default endpoint and model presets while the generic compatible provider keeps freeform endpoint/model controls
-- Documented invitation-centric onboarding so invite acceptance, Google/Yahoo OAuth, and local password setup now have a single target model instead of the current split behavior
-- Implemented invitation-centric onboarding phase 1 by limiting generic Google/Yahoo login to already-linked returning users and blocking auto-linking for merely pre-provisioned accounts
-- Implemented invitation-centric onboarding phase 2 by turning `/auth/register` into a multi-method onboarding screen that presents Google, Yahoo, and local password choices
-- Implemented invitation-centric onboarding phase 3 by adding invite-scoped Google/Yahoo login routes plus callback binding so the first successful OAuth identity can accept an invitation and complete onboarding
-- Implemented invitation-centric onboarding phase 4 by polishing invite validation state, accepted-invite handling, callback completion messaging, and clearer user-facing onboarding errors
-- Applied and verified the automation runtime migration against local MySQL `blessing_tree`
-- Live-smoke-tested worker/beat startup plus a real queued communication dispatch against the local Blessing Tree stack
-- Added communication schedule delete support to the backend so the calendar modal can fully manage communication records
-- Refined the Studio Communications template rail into a compact file-style panel with a Query Forge-like icon rail, template rehydration on file select, and backend-backed template delete with schedule-use protection
-- Replaced remaining native browser confirmation dialogs in the schedule editors with custom in-app confirmation UI and promoted that as project policy
-- Promoted another product UI rule: all buttons should include icons rather than shipping text-only button treatments
-- Promoted another engineering workflow rule: never commit feature work directly to `main`; always use a feature branch first
-- Fixed backend runtime gaps discovered during live stack verification:
-  - removed the RBAC package import cycle at app startup
-  - loaded the full SQLAlchemy model registry during app creation
-  - pinned backend `bcrypt` to `4.1.3` so local password auth works with `passlib`
-- Promoted additional coding rules into engineering policy for file size, single responsibility, version bumps, review, commit discipline, naming, and feature-driven backend structure
-- Promoted additional delivery rules into engineering policy for migrations, backend-authoritative authz, additive APIs, shared-module scope, tests, and doc updates
-- Initialized a single top-level Git repository with root `.gitignore` and `.gitattributes`
-- Started sponsor workspace implementation with sponsor-domain refinement, `pending_sponsor_registration`, public sponsor campaign config fields, campaign-scoped sponsor CRUD endpoints, sponsor interaction endpoints, public sponsor signup/verification endpoints, and staff/public sponsor frontend pages
-- Verified the current sponsor slice on 2026-05-23 with:
-  - `./.venv/bin/python -m pytest tests/features/campaigns/test_sponsor_api.py` from `blessing-tree-api` (`4 passed`)
-  - `npm run build` from `blessing-tree-ui` (passed with the existing Vite large-chunk warning)
-  - `npm test` from `blessing-tree-ui` (`23 files passed`, `82 tests passed`)
-- Applied and verified `V023__Sponsor_Workspace_Foundation.sql` and `V024__Campaign_Public_Sponsor_Config.sql` against local MySQL `blessing_tree` on 2026-05-23, including sponsor/sponsorship/interaction/campaign columns, `pending_sponsor_registration`, and expected new indexes
-- Fixed a backend startup regression discovered during live smoke testing by lazily resolving `send_public_sponsor_verification_email_task` from the public sponsor API, avoiding a `factory -> public API -> campaign_tasks -> factory` circular import
-- Live-smoke-tested the sponsor slice on 2026-05-23 against a fresh backend/frontend pair using disposable smoke data:
-  - protected sponsor workspace initial load, sponsor create, interaction create, and sponsor search all returned expected HTTP responses
-  - public sponsor config, public signup submission, and verification flow returned expected HTTP responses
-  - browser smoke verified protected Sponsors Directory, Intake, Reports, Campaign Studio sponsor flyer, and public sponsor signup pages with no page errors, console errors, or failed non-favicon responses
-- Implemented the admin-managed milestone/readiness backend foundation with `campaign_milestone_definition`, `campaign_readiness_rule_definition`, admin Campaign Operations APIs, seeded sponsor readiness blockers, and database-backed missing-milestone readiness evaluation
-- Applied and verified `V025__Admin_Milestone_Readiness_Definitions.sql` against local MySQL `blessing_tree`
-- Completed the next milestone/readiness phase by wiring Campaign Studio milestone validation, frontend milestone dropdowns, and Campaign Studio AI milestone draft/normalizer paths to database-defined milestone definitions as the runtime source
-- Added the initial Admin -> Campaign Operations UI with typed frontend API mapping, navigation, milestone definition create/edit, and missing-milestone readiness rule create/edit flows
-- Polished Admin -> Campaign Operations with milestone referenced-rule visibility, rule impact preview copy, and explicit confirmation gates before deactivating active system milestone definitions or system readiness rules
-- Completed sponsor polish pass for API contract and mail behavior:
-  - public sponsor verification responses now map backend snake-case sponsor payloads into the frontend camel-case verification screen contract
-  - public sponsor config registration metadata now maps `starts_on`, `ends_on`, and `missing_milestones`
-  - public sponsor signup no longer fails the request when Celery/email delivery is unavailable; it returns an explicit `email_delivery_status`
-  - sponsor workspace open-need counts now only count open wishlist items
-  - focused frontend API tests cover public sponsor config, signup delivery status, and verification mapping
-- Removed the old recipient runtime compatibility aliases for `ADULT_PROGRAM`/facility-style names; backend runtime and tests now use `ORGANIZATION`, `organization_type`, and `ORGANIZATION_ADULT` directly
-- Implemented campaign user access management:
-  - simplified campaign roles to Campaign Manager, People, Sponsors, Gift Operations, Gift Search, Reports Only, and View Only
-  - added Admin User Management campaign-access GET/PUT APIs and a simple one-select-per-campaign drawer UI
-  - changed authorization to union direct `campaign_user_role` grants with member access-role grants
-  - added frontend capability helpers, sidebar filtering, and protected route capability gates
-  - refined gift workflow endpoint guards around search, commit, operations, pool, distribution, and reports
-  - applied and verified `V033__User_Access_Role_Catalog.sql` against local MySQL `blessing_tree`; remaining legacy role key count is 0
-- Implemented gift workflow/reporting polish:
-  - Gift Status visual report now supports drawer actions, manual status changes including picked up/distributed, gift tag printing, and near-real-time visible-tab polling so scan updates appear without manual refresh
-  - left navigation now uses `Gift Status` for the visual gift report and no longer exposes the old Donations menu item
-  - gift tag content now focuses on recipient/family-or-group/age/gender plus QR code and purpose-based theme treatment instead of internal IDs or gift descriptions
-  - focused frontend build passed after the polling change
-- Implemented sponsor flyer/campaign purpose polish:
-  - Campaign Studio now has explicit Sponsor Flyer links in the header and Overview, plus an `Open Sponsor Flyer` action in Settings for existing campaigns
-  - user-facing `Season Theme` copy is now `Campaign Purpose`; storage/API still use `season_theme`
-  - current purpose-to-image treatment is simple keyword-based icon/accent mapping for gift tags; a real campaign asset/theme editor is still open
-- Implemented verify-first public sponsor self-registration:
-  - public signup page is now Blessing Tree branded and only collects sponsor/contact details before verification
-  - public verification page now owns NL gift search and gift reservation after the email token is verified
-  - backend ignores pre-verification selected gift IDs and exposes `POST /api/v1/public/campaigns/<public_slug>/sponsors/verified-gifts` for verified gift commits
-  - verification result payload now includes `selection_limit`
-  - verified with `.venv/bin/python -m pytest tests/features/campaigns/test_sponsor_api.py -q`, `npm test -- src/features/campaigns/api/publicSponsorApi.test.ts --run`, and `npm run build`
+- Reports now export real PDFs and true Excel `.xlsx` workbooks.
+- Admin Activity Log now has PDF and Excel export controls.
+- Ask Blessing Tree help/navigation/catalog content now knows about Activity
+  Log and report exports.
+- The detailed user guide was regenerated as DOCX/PDF.
+- The public downloadable user guide PDF was refreshed.
+- User-guide screenshots were recaptured from the current local app, including
+  a new Admin Activity Log screenshot.
+
+This branch has been committed and pushed:
+
+- commit `53e90ca Add report exports and update user guide`
+- branch `codex/report-exports`
+
+## Recently Completed Since The Older May Memory
+
+- Built and deployed Docker/Caddy/EC2/RDS-oriented production setup.
+- Added GitHub Actions deployment support.
+- Configured production SMTP/SES/Zoho-oriented email settings during deployment
+  work.
+- Removed normal sign-in Google/Yahoo buttons after deciding they would confuse
+  users.
+- Added delete-user support for deactivated users.
+- Implemented Ask Blessing Tree MVP and subsequent iterations:
+  - top-level navigation
+  - conversational UI
+  - reduced curated prompts
+  - clear-chat action
+  - thumbs up/down feedback with selected-state color
+  - prompt logging/review
+  - optional LLM NER
+  - optional Qdrant-backed knowledge retrieval
+  - field-level help dialog integration
+  - knowledge-base/user-guide integration
+  - report/query prompts
+  - calendar intelligence prompts
+- Added campaign calendar intelligence:
+  - shared backend read model
+  - Campaign Studio Schedule integration
+  - Dashboard upcoming calendar widget
+  - Ask Blessing Tree date/timing answers
+  - documentation updates
+- Reworked Campaign Studio AI panel so it behaves like Ask Blessing Tree and
+  uses Blessing Tree styling and the dialogue-bubble icon.
+- Added operational logging:
+  - local file logging configuration
+  - deployment/env documentation for log settings
+  - Admin Health remains available for runtime checks
+- Added Admin Activity Log:
+  - durable audit table
+  - API/list/detail
+  - Admin UI filters/pagination/drawer
+  - broad workflow event writers
+  - export buttons
+  - user-guide documentation
+- Added report export infrastructure:
+  - shared frontend report export helpers
+  - real PDF output
+  - true `.xlsx` output
+  - report export actions wired to report screens and Activity Log
+- Added and iterated the Campaign Flyer Builder.
+- Added and iterated the Gift Tag Builder:
+  - default seeded template
+  - 3x2 default size
+  - optional 2x2 size
+  - required QR code
+  - image/text placement controls
+  - batch print quantity
+  - blank/manual tags
+  - PDF sheet output
+- Added password-management changes:
+  - 8-character minimum
+  - profile password change
+  - password visibility affordance
+  - forgot-password/reset flow
+  - keep-signed-in support
+- Expanded sponsor communications:
+  - send campaign templates from sponsor drawer
+  - gift merge fields/lists
+  - direct sponsor send history
+  - first-class communication recipient concepts
+  - schedule/send-now support
+- Improved People/Intake:
+  - clearer create button labels
+  - generated child names
+  - add gifts after adding child/adult
+  - add another child/adult flow
+  - organization type admin screen
+  - family under organization support
+  - organization type served category including families
+  - updated seeded organization types
+- Improved Admin User Management:
+  - screen-level access toggle grid
+  - campaign access accordions
+  - active campaign badges
+  - single drawer save action
+  - row-click drawer behavior
+- Updated Ask Blessing Tree knowledge for:
+  - organization types
+  - family-in-organization behavior
+  - communication sending/scheduling
+  - gift tag builder
+  - flyer builder
+  - Activity Log
+  - report exports
+  - calendar intelligence
 
 ## Immediate Next Steps
 
-1. Live browser-check the latest public sponsor signup -> email verification -> verified gift search/reserve flow with the user-controlled backend/frontend processes
-2. Live browser-check Sponsor Flyer navigation/print and Gift Status auto-refresh after a public scan action
-3. Live browser-check Admin -> User Management campaign-access assignment and restricted user sessions for the major role bundles
-4. Decide whether to build the Sponsor Flyer editor next: editable copy/instructions/logo/artwork/theme, PDF/export treatment, and print-friendly QA
-5. Decide the next depth for `Campaign Purpose`: keep keyword icon mapping, add selectable assets, or integrate LLM/image generation for purpose-themed gift tags
-6. Continue QueryForge-style NL reporting/querying design/implementation after the current gift/sponsor surfaces are verified
+1. Merge/deploy `codex/report-exports` after review.
+2. Confirm production deployment picks up the new `xlsx` dependency and user
+   guide PDF.
+3. Smoke-test one report PDF export, one report Excel export, and one Activity
+   Log export in production.
+4. Continue product hardening after exports:
+   - operational monitoring/log review path
+   - bundle-size/performance cleanup
+   - more report coverage as users discover needs
+   - Ask Blessing Tree prompt tuning from real usage
 
 ## Blockers Or Ambiguities
 
-- Query Forge is a good source for auth/config patterns, but not all of its runtime surface belongs in Blessing Tree
-- The user controls local backend/frontend/Celery processes; do not start long-running app or worker processes unless explicitly asked
+- No current blocker is known for the report export branch.
+- User controls local app/Celery processes; avoid starting/stopping them unless
+  explicitly asked.
+- Qdrant should default enabled only when its environment variables and service
+  are available; deterministic Ask behavior must continue without it.

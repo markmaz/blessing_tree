@@ -5,14 +5,145 @@ from dataclasses import dataclass, field
 
 
 _CATEGORY_SYNONYMS: dict[str, tuple[str, ...]] = {
-    "clothing": ("clothes", "clothing", "shirt", "pants", "jacket", "coat", "shoes", "boots", "socks", "hat", "gloves"),
-    "coat": ("coat", "coats", "jacket", "jackets", "winter coat", "warm coat"),
-    "toy": ("toy", "toys", "lego", "legos", "doll", "dolls", "truck", "game", "games", "puzzle", "puzzles"),
-    "book": ("book", "books", "reading"),
+    "clothing": (
+        "clothes",
+        "clothing",
+        "shirt",
+        "shirts",
+        "pants",
+        "jeans",
+        "jacket",
+        "jackets",
+        "coat",
+        "coats",
+        "shoes",
+        "sneakers",
+        "boots",
+        "socks",
+        "hat",
+        "hats",
+        "gloves",
+        "hoodie",
+        "hoodies",
+        "sweater",
+        "sweaters",
+        "pajamas",
+        "pjs",
+        "underwear",
+    ),
+    "coat": ("coat", "coats", "jacket", "jackets", "winter coat", "warm coat", "parka", "hoodie", "hoodies"),
+    "toy": (
+        "toy",
+        "toys",
+        "lego",
+        "legos",
+        "blocks",
+        "building blocks",
+        "doll",
+        "dolls",
+        "barbie",
+        "truck",
+        "trucks",
+        "car",
+        "cars",
+        "game",
+        "games",
+        "board game",
+        "board games",
+        "puzzle",
+        "puzzles",
+        "action figure",
+        "action figures",
+        "dinosaur",
+        "dinosaurs",
+        "stuffed animal",
+        "stuffed animals",
+        "plush",
+        "play set",
+        "playset",
+        "playsets",
+        "craft",
+        "crafts",
+        "art kit",
+    ),
+    "book": ("book", "books", "reading", "novel", "novels", "comic", "comics", "journal", "journals"),
     "gift_card": ("gift card", "gift cards", "voucher", "vouchers"),
-    "essential": ("essential", "essentials", "hygiene", "toiletry", "toiletries", "blanket", "blankets"),
-    "electronics": ("electronic", "electronics", "headphones", "tablet", "speaker"),
-    "sports": ("sport", "sports", "basketball", "football", "soccer", "baseball"),
+    "essential": (
+        "essential",
+        "essentials",
+        "hygiene",
+        "toiletry",
+        "toiletries",
+        "blanket",
+        "blankets",
+        "bedding",
+        "towel",
+        "towels",
+        "diapers",
+        "wipes",
+        "soap",
+        "shampoo",
+        "toothbrush",
+        "toothpaste",
+    ),
+    "electronics": (
+        "electronic",
+        "electronics",
+        "headphones",
+        "earbuds",
+        "tablet",
+        "speaker",
+        "bluetooth",
+        "charger",
+        "gaming",
+        "video game",
+        "video games",
+        "controller",
+    ),
+    "sports": (
+        "sport",
+        "sports",
+        "basketball",
+        "football",
+        "soccer",
+        "baseball",
+        "softball",
+        "volleyball",
+        "cleats",
+        "ball",
+        "balls",
+        "bike",
+        "bicycle",
+        "scooter",
+        "skateboard",
+    ),
+    "art": (
+        "art",
+        "arts",
+        "creative",
+        "craft",
+        "crafts",
+        "drawing",
+        "paint",
+        "painting",
+        "markers",
+        "crayons",
+        "colored pencils",
+        "sketchbook",
+        "art kit",
+    ),
+    "beauty": (
+        "beauty",
+        "makeup",
+        "cosmetics",
+        "skin care",
+        "skincare",
+        "perfume",
+        "cologne",
+        "nail",
+        "nails",
+        "hair",
+    ),
 }
 
 _ITEM_TYPE_BY_CATEGORY: dict[str, str] = {
@@ -59,6 +190,10 @@ _STOP_TERMS = {
     "find",
     "show",
     "me",
+    "kids",
+    "kid",
+    "children",
+    "child",
 }
 
 
@@ -139,6 +274,20 @@ def _parse_age_range(value: str) -> tuple[int | None, int | None]:
         right = int(hyphen_match.group(2))
         return min(left, right), max(left, right)
 
+    inclusive_under_match = re.search(
+        r"\b(\d{1,2})\s*(?:years?|yrs?|yo|y/o|years old|old)?\s*(?:and|or)\s*(?:under|younger|below|less)\b",
+        value,
+    )
+    if inclusive_under_match:
+        return None, int(inclusive_under_match.group(1))
+
+    inclusive_over_match = re.search(
+        r"\b(\d{1,2})\s*(?:years?|yrs?|yo|y/o|years old|old)?\s*(?:and|or)\s*(?:over|older|above|up)\b",
+        value,
+    )
+    if inclusive_over_match:
+        return int(inclusive_over_match.group(1)), None
+
     exact_match = re.search(r"\b(\d{1,2})\s*(?:year|yr|yo|y/o|years old|old)\b", value)
     if exact_match:
         age = int(exact_match.group(1))
@@ -149,13 +298,33 @@ def _parse_age_range(value: str) -> tuple[int | None, int | None]:
         age = int(age_word_match.group(1))
         return age, age
 
-    under_match = re.search(r"\b(?:under|younger than|less than)\s+(\d{1,2})\b", value)
-    if under_match:
-        return None, max(int(under_match.group(1)) - 1, 0)
+    if _has_child_context(value):
+        contextual_under_match = re.search(r"\b(?:under|younger than|less than)\s+(\d{1,2})\b", value)
+        if contextual_under_match:
+            return None, max(int(contextual_under_match.group(1)) - 1, 0)
 
-    over_match = re.search(r"\b(?:over|older than|at least)\s+(\d{1,2})\b", value)
+        contextual_over_match = re.search(r"\b(?:over|older than|at least)\s+(\d{1,2})\b", value)
+        if contextual_over_match:
+            minimum = int(contextual_over_match.group(1))
+            if "at least" not in contextual_over_match.group(0):
+                minimum += 1
+            return minimum, None
+
+    under_match = re.search(
+        r"\b(?:age\s+)?(?:under|younger than|less than)\s+(\d{1,2})\s*(?:years?|yrs?|yo|y/o|years old|old)\b"
+        r"|\bage\s+(?:under|younger than|less than)\s+(\d{1,2})\b",
+        value,
+    )
+    if under_match:
+        return None, max(int(under_match.group(1) or under_match.group(2)) - 1, 0)
+
+    over_match = re.search(
+        r"\b(?:age\s+)?(?:over|older than|at least)\s+(\d{1,2})\s*(?:years?|yrs?|yo|y/o|years old|old)\b"
+        r"|\bage\s+(?:over|older than|at least)\s+(\d{1,2})\b",
+        value,
+    )
     if over_match:
-        minimum = int(over_match.group(1))
+        minimum = int(over_match.group(1) or over_match.group(2))
         if "at least" not in over_match.group(0):
             minimum += 1
         return minimum, None
@@ -171,18 +340,26 @@ def _parse_age_range(value: str) -> tuple[int | None, int | None]:
 
 
 def _parse_cost_range(value: str) -> tuple[int | None, int | None]:
-    under_match = re.search(r"\b(?:under|below|less than|max(?:imum)?|up to)\s+\$?(\d{1,4})\b", value)
+    has_child_context = _has_child_context(value)
+    has_age_phrase = _has_age_phrase(value)
+    under_match = re.search(r"\b(?:under|below|less than|max(?:imum)?|up to)\s+(\$?)(\d{1,4})\b", value)
     if under_match:
-        return None, int(under_match.group(1)) * 100
+        if (has_child_context or has_age_phrase) and not under_match.group(1):
+            return None, None
+        return None, int(under_match.group(2)) * 100
 
-    over_match = re.search(r"\b(?:over|above|more than|min(?:imum)?|at least)\s+\$?(\d{1,4})\b", value)
+    over_match = re.search(r"\b(?:over|above|more than|min(?:imum)?|at least)\s+(\$?)(\d{1,4})\b", value)
     if over_match:
-        return int(over_match.group(1)) * 100, None
+        if (has_child_context or has_age_phrase) and not over_match.group(1):
+            return None, None
+        return int(over_match.group(2)) * 100, None
 
-    range_match = re.search(r"\$?(\d{1,4})\s*(?:-|to)\s*\$?(\d{1,4})", value)
+    range_match = re.search(r"(\$?)(\d{1,4})\s*(?:-|to)\s*(\$?)(\d{1,4})", value)
     if range_match:
-        left = int(range_match.group(1)) * 100
-        right = int(range_match.group(2)) * 100
+        if (has_child_context or has_age_phrase) and not (range_match.group(1) or range_match.group(3)):
+            return None, None
+        left = int(range_match.group(2)) * 100
+        right = int(range_match.group(4)) * 100
         return min(left, right), max(left, right)
 
     return None, None
@@ -201,6 +378,12 @@ def _parse_categories(value: str) -> list[str]:
         if any(re.search(rf"\b{re.escape(term)}\b", value) for term in terms):
             categories.append(category)
     return categories
+
+
+def gift_category_search_terms(category: str) -> tuple[str, ...]:
+    normalized = category.strip().lower()
+    label = normalized.replace("_", " ")
+    return tuple(dict.fromkeys((label, *_CATEGORY_SYNONYMS.get(normalized, ()))))
 
 
 def _item_types_for_categories(categories: list[str]) -> list[str]:
@@ -228,7 +411,7 @@ def _parse_terms(value: str, categories: list[str], sizes: list[str]) -> list[st
     words = re.findall(r"[a-z0-9][a-z0-9'-]*", value)
     terms: list[str] = []
     for word in words:
-        if word in _STOP_TERMS or word in consumed or word.isdigit() or len(word) < 3:
+        if word in _STOP_TERMS or word in consumed or word.isdigit() or _is_numeric_range(word) or len(word) < 3:
             continue
         if word not in terms:
             terms.append(word)
@@ -249,3 +432,27 @@ def _build_warnings(
     if any(value is not None for value in (age_min, age_max)) or gender or categories or sizes or terms:
         return []
     return ["No structured filters were detected; searching by text only."]
+
+
+def _has_child_context(value: str) -> bool:
+    return bool(
+        re.search(
+            r"\b(?:kid|kids|child|children|boy|boys|girl|girls|teen|teens|teenager|teenagers|toddler|toddlers|infant|baby|babies)\b",
+            value,
+        )
+    )
+
+
+def _has_age_phrase(value: str) -> bool:
+    return bool(
+        re.search(
+            r"\bage\s+(?:under|younger than|less than|over|older than|at least)?\s*\d{1,2}\b"
+            r"|\b\d{1,2}\s*(?:-|to)\s*\d{1,2}\s*(?:years?|yrs?|yo|y/o|years old|old)\b"
+            r"|\b(?:under|younger than|less than|over|older than|at least)\s+\d{1,2}\s*(?:years?|yrs?|yo|y/o|years old|old)\b",
+            value,
+        )
+    )
+
+
+def _is_numeric_range(value: str) -> bool:
+    return bool(re.fullmatch(r"\d{1,2}\s*(?:-|to)\s*\d{1,2}", value))

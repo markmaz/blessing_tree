@@ -166,6 +166,8 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
     sponsor = Sponsor(
         id=uuid.uuid4(),
         display_name="Sponsor One",
+        email="sponsor@example.com",
+        phone="2815550101",
         preferred_contact="EMAIL",
         source="STAFF_ENTRY",
     )
@@ -221,6 +223,15 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
         if item["gift_workflow"]["label_code"] == "people-workspace-item-1"
     )
     assert open_payload_item["gift_workflow"]["sponsorship_status"] == "UNSPONSORED"
+    sponsored_payload_item = next(
+        item
+        for item in payload["recipients"][0]["wishlist"]["items"]
+        if item["gift_workflow"]["label_code"] == "people-workspace-item-2"
+    )
+    assert sponsored_payload_item["gift_workflow"]["sponsorship_status"] == "SPONSORED"
+    assert sponsored_payload_item["sponsor"]["display_name"] == "Sponsor One"
+    assert sponsored_payload_item["sponsor"]["phone"] == "2815550101"
+    assert sponsored_payload_item["sponsor"]["drop_off_status"] == "RECEIVED"
     assert payload["recipients"][0]["workflow_summary"]["open_item_count"] == 1
     assert sorted(payload["filters"]["program_types"]) == [
         RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
@@ -230,6 +241,21 @@ def test_people_workspace_returns_groups_recipients_and_counts(app, monkeypatch:
 
 def test_group_recipient_and_wishlist_crud_flow(app, monkeypatch: pytest.MonkeyPatch) -> None:
     install_auth(monkeypatch)
+    queued_item_reindexes: list[str] = []
+    queued_recipient_reindexes: list[str] = []
+    queued_item_deletes: list[str] = []
+    monkeypatch.setattr(
+        "app.features.recipients.service.enqueue_wishlist_item_reindex",
+        lambda wishlist_item_id: queued_item_reindexes.append(str(wishlist_item_id)),
+    )
+    monkeypatch.setattr(
+        "app.features.recipients.service.enqueue_recipient_gift_reindex",
+        lambda recipient_id: queued_recipient_reindexes.append(str(recipient_id)),
+    )
+    monkeypatch.setattr(
+        "app.features.recipients.service.enqueue_wishlist_item_delete",
+        lambda wishlist_item_id: queued_item_deletes.append(str(wishlist_item_id)),
+    )
     session = campaign_api_module.SessionLocal()
     manager = seed_user(session, name="Manager User")
     campaign = seed_campaign(session)
@@ -329,7 +355,21 @@ def test_group_recipient_and_wishlist_crud_flow(app, monkeypatch: pytest.MonkeyP
     )
 
     assert update_item_response.status_code == 200
+    assert queued_item_reindexes == [item_id, item_id]
+    update_recipient_response = client.patch(
+        f"/api/v1/campaigns/{campaign_id}/recipients/{recipient_id}",
+        json={"age": 4},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert update_recipient_response.status_code == 200
+    assert queued_recipient_reindexes == [recipient_id]
     assert wishlist_response.status_code == 200
+    delete_item_response = client.delete(
+        f"/api/v1/campaigns/{campaign_id}/recipients/{recipient_id}/wishlist/items/{item_id}",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert delete_item_response.status_code == 204
+    assert queued_item_deletes == [item_id]
     payload = wishlist_response.get_json()
     assert payload["intake_completed_by_contact"]["email"] == "taylor@example.com"
     assert payload["items"][0]["description"] == "Soccer ball"

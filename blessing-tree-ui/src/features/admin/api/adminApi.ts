@@ -10,6 +10,7 @@ import type {
   AdminAskReviewPayload,
   AdminFeaturesPayload,
   AdminHealthPayload,
+  AdminQdrantReindexPayload,
   AdminUserCampaignAccessPayload,
   AdminInvitation,
   AdminLlmModelsPayload,
@@ -503,7 +504,59 @@ export async function fetchAdminHealth(): Promise<AdminHealthPayload> {
           false,
       },
       llm: payload.checks.llm,
+      qdrant: normalizeHealthCheck(
+        payload.checks.qdrant ?? {
+          status: 'degraded',
+          configured: false,
+          message: 'Qdrant health data is not available.',
+        }
+      ),
     },
+  };
+}
+
+export async function reindexAdminQdrant(): Promise<AdminQdrantReindexPayload> {
+  const payload = await apiFetchJson<AdminQdrantReindexPayload>('/api/v1/admin/health/qdrant/reindex', {
+    method: 'POST',
+  });
+  const rawPayload = payload as unknown as {
+    latency_ms?: number;
+    ask?: {
+      indexed_items?: number;
+      collection?: string;
+    };
+    gift_search?: {
+      campaigns?: number;
+      indexed_items?: number;
+      collection?: string;
+    };
+  };
+  return {
+    ...payload,
+    latencyMs: payload.latencyMs ?? rawPayload.latency_ms,
+    ask: {
+      indexedItems: payload.ask?.indexedItems ?? rawPayload.ask?.indexed_items ?? 0,
+      collection: payload.ask?.collection ?? rawPayload.ask?.collection ?? '',
+    },
+    giftSearch: {
+      campaigns: payload.giftSearch?.campaigns ?? rawPayload.gift_search?.campaigns ?? 0,
+      indexedItems: payload.giftSearch?.indexedItems ?? rawPayload.gift_search?.indexed_items ?? 0,
+      collection: payload.giftSearch?.collection ?? rawPayload.gift_search?.collection ?? '',
+    },
+  };
+}
+
+function normalizeHealthCheck(check: AdminHealthPayload['checks']['database']): AdminHealthPayload['checks']['database'] {
+  const rawCheck = check as unknown as {
+    latency_ms?: number;
+    expected_collections?: string[];
+    worker_heartbeat?: boolean;
+  };
+  return {
+    ...check,
+    latencyMs: check.latencyMs ?? rawCheck.latency_ms,
+    expectedCollections: check.expectedCollections ?? rawCheck.expected_collections,
+    workerHeartbeat: check.workerHeartbeat ?? rawCheck.worker_heartbeat,
   };
 }
 

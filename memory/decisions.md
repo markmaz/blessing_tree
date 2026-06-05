@@ -205,7 +205,56 @@
 
 ## Invitation-Centric Onboarding Direction
 
-- Status: active
-- Decision: invitation is the only onboarding funnel into Blessing Tree. An invited user may choose Google, Yahoo, or a local password as their first authentication method, and the first successful identity binding should accept the invitation. App roles remain admin-controlled internally.
+- Status: superseded for visible UX by "Normal Sign-In Simplification"
+- Decision: invitation is the only onboarding funnel into Blessing Tree. Earlier planning allowed an invited user to choose Google, Yahoo, or a local password as their first authentication method.
 - Rationale: the current split between local-password invite acceptance and pre-provisioned OAuth login is inconsistent. The cleaner model is controlled provisioning plus user-chosen auth method.
-- Consequence: generic Google/Yahoo login should be for already-linked returning users only; first-time onboarding should start from the invite link; invite-scoped OAuth must validate the invited email, bind the identity, accept the invite, and complete sign-in; and local password setup becomes one onboarding option rather than the definition of invite acceptance.
+- Consequence: current user-facing docs and UI should describe local password invitation onboarding. Any remaining OAuth code should be treated as dormant/legacy unless the product decision changes.
+
+## Normal Sign-In Simplification
+
+- Status: active
+- Decision: remove normal sign-in Google/Yahoo buttons from the user-facing sign-in screen and keep the local username/password flow as the visible default.
+- Rationale: the target users found external-provider choices confusing, and the app is invitation/admin managed rather than public self-service.
+- Consequence: docs and support copy should describe local account sign-in, forgot password, and keep-signed-in behavior first; any remaining OAuth support should not be presented as the primary login path unless the product decision changes.
+
+## Ask Blessing Tree Retrieval Direction
+
+- Status: active
+- Decision: Ask Blessing Tree should combine deterministic help/report routing with optional LLM entity extraction and optional Qdrant-backed fuzzy knowledge retrieval.
+- Rationale: deterministic routing keeps campaign data access safe, while LLM/Qdrant support improves field-help and documentation matching for non-technical users asking questions in plain language.
+- Consequence: Ask must keep validated report/query catalogs authoritative, avoid arbitrary SQL, log/review unsupported prompts, and continue to work without Qdrant or an LLM.
+
+## Field-Level Help Direction
+
+- Status: active
+- Decision: field help should open an Ask-like modal in context instead of routing users away to the full Ask Blessing Tree page.
+- Rationale: users need quick guidance about a field such as Campaign Purpose or Guardian without losing their place in a drawer/form.
+- Consequence: new important forms should include unobtrusive help buttons where users may struggle with field meaning, and those buttons should use the same knowledge base as Ask Blessing Tree.
+
+## Campaign Calendar Intelligence Direction
+
+- Status: active
+- Decision: campaign dates should be exposed through a shared calendar intelligence service used by Campaign Studio, Dashboard, and Ask Blessing Tree.
+- Rationale: campaign managers need one holistic view of milestones, manual events, communications, readiness gaps, follow-ups, and upcoming dates, and users should be able to ask the assistant date questions directly.
+- Consequence: do not duplicate calendar logic per screen; add new date/event concepts to the shared service and update Ask examples when new calendar-backed questions become supported.
+
+## Gift Tag Builder Direction
+
+- Status: active
+- Decision: gift tags are campaign-configurable templates with mandatory QR codes, default 3x2 inch layout, optional 2x2 layout, image/text placement, batch print quantity, and blank/manual tag support.
+- Rationale: staff need printable tags that work in real pickup/distribution workflows while still allowing campaigns to control visual treatment.
+- Consequence: every saved/printed tag must preserve a scannable QR code; exported sheets should be PDF-based rather than browser print; empty/manual tags should use unassigned QR labels with clear scan behavior.
+
+## Report Export Direction
+
+- Status: active
+- Decision: user-facing report exports should produce real PDFs and true Excel `.xlsx` workbooks from the currently loaded/visible report data.
+- Rationale: users expect files that open cleanly in common office tools, not CSV files named like Excel or browser print output.
+- Consequence: keep export code shared, document export scope, and consider server-side exports only if users need very large all-matching-row exports later.
+
+## Activity Log Direction
+
+- Status: active
+- Decision: Admin Activity Log is a durable business-event log, not a low-level request log, and should be exportable to PDF/Excel.
+- Rationale: admins need plain-language answers to who changed what and when, plus shareable evidence for operational review.
+- Consequence: new mutating workflows should add audit events as part of implementation, and Activity Log exports should follow the same report export rules.

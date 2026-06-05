@@ -1,6 +1,15 @@
 # Campaign Studio Design
 
-Last updated: 2026-05-20
+Last updated: 2026-06-01
+
+## Status
+
+Implemented and iterated. Campaign Studio now includes overview/settings,
+Team, Communications, Schedule with calendar intelligence, Readiness, Campaign
+Purpose, Sponsor Flyer/Flyer Builder access, Gift Policy, and an Ask-like AI
+assistant panel. Related operational work lives in People, Sponsors, Gifts,
+Reports, and Admin screens rather than every workflow being embedded directly
+inside Studio.
 
 ## Purpose
 
@@ -126,14 +135,12 @@ Recommended sections:
 - Readiness
 - Settings
 
-Future sections may expand into:
+Related operating areas now live mostly outside the Studio left rail:
 
-- Recipients
-- Wishlists
-- Donations
-- Sponsors
-- Gifts
-- Pickups
+- People intake, directory, and reports
+- Sponsors intake, directory, and reports
+- Gifts search, status, operations, and pool
+- Gift Tag Builder
 - Reports
 
 Schedule is now further specified in:

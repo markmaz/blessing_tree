@@ -247,7 +247,7 @@ def build_document() -> None:
             ["People", "Family, organization, child, adult, wishlist, and people reports."],
             ["Sponsors", "Sponsor intake, sponsor directory, sponsor reports, interaction logs, and sponsor email sends."],
             ["Gifts", "Gift search, reservations, operations, gift pool, Gift Status report, and Gift Tag Builder."],
-            ["Admin", "User access, organization types, global campaign operation rules, LLM configuration, health, and app capabilities."],
+            ["Admin", "User access, activity history, organization types, global campaign operation rules, LLM configuration, health, and app capabilities."],
         ],
         widths=[1.5, 4.75],
     )
@@ -380,7 +380,7 @@ def build_document() -> None:
     add_heading(doc, "People Directory", level=2)
     add_body(
         doc,
-        "Use the directory when someone is already in the system. Search for a family, organization, child, or adult, then click the row to open the drawer. The drawer is also where staff can add another child or adult to an existing household, add a family under an organization, edit contacts, and manage wishlist details.",
+        "Use the directory when someone is already in the system. Search for a family, organization, child, or adult, then click the row to open the drawer. The drawer is also where staff can add another child or adult to an existing household, add a family under an organization, edit contacts, and manage wishlist details. Directory tables include sortable recipient IDs, program abbreviation quick filters, gift descriptions, gift sizes/details, and committed sponsor names. Use Expand All or Collapse All on the left and PDF or Excel export buttons in the upper right when staff need a printed operating list.",
     )
     add_workflow(
         doc,
@@ -447,7 +447,28 @@ def build_document() -> None:
     add_heading(doc, "Gift Search", level=2)
     add_body(
         doc,
-        "Gift Search helps staff or eligible sponsors find gifts to reserve or commit to. The search supports natural-language prompts such as 'girls age 8 to 10 who need coats' and returns matching wishlist items. From there, a user with the right access can commit a sponsor to a gift.",
+        "Gift Search helps staff or eligible sponsors find gifts to reserve or commit to. The search supports natural-language prompts such as 'girls age 8 to 10 who need coats' and can use Qdrant semantic matching for broader terms such as toys, Batman gifts, or video games when the wishlist uses a more specific description. Search chips show inferred filters and can be cleared. Results are paginated and can be exported to PDF or Excel from the upper right of the results container.",
+    )
+    add_workflow(
+        doc,
+        "Commit a Gift to a Sponsor",
+        [
+            "Open Gift Search or Gift Status.",
+            "Select the gift and open the commit action.",
+            "Search for the sponsor by name, email, phone, or organization.",
+            "Click the sponsor result so the selected sponsor appears below the search bar.",
+            "Add optional notes for the commitment.",
+            "Choose Commit.",
+        ],
+    )
+    add_workflow(
+        doc,
+        "Review or Release a Committed Gift",
+        [
+            "Click a recipient in Gift Search to review recipient and gift details.",
+            "Click a sponsor name on a committed gift to open the sponsor drawer.",
+            "To make a committed gift available again, choose Release and confirm the sponsor shown in the modal.",
+        ],
     )
     add_heading(doc, "Gift Operations", level=2)
     add_bullets(
@@ -529,7 +550,7 @@ def build_document() -> None:
     add_heading(doc, "Reports and Exports", level=1)
     add_body(
         doc,
-        "Reports appear under People, Sponsors, and Gifts. Report screens are designed to be exported to Excel and PDF. Excel is useful for filtering and analysis; PDF is useful for sharing a clean snapshot.",
+        "Reports appear under People, Sponsors, Gifts, Ask Blessing Tree, and Admin Activity Log. Report screens are designed to be exported to Excel and PDF. Excel is useful for filtering and analysis; PDF is useful for sharing a clean snapshot.",
     )
     add_table(
         doc,
@@ -540,8 +561,14 @@ def build_document() -> None:
             ["Gift Status", "Recipient-by-recipient visual gift workflow status with actions from the drawer."],
             ["Dashboard Widgets", "Calendar attention, popular gifts by gender, recipients sponsored by sponsor, unsponsored gifts, counts, and recent Ask prompts."],
             ["Ask Blessing Tree", "Natural-language report answers and report links for supported catalog questions."],
+            ["Admin Activity Log", "Filtered list of who changed what, when it happened, and which area, action, campaign, and record were involved."],
         ],
         widths=[1.7, 4.55],
+    )
+    add_note(
+        doc,
+        "Export scope",
+        "Exports use the rows currently loaded on the screen. On paginated screens such as Activity Log, apply the filters and row count you want before exporting.",
     )
 
     add_heading(doc, "Admin", level=1)
@@ -565,6 +592,22 @@ def build_document() -> None:
     add_body(
         doc,
         "Campaign Operations is the admin rule builder for global milestone definitions and readiness rules. Use it to define which milestones exist, whether they are blockers, where readiness warnings appear, and what message staff see.",
+    )
+    add_heading(doc, "Activity Log", level=2)
+    add_body(
+        doc,
+        "Activity Log shows a durable history of important changes across the app. Use it to answer questions such as who updated a sponsor, who changed a gift status, who edited campaign settings, who changed user access, or when a communication/template was changed.",
+    )
+    add_screenshot(doc, "admin-activity-log.png", "Admin Activity Log shows searchable change history with PDF and Excel exports.")
+    add_bullets(
+        doc,
+        [
+            "Use Search to find a person, sponsor, record label, user, or summary text.",
+            "Use Area and Action filters to narrow the log to people, sponsors, gifts, communications, campaigns, admin changes, created records, updates, status changes, scans, sends, and prints.",
+            "Use From and To dates when reviewing a specific operating window.",
+            "Click any row to open the detail drawer with before/after values when field-level changes were captured.",
+            "Use Excel export for sorting/filtering outside the app and PDF export for a readable snapshot of the currently loaded results.",
+        ],
     )
     add_heading(doc, "Organization Types", level=2)
     add_body(

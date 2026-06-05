@@ -1,6 +1,6 @@
 # Gift Tag Builder Design
 
-Last updated: 2026-05-27
+Last updated: 2026-06-01
 
 ## Status
 
@@ -10,8 +10,10 @@ Last updated: 2026-05-27
 - Phase 3 complete: saved templates drive PDF export, selected gift batches print
   to letter-size sheets, and blank/manual tags create real unassigned QR labels
   that open the mobile scan page with a clear unassigned-tag message.
-- Phase 4 next: sample sheets, long-text warnings, print history, and sheet
-  layout test hardening.
+- Remaining enhancements: sample sheets, long-text warnings, print history, and
+  sheet layout test hardening. The core builder, saved templates, batch print,
+  quantity print, blank/manual tags, QR guardrails, and PDF output are
+  implemented.
 - Builds on the gift workflow, QR scan flow, and campaign flyer builder.
 - Related documents:
   - `docs/engineering/gift-workflow-design.md`

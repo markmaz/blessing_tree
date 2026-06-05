@@ -1,18 +1,17 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import type { CampaignSponsor } from '@/features/campaigns/model/campaignSponsorWorkspaceTypes';
 import {
   formatPhoneNumber,
   formatShortDate,
   getMostRecentSponsorInteraction,
   summarizeSponsorInteraction,
-  summarizeSponsorGiftItems,
   toSponsorDropOffStatusLabel,
   toSponsorStatusLabel,
 } from '@/features/campaigns/model/campaignSponsorWorkspacePresentation';
 import { TablePagination } from '@/shared/ui/TablePagination';
 import { clampTablePage } from '@/shared/ui/tablePaginationModel';
 
-type SponsorSortKey = 'sponsor' | 'contact' | 'gifts' | 'status' | 'lastContacted' | 'dropOff';
+type SponsorSortKey = 'sponsor' | 'code' | 'contact' | 'gifts' | 'status' | 'lastContacted' | 'dropOff';
 
 interface CampaignSponsorTableProps {
   sponsors: CampaignSponsor[];
@@ -29,6 +28,7 @@ export function CampaignSponsorTable({
 }: CampaignSponsorTableProps) {
   const [sortKey, setSortKey] = useState<SponsorSortKey>('sponsor');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [openSponsorIds, setOpenSponsorIds] = useState<Record<string, boolean>>({});
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
@@ -36,6 +36,8 @@ export function CampaignSponsorTable({
     const sorted = [...sponsors].sort((left, right) => {
       const direction = sortDirection === 'asc' ? 1 : -1;
       switch (sortKey) {
+        case 'code':
+          return direction * compareStrings(left.participation.sponsorCode ?? '', right.participation.sponsorCode ?? '');
         case 'contact':
           return direction * compareStrings(left.email ?? left.phone ?? '', right.email ?? right.phone ?? '');
         case 'gifts':
@@ -60,6 +62,8 @@ export function CampaignSponsorTable({
     return sortedSponsors.slice((safePage - 1) * pageSize, safePage * pageSize);
   }, [pageSize, safePage, sortedSponsors]);
 
+  const hasExpandableSponsors = sortedSponsors.some((sponsor) => sponsor.sponsoredItems.length > 0);
+
   if (sortedSponsors.length === 0) {
     return <div className="campaign-studio__empty-note">No sponsors match the current search.</div>;
   }
@@ -73,17 +77,54 @@ export function CampaignSponsorTable({
     setSortDirection('asc');
   };
 
+  const toggleOpen = (sponsorId: string) => {
+    setOpenSponsorIds((currentValue) => ({ ...currentValue, [sponsorId]: !currentValue[sponsorId] }));
+  };
+
+  const expandAll = () => {
+    setOpenSponsorIds(
+      Object.fromEntries(
+        sortedSponsors
+          .filter((sponsor) => sponsor.sponsoredItems.length > 0)
+          .map((sponsor) => [sponsor.id, true])
+      )
+    );
+  };
+
+  const collapseAll = () => {
+    setOpenSponsorIds({});
+  };
+
   return (
     <>
+      {hasExpandableSponsors ? (
+        <div className="campaign-people-table-controls">
+          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={expandAll}>
+            <i className="bi bi-arrows-expand me-2" aria-hidden="true" />
+            Expand All
+          </button>
+          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={collapseAll}>
+            <i className="bi bi-arrows-collapse me-2" aria-hidden="true" />
+            Collapse All
+          </button>
+        </div>
+      ) : null}
       <div className="table-responsive">
         <table className="table campaign-team-table align-middle">
           <thead>
             <tr>
+              <th style={{ width: 40 }} />
               <SortableHeader
                 label="Sponsor"
                 active={sortKey === 'sponsor'}
                 direction={sortDirection}
                 onClick={() => toggleSort('sponsor')}
+              />
+              <SortableHeader
+                label="Sponsor Code"
+                active={sortKey === 'code'}
+                direction={sortDirection}
+                onClick={() => toggleSort('code')}
               />
               <SortableHeader
                 label="Contact"
@@ -119,85 +160,159 @@ export function CampaignSponsorTable({
             </tr>
           </thead>
           <tbody>
-            {pagedSponsors.map((sponsor) => (
-              <tr
-                key={sponsor.id}
-                className="campaign-team-table__row campaign-sponsor-table__row"
-                role="button"
-                tabIndex={0}
-                onClick={() => onSelectSponsor(sponsor.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    onSelectSponsor(sponsor.id);
-                  }
-                }}
-              >
-                <td>
-                  <div className="campaign-sponsor-table__primary">
-                    <span className="campaign-sponsor-table__name">{sponsor.displayName}</span>
-                    <span className="campaign-sponsor-table__meta">
-                      {[
-                        sponsor.organizationName,
-                        sponsor.participation.sponsorCode,
-                        sponsor.selfRegisteredAt ? 'Self-registered' : null,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ') || 'Staff-managed sponsor'}
-                    </span>
-                  </div>
-                </td>
-                <td>
-                  <div className="campaign-sponsor-table__primary">
-                    <span>{sponsor.email ?? sponsor.phone ?? 'No contact details'}</span>
-                    <span className="campaign-sponsor-table__meta">
-                      {[
-                        sponsor.email ? null : sponsor.phone ? formatPhoneNumber(sponsor.phone) : null,
-                        sponsor.city && sponsor.state ? `${sponsor.city}, ${sponsor.state}` : null,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ') || 'No city or state'}
-                    </span>
-                  </div>
-                </td>
-                <td>
-                  <div className="campaign-sponsor-table__primary">
-                    <span>{sponsor.sponsoredItemCount}</span>
-                    <span className="campaign-sponsor-table__meta">{summarizeSponsorGiftItems(sponsor)}</span>
-                  </div>
-                </td>
-                <td>
-                  <div className="campaign-sponsor-table__primary">
-                    <span>{toSponsorStatusLabel(sponsor.participation.status)}</span>
-                    <span className="campaign-sponsor-table__meta">{sponsor.participation.interestStatus}</span>
-                  </div>
-                </td>
-                <td>
-                  <div className="campaign-sponsor-table__primary">
-                    <span>{formatShortDate(sponsor.lastContactedAt)}</span>
-                    <span className="campaign-sponsor-table__meta">
-                      {summarizeSponsorInteraction(getMostRecentSponsorInteraction(sponsor.recentInteractions))}
-                    </span>
-                  </div>
-                </td>
-                <td>{toSponsorDropOffStatusLabel(sponsor.participation.dropOffStatus)}</td>
-                {canEdit ? (
-                  <td className="text-end">
-                    <button
-                      type="button"
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onRequestDeleteSponsor(sponsor.id);
-                      }}
-                    >
-                      <i className="bi bi-trash3" aria-hidden="true" />
-                      <span className="ms-2">Delete</span>
-                    </button>
-                  </td>
-                ) : null}
-              </tr>
-            ))}
+            {pagedSponsors.map((sponsor) => {
+              const hasSponsoredItems = sponsor.sponsoredItems.length > 0;
+              const isOpen = !!openSponsorIds[sponsor.id];
+
+              return (
+                <Fragment key={sponsor.id}>
+                  <tr
+                    className="campaign-team-table__row campaign-sponsor-table__row"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onSelectSponsor(sponsor.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onSelectSponsor(sponsor.id);
+                      }
+                    }}
+                  >
+                    <td>
+                      {hasSponsoredItems ? (
+                        <button
+                          type="button"
+                          className="campaign-people-group-row__toggle"
+                          aria-expanded={isOpen}
+                          aria-label={isOpen ? `Collapse ${sponsor.displayName}` : `Expand ${sponsor.displayName}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            toggleOpen(sponsor.id);
+                          }}
+                        >
+                          <i className={`bi ${isOpen ? 'bi-chevron-down' : 'bi-chevron-right'}`} aria-hidden="true" />
+                        </button>
+                      ) : (
+                        <span className="campaign-people-row__toggle-placeholder" aria-hidden="true" />
+                      )}
+                    </td>
+                    <td>
+                      <div className="campaign-sponsor-table__primary">
+                        <span className="campaign-sponsor-table__name">{sponsor.displayName}</span>
+                        <span className="campaign-sponsor-table__meta">
+                          {[
+                            sponsor.organizationName,
+                            sponsor.selfRegisteredAt ? 'Self-registered' : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ') || 'Staff-managed sponsor'}
+                        </span>
+                      </div>
+                    </td>
+                    <td>{sponsor.participation.sponsorCode ?? '—'}</td>
+                    <td>
+                      <div className="campaign-sponsor-table__primary">
+                        <span>{sponsor.email ?? sponsor.phone ?? 'No contact details'}</span>
+                        <span className="campaign-sponsor-table__meta">
+                          {[
+                            sponsor.email ? null : sponsor.phone ? formatPhoneNumber(sponsor.phone) : null,
+                            sponsor.city && sponsor.state ? `${sponsor.city}, ${sponsor.state}` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ') || 'No city or state'}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="campaign-sponsor-table__primary">
+                        <span>
+                          {sponsor.sponsoredItemCount} gift{sponsor.sponsoredItemCount === 1 ? '' : 's'}
+                        </span>
+                        <span className="campaign-sponsor-table__meta">
+                          {hasSponsoredItems ? 'Expand to view gift status' : 'No sponsored gifts yet'}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="campaign-sponsor-table__primary">
+                        <span>{toSponsorStatusLabel(sponsor.participation.status)}</span>
+                        <span className="campaign-sponsor-table__meta">{sponsor.participation.interestStatus}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="campaign-sponsor-table__primary">
+                        <span>{formatShortDate(sponsor.lastContactedAt)}</span>
+                        <span className="campaign-sponsor-table__meta">
+                          {summarizeSponsorInteraction(getMostRecentSponsorInteraction(sponsor.recentInteractions))}
+                        </span>
+                      </div>
+                    </td>
+                    <td>{toSponsorDropOffStatusLabel(sponsor.participation.dropOffStatus)}</td>
+                    {canEdit ? (
+                      <td className="text-end">
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onRequestDeleteSponsor(sponsor.id);
+                          }}
+                        >
+                          <i className="bi bi-trash3" aria-hidden="true" />
+                          <span className="ms-2">Delete</span>
+                        </button>
+                      </td>
+                    ) : null}
+                  </tr>
+                  {isOpen ? (
+                    <tr className="campaign-sponsor-table__gift-row">
+                      <td colSpan={canEdit ? 9 : 8}>
+                        <div className="campaign-people-group-children-wrap">
+                          <table className="table table-sm mb-0 campaign-people-group-children-table">
+                            <thead>
+                              <tr>
+                                <th scope="col">Recipient</th>
+                                <th scope="col">Gift</th>
+                                <th scope="col">Size</th>
+                                <th scope="col">Qty</th>
+                                <th scope="col">Gift Status</th>
+                                <th scope="col">Committed</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {sponsor.sponsoredItems.map((item) => (
+                                <tr key={item.id}>
+                                  <td>
+                                    <div className="campaign-sponsor-table__primary">
+                                      <span>{item.recipient?.displayLabel ?? 'Unknown recipient'}</span>
+                                      <span className="campaign-sponsor-table__meta">
+                                        {item.recipient?.programRecipientId ?? 'No recipient ID'}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <div className="campaign-sponsor-table__primary">
+                                      <span>{item.gift?.description ?? 'Unknown gift'}</span>
+                                      <span className="campaign-sponsor-table__meta">
+                                        {item.gift?.category ?? 'No category'}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td>{item.gift?.size ?? '—'}</td>
+                                  <td>{item.qtyCommitted}</td>
+                                  <td>{formatSponsorGiftStatus(item.gift?.status)}</td>
+                                  <td>{formatShortDate(item.committedAt)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -243,11 +358,21 @@ function SortableHeader({
 }
 
 function compareStrings(left: string, right: string) {
-  return left.localeCompare(right, undefined, { sensitivity: 'base' });
+  return left.localeCompare(right, undefined, { numeric: true, sensitivity: 'base' });
 }
 
 function compareNumbers(left: number, right: number) {
   return left - right;
+}
+
+function formatSponsorGiftStatus(value: string | null | undefined) {
+  if (!value) {
+    return 'Not set';
+  }
+  return value
+    .split('_')
+    .map((segment) => `${segment.slice(0, 1)}${segment.slice(1).toLowerCase()}`)
+    .join(' ');
 }
 
 function dateSortValue(value: string | null) {

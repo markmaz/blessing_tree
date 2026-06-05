@@ -2,6 +2,13 @@ import { useMemo, useState } from 'react';
 import '@/features/campaigns/ui/campaignStudioTeam.css';
 import '@/features/campaigns/ui/campaignPeople.css';
 import type { CampaignAccess } from '@/features/campaigns/model/campaignTypes';
+import {
+  formatRecipientAge,
+  toGroupContactRoleLabel,
+  toRecipientGroupTypeLabel,
+  toRecipientProgramTypeLabel,
+  toRecipientStatusLabel,
+} from '@/features/campaigns/model/campaignPeopleWorkspacePresentation';
 import type {
   CampaignAddressSuggestion,
   CampaignPeopleGroup,
@@ -21,6 +28,8 @@ import { CampaignPeopleRecipientTable } from '@/features/campaigns/ui/CampaignPe
 import { CampaignPeopleGroupDrawer } from '@/features/campaigns/ui/CampaignPeopleGroupDrawer';
 import { CampaignPeopleRecipientDrawer } from '@/features/campaigns/ui/CampaignPeopleRecipientDrawer';
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
+import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
+import type { ReportExportPayload } from '@/features/reports/model/reportExport';
 
 interface CampaignPeopleWorkspaceProps {
   campaignName: string;
@@ -82,6 +91,7 @@ export function CampaignPeopleWorkspace({
   const canEditPeople = canManagePeople(access);
   const [groupSearch, setGroupSearch] = useState('');
   const [recipientSearch, setRecipientSearch] = useState('');
+  const [selectedProgramAbbreviation, setSelectedProgramAbbreviation] = useState<string | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
   const [createGroupType, setCreateGroupType] = useState<RecipientGroupType | null>(null);
@@ -92,6 +102,34 @@ export function CampaignPeopleWorkspace({
   const [pendingDeleteRecipientId, setPendingDeleteRecipientId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const programFilterOptions = useMemo(() => {
+    if (!workspace) {
+      return [];
+    }
+    return Array.from(
+      new Set(
+        workspace.groups
+          .map((group) => group.programAbbreviation?.trim())
+          .filter((value): value is string => !!value)
+      )
+    ).sort((left, right) => left.localeCompare(right, undefined, { numeric: true, sensitivity: 'base' }));
+  }, [workspace]);
+
+  const groupProgramAbbreviationById = useMemo(() => {
+    const abbreviations = new Map<string, string>();
+    workspace?.groups.forEach((group) => {
+      const groupAbbreviation = group.programAbbreviation?.trim();
+      const parentAbbreviation = group.parentOrganizationGroupId
+        ? workspace.groups.find((candidate) => candidate.id === group.parentOrganizationGroupId)?.programAbbreviation?.trim()
+        : null;
+      const abbreviation = groupAbbreviation || parentAbbreviation;
+      if (abbreviation) {
+        abbreviations.set(group.id, abbreviation);
+      }
+    });
+    return abbreviations;
+  }, [workspace]);
+
   const filteredGroups = useMemo(() => {
     if (!workspace) {
       return [];
@@ -99,21 +137,29 @@ export function CampaignPeopleWorkspace({
 
     const normalizedSearch = groupSearch.trim().toLowerCase();
     return workspace.groups.filter((group) => {
+      if (selectedProgramAbbreviation && groupProgramAbbreviationById.get(group.id) !== selectedProgramAbbreviation) {
+        return false;
+      }
+
       if (!normalizedSearch) {
         return true;
       }
 
       const haystack = [
         group.groupName,
+        group.programAbbreviation ?? '',
+        group.externalReference ?? '',
+        group.parentOrganization?.groupName ?? '',
         group.primaryContact?.firstName ?? '',
         group.primaryContact?.lastName ?? '',
         group.primaryContact?.email ?? '',
+        group.primaryContact?.phone ?? '',
       ]
         .join(' ')
         .toLowerCase();
       return haystack.includes(normalizedSearch);
     });
-  }, [groupSearch, workspace]);
+  }, [groupProgramAbbreviationById, groupSearch, selectedProgramAbbreviation, workspace]);
 
   const filteredRecipients = useMemo(() => {
     if (!workspace) {
@@ -122,11 +168,19 @@ export function CampaignPeopleWorkspace({
 
     const normalizedSearch = recipientSearch.trim().toLowerCase();
     return workspace.recipients.filter((recipient) => {
+      if (
+        selectedProgramAbbreviation &&
+        groupProgramAbbreviationById.get(recipient.recipientGroupId) !== selectedProgramAbbreviation
+      ) {
+        return false;
+      }
+
       if (!normalizedSearch) {
         return true;
       }
 
       const haystack = [
+        recipient.programRecipientId ?? '',
         recipient.displayLabel,
         recipient.firstName ?? '',
         recipient.lastName ?? '',
@@ -136,7 +190,7 @@ export function CampaignPeopleWorkspace({
         .toLowerCase();
       return haystack.includes(normalizedSearch);
     });
-  }, [recipientSearch, workspace]);
+  }, [groupProgramAbbreviationById, recipientSearch, selectedProgramAbbreviation, workspace]);
 
   const selectedGroup =
     workspace?.groups.find((group) => group.id === selectedGroupId) ?? null;
@@ -146,6 +200,14 @@ export function CampaignPeopleWorkspace({
     workspace?.groups.find((group) => group.id === pendingDeleteGroupId) ?? null;
   const pendingDeleteRecipient =
     workspace?.recipients.find((recipient) => recipient.id === pendingDeleteRecipientId) ?? null;
+  const groupDirectoryExport = useMemo(
+    () => buildGroupDirectoryExport(campaignName, filteredGroups),
+    [campaignName, filteredGroups]
+  );
+  const peopleDirectoryExport = useMemo(
+    () => buildPeopleDirectoryExport(campaignName, filteredRecipients),
+    [campaignName, filteredRecipients]
+  );
 
   const pendingDeleteGroupDetails = useMemo(() => {
     if (!pendingDeleteGroup) {
@@ -251,35 +313,63 @@ export function CampaignPeopleWorkspace({
                 Shared intake containers for parents, guardians, coordinators, staff contacts, and the people they represent.
               </p>
             </div>
-            {canEditPeople && showCreateActions ? (
-              <div className="d-flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary btn-sm campaign-team-workspace__section-action"
-                  onClick={() => {
-                    setSelectedGroupId(null);
-                    setCreateParentOrganizationGroupId(null);
-                    setCreateGroupType('HOUSEHOLD');
-                  }}
-                >
-                  <i className="bi bi-house-heart" aria-hidden="true" />
-                  <span>Add Family</span>
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm campaign-team-workspace__section-action"
-                  onClick={() => {
-                    setSelectedGroupId(null);
-                    setCreateParentOrganizationGroupId(null);
-                    setCreateGroupType('ORGANIZATION');
-                  }}
-                >
-                  <i className="bi bi-diagram-3-fill" aria-hidden="true" />
-                  <span>Add Organization</span>
-                </button>
-              </div>
-            ) : null}
+            <div className="d-flex flex-wrap justify-content-end gap-2">
+              <ReportExportActions payload={groupDirectoryExport} formats={['pdf', 'excel']} />
+              {canEditPeople && showCreateActions ? (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm campaign-team-workspace__section-action"
+                    onClick={() => {
+                      setSelectedGroupId(null);
+                      setCreateParentOrganizationGroupId(null);
+                      setCreateGroupType('HOUSEHOLD');
+                    }}
+                  >
+                    <i className="bi bi-house-heart" aria-hidden="true" />
+                    <span>Add Family</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm campaign-team-workspace__section-action"
+                    onClick={() => {
+                      setSelectedGroupId(null);
+                      setCreateParentOrganizationGroupId(null);
+                      setCreateGroupType('ORGANIZATION');
+                    }}
+                  >
+                    <i className="bi bi-diagram-3-fill" aria-hidden="true" />
+                    <span>Add Organization</span>
+                  </button>
+                </>
+              ) : null}
+            </div>
           </div>
+
+          {programFilterOptions.length > 0 ? (
+            <div className="campaign-program-filter-row" aria-label="Program filters">
+              <span className="small text-uppercase text-muted fw-semibold">Program</span>
+              <div className="campaign-program-filter-row__chips" role="group" aria-label="Filter by program abbreviation">
+                <button
+                  type="button"
+                  className={`campaign-program-filter-chip${selectedProgramAbbreviation === null ? ' is-active' : ''}`}
+                  onClick={() => setSelectedProgramAbbreviation(null)}
+                >
+                  All
+                </button>
+                {programFilterOptions.map((abbreviation) => (
+                  <button
+                    key={abbreviation}
+                    type="button"
+                    className={`campaign-program-filter-chip${selectedProgramAbbreviation === abbreviation ? ' is-active' : ''}`}
+                    onClick={() => setSelectedProgramAbbreviation(abbreviation)}
+                  >
+                    {abbreviation}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="campaign-team-table-toolbar">
             <label className="form-label campaign-team-toolbar__search mb-0">
@@ -322,20 +412,23 @@ export function CampaignPeopleWorkspace({
                 Each row is an actual gift recipient, with a campaign-specific wishlist and program context.
               </p>
             </div>
-            {canEditPeople && showCreateActions ? (
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm campaign-team-workspace__section-action"
-                onClick={() => {
-                  setIsCreateRecipientOpen(true);
-                  setSelectedRecipientId(null);
-                  setCreateRecipientGroupId(null);
-                }}
-              >
-                <i className="bi bi-person-plus" aria-hidden="true" />
-                <span>Add Person</span>
-              </button>
-            ) : null}
+            <div className="d-flex flex-wrap justify-content-end gap-2">
+              <ReportExportActions payload={peopleDirectoryExport} formats={['pdf', 'excel']} />
+              {canEditPeople && showCreateActions ? (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm campaign-team-workspace__section-action"
+                  onClick={() => {
+                    setIsCreateRecipientOpen(true);
+                    setSelectedRecipientId(null);
+                    setCreateRecipientGroupId(null);
+                  }}
+                >
+                  <i className="bi bi-person-plus" aria-hidden="true" />
+                  <span>Add Person</span>
+                </button>
+              ) : null}
+            </div>
           </div>
 
           <div className="campaign-team-table-toolbar">
@@ -550,4 +643,256 @@ function StatCard({ label, value }: { label: string; value: number }) {
       <strong className="campaign-studio__stat-value">{value ?? 0}</strong>
     </article>
   );
+}
+
+function buildGroupDirectoryExport(campaignName: string, groups: CampaignPeopleGroup[]): ReportExportPayload {
+  const directoryRows = buildGroupDirectoryRows(groups);
+
+  return {
+    title: 'Households & Organizations Directory',
+    subtitle: campaignName,
+    fileName: `${campaignName}-groups-directory`,
+    sheets: [
+      {
+        name: 'Directory',
+        columns: [
+          { key: 'recipientId', label: 'Recipient ID', pdfWidthWeight: 0.85 },
+          { key: 'recipientName', label: 'Recipient Name', pdfWidthWeight: 1.45 },
+          { key: 'age', label: 'Age', pdfWidthWeight: 0.65 },
+          { key: 'location', label: 'Location', pdfWidthWeight: 1.05 },
+          { key: 'giftItems', label: 'Gift Items', pdfWidthWeight: 2.6 },
+          { key: 'sponsor', label: 'Sponsor', pdfWidthWeight: 1.55 },
+        ],
+        rows: directoryRows.length ? directoryRows : [{ group: 'No groups' }],
+      },
+    ],
+  };
+}
+
+function buildGroupDirectoryRows(groups: CampaignPeopleGroup[]) {
+  const rows: Array<Record<string, unknown>> = [];
+  const childGroupsByParentId = new Map<string, CampaignPeopleGroup[]>();
+  groups.forEach((group) => {
+    if (!group.parentOrganizationGroupId) {
+      return;
+    }
+    childGroupsByParentId.set(group.parentOrganizationGroupId, [
+      ...(childGroupsByParentId.get(group.parentOrganizationGroupId) ?? []),
+      group,
+    ]);
+  });
+
+  groups
+    .filter((group) => !group.parentOrganizationGroupId)
+    .forEach((group) => {
+    const familyGroups = childGroupsByParentId.get(group.id) ?? [];
+    const totalPeople = group.recipientCount + familyGroups.reduce((total, family) => total + family.recipientCount, 0);
+    rows.push({
+      __rowType: 'organizationHeader',
+      recipientId: formatGroupHeader(group, totalPeople),
+    });
+
+    sortRecipientsByProgramId(group.recipients).forEach((recipient) => {
+      rows.push(buildRecipientDirectoryRow(recipient, group));
+    });
+
+    familyGroups.forEach((family) => {
+      rows.push({
+        __rowType: 'familyHeader',
+        recipientId: formatFamilyHeader(family),
+      });
+      sortRecipientsByProgramId(family.recipients).forEach((recipient) => {
+        rows.push(buildRecipientDirectoryRow(recipient, family));
+      });
+    });
+
+    rows.push({ __rowType: 'spacer', recipientId: '' });
+  });
+
+  return rows;
+}
+
+function sortRecipientsByProgramId(recipients: CampaignRecipient[]): CampaignRecipient[] {
+  return [...recipients].sort((left, right) => {
+    const leftId = left.programRecipientId ?? '';
+    const rightId = right.programRecipientId ?? '';
+    const idComparison = leftId.localeCompare(rightId, undefined, { numeric: true, sensitivity: 'base' });
+    if (idComparison !== 0) {
+      return idComparison;
+    }
+    return left.displayLabel.localeCompare(right.displayLabel);
+  });
+}
+
+function buildRecipientDirectoryRow(recipient: CampaignRecipient, group: CampaignPeopleGroup): Record<string, unknown> {
+  return {
+    recipientId: recipient.programRecipientId ?? '',
+    recipientName: recipient.displayLabel,
+    age: formatRecipientAge(recipient.age, recipient.ageUnit),
+    location: recipient.facilityRoom ? `Room ${recipient.facilityRoom}` : [group.city, group.state].filter(Boolean).join(', '),
+    giftItems: formatRecipientGiftItems(recipient),
+    sponsor: formatRecipientSponsors(recipient),
+  };
+}
+
+function formatGroupHeader(group: CampaignPeopleGroup, totalPeople: number): string {
+  return [
+    group.groupName,
+    [
+      group.programAbbreviation ? `Program: ${group.programAbbreviation}` : null,
+      toRecipientGroupTypeLabel(group.groupType),
+      group.organizationType ?? null,
+      `People: ${totalPeople}`,
+    ]
+      .filter(Boolean)
+      .join(' · '),
+    `Contact: ${formatGroupPrimaryContact(group)}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+function formatFamilyHeader(group: CampaignPeopleGroup): string {
+  return [
+    group.groupName,
+    `Parent/Guardian: ${formatGroupPrimaryContact(group)}`,
+    group.externalReference ? `External Reference: ${group.externalReference}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+function formatGroupPrimaryContact(group: CampaignPeopleGroup): string {
+  const contact = group.primaryContact;
+  if (!contact) {
+    return 'No contact yet';
+  }
+  return [
+    contact.displayName,
+    [
+      toGroupContactRoleLabel(contact.contactRole),
+      contact.email,
+      contact.phone,
+    ]
+      .filter(Boolean)
+      .join(' · '),
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+function formatRecipientGiftItems(recipient: CampaignRecipient): string {
+  const items = recipient.wishlist?.items ?? [];
+  if (items.length === 0) {
+    return 'No wishlist';
+  }
+  return items
+    .map((item) => `${item.description}${item.size ? ` (${item.size})` : ''}`)
+    .join('; ');
+}
+
+function formatRecipientSponsors(recipient: CampaignRecipient): string {
+  const items = recipient.wishlist?.items ?? [];
+  if (items.length === 0) {
+    return '';
+  }
+  return items
+    .map((item) => {
+      if (!item.sponsor) {
+        return 'Unsponsored';
+      }
+      return `${item.sponsor.displayName}${item.sponsor.phone ? ` ${item.sponsor.phone}` : ''}`;
+    })
+    .join('; ');
+}
+
+function buildPeopleDirectoryExport(campaignName: string, recipients: CampaignRecipient[]): ReportExportPayload {
+  return {
+    title: 'People Directory',
+    subtitle: campaignName,
+    fileName: `${campaignName}-people-directory`,
+    sheets: [
+      {
+        name: 'People',
+        columns: [
+          { key: 'personId', label: 'Person ID' },
+          { key: 'person', label: 'Person' },
+          { key: 'program', label: 'Program' },
+          { key: 'group', label: 'Group' },
+          { key: 'age', label: 'Age' },
+          { key: 'gender', label: 'Gender' },
+          { key: 'room', label: 'Room' },
+          { key: 'directEmail', label: 'Direct Email' },
+          { key: 'directPhone', label: 'Direct Phone' },
+          { key: 'wishlistItems', label: 'Wishlist Items' },
+          { key: 'gifts', label: 'Gifts' },
+          { key: 'sponsors', label: 'Sponsors' },
+          { key: 'openItems', label: 'Open Items' },
+          { key: 'status', label: 'Status' },
+        ],
+        rows: recipients.map((recipient) => ({
+          personId: recipient.programRecipientId ?? '',
+          person: recipient.displayLabel,
+          program: toRecipientProgramTypeLabel(recipient.programType),
+          group: recipient.group?.groupName ?? '',
+          age: formatRecipientAge(recipient.age, recipient.ageUnit),
+          gender: recipient.gender ?? '',
+          room: recipient.facilityRoom ?? '',
+          directEmail: recipient.directEmail ?? '',
+          directPhone: recipient.directPhone ?? '',
+          wishlistItems: recipient.wishlist?.items.length ?? 0,
+          gifts: formatRecipientGiftExport(recipient),
+          sponsors: formatRecipientSponsorExport(recipient),
+          openItems: recipient.workflowSummary.openItemCount,
+          status: toRecipientStatusLabel(recipient.status),
+        })),
+      },
+      {
+        name: 'Gift Detail',
+        columns: [
+          { key: 'personId', label: 'Person ID' },
+          { key: 'person', label: 'Person' },
+          { key: 'group', label: 'Group' },
+          { key: 'gift', label: 'Gift' },
+          { key: 'size', label: 'Size' },
+          { key: 'category', label: 'Category' },
+          { key: 'sponsor', label: 'Sponsor' },
+          { key: 'sponsorPhone', label: 'Sponsor Phone' },
+          { key: 'giftReceived', label: 'Gft Rcvd' },
+          { key: 'pickedUp', label: 'Picked Up' },
+        ],
+        rows: recipients.flatMap((recipient) =>
+          (recipient.wishlist?.items ?? []).map((item) => ({
+            personId: recipient.programRecipientId ?? '',
+            person: recipient.displayLabel,
+            group: recipient.group?.groupName ?? '',
+            gift: item.description,
+            size: item.size ?? '',
+            category: item.category ?? item.itemType.replaceAll('_', ' '),
+            sponsor: item.sponsor?.displayName ?? '',
+            sponsorPhone: item.sponsor?.phone ?? '',
+            giftReceived: item.status === 'OPEN' || item.status === 'RESERVED' ? '' : 'Yes',
+            pickedUp: item.giftWorkflow.isPickedUp ? 'Yes' : '',
+          }))
+        ),
+      },
+    ],
+  };
+}
+
+function formatRecipientGiftExport(recipient: CampaignRecipient): string {
+  return (recipient.wishlist?.items ?? [])
+    .map((item) => `${item.description}${item.size ? ` (${item.size})` : ''}`)
+    .join('; ');
+}
+
+function formatRecipientSponsorExport(recipient: CampaignRecipient): string {
+  return (recipient.wishlist?.items ?? [])
+    .map((item) => {
+      if (!item.sponsor) {
+        return 'Unsponsored';
+      }
+      return `${item.sponsor.displayName}${item.sponsor.phone ? ` (${item.sponsor.phone})` : ''}`;
+    })
+    .join('; ');
 }

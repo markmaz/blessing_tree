@@ -127,14 +127,33 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
         content=(
             "People Directory is the maintenance screen for existing families, organizations, recipients, contacts, and "
             "wishlists. Search for a record and click the row to open the drawer. The drawer can add another child or "
-            "adult to an existing household and can add a family under an organization."
+            "adult to an existing household and can add a family under an organization. Directory rows include sortable "
+            "recipient IDs, program abbreviation filters, gift descriptions, gift size/detail context, and committed "
+            "sponsor names so staff can print the directory as a working list. Export buttons sit in the upper right "
+            "of directory containers, while expand-all and collapse-all controls sit on the left."
         ),
-        phrases=("people directory", "find family", "add third child", "existing household", "click row", "add family under organization"),
+        phrases=(
+            "people directory",
+            "find family",
+            "add third child",
+            "existing household",
+            "click row",
+            "add family under organization",
+            "program filter",
+            "organization directory gifts",
+            "print people directory",
+            "recipient id sorting",
+            "expand all organizations",
+        ),
         steps=(
             "Open People, then Directory.",
             "Search for the household, family, organization, child, or adult.",
+            "Use program abbreviation chips to narrow the directory when needed.",
+            "Sort by recipient ID when staff need records in operational order.",
+            "Expand or collapse groups to control which member and gift rows are visible.",
             "Click anywhere on the row to open the drawer.",
             "Use Quick Actions or the related section to add another child, adult, or family.",
+            "Use the PDF or Excel export controls in the upper right to print or download the current directory view.",
         ),
         route_name="campaign_people_directory",
         required_capability="campaign.recipients.view",
@@ -185,11 +204,78 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
         section="User Guide > Gifts > Search",
         content=(
             "Gift Search helps staff or eligible sponsors find gifts to reserve or commit to. The search supports natural "
-            "language prompts such as girls age 8 to 10 who need coats and returns matching wishlist items."
+            "language prompts such as girls age 8 to 10 who need coats and returns matching wishlist items. Search uses "
+            "structured filters for exact details and optional Qdrant semantic retrieval for broader wording and synonyms, "
+            "such as toys for boys under 8, Batman stuff, or video games when a wishlist says Mario Kart. Search chips show "
+            "which filters were understood and can be cleared. Results are paginated and can be exported to PDF or Excel "
+            "from the upper right of the results container. Click a recipient to open recipient details, and click a "
+            "sponsor name on a committed gift to open the sponsor drawer."
         ),
-        phrases=("gift search", "search gifts", "natural language gift search", "reserve gifts", "commit gifts"),
+        phrases=(
+            "gift search",
+            "search gifts",
+            "natural language gift search",
+            "semantic gift search",
+            "qdrant gift search",
+            "search toys for boys under 8",
+            "video games",
+            "batman gifts",
+            "clear search chips",
+            "gift search pagination",
+            "print gift search",
+            "export gift search",
+            "recipient details from gift search",
+            "sponsor drawer from gift search",
+            "reserve gifts",
+            "commit gifts",
+        ),
+        steps=(
+            "Open Gifts, then Gift Search.",
+            "Enter a natural-language search or specific recipient, gift, age, size, status, or sponsor text.",
+            "Review and clear search chips if the query inferred a filter you do not want.",
+            "Use pagination to move through result pages.",
+            "Click a recipient to review recipient and gift details.",
+            "Click a sponsor name on a committed gift to review sponsor details.",
+            "Use PDF or Excel export in the upper right when staff need a printed or spreadsheet copy.",
+        ),
         route_name="campaign_gifts_search",
         required_capability="campaign.gifts.search",
+    ),
+    KnowledgeArticle(
+        key="guide_commit_gift",
+        title="Commit and Release Gifts",
+        section="User Guide > Gifts > Commitments",
+        content=(
+            "Staff commit a gift by opening the gift action drawer, searching for a sponsor, selecting the sponsor from "
+            "the search result, optionally adding notes, and choosing Commit. The selected sponsor appears below the "
+            "search bar and can be cleared with the X before committing. The sponsor list is not shown until staff search, "
+            "which keeps the drawer focused. Committed gifts show the sponsor in the gift table. Releasing a committed "
+            "gift requires confirmation and makes the gift available again."
+        ),
+        phrases=(
+            "commit gift",
+            "assign sponsor to gift",
+            "sponsor search",
+            "select sponsor",
+            "selected sponsor",
+            "clear selected sponsor",
+            "commit notes",
+            "release gift",
+            "release sponsor from gift",
+            "make gift available again",
+            "sponsor on committed gift",
+        ),
+        steps=(
+            "Open Gift Search or Gift Status.",
+            "Select the gift and open the commit action.",
+            "Search for the sponsor by name, email, phone, or organization.",
+            "Click the sponsor result so the selected sponsor appears below the search bar.",
+            "Add notes if staff need context for the commitment.",
+            "Choose Commit.",
+            "To undo it, choose Release and confirm that the sponsor should be removed from the gift.",
+        ),
+        route_name="campaign_gifts_search",
+        required_capability="campaign.gifts.commit",
     ),
     KnowledgeArticle(
         key="guide_gift_workflow",
@@ -269,12 +355,25 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
         content=(
             "Admin is for app administrators. User Management controls invitations, user status, deletion of deactivated "
             "users, app roles, and campaign screen access. Campaign Operations manages milestone and readiness rule definitions. "
-            "Organization Types controls the People Intake organization dropdown."
+            "Organization Types controls the People Intake organization dropdown. Activity Log shows who changed important "
+            "records, when it happened, the affected area/action/campaign, and before/after field values when captured."
         ),
-        phrases=("admin", "user management", "invite users", "delete user", "organization types", "campaign operations"),
+        phrases=(
+            "admin",
+            "user management",
+            "invite users",
+            "delete user",
+            "organization types",
+            "campaign operations",
+            "activity log",
+            "audit log",
+            "who changed",
+            "change history",
+        ),
         steps=(
             "Open Admin.",
             "Use User Management for users and access.",
+            "Use Activity Log to review important changes and export filtered activity.",
             "Use Campaign Operations for milestone and readiness rules.",
             "Use Organization Types for intake organization choices.",
             "Use Health Check and App Capabilities for runtime administration.",
@@ -291,7 +390,7 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
             "common list controls, campaign setup, Campaign Studio, communications, milestones, gift rules, people, "
             "wishlists, sponsors, sponsor interactions, gift workflow, Gift Status, Gift Pool, Gift Tag Builder, Flyer "
             "Builder, public sponsor registration, public QR scanning, user management, organization types, campaign "
-            "operations, Ask Blessing Tree, and reports. Each field explains what it is used for and gives practical "
+            "operations, Activity Log, Ask Blessing Tree, and reports. Each field explains what it is used for and gives practical "
             "operator suggestions."
         ),
         phrases=(

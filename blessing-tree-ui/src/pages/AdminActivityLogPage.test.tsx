@@ -81,6 +81,8 @@ describe('AdminActivityLogPage', () => {
     expect(await screen.findByRole('heading', { name: /activity log/i })).toBeInTheDocument();
     expect(screen.getByText('Updated sponsor phone number.')).toBeInTheDocument();
     expect(screen.getByText('Mark Admin')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /pdf/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /excel/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /view activity updated sponsor phone number/i }));
 

@@ -3,6 +3,9 @@
 ## Status
 
 - Proposed and accepted for implementation on 2026-05-20
+- Implemented and extended with calendar intelligence, modal editing for manual
+  events/milestones/communication schedules, Dashboard upcoming-events reuse,
+  and Ask Blessing Tree date questions.
 
 ## Purpose
 

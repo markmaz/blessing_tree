@@ -206,6 +206,7 @@ describe('ReportsPage', () => {
                   status: 'OPEN',
                   qtyFulfilled: 0,
                   notes: null,
+                  sponsor: null,
                   giftWorkflow: {
                     sponsorshipStatus: 'UNSPONSORED',
                     sponsorshipId: null,

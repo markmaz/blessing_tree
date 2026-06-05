@@ -53,6 +53,7 @@ Remote deployment script:
 - `celery-worker`: Celery worker on queue `bt`.
 - `celery-beat`: Celery beat scheduler.
 - `valkey`: local Valkey for Celery broker/result backend and audit queue.
+- `qdrant`: local vector index for Ask knowledge retrieval and semantic gift search.
 
 ## RDS
 
@@ -105,6 +106,34 @@ Important production values:
 - `REFRESH_COOKIE_SECURE=true`
 - `COOKIE_SECURE=true`
 - `VALKEY_ADDRESS=valkey`
+- `QDRANT_URL=http://qdrant:6333`
+- `BT_GIFT_VECTOR_ENABLED=true` when semantic gift search should use Qdrant.
+
+Add swap on small EC2 hosts so transient Python memory spikes do not freeze the
+instance before the kernel can recover:
+
+```bash
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab
+sudo swapon /swapfile
+echo "vm.swappiness = 20" | sudo tee /etc/sysctl.d/99-blessing-tree.conf
+```
+
+Restrict SSH at the security group, VPN, or host SSH layer. For a single trusted
+admin IP, keep password auth off and allow only the deploy user from that IP:
+
+```text
+PasswordAuthentication no
+PermitRootLogin no
+MaxStartups 3:30:10
+AllowUsers ec2-user@<trusted-admin-ip>
+```
+
+The production Compose override intentionally adds container memory limits,
+reduces Gunicorn to two workers, and recycles Gunicorn/Celery workers to keep a
+small host from accumulating unbounded Python memory growth.
 
 ## GitHub Secrets
 

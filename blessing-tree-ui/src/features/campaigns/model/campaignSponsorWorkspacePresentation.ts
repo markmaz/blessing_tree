@@ -93,6 +93,51 @@ export function summarizeSponsorGiftItems(sponsor: CampaignSponsor): string {
   return `${sponsor.sponsoredItems.length} gift${sponsor.sponsoredItems.length === 1 ? '' : 's'} linked`;
 }
 
+export function needsSponsorFollowUp(sponsor: CampaignSponsor): boolean {
+  return !sponsor.lastContactedAt || getNextSponsorFollowUpAt(sponsor) !== null;
+}
+
+export function compareSponsorFollowUpQueue(left: CampaignSponsor, right: CampaignSponsor): number {
+  const leftNextFollowUp = getNextSponsorFollowUpAt(left);
+  const rightNextFollowUp = getNextSponsorFollowUpAt(right);
+
+  if (leftNextFollowUp && rightNextFollowUp) {
+    const comparison = dateSortValue(leftNextFollowUp) - dateSortValue(rightNextFollowUp);
+    return comparison === 0 ? left.displayName.localeCompare(right.displayName) : comparison;
+  }
+
+  if (leftNextFollowUp) {
+    return -1;
+  }
+
+  if (rightNextFollowUp) {
+    return 1;
+  }
+
+  if (!left.lastContactedAt && right.lastContactedAt) {
+    return -1;
+  }
+
+  if (left.lastContactedAt && !right.lastContactedAt) {
+    return 1;
+  }
+
+  return left.displayName.localeCompare(right.displayName, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+export function summarizeSponsorFollowUpQueue(sponsor: CampaignSponsor): string {
+  const nextFollowUp = getNextSponsorFollowUpAt(sponsor);
+  if (nextFollowUp) {
+    return `Next follow-up ${formatShortDate(nextFollowUp)}`;
+  }
+
+  if (!sponsor.lastContactedAt) {
+    return 'No contact recorded';
+  }
+
+  return 'No follow-up scheduled';
+}
+
 export function summarizeFollowUp(interactions: CampaignSponsorInteraction[]): string {
   const pending = interactions.filter((interaction) => interaction.followUpAt);
   if (pending.length === 0) {
@@ -101,6 +146,16 @@ export function summarizeFollowUp(interactions: CampaignSponsorInteraction[]): s
   const nextItem = [...pending]
     .sort((left, right) => (left.followUpAt ?? '').localeCompare(right.followUpAt ?? ''))[0];
   return `Next follow-up ${formatShortDate(nextItem.followUpAt)}`;
+}
+
+function getNextSponsorFollowUpAt(sponsor: CampaignSponsor): string | null {
+  const pending = sponsor.recentInteractions
+    .map((interaction) => interaction.followUpAt)
+    .filter((value): value is string => Boolean(value));
+  if (pending.length === 0) {
+    return null;
+  }
+  return pending.sort((left, right) => dateSortValue(left) - dateSortValue(right))[0];
 }
 
 function toTitleCase(value: string): string {

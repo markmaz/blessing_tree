@@ -1,10 +1,15 @@
 # Gift Workflow Design
 
-Last updated: 2026-05-24
+Last updated: 2026-06-01
 
 ## Status
 
-- Proposed for implementation planning.
+- Implemented and iterated.
+- Current runtime includes natural-language Gift Search, Gift Status visual
+  report, Gift Operations, Gift Pool, reservations/commitments, manual status
+  changes including picked up/distributed, public QR scan actions, reminder
+  rules, gift policies, gift tag templates, batch/manual tag printing, and
+  near-real-time visible-tab polling on the Gift Status page.
 - This design follows the existing recipient, sponsor, campaign readiness, and
   automation designs.
 - Implementation sequencing lives in:

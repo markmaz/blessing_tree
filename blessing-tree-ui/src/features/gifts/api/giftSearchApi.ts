@@ -59,6 +59,8 @@ interface GiftSearchItemResponse {
     age: number | null;
     age_unit: string | null;
     gender: string | null;
+    group_id?: string | null;
+    group_label?: string | null;
   } | null;
   label_code?: string;
   recipient_note?: string | null;
@@ -513,20 +515,13 @@ function mapGiftSearchItem(item: GiftSearchItemResponse): GiftSearchItem {
           age: item.recipient.age,
           ageUnit: item.recipient.age_unit,
           gender: item.recipient.gender,
+          groupId: item.recipient.group_id,
+          groupLabel: item.recipient.group_label,
         }
       : null,
     labelCode: item.label_code,
     recipientNote: item.recipient_note,
     notes: item.notes,
-  };
-}
-
-function mapGiftOperationsItem(item: GiftSearchItemResponse): GiftOperationsItem {
-  return {
-    ...mapGiftSearchItem(item),
-    receivedAt: item.received_at ?? null,
-    wrappedAt: item.wrapped_at ?? null,
-    storageLocationId: item.storage_location_id ?? null,
     sponsor: item.sponsor
       ? {
           id: item.sponsor.id,
@@ -537,6 +532,17 @@ function mapGiftOperationsItem(item: GiftSearchItemResponse): GiftOperationsItem
           dropOffStatus: item.sponsor.drop_off_status,
         }
       : null,
+  };
+}
+
+function mapGiftOperationsItem(item: GiftSearchItemResponse): GiftOperationsItem {
+  const mappedItem = mapGiftSearchItem(item);
+  return {
+    ...mappedItem,
+    receivedAt: item.received_at ?? null,
+    wrappedAt: item.wrapped_at ?? null,
+    storageLocationId: item.storage_location_id ?? null,
+    sponsor: mappedItem.sponsor ?? null,
   };
 }
 

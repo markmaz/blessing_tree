@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 interface ConfirmationModalProps {
@@ -5,10 +6,13 @@ interface ConfirmationModalProps {
   title: string;
   message: string;
   details?: string[];
+  detailsHeading?: string;
   confirmLabel?: string;
   cancelLabel?: string;
   tone?: 'danger' | 'secondary';
   isSubmitting?: boolean;
+  confirmDisabled?: boolean;
+  children?: ReactNode;
   onConfirm: () => Promise<void> | void;
   onClose: () => void;
 }
@@ -18,10 +22,13 @@ export function ConfirmationModal({
   title,
   message,
   details = [],
+  detailsHeading = 'This will delete',
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   tone = 'danger',
   isSubmitting = false,
+  confirmDisabled = false,
+  children,
   onConfirm,
   onClose,
 }: ConfirmationModalProps) {
@@ -60,19 +67,22 @@ export function ConfirmationModal({
           </button>
         </div>
 
-        {details.length ? (
+        {details.length || children ? (
           <div className="confirmation-modal__body">
-            <div className="confirmation-modal__card">
-              <div className="confirmation-modal__card-heading">
-                <i className="bi bi-list-check" aria-hidden="true" />
-                <span>This will delete</span>
+            {details.length ? (
+              <div className="confirmation-modal__card">
+                <div className="confirmation-modal__card-heading">
+                  <i className="bi bi-list-check" aria-hidden="true" />
+                  <span>{detailsHeading}</span>
+                </div>
+                <ul className="confirmation-modal__list mb-0">
+                  {details.map((detail) => (
+                    <li key={detail}>{detail}</li>
+                  ))}
+                </ul>
               </div>
-              <ul className="confirmation-modal__list mb-0">
-                {details.map((detail) => (
-                  <li key={detail}>{detail}</li>
-                ))}
-              </ul>
-            </div>
+            ) : null}
+            {children}
           </div>
         ) : null}
 
@@ -92,7 +102,7 @@ export function ConfirmationModal({
             onClick={() => {
               void onConfirm();
             }}
-            disabled={isSubmitting}
+            disabled={isSubmitting || confirmDisabled}
           >
             <i className={`bi ${tone === 'danger' ? 'bi-trash3-fill' : 'bi-check2-circle'} me-2`} aria-hidden="true" />
             {confirmLabel}

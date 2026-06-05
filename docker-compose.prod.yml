@@ -2,13 +2,50 @@ services:
   frontend:
     image: ${BT_UI_IMAGE:?BT_UI_IMAGE is required}
     build: null
+    mem_limit: 128m
+
+  caddy:
+    mem_limit: 128m
 
   api:
     image: ${BT_API_IMAGE:?BT_API_IMAGE is required}
     build: null
+    command:
+      - gunicorn
+      - --bind
+      - 0.0.0.0:5000
+      - --workers
+      - "2"
+      - --timeout
+      - "120"
+      - --max-requests
+      - "500"
+      - --max-requests-jitter
+      - "50"
+      - app.main:blessing_tree
+    mem_limit: 900m
 
   celery-worker:
     image: ${BT_API_IMAGE:?BT_API_IMAGE is required}
+    command:
+      - celery
+      - -A
+      - app.celery.celery
+      - worker
+      - -Q
+      - bt
+      - --loglevel=INFO
+      - --concurrency=2
+      - --max-tasks-per-child=100
+      - --max-memory-per-child=300000
+    mem_limit: 900m
 
   celery-beat:
     image: ${BT_API_IMAGE:?BT_API_IMAGE is required}
+    mem_limit: 256m
+
+  qdrant:
+    mem_limit: 512m
+
+  valkey:
+    mem_limit: 256m

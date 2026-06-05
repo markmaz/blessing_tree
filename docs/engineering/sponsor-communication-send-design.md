@@ -1,15 +1,15 @@
 # Sponsor Communication Send Design
 
-Last updated: 2026-05-27
+Last updated: 2026-06-01
 
 ## Status
 
-Implementation started on branch `codex/sponsor-communication-send`.
+Implemented.
 
-Open product questions answered on 2026-05-27 and incorporated below. The
-backend foundation, Sponsor Drawer sender, explicit Send Now targeting, and
-send history recipient detail drawer are implemented locally on the feature
-branch.
+Open product questions were answered on 2026-05-27 and incorporated below. The
+backend foundation, Sponsor Drawer sender, explicit Send Now targeting,
+scheduled communication targeting, recipient detail drawer, and communication
+send history are now part of the app.
 
 This design extends Campaign Studio communications so staff can send a campaign
 communication template directly from an individual sponsor record. The first

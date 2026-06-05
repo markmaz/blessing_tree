@@ -1,12 +1,16 @@
 import { useMemo } from 'react';
 import { useSponsorWorkspaceContext } from '@/features/campaigns/model/sponsorWorkspaceContext';
+import type { CampaignSponsor } from '@/features/campaigns/model/campaignSponsorWorkspaceTypes';
 import {
+  compareSponsorFollowUpQueue,
   formatShortDate,
-  summarizeFollowUp,
+  needsSponsorFollowUp,
+  summarizeSponsorFollowUpQueue,
   toSponsorDropOffStatusLabel,
   toSponsorStatusLabel,
 } from '@/features/campaigns/model/campaignSponsorWorkspacePresentation';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
+import type { ReportExportPayload } from '@/features/reports/model/reportExport';
 
 export function SponsorsReportsPage() {
   const { workspace, pendingRegistrations, isLoading } = useSponsorWorkspaceContext();
@@ -27,9 +31,26 @@ export function SponsorsReportsPage() {
       return [];
     }
     return workspace.sponsors
-      .filter((sponsor) => sponsor.recentInteractions.some((interaction) => interaction.followUpAt))
-      .slice(0, 8);
+      .filter(needsSponsorFollowUp)
+      .sort(compareSponsorFollowUpQueue)
+      .slice(0, 30);
   }, [workspace]);
+  const followUpQueueExport = useMemo(
+    () => buildSponsorFollowUpQueueExport(workspace?.campaignId ?? 'campaign', followUpQueue),
+    [followUpQueue, workspace?.campaignId]
+  );
+  const unmetCommitmentSponsors = useMemo(() => {
+    if (!workspace) {
+      return [];
+    }
+    return workspace.sponsors
+      .filter(hasUnselectedCommitment)
+      .sort(compareSponsorsByName);
+  }, [workspace]);
+  const unmetCommitmentsExport = useMemo(
+    () => buildUnmetCommitmentsExport(workspace?.campaignId ?? 'campaign', unmetCommitmentSponsors),
+    [unmetCommitmentSponsors, workspace?.campaignId]
+  );
 
   if (isLoading && !workspace) {
     return <div className="content-card">Loading sponsor reports…</div>;
@@ -61,6 +82,7 @@ export function SponsorsReportsPage() {
           { metric: 'Self-Registered', value: workspace.counts.selfRegisteredCount },
           { metric: 'Active Sponsorships', value: workspace.counts.activeSponsorshipCount },
           { metric: 'Sponsored Items', value: workspace.counts.sponsoredItemCount },
+          { metric: 'Committed Sponsors Without Gifts', value: unmetCommitmentSponsors.length },
         ],
       },
       {
@@ -85,10 +107,11 @@ export function SponsorsReportsPage() {
         rows: followUpQueue.map((sponsor) => ({
           sponsor: sponsor.displayName,
           status: toSponsorStatusLabel(sponsor.participation.status),
-          followUp: summarizeFollowUp(sponsor.recentInteractions),
+          followUp: summarizeSponsorFollowUpQueue(sponsor),
           sponsoredItems: sponsor.sponsoredItemCount,
         })),
       },
+      buildUnmetCommitmentsSheet(unmetCommitmentSponsors),
       {
         name: 'Pending Public Registrations',
         columns: [
@@ -146,7 +169,10 @@ export function SponsorsReportsPage() {
         </div>
         <div className="col-12 col-xl-6">
           <div className="content-card h-100">
-            <h2 className="h5 mb-3">Follow-up Queue</h2>
+            <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+              <h2 className="h5 mb-0">Follow-up Queue</h2>
+              <ReportExportActions payload={followUpQueueExport} formats={['pdf', 'excel']} />
+            </div>
             {followUpQueue.length === 0 ? (
               <div className="campaign-studio__empty-note mb-0">No active follow-up queue.</div>
             ) : (
@@ -156,12 +182,49 @@ export function SponsorsReportsPage() {
                     <div>
                       <strong>{sponsor.displayName}</strong>
                       <div className="text-muted small">
-                        {toSponsorStatusLabel(sponsor.participation.status)} · {summarizeFollowUp(sponsor.recentInteractions)}
+                        {toSponsorStatusLabel(sponsor.participation.status)} · {summarizeSponsorFollowUpQueue(sponsor)}
                       </div>
                     </div>
                     <span>{sponsor.sponsoredItemCount} gifts</span>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="col-12">
+          <div className="content-card">
+            <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+              <div>
+                <h2 className="h5 mb-1">Unmet Commitments</h2>
+                <p className="text-muted mb-0">
+                  Sponsors marked committed who have not selected or been assigned any gifts yet.
+                </p>
+              </div>
+              <ReportExportActions payload={unmetCommitmentsExport} formats={['pdf', 'excel']} />
+            </div>
+            {unmetCommitmentSponsors.length === 0 ? (
+              <div className="campaign-studio__empty-note mb-0">No unmet sponsor commitments.</div>
+            ) : (
+              <div className="campaign-sponsor-list">
+                {unmetCommitmentSponsors.slice(0, 8).map((sponsor) => {
+                  return (
+                    <div key={sponsor.id} className="campaign-sponsor-list__item">
+                      <div>
+                        <strong>{sponsor.displayName}</strong>
+                        <div className="text-muted small">
+                          {formatSponsorContact(sponsor)} · {summarizeSponsorFollowUpQueue(sponsor)}
+                        </div>
+                      </div>
+                      <span>No gifts selected</span>
+                    </div>
+                  );
+                })}
+                {unmetCommitmentSponsors.length > 8 ? (
+                  <div className="campaign-studio__empty-note mb-0">
+                    {unmetCommitmentSponsors.length - 8} more sponsor{unmetCommitmentSponsors.length - 8 === 1 ? '' : 's'} in export.
+                  </div>
+                ) : null}
               </div>
             )}
           </div>
@@ -200,4 +263,92 @@ function StatCard({ label, value }: { label: string; value: number }) {
       <div className="campaign-studio__stat-value">{value}</div>
     </div>
   );
+}
+
+function buildSponsorFollowUpQueueExport(
+  campaignId: string,
+  sponsors: CampaignSponsor[]
+): ReportExportPayload {
+  return {
+    title: 'Sponsor Follow-up Queue',
+    subtitle: `Campaign ${campaignId}`,
+    fileName: `sponsor-follow-up-queue-${campaignId}`,
+    sheets: [
+      {
+        name: 'Follow-up Queue',
+        columns: [
+          { key: 'sponsor', label: 'Sponsor', pdfWidthWeight: 1.5 },
+          { key: 'organization', label: 'Organization', pdfWidthWeight: 1.2 },
+          { key: 'email', label: 'Email', pdfWidthWeight: 1.5 },
+          { key: 'phone', label: 'Phone' },
+          { key: 'queueReason', label: 'Queue Reason', pdfWidthWeight: 1.5 },
+          { key: 'status', label: 'Status' },
+          { key: 'dropOff', label: 'Drop-off' },
+          { key: 'sponsoredItems', label: 'Gifts' },
+          { key: 'lastContacted', label: 'Last Contacted' },
+        ],
+        rows: sponsors.map((sponsor) => ({
+          sponsor: sponsor.displayName,
+          organization: sponsor.organizationName ?? '',
+          email: sponsor.email ?? '',
+          phone: sponsor.phone ?? '',
+          queueReason: summarizeSponsorFollowUpQueue(sponsor),
+          status: toSponsorStatusLabel(sponsor.participation.status),
+          dropOff: toSponsorDropOffStatusLabel(sponsor.participation.dropOffStatus),
+          sponsoredItems: sponsor.sponsoredItemCount,
+          lastContacted: formatShortDate(sponsor.lastContactedAt),
+        })),
+      },
+    ],
+  };
+}
+
+function buildUnmetCommitmentsExport(
+  campaignId: string,
+  sponsors: CampaignSponsor[]
+): ReportExportPayload {
+  return {
+    title: 'Sponsor Unmet Commitments',
+    subtitle: `Campaign ${campaignId}`,
+    fileName: `sponsor-unmet-commitments-${campaignId}`,
+    sheets: [buildUnmetCommitmentsSheet(sponsors)],
+  };
+}
+
+function buildUnmetCommitmentsSheet(sponsors: CampaignSponsor[]) {
+  return {
+    name: 'Unmet Commitments',
+    columns: [
+      { key: 'sponsor', label: 'Sponsor', pdfWidthWeight: 1.3 },
+      { key: 'organization', label: 'Organization', pdfWidthWeight: 1.1 },
+      { key: 'contact', label: 'Contact', pdfWidthWeight: 1.6 },
+      { key: 'followUp', label: 'Follow-Up', pdfWidthWeight: 1.35 },
+      { key: 'dropOff', label: 'Drop-off', pdfWidthWeight: 0.9 },
+      { key: 'lastContacted', label: 'Last Contacted', pdfWidthWeight: 0.9 },
+      { key: 'commitmentNotes', label: 'Commitment Notes', pdfWidthWeight: 1.8 },
+    ],
+    rows: sponsors.map((sponsor) => ({
+      sponsor: sponsor.displayName,
+      organization: sponsor.organizationName ?? '',
+      contact: formatSponsorContact(sponsor),
+      followUp: summarizeSponsorFollowUpQueue(sponsor),
+      dropOff: toSponsorDropOffStatusLabel(sponsor.participation.dropOffStatus),
+      lastContacted: formatShortDate(sponsor.lastContactedAt),
+      commitmentNotes: sponsor.participation.notes ?? sponsor.notes ?? '',
+    })),
+  };
+}
+
+function hasUnselectedCommitment(sponsor: CampaignSponsor) {
+  return sponsor.participation.status !== 'CANCELLED'
+    && sponsor.participation.interestStatus === 'COMMITTED'
+    && sponsor.sponsoredItemCount === 0;
+}
+
+function compareSponsorsByName(left: CampaignSponsor, right: CampaignSponsor) {
+  return left.displayName.localeCompare(right.displayName, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+function formatSponsorContact(sponsor: CampaignSponsor) {
+  return [sponsor.email, sponsor.phone].filter(Boolean).join(' | ') || 'No contact details';
 }

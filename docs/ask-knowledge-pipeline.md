@@ -68,7 +68,10 @@ The retrieval flow should be:
 
 ## Optional Qdrant Runtime
 
-The backend now has an optional Qdrant retriever. It is disabled by default and does not change normal Ask behavior unless explicitly enabled.
+The backend now has an optional Qdrant retriever. The application defaults the
+feature flag on, but Ask Blessing Tree must continue to behave correctly when
+Qdrant is unavailable, unconfigured, or unhealthy. Deterministic help/report
+handling remains the fallback and safety boundary.
 
 Environment variables:
 
@@ -89,6 +92,13 @@ docker compose --profile ask-vector up qdrant
 ```
 
 When enabled, the retriever lazily indexes seeded Ask knowledge documents into Qdrant and searches them before falling back to the older broad knowledge search. Structured exact field lookup still runs first because it is cheaper and more reliable for documented field names. If Qdrant or embeddings are unavailable, Ask falls back without failing the request.
+
+Admin Health Check also has a Generate Index action. That action rebuilds both vector collections:
+
+- Ask knowledge: seeded user guide articles, field references, help topics, and navigation targets in `BT_ASK_KNOWLEDGE_COLLECTION`.
+- Gift search: campaign wishlist/recipient/gift documents in `BT_GIFT_SEARCH_COLLECTION`, used by Gift Search for broad semantic queries such as toys, Batman gifts, or video games.
+
+Normal recipient and wishlist item changes enqueue Celery/Valkey reindex work for the gift search collection. Ask knowledge changes are code/documentation changes, so they need Generate Index after deployment when the seeded catalog changes.
 
 ## UI Context
 

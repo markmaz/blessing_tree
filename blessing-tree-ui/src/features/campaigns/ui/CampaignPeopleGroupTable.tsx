@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState } from 'react';
 import {
   formatRecipientAge,
   formatShortDate,
+  toGiftWorkflowStatusLabel,
   toGroupContactRoleLabel,
   toRecipientProgramTypeLabel,
   toRecipientGroupStatusLabel,
@@ -21,7 +22,7 @@ interface CampaignPeopleGroupTableProps {
   onRequestDeleteRecipient: (recipientId: string) => void;
 }
 
-type GroupSortKey = 'group' | 'type' | 'contact' | 'people' | 'updated' | 'status';
+type GroupSortKey = 'group' | 'program' | 'type' | 'contact' | 'people' | 'updated' | 'status';
 
 export function CampaignPeopleGroupTable({
   groups,
@@ -76,12 +77,30 @@ export function CampaignPeopleGroupTable({
     setOpenGroupIds((currentValue) => ({ ...currentValue, [groupId]: !currentValue[groupId] }));
   };
 
+  const expandAll = () => {
+    setOpenGroupIds(Object.fromEntries(sortedGroups.map((group) => [group.id, true])));
+  };
+
+  const collapseAll = () => {
+    setOpenGroupIds({});
+  };
+
   if (groups.length === 0) {
     return <div className="campaign-studio__empty-note">No households or organizations match the current search.</div>;
   }
 
   return (
     <>
+      <div className="campaign-people-table-controls">
+        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={expandAll}>
+          <i className="bi bi-arrows-expand me-2" aria-hidden="true" />
+          Expand All
+        </button>
+        <button type="button" className="btn btn-outline-secondary btn-sm" onClick={collapseAll}>
+          <i className="bi bi-arrows-collapse me-2" aria-hidden="true" />
+          Collapse All
+        </button>
+      </div>
       <div className="campaign-team-table-wrap">
         <table className="table campaign-team-table mb-0">
           <thead>
@@ -89,6 +108,13 @@ export function CampaignPeopleGroupTable({
               <SortableHeader
                 label="Group"
                 sortKey="group"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Program"
+                sortKey="program"
                 activeKey={sortKey}
                 direction={sortDirection}
                 onSort={handleSort}
@@ -175,6 +201,7 @@ export function CampaignPeopleGroupTable({
                       </div>
                     </div>
                   </td>
+                  <td>{group.programAbbreviation ?? group.parentOrganization?.groupName ?? '—'}</td>
                   <td>{toRecipientGroupTypeLabel(group.groupType)}</td>
                   <td>
                     {group.primaryContact ? (
@@ -214,7 +241,7 @@ export function CampaignPeopleGroupTable({
                 </tr>
                 {isOpen ? (
                   <tr className="campaign-people-group-children-row">
-                    <td colSpan={7}>
+                    <td colSpan={8}>
                       {group.recipients.length > 0 ? (
                         <div className="campaign-people-group-children-wrap">
                           <table className="table table-sm mb-0 campaign-people-group-children-table">
@@ -229,7 +256,7 @@ export function CampaignPeopleGroupTable({
                               </tr>
                             </thead>
                             <tbody>
-                              {group.recipients.map((recipient) => (
+                              {sortRecipientsByProgramId(group.recipients).map((recipient) => (
                                 <tr
                                   key={recipient.id}
                                   className="campaign-people-group-child-row"
@@ -258,9 +285,11 @@ export function CampaignPeopleGroupTable({
                                       .join(' · ') || 'No extra details'}
                                   </td>
                                   <td>
-                                    {recipient.wishlist
-                                      ? `${recipient.wishlist.items.length} gift${recipient.wishlist.items.length === 1 ? '' : 's'}`
-                                      : 'No wishlist'}
+                                    {recipient.wishlist?.items.length ? (
+                                      <GiftSummaryList items={recipient.wishlist.items} />
+                                    ) : (
+                                      <span className="text-muted">No wishlist</span>
+                                    )}
                                   </td>
                                   <td>{toRecipientStatusLabel(recipient.status)}</td>
                                   <td>
@@ -309,6 +338,48 @@ export function CampaignPeopleGroupTable({
   );
 }
 
+function sortRecipientsByProgramId(groupRecipients: CampaignPeopleGroup['recipients']) {
+  return [...groupRecipients].sort((left, right) => {
+    const leftId = left.programRecipientId ?? '';
+    const rightId = right.programRecipientId ?? '';
+    const idComparison = leftId.localeCompare(rightId, undefined, { numeric: true, sensitivity: 'base' });
+    if (idComparison !== 0) {
+      return idComparison;
+    }
+    return left.displayLabel.localeCompare(right.displayLabel);
+  });
+}
+
+function GiftSummaryList({
+  items,
+}: {
+  items: NonNullable<CampaignPeopleGroup['recipients'][number]['wishlist']>['items'];
+}) {
+  return (
+    <div className="campaign-people-gift-summary-list">
+      {items.map((item) => (
+        <div key={item.id} className="campaign-people-gift-summary-line">
+          <span className="campaign-people-gift-summary-line__gift">
+            {item.description}
+            {item.size ? ` (${item.size})` : ''}
+          </span>
+          <span className="campaign-people-gift-summary-line__meta">
+            {item.sponsor?.displayName ?? 'Unsponsored'}
+            {item.sponsor?.phone ? ` · ${item.sponsor.phone}` : ''}
+            {' · '}
+            {toGiftWorkflowStatusLabel(
+              item.giftWorkflow.isPickedUp,
+              item.giftWorkflow.isFullyFulfilled,
+              item.giftWorkflow.sponsorshipStatus
+            )}
+            {item.giftWorkflow.isPickedUp ? ' · Picked up' : ''}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function SortableHeader({
   label,
   sortKey,
@@ -343,6 +414,8 @@ function getGroupSortValue(group: CampaignPeopleGroup, sortKey: GroupSortKey) {
   switch (sortKey) {
     case 'type':
       return toRecipientGroupTypeLabel(group.groupType);
+    case 'program':
+      return group.programAbbreviation ?? group.parentOrganization?.groupName ?? '';
     case 'contact':
       return group.primaryContact
         ? `${group.primaryContact.firstName ?? ''} ${group.primaryContact.lastName ?? ''} ${group.primaryContact.email ?? ''}`.trim()

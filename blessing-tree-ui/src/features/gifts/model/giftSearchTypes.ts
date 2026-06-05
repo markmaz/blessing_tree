@@ -22,6 +22,8 @@ export interface GiftSearchRecipient {
   age: number | null;
   ageUnit: string | null;
   gender: string | null;
+  groupId?: string | null;
+  groupLabel?: string | null;
 }
 
 export interface GiftSearchItem {
@@ -40,6 +42,7 @@ export interface GiftSearchItem {
   isAvailable: boolean;
   sponsorshipStatus: 'SPONSORED' | 'UNSPONSORED';
   recipient: GiftSearchRecipient | null;
+  sponsor?: GiftOperationsSponsor | null;
   labelCode?: string;
   recipientNote?: string | null;
   notes?: string | null;
