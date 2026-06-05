@@ -4,6 +4,7 @@ import { askBlessingTree } from '@/features/ask/api/askApi';
 import type { AskRequestContext, AskResponse } from '@/features/ask/model/askTypes';
 import { AskResult } from '@/features/ask/ui/AskResult';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
+import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import '@/features/ask/ui/ask.css';
 
 const SUGGESTED_PROMPTS = [
@@ -146,22 +147,22 @@ export function AskBlessingTreePage() {
 
   return (
     <section className="ask-page">
-      <div className="campaign-studio-page__header">
-        <div>
-          <div className="campaign-chip-row mb-3">
+      <WorkspacePageHeader
+        title="Ask Blessing Tree"
+        description="Ask for help using the app or run a campaign report in plain language."
+        chips={
+          <>
             <span className="campaign-chip campaign-chip-muted">{campaign?.name ?? 'Campaign'}</span>
             <span className="campaign-chip campaign-chip-muted">Ask Blessing Tree</span>
-          </div>
-          <h1 className="h3 mb-1">Ask Blessing Tree</h1>
-          <p className="text-muted mb-0">
-            Ask for help using the app or run a campaign report in plain language.
-          </p>
-        </div>
-        <a href="/blessing-tree-user-guide.pdf" className="btn btn-outline-secondary btn-sm" download>
-          <i className="bi bi-file-earmark-pdf me-2" aria-hidden="true" />
-          Download User Guide
-        </a>
-      </div>
+          </>
+        }
+        actions={
+          <a href="/blessing-tree-user-guide.pdf" className="btn btn-outline-secondary btn-sm" download>
+            <i className="bi bi-file-earmark-pdf me-2" aria-hidden="true" />
+            Download User Guide
+          </a>
+        }
+      />
 
       <div className="content-card ask-composer">
         <form className="ask-composer__form" onSubmit={handleSubmit}>
