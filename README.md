@@ -54,6 +54,7 @@ blessing_tree/
 - [blessing-tree-api/README.md](/Users/mmaslak/Local%20Documents/projects/blessing_tree/blessing-tree-api/README.md): backend overview, routes, setup notes
 - [blessing-tree-ui/README.md](/Users/mmaslak/Local%20Documents/projects/blessing_tree/blessing-tree-ui/README.md): frontend overview, routes, setup notes
 - [docs/deployment/ec2-docker-compose.md](/Users/mmaslak/Local%20Documents/projects/blessing_tree/docs/deployment/ec2-docker-compose.md): preferred Docker Compose deployment on EC2 with RDS MySQL
+- [docs/deployment/production-backup-restore.md](/Users/mmaslak/Local%20Documents/projects/blessing_tree/docs/deployment/production-backup-restore.md): production backup, restore, and destructive-operation safety runbook
 - [docs/deployment/ec2-github-actions.md](/Users/mmaslak/Local%20Documents/projects/blessing_tree/docs/deployment/ec2-github-actions.md): GitHub Actions deployment to EC2
 - [graphify-out/GRAPH_REPORT.md](/Users/mmaslak/Local%20Documents/projects/blessing_tree/graphify-out/GRAPH_REPORT.md): knowledge graph report
 

@@ -4,10 +4,22 @@ Last updated: 2026-06-05
 
 ## Current Phase
 
-The current feature branch is `codex/mobile-receiving-hardening`.
+The current feature branch is `codex/production-safety-runbooks`.
 
-The current active work is Phase 4 of the Product Polish And Hardening Plan:
-mobile receiving hardening.
+The current active work is Phase 5 of the Product Polish And Hardening Plan:
+backups, restore, and production safety.
+
+The first Phase 5 slice adds production safety guardrails:
+
+- new production backup/restore runbook for the EC2 Docker Compose + RDS stack
+- demo seed script refuses `--reset` when `CURRENT_ENVIRONMENT=production`
+- demo seed script requires append-only production behavior unless
+  `--allow-production-replace` is passed intentionally
+- backend version bumped to `0.1.56`
+
+Phase 4 mobile receiving hardening is functionally complete on
+`codex/mobile-receiving-hardening`, pending only a final phone-width visual QA
+pass:
 
 Phase 3 permission cleanup is complete on `codex/permission-cleanup`:
 

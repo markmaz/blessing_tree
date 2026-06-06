@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import uuid
 from datetime import date, datetime, timedelta
@@ -618,6 +619,11 @@ def main() -> None:
     parser.add_argument("--reset", action="store_true", help="Clear operational data before seeding.")
     parser.add_argument("--yes", action="store_true", help="Required with --reset to confirm destructive local reset.")
     parser.add_argument(
+        "--allow-production-replace",
+        action="store_true",
+        help="Allow replacing an existing seeded campaign when CURRENT_ENVIRONMENT=production. Does not allow --reset.",
+    )
+    parser.add_argument(
         "--append",
         action="store_true",
         help="Create the seeded campaign without deleting or replacing existing seeded data.",
@@ -633,6 +639,11 @@ def main() -> None:
         raise SystemExit("Refusing to reset without --yes.")
     if args.reset and args.append:
         raise SystemExit("--reset and --append cannot be used together.")
+    enforce_environment_safety(
+        reset=args.reset,
+        append=args.append,
+        allow_production_replace=args.allow_production_replace,
+    )
 
     configure_seed_context(
         campaign_name=args.campaign_name,
@@ -649,6 +660,19 @@ def main() -> None:
         summary = seed_demo(db)
         db.commit()
     print_summary(summary)
+
+
+def enforce_environment_safety(*, reset: bool, append: bool, allow_production_replace: bool) -> None:
+    current_environment = os.getenv("CURRENT_ENVIRONMENT", "development").strip().lower()
+    if current_environment != "production":
+        return
+    if reset:
+        raise SystemExit("Refusing to run --reset when CURRENT_ENVIRONMENT=production.")
+    if not append and not allow_production_replace:
+        raise SystemExit(
+            "Refusing to replace seeded campaign data in production. Use --append with a unique "
+            "campaign name/slug, or pass --allow-production-replace intentionally."
+        )
 
 
 def configure_seed_context(*, campaign_name: str, campaign_slug: str) -> None:
