@@ -44,6 +44,16 @@ The final Phase 5 slice closes backup/restore documentation:
 
 Phase 5 is complete pending merge/deploy review.
 
+Follow-up documentation refresh:
+
+- user guide Admin section now includes health-check interpretation, production
+  backup/restore expectations, restore-drill guidance, and campaign delete
+  safety notes
+- Ask Blessing Tree knowledge now answers Admin Health, backup, restore,
+  production safety, seed safety, and campaign delete safety questions
+- backend Ask route mapping includes Admin Health so related answers can link
+  to `/admin/health`
+
 Phase 4 mobile receiving hardening is functionally complete on
 `codex/mobile-receiving-hardening`, pending only a final phone-width visual QA
 pass:

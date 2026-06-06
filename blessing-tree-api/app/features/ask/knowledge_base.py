@@ -359,7 +359,6 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
             "records, when it happened, the affected area/action/campaign, and before/after field values when captured."
         ),
         phrases=(
-            "admin",
             "user management",
             "invite users",
             "delete user",
@@ -380,6 +379,79 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
         ),
         route_name="admin_users",
         required_capability=None,
+    ),
+    KnowledgeArticle(
+        key="guide_admin_health",
+        title="Admin Health Check",
+        section="User Guide > Admin > Health Check",
+        content=(
+            "Admin Health shows database, Celery, LLM and embedding, Qdrant, email, and storage health. Use it after "
+            "deploys, restores, and configuration changes to see which dependency needs attention first. The email "
+            "check confirms SMTP configuration is present but does not send an email. Use Campaign Studio test email "
+            "when delivery needs to be verified end to end. The Qdrant Generate Index action rebuilds Ask knowledge "
+            "and semantic gift search indexes from MySQL."
+        ),
+        phrases=(
+            "admin health",
+            "health check",
+            "system health",
+            "qdrant health",
+            "email health",
+            "storage health",
+            "generate index",
+            "embedding health",
+            "celery health",
+            "why is health degraded",
+            "what does the admin health check tell me",
+            "what does health check tell me",
+        ),
+        steps=(
+            "Open Admin, then Health Check.",
+            "Review the overall status and the dependency-specific cards.",
+            "Treat the failing card's message as the first triage target.",
+            "Use Generate Index when Qdrant is reachable but Ask or gift search collections are missing or stale.",
+            "Send a Campaign Studio test email if SMTP delivery needs end-to-end verification.",
+        ),
+        route_name="admin_health",
+        required_capability=None,
+    ),
+    KnowledgeArticle(
+        key="guide_production_backup_restore",
+        title="Production Backup, Restore, and Safety",
+        section="User Guide > Admin > Production Safety",
+        content=(
+            "Production data lives in RDS MySQL. Qdrant is a rebuildable search index and Valkey is operational queue "
+            "or cache state. Production should use RDS automated backups with at least 7 days of retention during normal "
+            "operation and at least 14 days during active campaign intake or distribution. Before migrations, production "
+            "seed work, or campaign deletion, create both an RDS manual snapshot and a manual logical backup. Restore "
+            "drills should restore into a temporary database, verify login, campaign list, directories, gift search, "
+            "reports, and Admin Health, then remove the temporary restore target."
+        ),
+        phrases=(
+            "backup",
+            "backups",
+            "restore",
+            "restore drill",
+            "production restore",
+            "production backup",
+            "rds snapshot",
+            "manual logical backup",
+            "delete campaign safety",
+            "seed safety",
+            "production safety",
+            "what should i do before deleting a campaign",
+            "what should i do before deleting a production campaign",
+            "what backups do we have",
+            "how do i restore production",
+        ),
+        steps=(
+            "Confirm RDS automated backups and deletion protection are enabled.",
+            "Before risky production work, create an RDS manual snapshot.",
+            "Create a manual logical backup and copy it off the EC2 host.",
+            "For restore validation, restore into a temporary database target instead of overwriting production.",
+            "Run Admin Health and core workflow smoke checks against the restored target.",
+            "Regenerate Qdrant indexes from Admin Health if search collections are missing or stale.",
+        ),
     ),
     KnowledgeArticle(
         key="guide_field_reference",
