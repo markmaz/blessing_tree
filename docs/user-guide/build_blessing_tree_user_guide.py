@@ -622,7 +622,7 @@ def build_document() -> None:
     add_heading(doc, "Health Check and App Capabilities", level=2)
     add_body(
         doc,
-        "Health Check shows database, Celery, and LLM health. App Capabilities lets admins enable or disable major app surfaces such as People, Sponsors, Reports, Donations, and campaign AI.",
+        "Health Check shows database, Celery, LLM/embedding, Qdrant, email, and storage health. Use it after deploys, restores, and configuration changes to see which dependency needs attention first. App Capabilities lets admins enable or disable major app surfaces such as People, Sponsors, Reports, Donations, and campaign AI.",
     )
 
     add_heading(doc, "Account Profile and Settings", level=1)

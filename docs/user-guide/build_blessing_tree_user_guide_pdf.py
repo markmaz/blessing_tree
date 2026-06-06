@@ -910,7 +910,7 @@ def build() -> None:
             h2("LLM Configuration"),
             p("LLM Configuration controls the model used by Campaign Studio AI and Ask Blessing Tree when LLM features are enabled. Admins can select provider, endpoint, model, and test connectivity."),
             h2("Health Check and App Capabilities"),
-            p("Health Check shows database, Celery, and LLM health. App Capabilities lets admins enable or disable major app surfaces such as People, Sponsors, Reports, Donations, and campaign AI."),
+            p("Health Check shows database, Celery, LLM/embedding, Qdrant, email, and storage health. Use it after deploys, restores, and configuration changes to see which dependency needs attention first. App Capabilities lets admins enable or disable major app surfaces such as People, Sponsors, Reports, Donations, and campaign AI."),
             h1("Account Profile and Settings"),
             p("Use the menu under your name in the top bar to open Profile or Settings. Profile stores your display information and supports password changes for local accounts. The password fields include visibility controls because the customer requested that behavior. Settings holds account preferences that are separate from campaign setup."),
             h1("Public Sponsor and Public Scan Pages"),

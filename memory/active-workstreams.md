@@ -33,6 +33,17 @@ The third Phase 5 slice tightens campaign deletion safety:
 - focused backend delete tests cover name/year confirmation behavior
 - API version bumped to `0.1.58`; UI version bumped to `0.0.120`
 
+The final Phase 5 slice closes backup/restore documentation:
+
+- production runbook now documents scheduled RDS backup expectations
+- restore-drill checklist defines how to validate a backup without touching
+  production
+- campaign delete runbook language matches the name-plus-year confirmation
+- Admin Health guide text covers DB, Celery, LLM/embedding, Qdrant, email, and
+  storage checks
+
+Phase 5 is complete pending merge/deploy review.
+
 Phase 4 mobile receiving hardening is functionally complete on
 `codex/mobile-receiving-hardening`, pending only a final phone-width visual QA
 pass:
