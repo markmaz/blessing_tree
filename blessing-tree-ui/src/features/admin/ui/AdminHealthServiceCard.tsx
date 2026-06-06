@@ -66,6 +66,7 @@ export function AdminHealthServiceCard({
       {check.model ? <div className="admin-health-card__meta">Model: {check.model}</div> : null}
       {check.provider ? <div className="admin-health-card__meta">Provider: {check.provider}</div> : null}
       {check.url ? <div className="admin-health-card__meta">URL: {check.url}</div> : null}
+      {check.path ? <div className="admin-health-card__meta">Path: {check.path}</div> : null}
       {action ? (
         <div className="mt-3">
           <button type="button" className="btn btn-outline-secondary btn-sm" onClick={action.onClick} disabled={action.isBusy}>

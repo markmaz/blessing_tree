@@ -180,3 +180,7 @@ Use Admin Health to verify:
 
 If one dependency fails, treat the dependency-specific error as the first
 triage target before debugging application workflows.
+
+Admin Health is intentionally non-destructive. The email check verifies SMTP
+configuration is present, but it does not send an email. Use Campaign Studio's
+test email flow when delivery needs to be verified end to end.

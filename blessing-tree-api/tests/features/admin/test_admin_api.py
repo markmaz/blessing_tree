@@ -677,6 +677,44 @@ def test_llm_config_and_health(
     assert health_response.status_code == 200
     assert "checks" in health_response.get_json()
     assert "qdrant" in health_response.get_json()["checks"]
+    assert "email" in health_response.get_json()["checks"]
+    assert "storage" in health_response.get_json()["checks"]
+
+
+def test_health_reports_email_and_storage_details(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.features.admin.health_service import AdminHealthService
+
+    monkeypatch.setenv("SMTP_SERVER", "smtp.example.test")
+    monkeypatch.setenv("SMTP_PORT", "587")
+    monkeypatch.setenv("SMTP_USERNAME", "mailer")
+    monkeypatch.setenv("SMTP_PASSWORD", "secret")
+    monkeypatch.setenv("DEFAULT_MAIL_SENDER", "Blessing Tree <noreply@example.test>")
+    monkeypatch.setenv("BT_STORAGE_HEALTH_PATH", "/")
+
+    email = AdminHealthService._check_email()
+    storage = AdminHealthService._check_storage()
+
+    assert email["status"] == "ok"
+    assert email["configured"] is True
+    assert email["provider"] == "smtp.example.test"
+    assert storage["status"] in {"ok", "degraded", "error"}
+    assert storage["path"] == "/"
+    assert "free_percent" in storage
+
+
+def test_health_reports_degraded_email_when_required_settings_are_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.features.admin.health_service import AdminHealthService
+
+    monkeypatch.delenv("SMTP_SERVER", raising=False)
+    monkeypatch.delenv("SMTP_PORT", raising=False)
+    monkeypatch.delenv("SMPT_PORT", raising=False)
+    monkeypatch.delenv("DEFAULT_MAIL_SENDER", raising=False)
+
+    email = AdminHealthService._check_email()
+
+    assert email["status"] == "degraded"
+    assert email["configured"] is False
+    assert "SMTP_SERVER" in str(email["message"])
 
 
 def test_admin_can_generate_qdrant_indexes(

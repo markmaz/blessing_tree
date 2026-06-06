@@ -17,6 +17,13 @@ The first Phase 5 slice adds production safety guardrails:
   `--allow-production-replace` is passed intentionally
 - backend version bumped to `0.1.56`
 
+The second Phase 5 slice expands Admin Health:
+
+- backend health now reports email configuration and storage/disk pressure
+- Admin Health UI shows Email and Storage cards
+- health tests cover email configuration and storage payload details
+- API version bumped to `0.1.57`; UI version bumped to `0.0.119`
+
 Phase 4 mobile receiving hardening is functionally complete on
 `codex/mobile-receiving-hardening`, pending only a final phone-width visual QA
 pass:

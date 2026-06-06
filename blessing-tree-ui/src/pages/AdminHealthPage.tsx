@@ -90,7 +90,7 @@ export function AdminHealthPage() {
       </div>
 
       <div className="row g-4">
-        <div className="col-12 col-xl-3">
+        <div className="col-12 col-xl-4">
           <AdminHealthServiceCard
             title="Database"
             iconClass="bi-database"
@@ -101,7 +101,7 @@ export function AdminHealthPage() {
             ]}
           />
         </div>
-        <div className="col-12 col-xl-3">
+        <div className="col-12 col-xl-4">
           <AdminHealthServiceCard
             title="Celery"
             iconClass="bi-diagram-3"
@@ -113,7 +113,7 @@ export function AdminHealthPage() {
             ]}
           />
         </div>
-        <div className="col-12 col-xl-3">
+        <div className="col-12 col-xl-4">
           <AdminHealthServiceCard
             title="LLM"
             iconClass="bi-cpu"
@@ -125,7 +125,7 @@ export function AdminHealthPage() {
             ]}
           />
         </div>
-        <div className="col-12 col-xl-3">
+        <div className="col-12 col-xl-4">
           <AdminHealthServiceCard
             title="Qdrant"
             iconClass="bi-search"
@@ -141,6 +141,30 @@ export function AdminHealthPage() {
               isBusy: isIndexingQdrant,
               onClick: () => void handleGenerateQdrantIndex(),
             }}
+          />
+        </div>
+        <div className="col-12 col-xl-4">
+          <AdminHealthServiceCard
+            title="Email"
+            iconClass="bi-envelope-check"
+            check={health.checks.email}
+            metrics={[
+              { label: 'Status', value: health.checks.email.status },
+              { label: 'Configured', value: health.checks.email.configured ? 'Yes' : 'No' },
+              { label: 'Provider', value: health.checks.email.provider ?? '-' },
+            ]}
+          />
+        </div>
+        <div className="col-12 col-xl-4">
+          <AdminHealthServiceCard
+            title="Storage"
+            iconClass="bi-hdd"
+            check={health.checks.storage}
+            metrics={[
+              { label: 'Status', value: health.checks.storage.status },
+              { label: 'Free', value: health.checks.storage.freePercent != null ? `${health.checks.storage.freePercent}%` : '-' },
+              { label: 'Used', value: health.checks.storage.usedPercent != null ? `${health.checks.storage.usedPercent}%` : '-' },
+            ]}
           />
         </div>
       </div>
