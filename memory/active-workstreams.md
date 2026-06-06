@@ -45,6 +45,14 @@ The second Phase 4 slice hardens scanner error states:
   and malformed sponsor drop-off links
 - scanner parser tests cover the new bad-code states
 
+The third Phase 4 slice adds rendered mobile Scanner coverage:
+
+- manual unsupported QR URL entry shows the worker-facing unsupported-QR message
+- manual sponsor drop-off links missing a token show the secure-token warning
+- manual recipient IDs route to mobile Receive with auto-lookup state
+- manual sponsor drop-off QR URLs route to the drop-off page with campaign
+  context preserved
+
 The follow-on branch `codex/sponsor-dropoff-qr-workflow` has implemented the
 sponsor drop-off QR workflow through token revocation and scan-event tracking:
 
