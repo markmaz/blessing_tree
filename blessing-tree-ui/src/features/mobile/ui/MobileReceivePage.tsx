@@ -19,6 +19,14 @@ type ReceiveRouteState = {
   autoLookup?: boolean;
 };
 
+type RecentReceiveAction = {
+  giftId: string;
+  description: string;
+  action: 'received' | 'undone';
+  status: string;
+  occurredAt: Date;
+};
+
 export function MobileReceivePage() {
   const location = useLocation();
   const { selectedCampaign, selectedCampaignId } = useCampaigns();
@@ -26,13 +34,14 @@ export function MobileReceivePage() {
   const [lookedUpRecipientId, setLookedUpRecipientId] = useState('');
   const [items, setItems] = useState<GiftSearchItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [receivingItemId, setReceivingItemId] = useState<string | null>(null);
-  const [unreceivingItemId, setUnreceivingItemId] = useState<string | null>(null);
+  const [busyItemIds, setBusyItemIds] = useState<string[]>([]);
+  const [recentActions, setRecentActions] = useState<RecentReceiveAction[]>([]);
   const [activeNoteItemId, setActiveNoteItemId] = useState<string | null>(null);
   const [receiveNote, setReceiveNote] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const consumedScanValueRef = useRef<string | null>(null);
+  const busyItemIdsRef = useRef<Set<string>>(new Set());
 
   const recipient = items[0]?.recipient ?? null;
   const sortedItems = useMemo(
@@ -51,6 +60,7 @@ export function MobileReceivePage() {
     setItems([]);
     setActiveNoteItemId(null);
     setReceiveNote('');
+    setRecentActions([]);
     setLookedUpRecipientId(nextRecipientId);
 
     try {
@@ -92,11 +102,12 @@ export function MobileReceivePage() {
   }
 
   async function handleReceive(item: GiftSearchItem) {
-    if (!selectedCampaignId || isReceivedOrLater(item.status)) {
+    if (!selectedCampaignId || isReceivedOrLater(item.status) || busyItemIdsRef.current.has(item.wishlistItemId)) {
       return;
     }
 
-    setReceivingItemId(item.wishlistItemId);
+    busyItemIdsRef.current.add(item.wishlistItemId);
+    setBusyItemIds((current) => addBusyGift(current, item.wishlistItemId));
     setError(null);
     setMessage(null);
 
@@ -113,21 +124,32 @@ export function MobileReceivePage() {
         )
       );
       setMessage(`${updatedGift.description} marked received.`);
+      setRecentActions((current) =>
+        addRecentAction(current, {
+          giftId: updatedGift.wishlistItemId,
+          description: updatedGift.description,
+          action: 'received',
+          status: updatedGift.status,
+          occurredAt: new Date(),
+        })
+      );
       setActiveNoteItemId(null);
       setReceiveNote('');
     } catch (receiveError) {
       setError(receiveError instanceof Error ? receiveError.message : 'Unable to receive gift.');
     } finally {
-      setReceivingItemId(null);
+      busyItemIdsRef.current.delete(item.wishlistItemId);
+      setBusyItemIds((current) => removeBusyGift(current, item.wishlistItemId));
     }
   }
 
   async function handleUnreceive(item: GiftSearchItem) {
-    if (!selectedCampaignId || item.status !== 'RECEIVED') {
+    if (!selectedCampaignId || item.status !== 'RECEIVED' || busyItemIdsRef.current.has(item.wishlistItemId)) {
       return;
     }
 
-    setUnreceivingItemId(item.wishlistItemId);
+    busyItemIdsRef.current.add(item.wishlistItemId);
+    setBusyItemIds((current) => addBusyGift(current, item.wishlistItemId));
     setError(null);
     setMessage(null);
 
@@ -144,10 +166,20 @@ export function MobileReceivePage() {
         )
       );
       setMessage(`${updatedGift.description} moved back to ${toStatusLabel(updatedGift.status)}.`);
+      setRecentActions((current) =>
+        addRecentAction(current, {
+          giftId: updatedGift.wishlistItemId,
+          description: updatedGift.description,
+          action: 'undone',
+          status: updatedGift.status,
+          occurredAt: new Date(),
+        })
+      );
     } catch (unreceiveError) {
       setError(unreceiveError instanceof Error ? unreceiveError.message : 'Unable to undo receive.');
     } finally {
-      setUnreceivingItemId(null);
+      busyItemIdsRef.current.delete(item.wishlistItemId);
+      setBusyItemIds((current) => removeBusyGift(current, item.wishlistItemId));
     }
   }
 
@@ -195,6 +227,23 @@ export function MobileReceivePage() {
       {error ? <div className="mobile-alert mobile-alert--danger">{error}</div> : null}
       {message ? <div className="mobile-alert mobile-alert--success">{message}</div> : null}
 
+      {recentActions.length > 0 ? (
+        <section className="mobile-recent-actions" aria-label="Recently received gifts">
+          <div className="mobile-recent-actions__header">
+            <i className="bi bi-clock-history" aria-hidden="true" />
+            <h2>Recent actions</h2>
+          </div>
+          <ul>
+            {recentActions.map((action) => (
+              <li key={`${action.giftId}-${action.action}-${action.occurredAt.getTime()}`}>
+                <span>{action.description}</span>
+                <strong>{action.action === 'received' ? 'Received' : `Undo to ${toStatusLabel(action.status)}`}</strong>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {recipient ? (
         <section className="mobile-recipient-card" aria-label="Recipient summary">
           <div>
@@ -222,8 +271,7 @@ export function MobileReceivePage() {
         <section className="mobile-gift-list" aria-label="Wishlist items">
           {sortedItems.map((item) => {
             const isReceived = isReceivedOrLater(item.status);
-            const isReceiving = receivingItemId === item.wishlistItemId;
-            const isUnreceiving = unreceivingItemId === item.wishlistItemId;
+            const isBusy = isGiftBusy(busyItemIds, item.wishlistItemId);
             const noteOpen = activeNoteItemId === item.wishlistItemId;
             return (
               <article key={item.wishlistItemId} className="mobile-gift-card">
@@ -251,6 +299,7 @@ export function MobileReceivePage() {
                     <button
                       type="button"
                       className="mobile-secondary-action"
+                      disabled={isBusy}
                       onClick={() => {
                         setActiveNoteItemId(noteOpen ? null : item.wishlistItemId);
                         setReceiveNote('');
@@ -261,10 +310,10 @@ export function MobileReceivePage() {
                     <button
                       type="button"
                       className="mobile-primary-action mobile-primary-action--inline"
-                      disabled={isReceiving}
+                      disabled={isBusy}
                       onClick={() => void handleReceive(item)}
                     >
-                      {isReceiving ? 'Receiving...' : 'Receive'}
+                      {isBusy ? 'Receiving...' : 'Receive'}
                     </button>
                   </div>
                 ) : item.status === 'RECEIVED' ? (
@@ -273,10 +322,10 @@ export function MobileReceivePage() {
                     <button
                       type="button"
                       className="mobile-secondary-action mobile-secondary-action--danger"
-                      disabled={isUnreceiving}
+                      disabled={isBusy}
                       onClick={() => void handleUnreceive(item)}
                     >
-                      {isUnreceiving ? 'Undoing...' : 'Undo'}
+                      {isBusy ? 'Undoing...' : 'Undo'}
                     </button>
                   </div>
                 ) : (
@@ -312,6 +361,22 @@ function normalizeRecipientId(value: string | null | undefined): string {
 
 function isReceivedOrLater(status: string): boolean {
   return RECEIVED_OR_LATER_STATUSES.has(status);
+}
+
+function isGiftBusy(busyIds: string[], giftId: string): boolean {
+  return busyIds.includes(giftId);
+}
+
+function addBusyGift(busyIds: string[], giftId: string): string[] {
+  return busyIds.includes(giftId) ? busyIds : [...busyIds, giftId];
+}
+
+function removeBusyGift(busyIds: string[], giftId: string): string[] {
+  return busyIds.filter((id) => id !== giftId);
+}
+
+function addRecentAction(actions: RecentReceiveAction[], action: RecentReceiveAction): RecentReceiveAction[] {
+  return [action, ...actions.filter((item) => item.giftId !== action.giftId)].slice(0, 5);
 }
 
 function toStatusLabel(status: string): string {

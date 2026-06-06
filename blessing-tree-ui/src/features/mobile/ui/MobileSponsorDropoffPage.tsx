@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import {
   getSponsorDropoffPayload,
@@ -8,6 +8,14 @@ import type { GiftOperationsItem, SponsorDropoffGift, SponsorDropoffPayload } fr
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import { ApiError } from '@/shared/api/client';
 
+type RecentDropoffAction = {
+  giftId: string;
+  description: string;
+  action: 'received' | 'undone';
+  status: string;
+  occurredAt: Date;
+};
+
 export function MobileSponsorDropoffPage() {
   const { token = '' } = useParams();
   const [searchParams] = useSearchParams();
@@ -16,13 +24,19 @@ export function MobileSponsorDropoffPage() {
   const [payload, setPayload] = useState<SponsorDropoffPayload | null>(null);
   const [activeNoteItemId, setActiveNoteItemId] = useState<string | null>(null);
   const [receiveNote, setReceiveNote] = useState('');
-  const [busyGiftId, setBusyGiftId] = useState<string | null>(null);
+  const [busyGiftIds, setBusyGiftIds] = useState<string[]>([]);
+  const [recentActions, setRecentActions] = useState<RecentDropoffAction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const busyGiftIdsRef = useRef<Set<string>>(new Set());
 
   const loadDropoff = useCallback(async () => {
     if (!dropoffCampaignId || !token) {
+      setPayload(null);
+      setMessage(null);
+      setIsLoading(false);
+      setError('This QR code is missing its campaign context. Scan the latest sponsor email QR code or select the campaign before opening it.');
       return;
     }
     setIsLoading(true);
@@ -30,6 +44,7 @@ export function MobileSponsorDropoffPage() {
     setMessage(null);
     try {
       setPayload(await getSponsorDropoffPayload(dropoffCampaignId, token));
+      setRecentActions([]);
     } catch (loadError) {
       setPayload(null);
       setError(toDropoffLoadErrorMessage(loadError));
@@ -43,8 +58,9 @@ export function MobileSponsorDropoffPage() {
   }, [loadDropoff]);
 
   async function handleReceive(gift: SponsorDropoffGift) {
-    if (!dropoffCampaignId || !gift.canReceive) return;
-    setBusyGiftId(gift.wishlistItemId);
+    if (!dropoffCampaignId || !gift.canReceive || busyGiftIdsRef.current.has(gift.wishlistItemId)) return;
+    busyGiftIdsRef.current.add(gift.wishlistItemId);
+    setBusyGiftIds((current) => addBusyGift(current, gift.wishlistItemId));
     setError(null);
     setMessage(null);
     try {
@@ -58,16 +74,27 @@ export function MobileSponsorDropoffPage() {
       setActiveNoteItemId(null);
       setReceiveNote('');
       setMessage(`${updated.description} marked received.`);
+      setRecentActions((current) =>
+        addRecentAction(current, {
+          giftId: updated.wishlistItemId,
+          description: updated.description,
+          action: 'received',
+          status: updated.status,
+          occurredAt: new Date(),
+        })
+      );
     } catch (receiveError) {
       setError(receiveError instanceof Error ? receiveError.message : 'Unable to receive gift.');
     } finally {
-      setBusyGiftId(null);
+      busyGiftIdsRef.current.delete(gift.wishlistItemId);
+      setBusyGiftIds((current) => removeBusyGift(current, gift.wishlistItemId));
     }
   }
 
   async function handleUnreceive(gift: SponsorDropoffGift) {
-    if (!dropoffCampaignId || !gift.canUnreceive) return;
-    setBusyGiftId(gift.wishlistItemId);
+    if (!dropoffCampaignId || !gift.canUnreceive || busyGiftIdsRef.current.has(gift.wishlistItemId)) return;
+    busyGiftIdsRef.current.add(gift.wishlistItemId);
+    setBusyGiftIds((current) => addBusyGift(current, gift.wishlistItemId));
     setError(null);
     setMessage(null);
     try {
@@ -79,10 +106,20 @@ export function MobileSponsorDropoffPage() {
       );
       replaceGift(updated);
       setMessage(`${updated.description} moved back to ${toStatusLabel(updated.status)}.`);
+      setRecentActions((current) =>
+        addRecentAction(current, {
+          giftId: updated.wishlistItemId,
+          description: updated.description,
+          action: 'undone',
+          status: updated.status,
+          occurredAt: new Date(),
+        })
+      );
     } catch (unreceiveError) {
       setError(unreceiveError instanceof Error ? unreceiveError.message : 'Unable to undo receive.');
     } finally {
-      setBusyGiftId(null);
+      busyGiftIdsRef.current.delete(gift.wishlistItemId);
+      setBusyGiftIds((current) => removeBusyGift(current, gift.wishlistItemId));
     }
   }
 
@@ -127,6 +164,23 @@ export function MobileSponsorDropoffPage() {
       {isLoading ? <div className="mobile-alert mobile-scan-notice">Loading sponsor drop-off...</div> : null}
       {error ? <div className="mobile-alert mobile-alert--danger">{error}</div> : null}
       {message ? <div className="mobile-alert mobile-alert--success">{message}</div> : null}
+
+      {recentActions.length > 0 ? (
+        <section className="mobile-recent-actions" aria-label="Recently received drop-off gifts">
+          <div className="mobile-recent-actions__header">
+            <i className="bi bi-clock-history" aria-hidden="true" />
+            <h2>Recent actions</h2>
+          </div>
+          <ul>
+            {recentActions.map((action) => (
+              <li key={`${action.giftId}-${action.action}-${action.occurredAt.getTime()}`}>
+                <span>{action.description}</span>
+                <strong>{action.action === 'received' ? 'Received' : `Undo to ${toStatusLabel(action.status)}`}</strong>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {payload ? (
         <>
@@ -173,7 +227,7 @@ export function MobileSponsorDropoffPage() {
               </dl>
               <div className="mobile-gift-list">
                 {recipient.gifts.map((gift) => {
-                  const isBusy = busyGiftId === gift.wishlistItemId;
+                  const isBusy = isGiftBusy(busyGiftIds, gift.wishlistItemId);
                   const noteOpen = activeNoteItemId === gift.wishlistItemId;
                   return (
                     <article key={gift.wishlistItemId} className="mobile-gift-card">
@@ -198,6 +252,7 @@ export function MobileSponsorDropoffPage() {
                           <button
                             type="button"
                             className="mobile-secondary-action"
+                            disabled={isBusy}
                             onClick={() => {
                               setActiveNoteItemId(noteOpen ? null : gift.wishlistItemId);
                               setReceiveNote('');
@@ -258,6 +313,22 @@ export function MobileSponsorDropoffPage() {
 
 function isReceivedOrLater(status: string): boolean {
   return ['RECEIVED', 'WRAPPED', 'TAGGED', 'READY_FOR_DISTRIBUTION', 'DISTRIBUTED', 'PICKED_UP'].includes(status);
+}
+
+function isGiftBusy(busyIds: string[], giftId: string): boolean {
+  return busyIds.includes(giftId);
+}
+
+function addBusyGift(busyIds: string[], giftId: string): string[] {
+  return busyIds.includes(giftId) ? busyIds : [...busyIds, giftId];
+}
+
+function removeBusyGift(busyIds: string[], giftId: string): string[] {
+  return busyIds.filter((id) => id !== giftId);
+}
+
+function addRecentAction(actions: RecentDropoffAction[], action: RecentDropoffAction): RecentDropoffAction[] {
+  return [action, ...actions.filter((item) => item.giftId !== action.giftId)].slice(0, 5);
 }
 
 function toDropoffLoadErrorMessage(error: unknown): string {

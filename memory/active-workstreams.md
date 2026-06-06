@@ -4,17 +4,18 @@ Last updated: 2026-06-05
 
 ## Current Phase
 
-The current feature branch is `codex/permission-cleanup`.
+The current feature branch is `codex/mobile-receiving-hardening`.
 
-The current active work is Phase 3 of the Product Polish And Hardening Plan:
-permission cleanup. The first slice adds a documented campaign role/capability
-matrix, introduces the explicit `campaign.communications.send` capability,
-aligns sponsor/campaign email send endpoints to that capability, hides several
-communication/gift/mobile actions when the user lacks the matching capability,
-and adds focused API/RBAC tests.
+The current active work is Phase 4 of the Product Polish And Hardening Plan:
+mobile receiving hardening.
 
-The next slice tightens gift workflow UI permissions:
+Phase 3 permission cleanup is complete on `codex/permission-cleanup`:
 
+- documented campaign role/capability matrix
+- explicit `campaign.communications.send` capability
+- sponsor/campaign email send endpoints aligned to that capability
+- campaign delete locked to app-admin with strong confirmation
+- mobile receive/drop-off QR locked to gift check-in permission
 - Gift Operations hides print/tag and receive controls without
   `campaign.gifts.check_in`.
 - Gift Operations hides sponsor reminder controls unless the user can manage
@@ -24,6 +25,17 @@ The next slice tightens gift workflow UI permissions:
 - Gift Status report remains printable/exportable for report viewers, but
   mutation controls are hidden unless the user also has the needed gift
   operation capability.
+- backend and frontend test suites passed after the final test expectation fix
+
+The first Phase 4 slice hardens mobile receiving:
+
+- mobile Receive and sponsor Drop-Off pages now track busy state per gift to
+  avoid repeated receive/undo submissions
+- mobile Receive and sponsor Drop-Off pages show a recent receive/undo action
+  list so event workers can verify what just changed
+- sponsor Drop-Off now gives a clearer error when the QR link is missing
+  campaign context and no campaign is selected
+- receive/undo buttons have larger touch spacing for event-day use
 
 The follow-on branch `codex/sponsor-dropoff-qr-workflow` has implemented the
 sponsor drop-off QR workflow through token revocation and scan-event tracking:
