@@ -102,7 +102,7 @@ describe('AdminActivityLogPage', () => {
 
     await user.type(screen.getByLabelText(/search/i), 'Jane');
     await user.selectOptions(screen.getByLabelText(/area/i), 'sponsors');
-    await user.selectOptions(screen.getByLabelText(/action/i), 'updated');
+    await user.selectOptions(screen.getByLabelText(/^action$/i), 'updated');
     await user.selectOptions(screen.getByLabelText(/rows/i), '50');
     await user.click(screen.getByRole('button', { name: /apply filters/i }));
 
