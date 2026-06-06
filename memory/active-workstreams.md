@@ -37,6 +37,14 @@ The first Phase 4 slice hardens mobile receiving:
   campaign context and no campaign is selected
 - receive/undo buttons have larger touch spacing for event-day use
 
+The second Phase 4 slice hardens scanner error states:
+
+- scanner parsing now distinguishes blank input, missing sponsor drop-off token,
+  unsupported QR URLs, and unsupported text
+- mobile Scanner shows clearer event-worker messages for unsupported QR codes
+  and malformed sponsor drop-off links
+- scanner parser tests cover the new bad-code states
+
 The follow-on branch `codex/sponsor-dropoff-qr-workflow` has implemented the
 sponsor drop-off QR workflow through token revocation and scan-event tracking:
 
