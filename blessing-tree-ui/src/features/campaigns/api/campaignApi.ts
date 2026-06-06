@@ -268,12 +268,16 @@ export async function updateCampaign(
 
 export async function deleteCampaign(
   campaignId: string,
-  confirmationName: string
+  confirmationName: string,
+  confirmationYear: string
 ): Promise<void> {
   await apiFetchJson(`/api/v1/campaigns/${campaignId}`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ confirmation_name: confirmationName }),
+    body: JSON.stringify({
+      confirmation_name: confirmationName,
+      confirmation_year: confirmationYear,
+    }),
   });
 }
 

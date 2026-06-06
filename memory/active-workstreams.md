@@ -1,6 +1,6 @@
 # Active Workstreams
 
-Last updated: 2026-06-05
+Last updated: 2026-06-06
 
 ## Current Phase
 
@@ -23,6 +23,15 @@ The second Phase 5 slice expands Admin Health:
 - Admin Health UI shows Email and Storage cards
 - health tests cover email configuration and storage payload details
 - API version bumped to `0.1.57`; UI version bumped to `0.0.119`
+
+The third Phase 5 slice tightens campaign deletion safety:
+
+- backend campaign delete now requires both exact campaign name and exact
+  campaign year confirmation
+- campaign detail danger-zone modal lists all campaign-owned record classes
+  from summary counts before enabling permanent delete
+- focused backend delete tests cover name/year confirmation behavior
+- API version bumped to `0.1.58`; UI version bumped to `0.0.120`
 
 Phase 4 mobile receiving hardening is functionally complete on
 `codex/mobile-receiving-hardening`, pending only a final phone-width visual QA

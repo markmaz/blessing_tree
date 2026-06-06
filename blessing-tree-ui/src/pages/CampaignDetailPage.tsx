@@ -25,6 +25,7 @@ export function CampaignDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleteYearConfirmation, setDeleteYearConfirmation] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
@@ -58,6 +59,20 @@ export function CampaignDetailPage() {
   const otherCampaignCount = Math.max(campaigns.length - 1, 0);
   const showAdminEditor = canManageCampaign(access);
   const showDeleteCampaign = isAppAdminRole(access.globalAppRole);
+  const deleteConfirmationMatches =
+    deleteConfirmation === campaign.name && deleteYearConfirmation === String(campaign.year);
+  const deleteImpactDetails = [
+    `${campaign.name} (${campaign.year})`,
+    `${summary.counts.recipientGroups} recipient groups`,
+    `${summary.counts.recipients} recipients`,
+    `${summary.counts.wishlists} wishlists`,
+    `${summary.counts.wishlistItems} wishlist items`,
+    `${summary.counts.sponsorships} sponsorship records`,
+    `${summary.counts.sponsorshipItems} sponsored gift links`,
+    `${summary.counts.fulfillments} fulfillment records`,
+    `${summary.counts.pickups} pickup records`,
+    `${summary.counts.donations} donations`,
+  ];
 
   const handleUpdateCampaign = async (input: CampaignUpsertInput) => {
     setIsEditing(true);
@@ -86,9 +101,10 @@ export function CampaignDetailPage() {
     setSaveError(null);
 
     try {
-      await deleteCampaign(campaignId, deleteConfirmation);
+      await deleteCampaign(campaignId, deleteConfirmation, deleteYearConfirmation);
       setIsDeleteModalOpen(false);
       setDeleteConfirmation('');
+      setDeleteYearConfirmation('');
       if (isCurrentCampaign) {
         selectCampaign(null);
       }
@@ -255,23 +271,18 @@ export function CampaignDetailPage() {
       <ConfirmationModal
         open={isDeleteModalOpen}
         title="Delete Campaign Permanently"
-        message="This cannot be undone. Type the campaign name exactly to confirm deletion."
+        message="This cannot be undone. Type the campaign name and campaign year exactly to confirm deletion."
         detailsHeading="This will permanently delete"
-        details={[
-          `${campaign.name} (${campaign.year})`,
-          `${summary.counts.recipients} recipients`,
-          `${summary.counts.wishlistItems} wishlist items`,
-          `${summary.counts.sponsorships} sponsorship records`,
-          `${summary.counts.donations} donations`,
-        ]}
+        details={deleteImpactDetails}
         confirmLabel={isDeleting ? 'Deleting...' : 'Delete Campaign'}
         tone="danger"
         isSubmitting={isDeleting}
-        confirmDisabled={deleteConfirmation !== campaign.name}
+        confirmDisabled={!deleteConfirmationMatches}
         onClose={() => {
           if (!isDeleting) {
             setIsDeleteModalOpen(false);
             setDeleteConfirmation('');
+            setDeleteYearConfirmation('');
           }
         }}
         onConfirm={handleDeleteCampaign}
@@ -283,6 +294,17 @@ export function CampaignDetailPage() {
             value={deleteConfirmation}
             onChange={(event) => setDeleteConfirmation(event.target.value)}
             placeholder={campaign.name}
+            autoComplete="off"
+          />
+        </label>
+        <label className="form-label w-100 mb-0 mt-3">
+          Campaign year
+          <input
+            className="form-control mt-2"
+            inputMode="numeric"
+            value={deleteYearConfirmation}
+            onChange={(event) => setDeleteYearConfirmation(event.target.value)}
+            placeholder={String(campaign.year)}
             autoComplete="off"
           />
         </label>
