@@ -54,6 +54,16 @@ Follow-up documentation refresh:
 - backend Ask route mapping includes Admin Health so related answers can link
   to `/admin/health`
 
+Frontend performance hardening:
+
+- route-level lazy loading now splits campaign, people, sponsor, gift, admin,
+  mobile, and report pages out of the initial app chunk
+- report PDF/Excel libraries are loaded only when an export button is clicked
+- Vite manual chunks isolate React, canvas, QR/scanner, PDF, and Excel vendor
+  libraries
+- production build no longer emits the large chunk warning; the prior main app
+  chunk of roughly 1.8 MB is now split into much smaller route/vendor chunks
+
 Phase 4 mobile receiving hardening is functionally complete on
 `codex/mobile-receiving-hardening`, pending only a final phone-width visual QA
 pass:

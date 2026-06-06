@@ -18,63 +18,136 @@ import {
   hasAnyCampaignCapability,
   hasCampaignCapability,
 } from '@/features/campaigns/model/campaignPermissions';
-import { AccountProfilePage } from '@/pages/AccountProfilePage';
-import { AccountSettingsPage } from '@/pages/AccountSettingsPage';
-import { AdminCapabilitiesPage } from '@/pages/AdminCapabilitiesPage';
-import { AdminActivityLogPage } from '@/pages/AdminActivityLogPage';
-import { AdminAskReviewPage } from '@/pages/AdminAskReviewPage';
-import { AdminCampaignOperationsPage } from '@/pages/AdminCampaignOperationsPage';
-import { AdminHealthPage } from '@/pages/AdminHealthPage';
-import { AdminLlmPage } from '@/pages/AdminLlmPage';
-import { AdminOrganizationTypesPage } from '@/pages/AdminOrganizationTypesPage';
-import { AdminPage } from '@/pages/AdminPage';
-import { AdminUsersPage } from '@/pages/AdminUsersPage';
-import { AskBlessingTreePage } from '@/pages/AskBlessingTreePage';
-import { CampaignDetailPage } from '@/pages/CampaignDetailPage';
-import { CampaignsPage } from '@/pages/CampaignsPage';
-import { CampaignStudioPage } from '@/pages/CampaignStudioPage';
-import { DashboardPage } from '@/pages/DashboardPage';
-import { GiftOperationsPage } from '@/pages/GiftOperationsPage';
-import { GiftPoolPage } from '@/pages/GiftPoolPage';
-import { GiftSearchPage } from '@/pages/GiftSearchPage';
-import { GiftWorkflowReportPage } from '@/pages/GiftWorkflowReportPage';
-import { MobileHomePage } from '@/features/mobile/ui/MobilePlaceholderPages';
 import { MobileAppRedirectGuard } from '@/features/mobile/ui/MobileAppRedirectGuard';
-import { MobileReceivePage } from '@/features/mobile/ui/MobileReceivePage';
-import { MobileScannerPage } from '@/features/mobile/ui/MobileScannerPage';
-import { MobileSponsorDropoffPage } from '@/features/mobile/ui/MobileSponsorDropoffPage';
-import {
-  MobileGiftsPage,
-  MobileGroupsPage,
-  MobileSponsorsPage,
-} from '@/features/mobile/ui/MobileSearchPages';
 import { MobileShell } from '@/features/mobile/ui/MobileShell';
-import { PeopleDirectoryPage } from '@/pages/PeopleDirectoryPage';
-import { PeopleIntakePage } from '@/pages/PeopleIntakePage';
-import { PeoplePage } from '@/pages/PeoplePage';
 import { PublicGiftScanPage } from '@/pages/PublicGiftScanPage';
 import { PublicSponsorSignupPage } from '@/pages/PublicSponsorSignupPage';
 import { PublicSponsorVerifyPage } from '@/pages/PublicSponsorVerifyPage';
-import { ReportsPage } from '@/pages/ReportsPage';
-import { SponsorsDirectoryPage } from '@/pages/SponsorsDirectoryPage';
-import { SponsorsIntakePage } from '@/pages/SponsorsIntakePage';
-import { SponsorsPage } from '@/pages/SponsorsPage';
-import { SponsorsReportsPage } from '@/pages/SponsorsReportsPage';
 import { FeatureGate } from '@/shared/ui/FeatureGate';
 import { ProtectedRoute } from '@/shared/ui/ProtectedRoute';
 import { AppLayout } from '@/shared/ui/layout/AppLayout';
 import { buildCampaignPeopleReportsPath, routes } from './routes';
 
+const AccountProfilePage = lazy(() =>
+  import('@/pages/AccountProfilePage').then((module) => ({ default: module.AccountProfilePage }))
+);
+const AccountSettingsPage = lazy(() =>
+  import('@/pages/AccountSettingsPage').then((module) => ({ default: module.AccountSettingsPage }))
+);
+const AdminCapabilitiesPage = lazy(() =>
+  import('@/pages/AdminCapabilitiesPage').then((module) => ({ default: module.AdminCapabilitiesPage }))
+);
+const AdminActivityLogPage = lazy(() =>
+  import('@/pages/AdminActivityLogPage').then((module) => ({ default: module.AdminActivityLogPage }))
+);
+const AdminAskReviewPage = lazy(() =>
+  import('@/pages/AdminAskReviewPage').then((module) => ({ default: module.AdminAskReviewPage }))
+);
+const AdminCampaignOperationsPage = lazy(() =>
+  import('@/pages/AdminCampaignOperationsPage').then((module) => ({
+    default: module.AdminCampaignOperationsPage,
+  }))
+);
+const AdminHealthPage = lazy(() =>
+  import('@/pages/AdminHealthPage').then((module) => ({ default: module.AdminHealthPage }))
+);
+const AdminLlmPage = lazy(() =>
+  import('@/pages/AdminLlmPage').then((module) => ({ default: module.AdminLlmPage }))
+);
+const AdminOrganizationTypesPage = lazy(() =>
+  import('@/pages/AdminOrganizationTypesPage').then((module) => ({
+    default: module.AdminOrganizationTypesPage,
+  }))
+);
+const AdminPage = lazy(() => import('@/pages/AdminPage').then((module) => ({ default: module.AdminPage })));
+const AdminUsersPage = lazy(() =>
+  import('@/pages/AdminUsersPage').then((module) => ({ default: module.AdminUsersPage }))
+);
+const AskBlessingTreePage = lazy(() =>
+  import('@/pages/AskBlessingTreePage').then((module) => ({ default: module.AskBlessingTreePage }))
+);
+const CampaignDetailPage = lazy(() =>
+  import('@/pages/CampaignDetailPage').then((module) => ({ default: module.CampaignDetailPage }))
+);
+const CampaignsPage = lazy(() =>
+  import('@/pages/CampaignsPage').then((module) => ({ default: module.CampaignsPage }))
+);
+const CampaignStudioPage = lazy(() =>
+  import('@/pages/CampaignStudioPage').then((module) => ({ default: module.CampaignStudioPage }))
+);
 const CampaignSponsorFlyerPage = lazy(() =>
   import('@/pages/CampaignSponsorFlyerPage').then((module) => ({
     default: module.CampaignSponsorFlyerPage,
   }))
 );
-
+const DashboardPage = lazy(() =>
+  import('@/pages/DashboardPage').then((module) => ({ default: module.DashboardPage }))
+);
+const GiftOperationsPage = lazy(() =>
+  import('@/pages/GiftOperationsPage').then((module) => ({ default: module.GiftOperationsPage }))
+);
+const GiftPoolPage = lazy(() =>
+  import('@/pages/GiftPoolPage').then((module) => ({ default: module.GiftPoolPage }))
+);
+const GiftSearchPage = lazy(() =>
+  import('@/pages/GiftSearchPage').then((module) => ({ default: module.GiftSearchPage }))
+);
 const GiftTagBuilderPage = lazy(() =>
   import('@/pages/GiftTagBuilderPage').then((module) => ({
     default: module.GiftTagBuilderPage,
   }))
+);
+const GiftWorkflowReportPage = lazy(() =>
+  import('@/pages/GiftWorkflowReportPage').then((module) => ({ default: module.GiftWorkflowReportPage }))
+);
+const MobileHomePage = lazy(() =>
+  import('@/features/mobile/ui/MobilePlaceholderPages').then((module) => ({
+    default: module.MobileHomePage,
+  }))
+);
+const MobileReceivePage = lazy(() =>
+  import('@/features/mobile/ui/MobileReceivePage').then((module) => ({ default: module.MobileReceivePage }))
+);
+const MobileScannerPage = lazy(() =>
+  import('@/features/mobile/ui/MobileScannerPage').then((module) => ({ default: module.MobileScannerPage }))
+);
+const MobileSponsorDropoffPage = lazy(() =>
+  import('@/features/mobile/ui/MobileSponsorDropoffPage').then((module) => ({
+    default: module.MobileSponsorDropoffPage,
+  }))
+);
+const MobileGiftsPage = lazy(() =>
+  import('@/features/mobile/ui/MobileSearchPages').then((module) => ({ default: module.MobileGiftsPage }))
+);
+const MobileGroupsPage = lazy(() =>
+  import('@/features/mobile/ui/MobileSearchPages').then((module) => ({ default: module.MobileGroupsPage }))
+);
+const MobileSponsorsPage = lazy(() =>
+  import('@/features/mobile/ui/MobileSearchPages').then((module) => ({ default: module.MobileSponsorsPage }))
+);
+const PeopleDirectoryPage = lazy(() =>
+  import('@/pages/PeopleDirectoryPage').then((module) => ({ default: module.PeopleDirectoryPage }))
+);
+const PeopleIntakePage = lazy(() =>
+  import('@/pages/PeopleIntakePage').then((module) => ({ default: module.PeopleIntakePage }))
+);
+const PeoplePage = lazy(() =>
+  import('@/pages/PeoplePage').then((module) => ({ default: module.PeoplePage }))
+);
+const ReportsPage = lazy(() =>
+  import('@/pages/ReportsPage').then((module) => ({ default: module.ReportsPage }))
+);
+const SponsorsDirectoryPage = lazy(() =>
+  import('@/pages/SponsorsDirectoryPage').then((module) => ({ default: module.SponsorsDirectoryPage }))
+);
+const SponsorsIntakePage = lazy(() =>
+  import('@/pages/SponsorsIntakePage').then((module) => ({ default: module.SponsorsIntakePage }))
+);
+const SponsorsPage = lazy(() =>
+  import('@/pages/SponsorsPage').then((module) => ({ default: module.SponsorsPage }))
+);
+const SponsorsReportsPage = lazy(() =>
+  import('@/pages/SponsorsReportsPage').then((module) => ({ default: module.SponsorsReportsPage }))
 );
 
 export function App() {
@@ -83,15 +156,16 @@ export function App() {
       <CampaignProvider>
         <AppFeaturesProvider>
           <BrowserRouter>
-            <Routes>
-              <Route path={routes.LOGIN} element={<LoginPage />} />
-              <Route path={routes.AUTH_REGISTER} element={<InviteAcceptPage />} />
-              <Route path={routes.AUTH_FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
-              <Route path={routes.AUTH_RESET_PASSWORD} element={<ResetPasswordPage />} />
-              <Route path={routes.PUBLIC_CAMPAIGN_SPONSOR} element={<PublicSponsorSignupPage />} />
-              <Route path={routes.PUBLIC_CAMPAIGN_SPONSOR_VERIFY} element={<PublicSponsorVerifyPage />} />
-              <Route path={routes.PUBLIC_GIFT_SCAN} element={<PublicGiftScanPage />} />
-              <Route path={routes.SCAN_GIFT} element={<PublicGiftScanPage />} />
+            <Suspense fallback={<RouteLoadingState />}>
+              <Routes>
+                <Route path={routes.LOGIN} element={<LoginPage />} />
+                <Route path={routes.AUTH_REGISTER} element={<InviteAcceptPage />} />
+                <Route path={routes.AUTH_FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+                <Route path={routes.AUTH_RESET_PASSWORD} element={<ResetPasswordPage />} />
+                <Route path={routes.PUBLIC_CAMPAIGN_SPONSOR} element={<PublicSponsorSignupPage />} />
+                <Route path={routes.PUBLIC_CAMPAIGN_SPONSOR_VERIFY} element={<PublicSponsorVerifyPage />} />
+                <Route path={routes.PUBLIC_GIFT_SCAN} element={<PublicGiftScanPage />} />
+                <Route path={routes.SCAN_GIFT} element={<PublicGiftScanPage />} />
 
               <Route
                 path={`${routes.MOBILE}/*`}
@@ -152,9 +226,7 @@ export function App() {
                   path={routes.CAMPAIGN_SPONSOR_FLYER.slice(1)}
                   element={
                     <CampaignCapabilityGate capability={campaignCapabilities.view}>
-                      <Suspense fallback={<section className="content-card"><p className="text-muted mb-0">Loading flyer builder...</p></section>}>
-                        <CampaignSponsorFlyerPage />
-                      </Suspense>
+                      <CampaignSponsorFlyerPage />
                     </CampaignCapabilityGate>
                   }
                 />
@@ -249,9 +321,7 @@ export function App() {
                   element={
                     <FeatureGate featureKey="sponsors">
                       <CampaignCapabilityGate capability={campaignCapabilities.admin}>
-                        <Suspense fallback={<section className="content-card"><p className="text-muted mb-0">Loading gift tag builder...</p></section>}>
-                          <GiftTagBuilderPage />
-                        </Suspense>
+                        <GiftTagBuilderPage />
                       </CampaignCapabilityGate>
                     </FeatureGate>
                   }
@@ -277,12 +347,21 @@ export function App() {
                 </Route>
               </Route>
 
-              <Route path="*" element={<Navigate to={routes.HOME} replace />} />
-            </Routes>
+                <Route path="*" element={<Navigate to={routes.HOME} replace />} />
+              </Routes>
+            </Suspense>
           </BrowserRouter>
         </AppFeaturesProvider>
       </CampaignProvider>
     </AuthProvider>
+  );
+}
+
+function RouteLoadingState() {
+  return (
+    <section className="content-card">
+      <p className="text-muted mb-0">Loading...</p>
+    </section>
   );
 }
 
