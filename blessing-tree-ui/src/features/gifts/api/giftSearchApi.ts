@@ -267,6 +267,14 @@ export async function searchCampaignGifts(campaignId: string, query: string): Pr
   return mapGiftSearchResult(response);
 }
 
+export async function lookupCampaignReceiveGifts(campaignId: string, recipientId: string): Promise<GiftSearchResult> {
+  const params = new URLSearchParams({ recipient_id: recipientId.trim() });
+  const response = await apiFetchJson<GiftSearchResponse>(
+    `/api/v1/campaigns/${campaignId}/gifts/receive-lookup?${params.toString()}`
+  );
+  return mapGiftSearchResult(response);
+}
+
 export async function searchPublicCampaignGifts(publicSlug: string, query: string): Promise<GiftSearchResult> {
   const params = new URLSearchParams();
   if (query.trim()) {

@@ -12,6 +12,7 @@ import type { CampaignSponsor } from '@/features/campaigns/model/campaignSponsor
 import { getCampaignPeopleWorkspace } from '@/features/campaigns/api/campaignPeopleWorkspaceApi';
 import type { CampaignPeopleGroup } from '@/features/campaigns/model/campaignPeopleWorkspaceTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
+import { canCheckInGifts, canCommitGifts } from '@/features/campaigns/model/campaignPermissions';
 
 const RECEIVED_OR_LATER_STATUSES = new Set([
   'RECEIVED',
@@ -23,7 +24,7 @@ const RECEIVED_OR_LATER_STATUSES = new Set([
 ]);
 
 export function MobileGiftsPage() {
-  const { selectedCampaignId } = useCampaigns();
+  const { selectedCampaign, selectedCampaignId } = useCampaigns();
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<GiftSearchItem[]>([]);
   const [sponsors, setSponsors] = useState<CampaignSponsor[]>([]);
@@ -37,6 +38,9 @@ export function MobileGiftsPage() {
   const [isLoadingSponsors, setIsLoadingSponsors] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const userAccess = selectedCampaign?.userAccess ?? null;
+  const canCommitCampaignGifts = canCommitGifts(userAccess);
+  const canCheckInCampaignGifts = canCheckInGifts(userAccess);
 
   const sponsorMatches = useMemo(() => {
     const normalized = normalizeSearch(sponsorQuery);
@@ -66,6 +70,7 @@ export function MobileGiftsPage() {
   }
 
   async function openCommit(item: GiftSearchItem) {
+    if (!canCommitCampaignGifts) return;
     setCommitGift(item);
     setSelectedSponsor(null);
     setSponsorQuery('');
@@ -84,7 +89,7 @@ export function MobileGiftsPage() {
   }
 
   async function handleCommit() {
-    if (!selectedCampaignId || !commitGift || !selectedSponsor) return;
+    if (!selectedCampaignId || !commitGift || !selectedSponsor || !canCommitCampaignGifts) return;
     setBusyGiftId(commitGift.wishlistItemId);
     setError(null);
     try {
@@ -105,7 +110,7 @@ export function MobileGiftsPage() {
   }
 
   async function handleRelease() {
-    if (!selectedCampaignId || !releaseGift) return;
+    if (!selectedCampaignId || !releaseGift || !canCommitCampaignGifts) return;
     setBusyGiftId(releaseGift.wishlistItemId);
     setError(null);
     try {
@@ -121,7 +126,7 @@ export function MobileGiftsPage() {
   }
 
   async function handleOperation(item: GiftSearchItem, action: 'receive' | 'unreceive') {
-    if (!selectedCampaignId) return;
+    if (!selectedCampaignId || !canCheckInCampaignGifts) return;
     setBusyGiftId(item.wishlistItemId);
     setError(null);
     try {
@@ -193,22 +198,22 @@ export function MobileGiftsPage() {
                 </div>
               </details>
               <div className="mobile-card-actions">
-                {!item.sponsor && !RECEIVED_OR_LATER_STATUSES.has(item.status) ? (
+                {canCommitCampaignGifts && !item.sponsor && !RECEIVED_OR_LATER_STATUSES.has(item.status) ? (
                   <button type="button" className="mobile-secondary-action" onClick={() => void openCommit(item)}>
                     Commit
                   </button>
                 ) : null}
-                {item.sponsor && !RECEIVED_OR_LATER_STATUSES.has(item.status) ? (
+                {canCommitCampaignGifts && item.sponsor && !RECEIVED_OR_LATER_STATUSES.has(item.status) ? (
                   <button type="button" className="mobile-secondary-action mobile-secondary-action--danger" onClick={() => setReleaseGift(item)}>
                     Release
                   </button>
                 ) : null}
-                {canReceive ? (
+                {canCheckInCampaignGifts && canReceive ? (
                   <button type="button" className="mobile-primary-action mobile-primary-action--inline" disabled={isBusy} onClick={() => void handleOperation(item, 'receive')}>
                     {isBusy ? 'Receiving...' : 'Receive'}
                   </button>
                 ) : null}
-                {canUndo ? (
+                {canCheckInCampaignGifts && canUndo ? (
                   <button type="button" className="mobile-secondary-action mobile-secondary-action--danger" disabled={isBusy} onClick={() => void handleOperation(item, 'unreceive')}>
                     {isBusy ? 'Undoing...' : 'Undo'}
                   </button>

@@ -18,7 +18,9 @@ from app.features.rbac.constants import (
     APP_USER_ROLE,
     CAMPAIGN_DONATIONS_EDIT_CAPABILITY,
     CAMPAIGN_COMMUNICATIONS_SEND_CAPABILITY,
+    CAMPAIGN_GIFTS_COMMIT_CAPABILITY,
     CAMPAIGN_GIFTS_CHECK_IN_CAPABILITY,
+    CAMPAIGN_GIFTS_SEARCH_CAPABILITY,
     CAMPAIGN_SPONSORS_MANAGE_CAPABILITY,
     DONATION_ENTRY_ROLE,
     GIFT_CHECKIN_ROLE,
@@ -128,7 +130,7 @@ def test_get_campaign_capabilities_unions_multiple_active_roles() -> None:
     db.close()
 
 
-def test_sponsor_intake_role_can_manage_sponsors_and_send_communications() -> None:
+def test_sponsor_intake_role_can_manage_sponsors_commit_gifts_and_send_communications() -> None:
     db = _build_session()
     service = AuthorizationService()
     user = _create_user("VOLUNTEER")
@@ -149,7 +151,10 @@ def test_sponsor_intake_role_can_manage_sponsors_and_send_communications() -> No
     capabilities = service.get_campaign_capabilities(db, user.id, campaign.id)
 
     assert CAMPAIGN_SPONSORS_MANAGE_CAPABILITY in capabilities
+    assert CAMPAIGN_GIFTS_SEARCH_CAPABILITY in capabilities
+    assert CAMPAIGN_GIFTS_COMMIT_CAPABILITY in capabilities
     assert CAMPAIGN_COMMUNICATIONS_SEND_CAPABILITY in capabilities
+    assert service.user_has_campaign_capability(db, user.id, campaign.id, CAMPAIGN_GIFTS_COMMIT_CAPABILITY)
     assert service.user_has_campaign_capability(db, user.id, campaign.id, CAMPAIGN_COMMUNICATIONS_SEND_CAPABILITY)
     db.close()
 

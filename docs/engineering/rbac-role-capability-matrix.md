@@ -36,7 +36,7 @@ still reject unauthorized requests.
 | People Intake | Recipient intake workers | `campaign.view`, `campaign.recipients.view`, `campaign.recipients.edit`, `campaign.pickups.manage` |
 | People Directory | Recipient lookup workers | `campaign.view`, `campaign.recipients.view` |
 | People Reports | People/report viewers | `campaign.view`, `campaign.reports.view` |
-| Sponsor Intake | Sponsor intake and sponsor communication workers | `campaign.view`, `campaign.sponsors.view`, `campaign.sponsors.manage`, `campaign.communications.send` |
+| Sponsor Intake | Sponsor intake and sponsor communication workers | `campaign.view`, `campaign.sponsors.view`, `campaign.sponsors.manage`, `campaign.gifts.search`, `campaign.gifts.commit`, `campaign.communications.send` |
 | Sponsor Directory | Sponsor lookup workers | `campaign.view`, `campaign.sponsors.view` |
 | Sponsor Reports | Sponsor/report viewers | `campaign.view`, `campaign.reports.view` |
 | Gift Search | Staff matching sponsors to gifts | `campaign.view`, `campaign.gifts.search`, `campaign.gifts.commit` |

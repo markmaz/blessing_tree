@@ -20,7 +20,7 @@ from app.features.gifts import (
     CampaignGiftTagTemplateService,
     serialize_gift_search_response,
 )
-from app.features.rbac.decorators import require_campaign_capability
+from app.features.rbac.decorators import require_any_campaign_capability, require_campaign_capability
 from app.features.gifts.serializers import (
     serialize_donation,
     serialize_fulfillment,
@@ -119,9 +119,40 @@ class CampaignGiftSearchParseResource(Resource):
         return {"campaign_id": campaign_id, "parsed_filters": parsed.to_dict()}
 
 
+@campaign_ns.route("/<string:campaign_id>/gifts/receive-lookup")
+class CampaignGiftReceiveLookupResource(Resource):
+    @require_campaign_capability("campaign.gifts.check_in")
+    def get(self, campaign_id: str):
+        recipient_id = (request.args.get("recipient_id") or request.args.get("q") or "").strip()
+        if not recipient_id:
+            return {"message": "Recipient ID is required"}, 400
+
+        with SessionLocal() as db:
+            parsed, results = _gift_search_service.search_staff_gifts(
+                db,
+                campaign_id,
+                query=recipient_id,
+                filters={"q": recipient_id},
+                limit=min(_limit_arg(), 200),
+            )
+            exact_results = _filter_exact_recipient_results(results, recipient_id)
+        return serialize_gift_search_response(
+            campaign_id=campaign_id,
+            parsed_filters=parsed.to_dict(),
+            results=exact_results,
+            public=False,
+        )
+
+
 @campaign_ns.route("/<string:campaign_id>/gifts/operations")
 class CampaignGiftOperationsResource(Resource):
-    @require_campaign_capability("campaign.gifts.check_in")
+    @require_any_campaign_capability(
+        (
+            "campaign.gifts.check_in",
+            "campaign.gifts.wrap",
+            "campaign.gifts.distribute",
+        )
+    )
     def get(self, campaign_id: str):
         with SessionLocal() as db:
             payload = _gift_operations_service.get_operations_payload(
@@ -807,6 +838,27 @@ def _limit_arg() -> int:
         return int(value)
     except ValueError:
         return 100
+
+
+def _filter_exact_recipient_results(results: list[WishlistItem], recipient_id: str) -> list[WishlistItem]:
+    normalized_lookup = _normalize_recipient_lookup(recipient_id)
+    exact_matches = [
+        item
+        for item in results
+        if _normalize_recipient_lookup(getattr(getattr(item.wishlist, "recipient", None), "program_recipient_id", None))
+        == normalized_lookup
+    ]
+    if not exact_matches:
+        return []
+
+    recipient_uuid = exact_matches[0].wishlist.recipient_id if exact_matches[0].wishlist is not None else None
+    if recipient_uuid is None:
+        return exact_matches
+    return [item for item in exact_matches if item.wishlist is not None and item.wishlist.recipient_id == recipient_uuid]
+
+
+def _normalize_recipient_lookup(value: object) -> str:
+    return "".join(str(value or "").strip().upper().split())
 
 
 def _actor_user_id() -> uuid.UUID | None:

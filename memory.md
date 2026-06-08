@@ -21,8 +21,10 @@ At the start of a session, agents should read:
 - `docs/engineering/refactor-guidelines.md` - refactor triggers and file-ownership guidance
 - `docs/engineering/testing-strategy.md` - current verification expectations for backend and frontend
 - `docs/engineering/security-tenancy.md` - auth, cookies, secrets, and trust-boundary guidance
+- `docs/engineering/security-audit-2026-06-06.md` - concrete security audit findings and remediation plan
 - `docs/engineering/compatibility-versioning.md` - migration, env, API, and compatibility expectations
 - `docs/engineering/report-export-design.md` - current PDF/Excel export behavior and scope
+- `docs/engineering/family-organization-id-design.md` - proposed family/group ID scheme for organizations with families and suffixed recipient IDs
 - `docs/engineering/mobile-operator-mode-design.md` - planned phone-only search and gift-receive experience
 - `docs/engineering/sponsor-dropoff-qr-design.md` - planned sponsor email QR and mobile drop-off receive workflow
 

@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timedelta
 
 from app.features.campaigns import api as campaign_api_module
+from app.features.rbac import decorators as rbac_decorators
 from app.features.campaigns.studio_service import CampaignStudioService
 from app.features.gifts.search_parser import parse_gift_search_text
 from app.features.gifts.search_service import GiftSearchService
@@ -129,6 +130,38 @@ def test_staff_gift_search_filters_natural_language(app, monkeypatch) -> None:
     assert item["recipient"]["program_recipient_id"] == "CH-001"
     assert item["label_code"] == "gift-search-coat"
     assert item["recipient_note"] == "Prefers blue or purple."
+
+
+def test_receive_lookup_uses_check_in_capability_without_general_gift_search(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    user = seed_user(session, name="Receive Worker")
+    campaign = seed_campaign(session, name="Receive Lookup Campaign")
+    _seed_gifts(session, campaign.id)
+    session.commit()
+
+    class CheckInOnlyAuthorization:
+        def user_has_campaign_capability(self, db, user_id, campaign_id, capability):
+            return capability == "campaign.gifts.check_in"
+
+    monkeypatch.setattr(rbac_decorators, "_authorization_service", CheckInOnlyAuthorization())
+    client = app.test_client()
+
+    search_response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/gifts/search?q=CH-001",
+        headers=auth_header(str(user.id), "VOLUNTEER"),
+    )
+    assert search_response.status_code == 403
+
+    lookup_response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/gifts/receive-lookup?recipient_id=%20ch-001%20",
+        headers=auth_header(str(user.id), "VOLUNTEER"),
+    )
+
+    assert lookup_response.status_code == 200
+    payload = lookup_response.get_json()
+    assert payload["count"] == 3
+    assert {item["recipient"]["program_recipient_id"] for item in payload["items"]} == {"CH-001"}
 
 
 def test_staff_gift_search_uses_broad_toy_synonyms(app, monkeypatch) -> None:
@@ -467,6 +500,30 @@ def test_gift_operations_receive_wrap_ready_and_update_sponsor_dropoff(app, monk
         .all()
     ]
     assert event_types == ["RECEIVED", "WRAPPED", "STATUS_CHANGED", "STATUS_CHANGED"]
+
+
+def test_gift_operations_screen_loads_for_wrap_only_worker(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    user = seed_user(session, name="Wrap Worker")
+    campaign = seed_campaign(session, name="Wrap Operations Campaign")
+    _seed_gifts(session, campaign.id)
+    session.commit()
+
+    class WrapOnlyAuthorization:
+        def user_has_campaign_capability(self, db, user_id, campaign_id, capability):
+            return capability == "campaign.gifts.wrap"
+
+    monkeypatch.setattr(rbac_decorators, "_authorization_service", WrapOnlyAuthorization())
+    client = app.test_client()
+
+    operations_response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/gifts/operations",
+        headers=auth_header(str(user.id), "VOLUNTEER"),
+    )
+
+    assert operations_response.status_code == 200
+    assert operations_response.get_json()["campaign_id"] == str(campaign.id)
 
 
 def test_gift_operations_can_unreceive_sponsored_gift(app, monkeypatch) -> None:

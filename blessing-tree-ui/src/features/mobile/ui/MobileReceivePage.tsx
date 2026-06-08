@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { buildMobileScanPath } from '@/app/routes';
-import { searchCampaignGifts, updateCampaignGiftOperation } from '@/features/gifts/api/giftSearchApi';
+import { lookupCampaignReceiveGifts, updateCampaignGiftOperation } from '@/features/gifts/api/giftSearchApi';
 import type { GiftSearchItem } from '@/features/gifts/model/giftSearchTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 
@@ -64,20 +64,13 @@ export function MobileReceivePage() {
     setLookedUpRecipientId(nextRecipientId);
 
     try {
-      const result = await searchCampaignGifts(selectedCampaignId, nextRecipientId);
-      const normalizedLookup = normalizeRecipientId(nextRecipientId);
-      const exactMatches = result.items.filter(
-        (item) => normalizeRecipientId(item.recipient?.programRecipientId) === normalizedLookup
-      );
-
-      if (exactMatches.length === 0) {
+      const result = await lookupCampaignReceiveGifts(selectedCampaignId, nextRecipientId);
+      if (result.items.length === 0) {
         setError(`No wishlist found for ${nextRecipientId}.`);
         return;
       }
 
-      const firstRecipientId = exactMatches[0]?.recipient?.id;
-      const recipientItems = exactMatches.filter((item) => item.recipient?.id === firstRecipientId);
-      setItems(recipientItems);
+      setItems(result.items);
     } catch (lookupError) {
       setError(lookupError instanceof Error ? lookupError.message : 'Unable to find recipient wishlist.');
     } finally {
@@ -353,10 +346,6 @@ export function MobileReceivePage() {
       ) : null}
     </section>
   );
-}
-
-function normalizeRecipientId(value: string | null | undefined): string {
-  return String(value ?? '').trim().toUpperCase().replace(/\s+/g, '');
 }
 
 function isReceivedOrLater(status: string): boolean {
