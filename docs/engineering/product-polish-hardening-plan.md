@@ -155,7 +155,8 @@ Make role behavior clear, enforceable, and safe for real campaign teams.
 
 ### Deliverables
 
-- Updated role/capability matrix document.
+- Updated role/capability matrix document:
+  `docs/engineering/rbac-role-capability-matrix.md`.
 - UI action visibility cleanup.
 - API tests for major permission boundaries.
 
@@ -210,6 +211,9 @@ Make event-day gift receiving reliable under stress, poor lighting, and accident
 
 ## Phase 5: Backups, Restore, And Safety
 
+Status: complete on `codex/production-safety-runbooks` pending merge/deploy
+review.
+
 ### Goal
 
 Reduce production risk before more organizations use the system.
@@ -248,6 +252,18 @@ Reduce production risk before more organizations use the system.
 - Campaign delete cannot happen without a high-confidence admin confirmation.
 - Demo seed scripts cannot silently wipe production data.
 - Admin health clearly identifies which dependency is failing.
+
+### Completion Notes
+
+- Production backup/restore runbook documents RDS automated backup
+  expectations, manual logical backups, snapshot restore, logical restore,
+  restore drills, and post-restore health checks.
+- Seed script guardrails prevent accidental production reset and require
+  append-only behavior unless explicitly overridden.
+- Campaign deletion is app-admin only, requires exact campaign name and year,
+  and shows a clear deletion-impact list.
+- Admin Health covers database, Celery, LLM/embedding, Qdrant, email, and
+  storage/disk checks with dependency-specific messages.
 
 ## Suggested Implementation Sequence
 

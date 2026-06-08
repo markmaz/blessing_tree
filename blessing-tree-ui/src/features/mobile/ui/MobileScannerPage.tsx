@@ -41,7 +41,7 @@ export function MobileScannerPage() {
     }
 
     handledResultRef.current = false;
-    setError('That code is not a Blessing Tree sponsor QR, gift label, or recipient ID.');
+    setError(scanErrorMessage(destination.reason));
   }, [navigate, stopActiveScanner]);
 
   useEffect(() => {
@@ -151,4 +151,17 @@ export function MobileScannerPage() {
       </Link>
     </section>
   );
+}
+
+function scanErrorMessage(reason: 'empty' | 'missing-dropoff-token' | 'unsupported-url' | 'unsupported-text'): string {
+  if (reason === 'missing-dropoff-token') {
+    return 'That sponsor QR is missing its secure drop-off token. Use the latest sponsor email or ask a campaign manager to resend it.';
+  }
+  if (reason === 'unsupported-url') {
+    return 'That QR opens a page Blessing Tree cannot receive from. Scan a sponsor drop-off QR, gift label, or type a recipient ID.';
+  }
+  if (reason === 'empty') {
+    return 'Enter a recipient ID or paste the full QR link.';
+  }
+  return 'That code is not a Blessing Tree sponsor QR, gift label, or recipient ID.';
 }

@@ -1,5 +1,4 @@
-import { jsPDF } from 'jspdf';
-import * as XLSX from 'xlsx';
+import type { jsPDF as JsPdf } from 'jspdf';
 
 export interface ReportExportColumn {
   key: string;
@@ -22,7 +21,8 @@ export interface ReportExportPayload {
   sheets: ReportExportSheet[];
 }
 
-export function exportReportToExcel(payload: ReportExportPayload): void {
+export async function exportReportToExcel(payload: ReportExportPayload): Promise<void> {
+  const XLSX = await import('xlsx');
   const workbook = XLSX.utils.book_new();
   for (const sheet of payload.sheets) {
     const columns = sheet.columns.length ? sheet.columns : [{ key: 'value', label: 'Value' }];
@@ -69,7 +69,8 @@ export function exportReportToCsv(payload: ReportExportPayload): void {
   URL.revokeObjectURL(url);
 }
 
-export function printReportToPdf(payload: ReportExportPayload): void {
+export async function printReportToPdf(payload: ReportExportPayload): Promise<void> {
+  const { jsPDF } = await import('jspdf');
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
   const margin = 24;
   const pageWidth = pdf.internal.pageSize.getWidth();
@@ -156,7 +157,7 @@ function excelColumnWidth(
 }
 
 function drawPdfTable(
-  pdf: jsPDF,
+  pdf: JsPdf,
   sheet: ReportExportSheet,
   margin: number,
   startY: number,
@@ -271,7 +272,7 @@ function isSectionHeaderRow(rowType: unknown): boolean {
 }
 
 function drawPdfHeaderRow(
-  pdf: jsPDF,
+  pdf: JsPdf,
   columns: ReportExportColumn[],
   margin: number,
   y: number,
@@ -318,7 +319,7 @@ function getPdfColumnWidths(columns: ReportExportColumn[], contentWidth: number)
 }
 
 function drawWrappedText(
-  pdf: jsPDF,
+  pdf: JsPdf,
   text: string,
   x: number,
   y: number,
@@ -331,7 +332,7 @@ function drawWrappedText(
 }
 
 function ensureSpace(
-  pdf: jsPDF,
+  pdf: JsPdf,
   y: number,
   requiredHeight: number,
   margin: number,

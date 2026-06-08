@@ -454,12 +454,19 @@ class CampaignService:
         campaign: Campaign,
         *,
         confirmation_name: object,
+        confirmation_year: object,
     ) -> None:
         if str(confirmation_name or "") != campaign.name:
             raise ServiceError(
                 "Campaign delete confirmation must match the campaign name exactly.",
                 status_code=400,
                 details={"field": "confirmation_name", "required_value": campaign.name},
+            )
+        if str(confirmation_year or "") != str(campaign.year):
+            raise ServiceError(
+                "Campaign delete confirmation must match the campaign year exactly.",
+                status_code=400,
+                details={"field": "confirmation_year", "required_value": campaign.year},
             )
         wishlist_ids = [row[0] for row in db.query(Wishlist.id).filter(Wishlist.campaign_id == campaign.id).all()]
         if wishlist_ids:

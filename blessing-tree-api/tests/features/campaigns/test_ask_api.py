@@ -424,6 +424,46 @@ def test_ask_user_guide_download_prompt_returns_pdf_action(
     assert payload["actions"][0]["route"] == "/blessing-tree-user-guide.pdf"
 
 
+def test_ask_answers_admin_health_and_backup_questions(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    health_response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "What does the Admin Health Check tell me?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    backup_response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/ask",
+        json={"prompt": "What should I do before deleting a production campaign?"},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert health_response.status_code == 200
+    health_payload = health_response.get_json()
+    assert health_payload["kind"] == "knowledge_result"
+    assert health_payload["title"] == "Admin Health Check"
+    assert "Qdrant" in health_payload["answer"]
+    assert health_payload["actions"][0]["route"] == "/admin/health"
+
+    assert backup_response.status_code == 200
+    backup_payload = backup_response.get_json()
+    assert backup_payload["kind"] == "knowledge_result"
+    assert backup_payload["title"] == "Production Backup, Restore, and Safety"
+    assert "RDS manual snapshot" in backup_payload["answer"]
+
+
 def test_ask_field_help_explains_campaign_purpose_instead_of_navigation(
     app: Flask,
     monkeypatch: pytest.MonkeyPatch,

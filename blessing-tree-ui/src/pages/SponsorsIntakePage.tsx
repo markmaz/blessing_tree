@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react';
-import { canManageSponsors } from '@/features/campaigns/model/campaignPermissions';
+import {
+  canCommitGifts,
+  canManageSponsors,
+  canSendCampaignCommunications,
+} from '@/features/campaigns/model/campaignPermissions';
 import { useSponsorWorkspaceContext } from '@/features/campaigns/model/sponsorWorkspaceContext';
 import { formatShortDate, toSponsorStatusLabel } from '@/features/campaigns/model/campaignSponsorWorkspacePresentation';
 import { CampaignSponsorDrawer } from '@/features/campaigns/ui/CampaignSponsorDrawer';
@@ -31,6 +35,8 @@ export function SponsorsIntakePage() {
   } = useSponsorWorkspaceContext();
 
   const canEditSponsors = canManageSponsors(access);
+  const canCommitCampaignGifts = canCommitGifts(access);
+  const canSendCommunications = canSendCampaignCommunications(access);
   const [selectedSponsorId, setSelectedSponsorId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
@@ -198,6 +204,8 @@ export function SponsorsIntakePage() {
         campaignId={workspace.campaignId}
         isOpen={isCreateOpen || selectedSponsor !== null}
         canEdit={canEditSponsors}
+        canCommitGifts={canCommitCampaignGifts}
+        canSendCommunications={canSendCommunications}
         isSaving={isSaving}
         sponsor={selectedSponsor}
         communicationTemplates={communicationTemplates}

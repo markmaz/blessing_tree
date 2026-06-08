@@ -302,7 +302,7 @@ def test_delete_campaign_requires_app_admin(
     client = app.test_client()
     response = client.delete(
         f"/api/v1/campaigns/{campaign_id}",
-        json={"confirmation_name": "Delete Protected Campaign"},
+        json={"confirmation_name": "Delete Protected Campaign", "confirmation_year": 2026},
         headers=_auth_header(manager_id, "VOLUNTEER"),
     )
 
@@ -332,6 +332,31 @@ def test_delete_campaign_requires_exact_confirmation_name(
     assert response.status_code == 400
     payload = response.get_json()
     assert payload["details"]["field"] == "confirmation_name"
+
+
+def test_delete_campaign_requires_exact_confirmation_year(
+    app: Flask,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    admin = _seed_user(session, role="ADMIN")
+    campaign = _seed_campaign(session, year=2026, name="Delete Year Campaign")
+    admin_id = str(admin.id)
+    campaign_id = str(campaign.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    response = client.delete(
+        f"/api/v1/campaigns/{campaign_id}",
+        json={"confirmation_name": "Delete Year Campaign", "confirmation_year": 2027},
+        headers=_auth_header(admin_id, "ADMIN"),
+    )
+
+    assert response.status_code == 400
+    payload = response.get_json()
+    assert payload["details"]["field"] == "confirmation_year"
 
 
 def test_app_admin_can_delete_campaign_with_exact_confirmation(
@@ -369,7 +394,7 @@ def test_app_admin_can_delete_campaign_with_exact_confirmation(
     client = app.test_client()
     response = client.delete(
         f"/api/v1/campaigns/{campaign_id}",
-        json={"confirmation_name": "Disposable Campaign"},
+        json={"confirmation_name": "Disposable Campaign", "confirmation_year": 2026},
         headers=_auth_header(admin_id, "ADMIN"),
     )
 

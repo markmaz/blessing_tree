@@ -16,6 +16,39 @@ export default defineConfig({
   optimizeDeps: {
     include: ['jspdf', 'konva', 'qrcode', 'react-konva'],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return undefined
+          }
+          if (id.includes('/xlsx/')) {
+            return 'vendor-xlsx'
+          }
+          if (id.includes('/jspdf/')) {
+            return 'vendor-jspdf'
+          }
+          if (id.includes('/html2canvas/')) {
+            return 'vendor-html2canvas'
+          }
+          if (id.includes('/dompurify/')) {
+            return 'vendor-dompurify'
+          }
+          if (id.includes('/konva/') || id.includes('/react-konva/')) {
+            return 'vendor-canvas'
+          }
+          if (id.includes('/qrcode/') || id.includes('/qrcode.react/') || id.includes('/@zxing/')) {
+            return 'vendor-qr'
+          }
+          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/react-router-dom/')) {
+            return 'vendor-react'
+          }
+          return undefined
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,

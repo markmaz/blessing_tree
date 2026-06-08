@@ -511,6 +511,19 @@ export async function fetchAdminHealth(): Promise<AdminHealthPayload> {
           message: 'Qdrant health data is not available.',
         }
       ),
+      email: normalizeHealthCheck(
+        payload.checks.email ?? {
+          status: 'degraded',
+          configured: false,
+          message: 'Email health data is not available.',
+        }
+      ),
+      storage: normalizeHealthCheck(
+        payload.checks.storage ?? {
+          status: 'degraded',
+          message: 'Storage health data is not available.',
+        }
+      ),
     },
   };
 }
@@ -551,12 +564,20 @@ function normalizeHealthCheck(check: AdminHealthPayload['checks']['database']): 
     latency_ms?: number;
     expected_collections?: string[];
     worker_heartbeat?: boolean;
+    total_bytes?: number;
+    free_bytes?: number;
+    used_percent?: number;
+    free_percent?: number;
   };
   return {
     ...check,
     latencyMs: check.latencyMs ?? rawCheck.latency_ms,
     expectedCollections: check.expectedCollections ?? rawCheck.expected_collections,
     workerHeartbeat: check.workerHeartbeat ?? rawCheck.worker_heartbeat,
+    totalBytes: check.totalBytes ?? rawCheck.total_bytes,
+    freeBytes: check.freeBytes ?? rawCheck.free_bytes,
+    usedPercent: check.usedPercent ?? rawCheck.used_percent,
+    freePercent: check.freePercent ?? rawCheck.free_percent,
   };
 }
 

@@ -3,8 +3,6 @@ import { NavLink, Outlet, Link } from 'react-router-dom';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
 import {
   campaignCapabilities,
-  giftOperationsCapabilities,
-  hasAnyCampaignCapability,
   hasCampaignCapability,
 } from '@/features/campaigns/model/campaignPermissions';
 import { setPrefersFullSite } from '@/features/mobile/model/mobileMode';
@@ -42,7 +40,7 @@ export function MobileShell() {
       label: 'Receive',
       icon: 'bi-check2-square',
       path: buildMobileReceivePath(),
-      isVisible: hasAnyCampaignCapability(access, giftOperationsCapabilities),
+      isVisible: hasCampaignCapability(access, campaignCapabilities.giftCheckIn),
     },
     {
       label: 'Sponsors',

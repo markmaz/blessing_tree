@@ -140,6 +140,7 @@ class CampaignDetailResource(Resource):
                 db,
                 campaign,
                 confirmation_name=payload.get("confirmation_name"),
+                confirmation_year=payload.get("confirmation_year"),
             )
             db.commit()
         return "", 204

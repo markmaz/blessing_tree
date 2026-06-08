@@ -24,12 +24,13 @@ interface CampaignStudioTemplateWorkspaceProps {
   activeTab: 'metadata' | 'content';
   isSaving: boolean;
   isExisting: boolean;
+  canEdit: boolean;
   onChangeTab: (tab: 'metadata' | 'content') => void;
   onChangeDraft: (
     updater: (currentDraft: CommunicationTemplateDraft) => CommunicationTemplateDraft
   ) => void;
   onSave: () => void;
-  onSendTestEmail: (recipientEmail?: string) => Promise<unknown>;
+  onSendTestEmail?: (recipientEmail?: string) => Promise<unknown>;
   onInsertMergeField: (field: string) => void;
   onFocusTarget: (target: CommunicationTemplateFocusTarget) => void;
 }
@@ -41,6 +42,7 @@ export function CampaignStudioTemplateWorkspace({
   activeTab,
   isSaving,
   isExisting,
+  canEdit,
   onChangeTab,
   onChangeDraft,
   onSave,
@@ -56,7 +58,7 @@ export function CampaignStudioTemplateWorkspace({
   const recipientSummary = audienceRecipientSummaries.find((summary) => summary.audience === draft.audience);
 
   const handleSendTestEmail = async () => {
-    if (!isExisting) {
+    if (!isExisting || !onSendTestEmail) {
       return;
     }
     setIsSendingTest(true);
@@ -86,7 +88,7 @@ export function CampaignStudioTemplateWorkspace({
           </div>
         </div>
         <div className="campaign-template-workspace__header-actions">
-          {isExisting ? (
+          {isExisting && onSendTestEmail ? (
             <label className="campaign-template-workspace__test-email">
               <span className="visually-hidden">Test email address</span>
               <input
@@ -98,7 +100,7 @@ export function CampaignStudioTemplateWorkspace({
               />
             </label>
           ) : null}
-          {isExisting ? (
+          {isExisting && onSendTestEmail ? (
             <button
               type="button"
               className="btn btn-outline-secondary btn-sm"
@@ -109,15 +111,17 @@ export function CampaignStudioTemplateWorkspace({
               Send Test
             </button>
           ) : null}
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            disabled={isSaving}
-            onClick={onSave}
-          >
-            <i className="bi bi-floppy" aria-hidden="true" />{' '}
-            {isExisting ? 'Save Template' : 'Create Template'}
-          </button>
+          {canEdit ? (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              disabled={isSaving}
+              onClick={onSave}
+            >
+              <i className="bi bi-floppy" aria-hidden="true" />{' '}
+              {isExisting ? 'Save Template' : 'Create Template'}
+            </button>
+          ) : null}
         </div>
       </div>
 

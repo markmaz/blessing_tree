@@ -92,3 +92,63 @@ def require_campaign_capability(
         return wrapper
 
     return decorator
+
+
+def require_any_campaign_capability(
+    capabilities: tuple[str, ...] | list[str] | set[str],
+    *,
+    campaign_id_arg: str = "campaign_id",
+    allow_query_fallback: bool = False,
+    allow_body_fallback: bool = False,
+):
+    required_capabilities = tuple(capabilities)
+
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            if request.method == "OPTIONS":
+                return make_response("", 204)
+
+            ensure_authenticated_request()
+            campaign_id = resolve_campaign_scope_id(
+                campaign_id_arg=campaign_id_arg,
+                route_kwargs=kwargs,
+                allow_query_fallback=allow_query_fallback,
+                allow_body_fallback=allow_body_fallback,
+            )
+
+            with SessionLocal() as db:
+                campaign = db.query(Campaign).filter(Campaign.id == campaign_id).one_or_none()
+                if campaign is None:
+                    raise ServiceError(
+                        "Campaign not found",
+                        status_code=404,
+                        details={"campaign_id": campaign_id},
+                    )
+                allowed = any(
+                    _authorization_service.user_has_campaign_capability(
+                        db,
+                        getattr(g, "user_id", None),
+                        campaign_id,
+                        capability,
+                    )
+                    for capability in required_capabilities
+                )
+
+            if not allowed:
+                raise ServiceError(
+                    "Forbidden",
+                    status_code=403,
+                    details={
+                        "code": "missing_campaign_capability",
+                        "campaign_id": campaign_id,
+                        "capabilities": list(required_capabilities),
+                    },
+                )
+
+            g.campaign_id = campaign_id
+            return fn(*args, **kwargs)
+
+        return wrapper
+
+    return decorator

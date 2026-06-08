@@ -222,7 +222,7 @@ class CommunicationTemplateDetailResource(Resource):
 
 @campaign_ns.route("/<string:campaign_id>/communications/templates/<string:template_id>/test-email")
 class CommunicationTemplateTestEmailResource(Resource):
-    @require_campaign_capability("campaign.admin")
+    @require_campaign_capability("campaign.communications.send")
     def post(self, campaign_id: str, template_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
@@ -249,7 +249,7 @@ class CommunicationTemplateTestEmailResource(Resource):
 
 @campaign_ns.route("/<string:campaign_id>/communications/send")
 class CommunicationSendResource(Resource):
-    @require_campaign_capability("campaign.admin")
+    @require_campaign_capability("campaign.communications.send")
     def post(self, campaign_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 from datetime import UTC, datetime
 
 import requests
@@ -35,6 +36,8 @@ class AdminHealthService:
             "celery": self._check_celery(),
             "llm": self._llm_service.health(db),
             "qdrant": self._check_qdrant(),
+            "email": self._check_email(),
+            "storage": self._check_storage(),
         }
 
         statuses = [str(item.get("status") or "error") for item in checks.values()]
@@ -186,6 +189,70 @@ class AdminHealthService:
                 "url": qdrant_url,
                 "message": f"Qdrant is not reachable at {qdrant_url}. Start the qdrant service or update QDRANT_URL.",
             }
+
+    @staticmethod
+    def _check_email() -> dict[str, object]:
+        smtp_server = (os.getenv("SMTP_SERVER") or "").strip()
+        default_sender = (os.getenv("DEFAULT_MAIL_SENDER") or "").strip()
+        smtp_username = (os.getenv("SMTP_USERNAME") or "").strip()
+        smtp_password = (os.getenv("SMTP_PASSWORD") or "").strip()
+        smtp_port = (os.getenv("SMTP_PORT") or os.getenv("SMPT_PORT") or "").strip()
+        missing = [
+            label
+            for label, value in (
+                ("SMTP_SERVER", smtp_server),
+                ("SMTP_PORT", smtp_port),
+                ("DEFAULT_MAIL_SENDER", default_sender),
+            )
+            if not value
+        ]
+        auth_partial = bool(smtp_username) != bool(smtp_password)
+        if missing or auth_partial:
+            auth_message = " SMTP_USERNAME and SMTP_PASSWORD must be set together." if auth_partial else ""
+            return {
+                "status": "degraded",
+                "configured": False,
+                "provider": smtp_server or None,
+                "message": f"Email is not fully configured. Missing: {', '.join(missing) or 'none'}.{auth_message}".strip(),
+            }
+        return {
+            "status": "ok",
+            "configured": True,
+            "provider": smtp_server,
+            "message": "Email configuration is present. Send a test email from Campaign Studio to verify delivery.",
+        }
+
+    @staticmethod
+    def _check_storage() -> dict[str, object]:
+        path = (os.getenv("BT_STORAGE_HEALTH_PATH") or "/").strip() or "/"
+        try:
+            usage = shutil.disk_usage(path)
+        except OSError as exc:
+            return {
+                "status": "error",
+                "path": path,
+                "message": f"Unable to read disk usage for {path}: {exc}",
+            }
+        free_percent = round((usage.free / usage.total) * 100, 1) if usage.total else 0.0
+        used_percent = round(100 - free_percent, 1)
+        if free_percent < 10:
+            status = "error"
+            message = f"Disk free space is critically low at {free_percent}%."
+        elif free_percent < 20:
+            status = "degraded"
+            message = f"Disk free space is low at {free_percent}%."
+        else:
+            status = "ok"
+            message = f"Disk free space is healthy at {free_percent}%."
+        return {
+            "status": status,
+            "path": path,
+            "total_bytes": usage.total,
+            "free_bytes": usage.free,
+            "used_percent": used_percent,
+            "free_percent": free_percent,
+            "message": message,
+        }
 
 
 def _collection_names(payload: object) -> set[str]:

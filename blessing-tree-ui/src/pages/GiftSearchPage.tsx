@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { commitCampaignGift, releaseCampaignGift, searchCampaignGifts } from '@/features/gifts/api/giftSearchApi';
 import type { GiftSearchItem, GiftSearchResult } from '@/features/gifts/model/giftSearchTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
+import { canCommitGifts } from '@/features/campaigns/model/campaignPermissions';
 import { getCampaignSponsorWorkspace } from '@/features/campaigns/api/campaignSponsorWorkspaceApi';
 import type { CampaignSponsor } from '@/features/campaigns/model/campaignSponsorWorkspaceTypes';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
@@ -57,6 +58,7 @@ export function GiftSearchPage() {
   }, [campaignId]);
 
   const campaign = campaigns.find((item) => item.id === campaignId) ?? null;
+  const canCommitCampaignGifts = canCommitGifts(campaign?.userAccess ?? null);
   const filterChips = useMemo(() => buildFilterChips(result), [result]);
   const selectedSponsor = sponsors.find((sponsor) => sponsor.id === selectedSponsorId) ?? null;
   const selectedSponsorDetails = sponsors.find((sponsor) => sponsor.id === selectedSponsorDetailsId) ?? null;
@@ -257,6 +259,7 @@ export function GiftSearchPage() {
                       isSaving={isSavingGift}
                       onOpenDetails={() => setDetailsGift(item)}
                       onOpenSponsor={item.sponsor ? () => setSelectedSponsorDetailsId(item.sponsor?.id ?? null) : undefined}
+                      canCommit={canCommitCampaignGifts}
                       onCommit={() => openCommitDrawer(item)}
                       onRelease={() => setPendingReleaseGift(item)}
                     />
@@ -434,6 +437,7 @@ function GiftSearchRow({
   isSaving,
   onOpenDetails,
   onOpenSponsor,
+  canCommit,
   onCommit,
   onRelease,
 }: {
@@ -441,6 +445,7 @@ function GiftSearchRow({
   isSaving: boolean;
   onOpenDetails: () => void;
   onOpenSponsor?: () => void;
+  canCommit: boolean;
   onCommit: () => void;
   onRelease: () => void;
 }) {
@@ -489,7 +494,9 @@ function GiftSearchRow({
         {item.labelCode ? <div className="text-muted small">Label {item.labelCode}</div> : null}
       </td>
       <td>
-        {item.isAvailable ? (
+        {!canCommit ? (
+          <span className="text-muted small">View only</span>
+        ) : item.isAvailable ? (
           <button type="button" className="btn btn-outline-secondary btn-sm" onClick={onCommit} disabled={isSaving}>
             <i className="bi bi-bag-check me-1" aria-hidden="true" />
             Commit

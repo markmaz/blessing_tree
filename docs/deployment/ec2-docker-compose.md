@@ -65,6 +65,9 @@ Recommended RDS setup:
 - automated backups enabled
 - deletion protection enabled for production
 
+See [Production Backup And Restore Runbook](production-backup-restore.md)
+for manual logical backups, RDS snapshot restore, and production seed safety.
+
 The app receives RDS settings through:
 
 ```text

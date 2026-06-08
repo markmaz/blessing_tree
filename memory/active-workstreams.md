@@ -1,14 +1,116 @@
 # Active Workstreams
 
-Last updated: 2026-06-05
+Last updated: 2026-06-06
 
 ## Current Phase
 
-The current feature branch is `codex/sponsor-dropoff-qr-workflow`.
+The current feature branch is `codex/production-safety-runbooks`.
 
-The current active work is finishing Mobile Operator Mode after completing the
-report/export, production deployment, semantic search, demo seeding, and
-operational hardening branch.
+The current active work is Phase 5 of the Product Polish And Hardening Plan:
+backups, restore, and production safety.
+
+The first Phase 5 slice adds production safety guardrails:
+
+- new production backup/restore runbook for the EC2 Docker Compose + RDS stack
+- demo seed script refuses `--reset` when `CURRENT_ENVIRONMENT=production`
+- demo seed script requires append-only production behavior unless
+  `--allow-production-replace` is passed intentionally
+- backend version bumped to `0.1.56`
+
+The second Phase 5 slice expands Admin Health:
+
+- backend health now reports email configuration and storage/disk pressure
+- Admin Health UI shows Email and Storage cards
+- health tests cover email configuration and storage payload details
+- API version bumped to `0.1.57`; UI version bumped to `0.0.119`
+
+The third Phase 5 slice tightens campaign deletion safety:
+
+- backend campaign delete now requires both exact campaign name and exact
+  campaign year confirmation
+- campaign detail danger-zone modal lists all campaign-owned record classes
+  from summary counts before enabling permanent delete
+- focused backend delete tests cover name/year confirmation behavior
+- API version bumped to `0.1.58`; UI version bumped to `0.0.120`
+
+The final Phase 5 slice closes backup/restore documentation:
+
+- production runbook now documents scheduled RDS backup expectations
+- restore-drill checklist defines how to validate a backup without touching
+  production
+- campaign delete runbook language matches the name-plus-year confirmation
+- Admin Health guide text covers DB, Celery, LLM/embedding, Qdrant, email, and
+  storage checks
+
+Phase 5 is complete pending merge/deploy review.
+
+Follow-up documentation refresh:
+
+- user guide Admin section now includes health-check interpretation, production
+  backup/restore expectations, restore-drill guidance, and campaign delete
+  safety notes
+- Ask Blessing Tree knowledge now answers Admin Health, backup, restore,
+  production safety, seed safety, and campaign delete safety questions
+- backend Ask route mapping includes Admin Health so related answers can link
+  to `/admin/health`
+
+Frontend performance hardening:
+
+- route-level lazy loading now splits campaign, people, sponsor, gift, admin,
+  mobile, and report pages out of the initial app chunk
+- report PDF/Excel libraries are loaded only when an export button is clicked
+- Vite manual chunks isolate React, canvas, QR/scanner, PDF, and Excel vendor
+  libraries
+- production build no longer emits the large chunk warning; the prior main app
+  chunk of roughly 1.8 MB is now split into much smaller route/vendor chunks
+
+Phase 4 mobile receiving hardening is functionally complete on
+`codex/mobile-receiving-hardening`, pending only a final phone-width visual QA
+pass:
+
+Phase 3 permission cleanup is complete on `codex/permission-cleanup`:
+
+- documented campaign role/capability matrix
+- explicit `campaign.communications.send` capability
+- sponsor/campaign email send endpoints aligned to that capability
+- campaign delete locked to app-admin with strong confirmation
+- mobile receive/drop-off QR locked to gift check-in permission
+- Gift Operations hides print/tag and receive controls without
+  `campaign.gifts.check_in`.
+- Gift Operations hides sponsor reminder controls unless the user can manage
+  sponsors, matching the reminder API capability.
+- Gift Operations and Gift Status report filter receive, wrap, ready, pickup,
+  and exception actions by their exact gift workflow capabilities.
+- Gift Status report remains printable/exportable for report viewers, but
+  mutation controls are hidden unless the user also has the needed gift
+  operation capability.
+- backend and frontend test suites passed after the final test expectation fix
+
+The first Phase 4 slice hardens mobile receiving:
+
+- mobile Receive and sponsor Drop-Off pages now track busy state per gift to
+  avoid repeated receive/undo submissions
+- mobile Receive and sponsor Drop-Off pages show a recent receive/undo action
+  list so event workers can verify what just changed
+- sponsor Drop-Off now gives a clearer error when the QR link is missing
+  campaign context and no campaign is selected
+- receive/undo buttons have larger touch spacing for event-day use
+
+The second Phase 4 slice hardens scanner error states:
+
+- scanner parsing now distinguishes blank input, missing sponsor drop-off token,
+  unsupported QR URLs, and unsupported text
+- mobile Scanner shows clearer event-worker messages for unsupported QR codes
+  and malformed sponsor drop-off links
+- scanner parser tests cover the new bad-code states
+
+The third Phase 4 slice adds rendered mobile Scanner coverage:
+
+- manual unsupported QR URL entry shows the worker-facing unsupported-QR message
+- manual sponsor drop-off links missing a token show the secure-token warning
+- manual recipient IDs route to mobile Receive with auto-lookup state
+- manual sponsor drop-off QR URLs route to the drop-off page with campaign
+  context preserved
 
 The follow-on branch `codex/sponsor-dropoff-qr-workflow` has implemented the
 sponsor drop-off QR workflow through token revocation and scan-event tracking:

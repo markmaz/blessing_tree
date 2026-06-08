@@ -17,9 +17,14 @@ from app.features.rbac.constants import (
     APP_ADMIN_ROLE,
     APP_USER_ROLE,
     CAMPAIGN_DONATIONS_EDIT_CAPABILITY,
+    CAMPAIGN_COMMUNICATIONS_SEND_CAPABILITY,
+    CAMPAIGN_GIFTS_COMMIT_CAPABILITY,
     CAMPAIGN_GIFTS_CHECK_IN_CAPABILITY,
+    CAMPAIGN_GIFTS_SEARCH_CAPABILITY,
+    CAMPAIGN_SPONSORS_MANAGE_CAPABILITY,
     DONATION_ENTRY_ROLE,
     GIFT_CHECKIN_ROLE,
+    SPONSORS_INTAKE_ROLE,
     normalize_app_role,
 )
 from app.features.rbac.models.campaign_user_role import CampaignUserRole
@@ -122,6 +127,35 @@ def test_get_campaign_capabilities_unions_multiple_active_roles() -> None:
     assert CAMPAIGN_DONATIONS_EDIT_CAPABILITY in capabilities
     assert CAMPAIGN_GIFTS_CHECK_IN_CAPABILITY in capabilities
     assert service.user_has_campaign_capability(db, user.id, campaign.id, CAMPAIGN_GIFTS_CHECK_IN_CAPABILITY)
+    db.close()
+
+
+def test_sponsor_intake_role_can_manage_sponsors_commit_gifts_and_send_communications() -> None:
+    db = _build_session()
+    service = AuthorizationService()
+    user = _create_user("VOLUNTEER")
+    campaign = _create_campaign()
+    db.add_all([user, campaign])
+    db.flush()
+    db.add(
+        CampaignUserRole(
+            id=uuid.uuid4(),
+            user_id=user.id,
+            campaign_id=campaign.id,
+            role_key=SPONSORS_INTAKE_ROLE,
+            is_active=True,
+        )
+    )
+    db.commit()
+
+    capabilities = service.get_campaign_capabilities(db, user.id, campaign.id)
+
+    assert CAMPAIGN_SPONSORS_MANAGE_CAPABILITY in capabilities
+    assert CAMPAIGN_GIFTS_SEARCH_CAPABILITY in capabilities
+    assert CAMPAIGN_GIFTS_COMMIT_CAPABILITY in capabilities
+    assert CAMPAIGN_COMMUNICATIONS_SEND_CAPABILITY in capabilities
+    assert service.user_has_campaign_capability(db, user.id, campaign.id, CAMPAIGN_GIFTS_COMMIT_CAPABILITY)
+    assert service.user_has_campaign_capability(db, user.id, campaign.id, CAMPAIGN_COMMUNICATIONS_SEND_CAPABILITY)
     db.close()
 
 

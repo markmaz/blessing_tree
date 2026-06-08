@@ -622,7 +622,47 @@ def build_document() -> None:
     add_heading(doc, "Health Check and App Capabilities", level=2)
     add_body(
         doc,
-        "Health Check shows database, Celery, and LLM health. App Capabilities lets admins enable or disable major app surfaces such as People, Sponsors, Reports, Donations, and campaign AI.",
+        "Health Check shows database, Celery, LLM/embedding, Qdrant, email, and storage health. Use it after deploys, restores, and configuration changes to see which dependency needs attention first. App Capabilities lets admins enable or disable major app surfaces such as People, Sponsors, Reports, Donations, and campaign AI.",
+    )
+    add_table(
+        doc,
+        ["Health Check", "What to do if it needs attention"],
+        [
+            ["Database", "Check RDS status, security groups, database credentials, and DB_HOST."],
+            ["Celery", "Check Valkey, celery-worker, celery-beat, and worker logs for the bt queue."],
+            ["LLM/Embedding", "Verify the OpenAI key, model allowlist, project permissions, and budget."],
+            ["Qdrant", "Check the Qdrant container and QDRANT_URL. Use Generate Index if collections are missing or stale."],
+            ["Email", "Confirm SMTP settings, then send a Campaign Studio test email to verify delivery."],
+            ["Storage", "Clean old logs/artifacts or increase disk size when free space is low."],
+        ],
+        widths=[1.6, 4.65],
+    )
+    add_note(
+        doc,
+        "Health checks are non-destructive",
+        "The email check verifies configuration only; it does not send mail. The Qdrant Generate Index action rebuilds Ask knowledge and semantic gift search indexes from MySQL.",
+    )
+    add_heading(doc, "Production Backup, Restore, and Safety", level=2)
+    add_body(
+        doc,
+        "Production data lives in RDS MySQL. Qdrant is a rebuildable search index, and Valkey holds operational queue/cache state. Keep RDS automated backups enabled and use manual backups before risky work.",
+    )
+    add_bullets(
+        doc,
+        [
+            "Use at least 7 days of RDS backup retention during normal operation.",
+            "Use at least 14 days of retention during active campaign intake and distribution.",
+            "Before migrations, production seed work, or campaign deletion, create both an RDS manual snapshot and a manual logical backup.",
+            "Copy manual logical backups off the EC2 host.",
+            "Restore drills should use a temporary database target, never overwrite production.",
+            "After a restore, verify login, campaign list, People Directory, Sponsor Directory, Gift Search, Reports, and Admin Health.",
+            "Regenerate Qdrant indexes from Admin Health if Ask or semantic gift search collections are missing or stale.",
+        ],
+    )
+    add_note(
+        doc,
+        "Campaign delete safety",
+        "Campaign deletion is app-admin only. The confirmation modal requires the exact campaign name and campaign year and shows the deletion-impact list before the delete button is enabled.",
     )
 
     add_heading(doc, "Account Profile and Settings", level=1)

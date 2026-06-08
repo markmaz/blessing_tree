@@ -238,7 +238,7 @@ class CampaignSponsorInteractionDetailResource(Resource):
 
 @campaign_ns.route("/<string:campaign_id>/sponsors/<string:sponsor_id>/communications/preview")
 class CampaignSponsorCommunicationPreviewResource(Resource):
-    @require_campaign_capability("campaign.sponsors.manage")
+    @require_campaign_capability("campaign.communications.send")
     def post(self, campaign_id: str, sponsor_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:
@@ -252,7 +252,7 @@ class CampaignSponsorCommunicationPreviewResource(Resource):
 
 @campaign_ns.route("/<string:campaign_id>/sponsors/<string:sponsor_id>/communications/send")
 class CampaignSponsorCommunicationSendResource(Resource):
-    @require_campaign_capability("campaign.sponsors.manage")
+    @require_campaign_capability("campaign.communications.send")
     def post(self, campaign_id: str, sponsor_id: str):
         payload = request.get_json(silent=True) or {}
         with SessionLocal() as db:

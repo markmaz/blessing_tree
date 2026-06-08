@@ -33,6 +33,8 @@ interface CampaignSponsorDrawerProps {
   campaignId?: string | null;
   isOpen: boolean;
   canEdit: boolean;
+  canCommitGifts: boolean;
+  canSendCommunications: boolean;
   isSaving: boolean;
   sponsor: CampaignSponsor | null;
   communicationTemplates: CommunicationTemplate[];
@@ -75,6 +77,8 @@ export function CampaignSponsorDrawer({
   campaignId,
   isOpen,
   canEdit,
+  canCommitGifts,
+  canSendCommunications,
   isSaving,
   sponsor,
   communicationTemplates,
@@ -272,7 +276,7 @@ export function CampaignSponsorDrawer({
 
   const handleSearchGifts = async (event?: React.FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
-    if (!campaignId || !sponsor) {
+    if (!campaignId || !sponsor || !canCommitGifts) {
       return;
     }
     setGiftSearchError(null);
@@ -288,7 +292,7 @@ export function CampaignSponsorDrawer({
   };
 
   const handleCommitGift = async (item: GiftSearchItem) => {
-    if (!sponsor) {
+    if (!sponsor || !canCommitGifts) {
       return;
     }
     setGiftSearchError(null);
@@ -309,7 +313,7 @@ export function CampaignSponsorDrawer({
   };
 
   const handleSendCommunication = async () => {
-    if (!sponsor || !selectedTemplateId) {
+    if (!sponsor || !selectedTemplateId || !canSendCommunications) {
       return;
     }
     setCommunicationError(null);
@@ -802,96 +806,99 @@ export function CampaignSponsorDrawer({
               <div className="campaign-studio__empty-note">Save the sponsor first to start linking gifts and tracking commitments.</div>
             ) : (
               <div className="campaign-sponsor-gift-workflow">
-                <form className="campaign-sponsor-gift-search" onSubmit={(event) => void handleSearchGifts(event)}>
-                  <label className="form-label w-100 mb-0">
-                    Search available gifts
-                    <div className="input-group mt-2">
-                      <span className="input-group-text">
-                        <i className="bi bi-search" aria-hidden="true" />
-                      </span>
-                      <input
-                        className="form-control"
-                        value={giftSearchQuery}
-                        onChange={(event) => setGiftSearchQuery(event.target.value)}
-                        placeholder="Search recipient ID, age, gender, gift, size, or category"
-                        disabled={!canEdit || isGiftSearchLoading}
-                      />
-                      {giftSearchQuery ? (
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary"
-                          onClick={() => {
-                            setGiftSearchQuery('');
-                            setGiftSearchResult(null);
-                            setGiftSearchError(null);
-                          }}
-                          disabled={isGiftSearchLoading}
-                        >
-                          <i className="bi bi-x-lg" aria-hidden="true" />
-                          <span className="visually-hidden">Clear gift search</span>
-                        </button>
-                      ) : null}
-                      <button type="submit" className="btn btn-secondary" disabled={!canEdit || isGiftSearchLoading}>
-                        {isGiftSearchLoading ? 'Searching...' : 'Search'}
-                      </button>
-                    </div>
-                  </label>
-                </form>
-
-                <label className="form-label w-100 mb-0">
-                  Commitment notes
-                  <textarea
-                    className="form-control mt-2"
-                    rows={2}
-                    value={giftCommitNotes}
-                    onChange={(event) => setGiftCommitNotes(event.target.value)}
-                    placeholder="Optional notes for gifts committed from this drawer"
-                    disabled={!canEdit}
-                  />
-                </label>
-
-                {giftSearchError ? <div className="alert alert-danger mb-0">{giftSearchError}</div> : null}
-
-                {giftSearchResult ? (
-                  <div className="campaign-sponsor-gift-results">
-                    <div className="d-flex flex-wrap justify-content-between gap-2">
-                      <strong>{giftSearchResult.count} gift{giftSearchResult.count === 1 ? '' : 's'} found</strong>
-                      {giftSearchResult.parsedFilters.warnings.length > 0 ? (
-                        <span className="text-muted small">{giftSearchResult.parsedFilters.warnings[0]}</span>
-                      ) : null}
-                    </div>
-                    {giftSearchResult.items.length === 0 ? (
-                      <div className="campaign-studio__empty-note mb-0">No gifts match that search.</div>
-                    ) : (
-                      <div className="campaign-sponsor-gift-result-list">
-                        {giftSearchResult.items.slice(0, 8).map((item) => (
-                          <div key={item.wishlistItemId} className="campaign-sponsor-gift-result">
-                            <div>
-                              <strong>{item.description}</strong>
-                              <div className="text-muted small">
-                                {item.recipient?.displayLabel ?? item.recipient?.publicLabel ?? 'Recipient'}
-                                {item.recipient?.programRecipientId ? ` · ${item.recipient.programRecipientId}` : ''}
-                              </div>
-                              <div className="text-muted small">
-                                {[formatGiftRecipientAge(item.recipient), formatGender(item.recipient?.gender), item.recipient?.groupLabel, item.size]
-                                  .filter(Boolean)
-                                  .join(' · ') || 'No additional details'}
-                              </div>
-                            </div>
+                {canCommitGifts ? (
+                  <>
+                    <form className="campaign-sponsor-gift-search" onSubmit={(event) => void handleSearchGifts(event)}>
+                      <label className="form-label w-100 mb-0">
+                        Search available gifts
+                        <div className="input-group mt-2">
+                          <span className="input-group-text">
+                            <i className="bi bi-search" aria-hidden="true" />
+                          </span>
+                          <input
+                            className="form-control"
+                            value={giftSearchQuery}
+                            onChange={(event) => setGiftSearchQuery(event.target.value)}
+                            placeholder="Search recipient ID, age, gender, gift, size, or category"
+                            disabled={isGiftSearchLoading}
+                          />
+                          {giftSearchQuery ? (
                             <button
                               type="button"
-                              className="btn btn-outline-secondary btn-sm"
-                              onClick={() => void handleCommitGift(item)}
-                              disabled={!canEdit || !item.isAvailable || committingGiftId !== null}
+                              className="btn btn-outline-secondary"
+                              onClick={() => {
+                                setGiftSearchQuery('');
+                                setGiftSearchResult(null);
+                                setGiftSearchError(null);
+                              }}
+                              disabled={isGiftSearchLoading}
                             >
-                              <i className="bi bi-bag-check me-1" aria-hidden="true" />
-                              {committingGiftId === item.wishlistItemId ? 'Committing...' : item.isAvailable ? 'Commit' : 'Unavailable'}
+                              <i className="bi bi-x-lg" aria-hidden="true" />
+                              <span className="visually-hidden">Clear gift search</span>
                             </button>
+                          ) : null}
+                          <button type="submit" className="btn btn-secondary" disabled={isGiftSearchLoading}>
+                            {isGiftSearchLoading ? 'Searching...' : 'Search'}
+                          </button>
+                        </div>
+                      </label>
+                    </form>
+
+                    <label className="form-label w-100 mb-0">
+                      Commitment notes
+                      <textarea
+                        className="form-control mt-2"
+                        rows={2}
+                        value={giftCommitNotes}
+                        onChange={(event) => setGiftCommitNotes(event.target.value)}
+                        placeholder="Optional notes for gifts committed from this drawer"
+                      />
+                    </label>
+
+                    {giftSearchError ? <div className="alert alert-danger mb-0">{giftSearchError}</div> : null}
+
+                    {giftSearchResult ? (
+                      <div className="campaign-sponsor-gift-results">
+                        <div className="d-flex flex-wrap justify-content-between gap-2">
+                          <strong>{giftSearchResult.count} gift{giftSearchResult.count === 1 ? '' : 's'} found</strong>
+                          {giftSearchResult.parsedFilters.warnings.length > 0 ? (
+                            <span className="text-muted small">{giftSearchResult.parsedFilters.warnings[0]}</span>
+                          ) : null}
+                        </div>
+                        {giftSearchResult.items.length === 0 ? (
+                          <div className="campaign-studio__empty-note mb-0">No gifts match that search.</div>
+                        ) : (
+                          <div className="campaign-sponsor-gift-result-list">
+                            {giftSearchResult.items.slice(0, 8).map((item) => (
+                              <div key={item.wishlistItemId} className="campaign-sponsor-gift-result">
+                                <div>
+                                  <strong>{item.description}</strong>
+                                  <div className="text-muted small">
+                                    {item.recipient?.displayLabel ?? item.recipient?.publicLabel ?? 'Recipient'}
+                                    {item.recipient?.programRecipientId ? ` · ${item.recipient.programRecipientId}` : ''}
+                                  </div>
+                                  <div className="text-muted small">
+                                    {[formatGiftRecipientAge(item.recipient), formatGender(item.recipient?.gender), item.recipient?.groupLabel, item.size]
+                                      .filter(Boolean)
+                                      .join(' · ') || 'No additional details'}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-secondary btn-sm"
+                                  onClick={() => void handleCommitGift(item)}
+                                  disabled={!item.isAvailable || committingGiftId !== null}
+                                >
+                                  <i className="bi bi-bag-check me-1" aria-hidden="true" />
+                                  {committingGiftId === item.wishlistItemId ? 'Committing...' : item.isAvailable ? 'Commit' : 'Unavailable'}
+                                </button>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
                       </div>
-                    )}
-                  </div>
+                    ) : null}
+                  </>
                 ) : null}
 
                 {sponsor.sponsoredItems.length === 0 ? (
@@ -944,7 +951,7 @@ export function CampaignSponsorDrawer({
             isOpen={isDropoffLinksSectionOpen}
             onToggle={() => setIsDropoffLinksSectionOpen((currentValue) => !currentValue)}
             action={
-              canEdit && sponsor ? (
+              canSendCommunications && sponsor ? (
                 <button
                   type="button"
                   className="btn btn-outline-secondary btn-sm campaign-team-workspace__section-action"
@@ -1014,7 +1021,7 @@ export function CampaignSponsorDrawer({
                           <th scope="col">Expires</th>
                           <th scope="col">Scans</th>
                           <th scope="col">Last Scan</th>
-                          {canEdit ? <th scope="col" className="text-end">Actions</th> : null}
+                          {canSendCommunications ? <th scope="col" className="text-end">Actions</th> : null}
                         </tr>
                       </thead>
                       <tbody>
@@ -1031,7 +1038,7 @@ export function CampaignSponsorDrawer({
                               <td>{formatSponsorDateTime(token.expiresAt)}</td>
                               <td>{token.scanCount}</td>
                               <td>{formatSponsorDateTime(token.latestScanAt ?? token.lastScannedAt)}</td>
-                              {canEdit ? (
+                              {canSendCommunications ? (
                                 <td className="text-end">
                                   {token.status === 'ACTIVE' ? (
                                     <button
@@ -1052,7 +1059,7 @@ export function CampaignSponsorDrawer({
                               ) : null}
                             </tr>
                             <tr className="campaign-sponsor-scan-history-row">
-                              <td colSpan={canEdit ? 6 : 5}>
+                              <td colSpan={canSendCommunications ? 6 : 5}>
                                 <details className="campaign-sponsor-scan-history">
                                   <summary className="campaign-sponsor-scan-history__summary">
                                     <i className="bi bi-clock-history" aria-hidden="true" />
@@ -1120,7 +1127,7 @@ export function CampaignSponsorDrawer({
             }
           >
 
-            {sponsor && canEdit ? (
+            {sponsor && canSendCommunications ? (
               <div className="campaign-sponsor-communication-send">
                 <div className="campaign-sponsor-communication-send__header">
                   <div>

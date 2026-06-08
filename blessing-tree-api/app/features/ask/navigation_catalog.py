@@ -117,5 +117,6 @@ def build_route(route_name: str, campaign_id: str) -> str:
         "admin_campaign_operations": "/admin/campaign-operations",
         "admin_organization_types": "/admin/organization-types",
         "admin_llm": "/admin/llm",
+        "admin_health": "/admin/health",
     }
     return campaign_routes.get(route_name) or static_routes.get(route_name) or "/"

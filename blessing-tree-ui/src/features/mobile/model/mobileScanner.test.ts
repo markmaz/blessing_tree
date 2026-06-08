@@ -11,6 +11,14 @@ describe('mobileScanner', () => {
     });
   });
 
+  it('rejects sponsor drop-off URLs with no token', () => {
+    expect(resolveMobileScanDestination('https://app.example.test/mobile/receive/dropoff')).toEqual({
+      type: 'unknown',
+      value: 'https://app.example.test/mobile/receive/dropoff',
+      reason: 'missing-dropoff-token',
+    });
+  });
+
   it('preserves campaign context from sponsor drop-off QR URLs', () => {
     expect(
       resolveMobileScanDestination('https://app.example.test/mobile/receive/dropoff/abc123?campaignId=campaign-123')
@@ -39,6 +47,23 @@ describe('mobileScanner', () => {
     expect(resolveMobileScanDestination('not a blessing tree code')).toEqual({
       type: 'unknown',
       value: 'not a blessing tree code',
+      reason: 'unsupported-text',
+    });
+  });
+
+  it('rejects unsupported QR URLs with a URL-specific reason', () => {
+    expect(resolveMobileScanDestination('https://example.test/not-blessing-tree')).toEqual({
+      type: 'unknown',
+      value: 'https://example.test/not-blessing-tree',
+      reason: 'unsupported-url',
+    });
+  });
+
+  it('rejects blank manual scan input', () => {
+    expect(resolveMobileScanDestination('   ')).toEqual({
+      type: 'unknown',
+      value: '',
+      reason: 'empty',
     });
   });
 });

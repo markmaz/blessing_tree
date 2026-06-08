@@ -7,6 +7,7 @@ export const campaignCapabilities = {
   peopleEdit: 'campaign.recipients.edit',
   sponsorsView: 'campaign.sponsors.view',
   sponsorsManage: 'campaign.sponsors.manage',
+  communicationsSend: 'campaign.communications.send',
   giftSearch: 'campaign.gifts.search',
   giftCommit: 'campaign.gifts.commit',
   giftCheckIn: 'campaign.gifts.check_in',
@@ -61,8 +62,28 @@ export function canManageSponsors(access: CampaignAccess | null | undefined): bo
   return hasCampaignCapability(access, campaignCapabilities.sponsorsManage);
 }
 
+export function canSendCampaignCommunications(access: CampaignAccess | null | undefined): boolean {
+  return hasCampaignCapability(access, campaignCapabilities.communicationsSend);
+}
+
 export function canUseGiftSearch(access: CampaignAccess | null | undefined): boolean {
   return hasCampaignCapability(access, campaignCapabilities.giftSearch);
+}
+
+export function canCommitGifts(access: CampaignAccess | null | undefined): boolean {
+  return hasCampaignCapability(access, campaignCapabilities.giftCommit);
+}
+
+export function canCheckInGifts(access: CampaignAccess | null | undefined): boolean {
+  return hasCampaignCapability(access, campaignCapabilities.giftCheckIn);
+}
+
+export function canWrapGifts(access: CampaignAccess | null | undefined): boolean {
+  return hasCampaignCapability(access, campaignCapabilities.giftWrap);
+}
+
+export function canDistributeGifts(access: CampaignAccess | null | undefined): boolean {
+  return hasCampaignCapability(access, campaignCapabilities.giftDistribute);
 }
 
 export function canUseGiftOperations(access: CampaignAccess | null | undefined): boolean {

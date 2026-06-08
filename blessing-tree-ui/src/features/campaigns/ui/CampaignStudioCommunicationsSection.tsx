@@ -36,6 +36,8 @@ interface CampaignStudioCommunicationsSectionProps {
   sends?: CommunicationSendHistoryItem[];
   templates: CommunicationTemplate[];
   isSaving: boolean;
+  canEditTemplates: boolean;
+  canSendCommunications: boolean;
   requestedTemplateId?: string | null;
   onConsumeRequestedTemplate?: () => void;
   onCreateTemplate: (
@@ -60,6 +62,8 @@ export function CampaignStudioCommunicationsSection({
   sends = [],
   templates,
   isSaving,
+  canEditTemplates,
+  canSendCommunications,
   requestedTemplateId = null,
   onConsumeRequestedTemplate,
   onCreateTemplate,
@@ -155,6 +159,7 @@ export function CampaignStudioCommunicationsSection({
             templates={templates}
             selectedTemplateId={selectedTemplateId}
             isPanelOpen={!isLibraryCollapsed}
+            canEdit={canEditTemplates}
             onSelectTemplate={(templateId) => {
               const selectedTemplate = templates.find((template) => template.id === templateId);
               setSelectedTemplateId(templateId);
@@ -197,6 +202,7 @@ export function CampaignStudioCommunicationsSection({
             activeTab={activeTab}
             isSaving={isSaving}
             isExisting={selectedTemplateId !== null}
+            canEdit={canEditTemplates}
             onChangeTab={setActiveTab}
             onChangeDraft={(updater) =>
               setDraft((currentDraft) => {
@@ -220,10 +226,10 @@ export function CampaignStudioCommunicationsSection({
               })
             }
             onSave={handleSave}
-            onSendTestEmail={(recipientEmail) =>
-              selectedTemplateId && onSendTestEmail
-                ? onSendTestEmail(selectedTemplateId, recipientEmail)
-                : Promise.resolve(null)
+            onSendTestEmail={
+              selectedTemplateId && canSendCommunications && onSendTestEmail
+                ? (recipientEmail) => onSendTestEmail(selectedTemplateId, recipientEmail)
+                : undefined
             }
             onInsertMergeField={handleInsertMergeField}
             onFocusTarget={setFocusedTarget}
@@ -237,7 +243,8 @@ export function CampaignStudioCommunicationsSection({
         audienceRecipientSummaries={audienceRecipientSummaries}
         recipientOptions={recipientOptions}
         isSaving={isSaving}
-        onSendCommunication={onSendCommunication}
+        canSendCommunications={canSendCommunications}
+        onSendCommunication={canSendCommunications ? onSendCommunication : undefined}
       />
 
       <CampaignCommunicationHistoryPanel sends={sends} />
@@ -251,6 +258,7 @@ function CampaignCommunicationSendNowPanel({
   audienceRecipientSummaries,
   recipientOptions,
   isSaving,
+  canSendCommunications,
   onSendCommunication,
 }: {
   templates: CommunicationTemplate[];
@@ -258,6 +266,7 @@ function CampaignCommunicationSendNowPanel({
   audienceRecipientSummaries: CommunicationAudienceRecipientSummary[];
   recipientOptions: CommunicationRecipientOptions;
   isSaving: boolean;
+  canSendCommunications: boolean;
   onSendCommunication?: (input: CreateCommunicationSendInput) => Promise<boolean>;
 }) {
   const activeTemplates = templates.filter((template) => template.isActive && template.channel === 'EMAIL');
@@ -327,6 +336,11 @@ function CampaignCommunicationSendNowPanel({
       title="Send Now"
       description="Choose the exact recipients for a real campaign email. Sends are recorded in history."
     >
+      {!canSendCommunications ? (
+        <div className="campaign-studio__empty-note mb-0">
+          You can review communication history, but you do not have permission to send campaign emails.
+        </div>
+      ) : null}
       {localError ? <div className="alert alert-danger">{localError}</div> : null}
       <div className="campaign-template-send-now">
         <label className="form-label">
@@ -479,7 +493,7 @@ function CampaignCommunicationSendNowPanel({
           <button
             type="button"
             className="btn btn-secondary btn-sm"
-            disabled={isSaving || !onSendCommunication || !selectedTemplate || recipientCount === 0}
+            disabled={!canSendCommunications || isSaving || !onSendCommunication || !selectedTemplate || recipientCount === 0}
             onClick={() => void handleSend()}
           >
             <i className={`bi ${isSaving ? 'bi-arrow-repeat' : 'bi-send'} me-2`} aria-hidden="true" />

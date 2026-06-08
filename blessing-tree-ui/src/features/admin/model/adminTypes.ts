@@ -89,6 +89,11 @@ export interface AdminHealthCheck {
   workers?: string[];
   workerHeartbeat?: boolean;
   configured?: boolean;
+  path?: string;
+  totalBytes?: number;
+  freeBytes?: number;
+  usedPercent?: number;
+  freePercent?: number;
 }
 
 export interface AdminQdrantReindexPayload {
@@ -114,6 +119,8 @@ export interface AdminHealthPayload {
     celery: AdminHealthCheck;
     llm: AdminHealthCheck;
     qdrant: AdminHealthCheck;
+    email: AdminHealthCheck;
+    storage: AdminHealthCheck;
   };
 }
 

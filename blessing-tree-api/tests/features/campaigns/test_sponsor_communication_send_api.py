@@ -222,6 +222,58 @@ def test_send_sponsor_communication_records_send_recipient_and_interaction(app, 
     assert interaction.related_delivery_attempt_id == str(send.id)
 
 
+def test_sponsor_intake_role_can_send_sponsor_communication(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    delivered: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        "app.features.campaigns.communication_send_service.send_email_message",
+        lambda **kwargs: delivered.append(kwargs),
+    )
+    session = sponsor_api_module.SessionLocal()
+    sponsor_intake = seed_user(session, name="Sponsor Intake")
+    campaign = seed_campaign(session, name="Sponsor Intake Send Campaign")
+    assign_role(session, sponsor_intake, campaign, "SPONSORS_INTAKE")
+    sponsor, template = _seed_sponsor_template_context(session, campaign.id)
+    session.commit()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign.id}/sponsors/{sponsor.id}/communications/send",
+        json={"template_id": str(template.id)},
+        headers=auth_header(str(sponsor_intake.id), "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["status"] == "SENT"
+    assert delivered[0]["recipients"] == ["sponsor@example.com"]
+
+
+def test_view_only_role_cannot_send_sponsor_communication(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    delivered: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        "app.features.campaigns.communication_send_service.send_email_message",
+        lambda **kwargs: delivered.append(kwargs),
+    )
+    session = sponsor_api_module.SessionLocal()
+    viewer = seed_user(session, name="View Only")
+    campaign = seed_campaign(session, name="Forbidden Send Campaign")
+    assign_role(session, viewer, campaign, "CAMPAIGN_VIEWER")
+    sponsor, template = _seed_sponsor_template_context(session, campaign.id)
+    session.commit()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign.id}/sponsors/{sponsor.id}/communications/send",
+        json={"template_id": str(template.id)},
+        headers=auth_header(str(viewer.id), "VOLUNTEER"),
+    )
+
+    assert response.status_code == 403
+    assert response.get_json()["details"]["capability"] == "campaign.communications.send"
+    assert delivered == []
+
+
 def test_mobile_dropoff_token_resolves_committed_gifts(app, monkeypatch) -> None:
     install_auth(monkeypatch)
     session = sponsor_api_module.SessionLocal()
