@@ -6,6 +6,7 @@ import type {
   GiftPoolLine,
   GiftPoolLineInput,
   GiftPoolMatch,
+  GiftPoolMatchMode,
   GiftPoolResult,
 } from '@/features/gifts/model/giftPoolTypes';
 import type { GiftSearchItem } from '@/features/gifts/model/giftSearchTypes';
@@ -51,7 +52,9 @@ interface GiftPoolAssignmentResponse {
   quantity_fulfilled: number;
   fulfilled_at: string | null;
   fulfilled_by_user_id: string | null;
+  fulfilled_by_display_name: string | null;
   notes: string | null;
+  wishlist_item?: GiftSearchItemResponse | null;
 }
 
 interface GiftPoolDonationResponse {
@@ -102,6 +105,9 @@ interface GiftSearchItemResponse {
     age: number | null;
     age_unit: string | null;
     gender: string | null;
+    group_id?: string | null;
+    group_program_id?: string | null;
+    group_label?: string | null;
   } | null;
   label_code?: string;
   recipient_note?: string | null;
@@ -143,9 +149,24 @@ export async function createCampaignDonation(
   return mapGiftPoolDonation(response.donation);
 }
 
-export async function getGiftPoolMatches(campaignId: string, lineId: string): Promise<GiftPoolMatch[]> {
+export async function getGiftPoolMatches(
+  campaignId: string,
+  lineId: string,
+  options: { mode?: GiftPoolMatchMode; query?: string; limit?: number } = {}
+): Promise<GiftPoolMatch[]> {
+  const params = new URLSearchParams();
+  if (options.mode) {
+    params.set('mode', options.mode);
+  }
+  if (options.query?.trim()) {
+    params.set('q', options.query.trim());
+  }
+  if (options.limit) {
+    params.set('limit', String(options.limit));
+  }
+  const suffix = params.toString() ? `?${params.toString()}` : '';
   const response = await apiFetchJson<{ matches: GiftPoolMatchResponse[] }>(
-    `/api/v1/campaigns/${campaignId}/donation-lines/${lineId}/matches`
+    `/api/v1/campaigns/${campaignId}/donation-lines/${lineId}/matches${suffix}`
   );
   return response.matches.map((match) => ({
     wishlistItem: mapGiftSearchItem(match.wishlist_item),
@@ -176,6 +197,32 @@ export async function assignGiftPoolLine(
     line: mapGiftPoolLine(response.line),
     gift: mapGiftSearchItem(response.gift),
     assignment: mapGiftPoolAssignment(response.fulfillment),
+  };
+}
+
+export async function unassignGiftPoolLine(
+  campaignId: string,
+  lineId: string,
+  fulfillmentId: string,
+  input: { notes?: string } = {}
+): Promise<{ line: GiftPoolLine; gift: GiftSearchItem; removedFulfillmentId: string; quantity: number }> {
+  const response = await apiFetchJson<{
+    line: GiftPoolLineResponse;
+    gift: GiftSearchItemResponse;
+    removed_fulfillment_id: string;
+    quantity: number;
+  }>(`/api/v1/campaigns/${campaignId}/donation-lines/${lineId}/assignments/${fulfillmentId}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      notes: input.notes?.trim() || null,
+    }),
+  });
+  return {
+    line: mapGiftPoolLine(response.line),
+    gift: mapGiftSearchItem(response.gift),
+    removedFulfillmentId: response.removed_fulfillment_id,
+    quantity: response.quantity,
   };
 }
 
@@ -262,7 +309,9 @@ function mapGiftPoolAssignment(assignment: GiftPoolAssignmentResponse): GiftPool
     quantityFulfilled: assignment.quantity_fulfilled,
     fulfilledAt: assignment.fulfilled_at,
     fulfilledByUserId: assignment.fulfilled_by_user_id,
+    fulfilledByDisplayName: assignment.fulfilled_by_display_name,
     notes: assignment.notes,
+    wishlistItem: assignment.wishlist_item ? mapGiftSearchItem(assignment.wishlist_item) : null,
   };
 }
 
@@ -293,6 +342,9 @@ function mapGiftSearchItem(item: GiftSearchItemResponse): GiftSearchItem {
           age: item.recipient.age,
           ageUnit: item.recipient.age_unit,
           gender: item.recipient.gender,
+          groupId: item.recipient.group_id,
+          groupProgramId: item.recipient.group_program_id,
+          groupLabel: item.recipient.group_label,
         }
       : null,
     labelCode: item.label_code,

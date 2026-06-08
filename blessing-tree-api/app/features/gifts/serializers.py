@@ -180,15 +180,21 @@ def serialize_gift_pool_line(line: DonationLine) -> dict[str, Any]:
 
 
 def serialize_fulfillment(fulfillment: Fulfillment) -> dict[str, Any]:
-    return {
+    payload = {
         "id": str(fulfillment.id),
         "wishlist_item_id": str(fulfillment.wishlist_item_id),
         "donation_line_id": str(fulfillment.donation_line_id),
         "quantity_fulfilled": fulfillment.quantity_fulfilled,
         "fulfilled_at": _serialize_datetime(fulfillment.fulfilled_at),
         "fulfilled_by_user_id": str(fulfillment.fulfilled_by_user_id) if fulfillment.fulfilled_by_user_id else None,
+        "fulfilled_by_display_name": fulfillment.fulfilled_by_user.display_name
+        if getattr(fulfillment, "fulfilled_by_user", None) is not None
+        else None,
         "notes": fulfillment.notes,
     }
+    if fulfillment.wishlist_item is not None:
+        payload["wishlist_item"] = serialize_gift_search_item(fulfillment.wishlist_item, public=False)
+    return payload
 
 
 def serialize_gift_pool_matches(matches: list[dict[str, Any]]) -> dict[str, Any]:

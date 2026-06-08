@@ -767,12 +767,115 @@ def test_gift_pool_intake_matches_and_assignment(app, monkeypatch) -> None:
     assert assign_payload["line"]["inventory_status"] == "ASSIGNED"
     assert assign_payload["line"]["quantity_available"] == 0
     assert assign_payload["gift"]["status"] == "RECEIVED"
+    fulfillment_id = assign_payload["fulfillment"]["id"]
 
     session.expire_all()
     line = session.query(DonationLine).filter(DonationLine.id == uuid.UUID(line_id)).one()
     assert line.quantity_assigned == 1
     assert session.query(Fulfillment).filter(Fulfillment.donation_line_id == line.id).count() == 1
     assert session.query(ItemEvent).filter(ItemEvent.wishlist_item_id == gifts["coat_id"], ItemEvent.event_type == "RECEIVED").count() == 1
+
+    unassign_response = client.delete(
+        f"/api/v1/campaigns/{campaign.id}/donation-lines/{line_id}/assignments/{fulfillment_id}",
+        json={"notes": "Wrong recipient."},
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+    assert unassign_response.status_code == 200
+    unassign_payload = unassign_response.get_json()
+    assert unassign_payload["removed_fulfillment_id"] == fulfillment_id
+    assert unassign_payload["quantity"] == 1
+    assert unassign_payload["line"]["inventory_status"] == "AVAILABLE"
+    assert unassign_payload["line"]["quantity_available"] == 1
+    assert unassign_payload["gift"]["status"] == "OPEN"
+
+    session.expire_all()
+    line = session.query(DonationLine).filter(DonationLine.id == uuid.UUID(line_id)).one()
+    gift = session.query(WishlistItem).filter(WishlistItem.id == gifts["coat_id"]).one()
+    assert line.quantity_assigned == 0
+    assert gift.qty_fulfilled == 0
+    assert session.query(Fulfillment).filter(Fulfillment.donation_line_id == line.id).count() == 0
+    assert (
+        session.query(ItemEvent)
+        .filter(ItemEvent.wishlist_item_id == gifts["coat_id"], ItemEvent.event_type == "STATUS_CHANGED")
+        .count()
+        == 1
+    )
+    assert (
+        session.query(AuditEvent)
+        .filter(AuditEvent.campaign_id == campaign.id, AuditEvent.entity_type == "fulfillment", AuditEvent.action == "deleted")
+        .count()
+        == 1
+    )
+    assert (
+        session.query(AuditEvent)
+        .filter(AuditEvent.campaign_id == campaign.id, AuditEvent.entity_type == "donation_line", AuditEvent.action == "status_changed")
+        .count()
+        >= 1
+    )
+    assert (
+        session.query(AuditEvent)
+        .filter(AuditEvent.campaign_id == campaign.id, AuditEvent.entity_type == "wishlist_item", AuditEvent.action == "status_changed")
+        .count()
+        >= 2
+    )
+
+
+def test_gift_pool_assignment_candidates_support_search_and_needs_gifts(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Gift Pool Manager")
+    campaign = seed_campaign(session, name="Gift Pool Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    gifts = _seed_gifts(session, campaign.id)
+    no_coverage_item_id = _seed_uncovered_recipient_gift(session, campaign.id)
+    session.commit()
+
+    client = app.test_client()
+    create_response = client.post(
+        f"/api/v1/campaigns/{campaign.id}/donations",
+        json={
+            "source": "DROP_OFF",
+            "lines": [
+                {
+                    "description": "Remote control race car",
+                    "category": "Toy",
+                    "quantity": 1,
+                }
+            ],
+        },
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+    assert create_response.status_code == 201
+    line_id = create_response.get_json()["donation"]["lines"][0]["id"]
+
+    search_response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/donation-lines/{line_id}/matches",
+        query_string={"mode": "search", "q": "BT-900 remote"},
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+    assert search_response.status_code == 200
+    search_matches = search_response.get_json()["matches"]
+    assert [row["wishlist_item"]["wishlist_item_id"] for row in search_matches] == [str(no_coverage_item_id)]
+    assert search_matches[0]["wishlist_item"]["recipient"]["group_program_id"] == "BT-900"
+
+    blank_search_response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/donation-lines/{line_id}/matches",
+        query_string={"mode": "search"},
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+    assert blank_search_response.status_code == 200
+    assert blank_search_response.get_json()["matches"] == []
+
+    needs_response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/donation-lines/{line_id}/matches",
+        query_string={"mode": "needs_gifts"},
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+    assert needs_response.status_code == 200
+    needs_ids = {row["wishlist_item"]["wishlist_item_id"] for row in needs_response.get_json()["matches"]}
+    assert str(no_coverage_item_id) in needs_ids
+    assert str(gifts["coat_id"]) not in needs_ids
+    assert str(gifts["art_kit_id"]) not in needs_ids
 
 
 def test_gift_label_print_job_creates_label_rows_and_opaque_scan_path(app, monkeypatch) -> None:
@@ -1267,6 +1370,55 @@ def _seed_gifts(session, campaign_id, *, age=8, gender="F"):
         "art_kit_id": art_kit.id,
         "sponsored_id": sponsored.id,
     }
+
+
+def _seed_uncovered_recipient_gift(session, campaign_id):
+    group = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign_id,
+        group_type=RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+        group_name="Taylor Family",
+        program_group_id="BT-900",
+        status=RECIPIENT_GROUP_STATUS_ACTIVE,
+    )
+    recipient = Recipient(
+        id=uuid.uuid4(),
+        campaign_id=campaign_id,
+        recipient_group_id=group.id,
+        recipient_kind=RECIPIENT_KIND_CHILD,
+        program_type=RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+        first_name="Miles",
+        last_name="Taylor",
+        display_label="Miles Taylor",
+        program_recipient_id="BT-900-1",
+        age=7,
+        age_unit="YEARS",
+        gender="M",
+        status=RECIPIENT_STATUS_ACTIVE,
+    )
+    wishlist = Wishlist(
+        id=uuid.uuid4(),
+        campaign_id=campaign_id,
+        recipient_id=recipient.id,
+        wishlist_status=WISHLIST_STATUS_READY,
+    )
+    item = WishlistItem(
+        id=uuid.uuid4(),
+        wishlist_id=wishlist.id,
+        category="Toy",
+        item_type=WISHLIST_ITEM_TYPE_GIFT,
+        description="Remote control race car",
+        qty_requested=1,
+        priority="MEDIUM",
+        allow_substitute=True,
+        status="OPEN",
+        qty_fulfilled=0,
+        label_code="gift-pool-uncovered-remote-car",
+        label_version=1,
+    )
+    session.add_all([group, recipient, wishlist, item])
+    session.flush()
+    return item.id
 
 
 def _seed_public_registration_milestones(session, campaign_id):

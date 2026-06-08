@@ -40,6 +40,7 @@ from app.features.gifts.serializers import (
     serialize_scan_lookup,
 )
 from app.models.donation_line import DonationLine
+from app.models.fulfillment import Fulfillment
 from app.models.recipient import Recipient
 from app.models.recipient_group import RecipientGroup
 from app.models.wishlist import Wishlist
@@ -514,6 +515,8 @@ class CampaignDonationLineMatchesResource(Resource):
                 campaign_id=uuid.UUID(campaign_id),
                 line_id=uuid.UUID(line_id),
                 limit=_limit_arg(),
+                mode=request.args.get("mode") or "suggested",
+                query=request.args.get("q") or request.args.get("search"),
             )
             response = serialize_gift_pool_matches(matches)
         return response
@@ -604,6 +607,104 @@ class CampaignDonationLineAssignResource(Resource):
             )
             db.commit()
         return response, 201
+
+
+@campaign_ns.route("/<string:campaign_id>/donation-lines/<string:line_id>/assignments/<string:fulfillment_id>")
+class CampaignDonationLineAssignmentResource(Resource):
+    @require_campaign_capability("campaign.gifts.pool.manage")
+    def delete(self, campaign_id: str, line_id: str, fulfillment_id: str):
+        payload = request.get_json(silent=True) or {}
+        with SessionLocal() as db:
+            before_line = _find_donation_line(db, campaign_id, line_id)
+            before_line_snapshot = _donation_line_snapshot(before_line) if before_line is not None else {}
+            fulfillment = _find_fulfillment(db, campaign_id, line_id, fulfillment_id)
+            if fulfillment is None:
+                return {"error": "Gift pool assignment not found"}, 404
+            wishlist_item_id = str(fulfillment.wishlist_item_id)
+            before_gift = _gift_snapshot(db, campaign_id, wishlist_item_id)
+            before_fulfillment = {
+                "quantity_fulfilled": fulfillment.quantity_fulfilled,
+                "wishlist_item_id": wishlist_item_id,
+                "donation_line_id": line_id,
+            }
+            result = _gift_pool_service.unassign_fulfillment(
+                db,
+                campaign_id=uuid.UUID(campaign_id),
+                line_id=uuid.UUID(line_id),
+                fulfillment_id=uuid.UUID(fulfillment_id),
+                actor_user_id=_actor_user_id(),
+                quantity=payload.get("quantity"),
+                notes=str(payload.get("notes") or "").strip() or None,
+            )
+            line = result["line"]
+            gift = result["gift"]
+            response = {
+                "line": serialize_gift_pool_line(line),
+                "gift": serialize_gift_search_item(gift, public=False),
+                "removed_fulfillment_id": fulfillment_id,
+                "quantity": result["quantity"],
+            }
+            _audit_event_service.record_event(
+                db,
+                area="gifts",
+                action="deleted",
+                entity_type="fulfillment",
+                entity_id=uuid.UUID(fulfillment_id),
+                entity_label=gift.description,
+                campaign_id=campaign_id,
+                actor_user_id=_actor_user_id(),
+                summary=f"Removed {result['quantity']} gift pool item assignment(s) from {gift.description}.",
+                changes=build_changes(
+                    before=before_fulfillment,
+                    after={},
+                    field_map={"quantity_fulfilled": "Quantity Fulfilled"},
+                ),
+                metadata={
+                    "donation_line_id": line_id,
+                    "wishlist_item_id": wishlist_item_id,
+                    "quantity": result["quantity"],
+                },
+            )
+            _audit_event_service.record_event(
+                db,
+                area="gifts",
+                action="status_changed",
+                entity_type="donation_line",
+                entity_id=line.id,
+                entity_label=line.description,
+                campaign_id=campaign_id,
+                actor_user_id=_actor_user_id(),
+                summary=f"Updated gift pool quantity for {line.description}.",
+                changes=build_changes(
+                    before=before_line_snapshot,
+                    after=_donation_line_snapshot(line),
+                    field_map=DONATION_LINE_FIELD_MAP,
+                ),
+                metadata={"removed_fulfillment_id": fulfillment_id},
+            )
+            _audit_event_service.record_event(
+                db,
+                area="gifts",
+                action="status_changed",
+                entity_type="wishlist_item",
+                entity_id=gift.id,
+                entity_label=gift.description,
+                campaign_id=campaign_id,
+                actor_user_id=_actor_user_id(),
+                summary=f"Gift pool unassignment updated {gift.description}.",
+                changes=build_changes(
+                    before=before_gift,
+                    after={
+                        "status": gift.status,
+                        "qty_fulfilled": gift.qty_fulfilled,
+                        "storage_location_id": str(gift.storage_location_id) if gift.storage_location_id else None,
+                    },
+                    field_map=GIFT_STATUS_FIELD_MAP,
+                ),
+                metadata={"removed_fulfillment_id": fulfillment_id, "donation_line_id": line_id},
+            )
+            db.commit()
+        return response
 
 
 @campaign_ns.route("/<string:campaign_id>/gifts/<string:wishlist_item_id>/commit")
@@ -982,6 +1083,19 @@ def _find_donation_line(db, campaign_id: str, line_id: str) -> DonationLine | No
     return (
         db.query(DonationLine)
         .filter(DonationLine.campaign_id == uuid.UUID(campaign_id), DonationLine.id == uuid.UUID(line_id))
+        .one_or_none()
+    )
+
+
+def _find_fulfillment(db, campaign_id: str, line_id: str, fulfillment_id: str) -> Fulfillment | None:
+    return (
+        db.query(Fulfillment)
+        .join(DonationLine, DonationLine.id == Fulfillment.donation_line_id)
+        .filter(
+            DonationLine.campaign_id == uuid.UUID(campaign_id),
+            DonationLine.id == uuid.UUID(line_id),
+            Fulfillment.id == uuid.UUID(fulfillment_id),
+        )
         .one_or_none()
     )
 
