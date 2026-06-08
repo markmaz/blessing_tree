@@ -5,7 +5,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -16,6 +16,7 @@ from app.models.donation_line import DonationLine
 from app.models.fulfillment import Fulfillment
 from app.models.item_event import ItemEvent
 from app.models.recipient import Recipient
+from app.models.recipient_group import RecipientGroup
 from app.models.wishlist import Wishlist
 from app.models.wishlist_item import WishlistItem
 
@@ -151,21 +152,37 @@ class GiftPoolService:
         campaign_id: uuid.UUID,
         line_id: uuid.UUID,
         limit: int = 25,
+        mode: str = "suggested",
+        query: str | None = None,
     ) -> list[dict[str, Any]]:
         line = self._load_line(db, campaign_id, line_id)
         self._normalize_line_quantities(line)
         if line.inventory_status == "ARCHIVED" or line.quantity_available <= 0:
             return []
+        mode = _match_mode(mode)
         items = (
             db.query(WishlistItem)
             .options(
-                joinedload(WishlistItem.wishlist).joinedload(Wishlist.recipient),
+                joinedload(WishlistItem.wishlist).joinedload(Wishlist.recipient).joinedload(Recipient.recipient_group),
                 joinedload(WishlistItem.fulfillment_rows),
+                joinedload(WishlistItem.sponsorship_item),
             )
             .join(Wishlist, Wishlist.id == WishlistItem.wishlist_id)
-            .filter(Wishlist.campaign_id == campaign_id, WishlistItem.status == "OPEN")
+            .join(Recipient, Recipient.id == Wishlist.recipient_id)
+            .join(RecipientGroup, RecipientGroup.id == Recipient.recipient_group_id)
+            .filter(
+                Wishlist.campaign_id == campaign_id,
+                WishlistItem.status == "OPEN",
+                ~WishlistItem.sponsorship_item.has(),
+            )
             .all()
         )
+        if mode == "needs_gifts":
+            covered_recipient_ids = self._covered_recipient_ids(db, campaign_id)
+            items = [item for item in items if item.wishlist.recipient_id not in covered_recipient_ids]
+        search_terms = _keywords(query)
+        if mode == "search" and not search_terms:
+            return []
         matches = [
             {
                 "wishlist_item": item,
@@ -173,10 +190,13 @@ class GiftPoolService:
                 "reasons": reasons,
             }
             for item in items
-            for score, reasons in [self._score_match(line, item)]
-            if score > 0 and _remaining_quantity(item) > 0
+            for score, reasons in [self._candidate_score(line, item, mode, search_terms)]
+            if (score > 0 or (mode != "suggested" and not search_terms)) and _remaining_quantity(item) > 0
         ]
-        matches.sort(key=lambda row: (-int(row["score"]), row["wishlist_item"].priority, row["wishlist_item"].description))
+        if mode == "needs_gifts":
+            matches.sort(key=lambda row: _recipient_need_sort_key(row["wishlist_item"]))
+        else:
+            matches.sort(key=lambda row: (-int(row["score"]), row["wishlist_item"].priority, row["wishlist_item"].description))
         return matches[:limit]
 
     def assign_line(
@@ -246,6 +266,100 @@ class GiftPoolService:
         db.commit()
         db.refresh(fulfillment)
         return fulfillment
+
+    def unassign_fulfillment(
+        self,
+        db: Session,
+        *,
+        campaign_id: uuid.UUID,
+        line_id: uuid.UUID,
+        fulfillment_id: uuid.UUID,
+        actor_user_id: uuid.UUID | None,
+        quantity: object | None = None,
+        notes: str | None = None,
+    ) -> dict[str, Any]:
+        fulfillment = (
+            db.query(Fulfillment)
+            .options(
+                joinedload(Fulfillment.donation_line).joinedload(DonationLine.fulfillments),
+                joinedload(Fulfillment.wishlist_item).joinedload(WishlistItem.wishlist),
+                joinedload(Fulfillment.wishlist_item).joinedload(WishlistItem.fulfillment_rows),
+            )
+            .join(DonationLine, DonationLine.id == Fulfillment.donation_line_id)
+            .join(WishlistItem, WishlistItem.id == Fulfillment.wishlist_item_id)
+            .join(Wishlist, Wishlist.id == WishlistItem.wishlist_id)
+            .filter(
+                DonationLine.campaign_id == campaign_id,
+                DonationLine.id == line_id,
+                Fulfillment.id == fulfillment_id,
+                Wishlist.campaign_id == campaign_id,
+            )
+            .one_or_none()
+        )
+        if fulfillment is None:
+            raise ServiceError("Gift pool assignment not found", status_code=404)
+        item = fulfillment.wishlist_item
+        line = fulfillment.donation_line
+        if item.status not in {"OPEN", "RECEIVED"}:
+            raise ServiceError("Only open or received gift pool assignments can be removed", status_code=409)
+
+        removal_quantity = (
+            _positive_int(quantity, "quantity")
+            if quantity not in (None, "")
+            else int(fulfillment.quantity_fulfilled or 0)
+        )
+        if removal_quantity > int(fulfillment.quantity_fulfilled or 0):
+            raise ServiceError("quantity cannot exceed assigned quantity", status_code=409)
+
+        previous_item_status = item.status
+        previous_item_quantity = item.qty_fulfilled or 0
+        if removal_quantity == fulfillment.quantity_fulfilled:
+            if fulfillment in line.fulfillments:
+                line.fulfillments.remove(fulfillment)
+            db.delete(fulfillment)
+        else:
+            fulfillment.quantity_fulfilled -= removal_quantity
+            fulfillment.notes = notes or fulfillment.notes
+
+        item.qty_fulfilled = max((item.qty_fulfilled or 0) - removal_quantity, 0)
+        if item.qty_fulfilled < (item.qty_requested or 1):
+            item.status = "OPEN"
+            item.received_at = None
+            item.received_by_user_id = None
+
+        self._record_event(
+            db,
+            item,
+            actor_user_id,
+            event_type="STATUS_CHANGED",
+            detail={
+                "source": "gift_pool_unassignment",
+                "donation_line_id": str(line.id),
+                "fulfillment_id": str(fulfillment_id),
+                "quantity": removal_quantity,
+                "from_status": previous_item_status,
+                "to_status": item.status,
+                "from_qty_fulfilled": previous_item_quantity,
+                "to_qty_fulfilled": item.qty_fulfilled,
+                **({"notes": notes} if notes else {}),
+            },
+        )
+        try:
+            db.flush()
+        except IntegrityError as exc:
+            raise ServiceError("Gift pool unassignment conflict", status_code=409) from exc
+        self._normalize_line_quantities(line)
+        db.commit()
+        db.refresh(line)
+        db.refresh(item)
+        return {
+            "line": line,
+            "gift": item,
+            "fulfillment_id": fulfillment_id,
+            "quantity": removal_quantity,
+            "previous_item_status": previous_item_status,
+            "previous_item_quantity": previous_item_quantity,
+        }
 
     def _base_line_query(self, db: Session, campaign_id: uuid.UUID):
         return (
@@ -397,19 +511,67 @@ class GiftPoolService:
             reasons.append("high priority")
         return score, reasons
 
+    def _candidate_score(
+        self,
+        line: DonationLine,
+        item: WishlistItem,
+        mode: str,
+        search_terms: set[str],
+    ) -> tuple[int, list[str]]:
+        score, reasons = self._score_match(line, item)
+        if search_terms:
+            haystack = _candidate_haystack(item)
+            if not search_terms.intersection(haystack):
+                return 0, []
+            score += 100
+            reasons = ["search", *reasons]
+        if mode == "needs_gifts":
+            reasons = ["no gift coverage", *reasons]
+        elif mode == "search" and not search_terms:
+            score += 1
+        return score, reasons
+
+    def _covered_recipient_ids(self, db: Session, campaign_id: uuid.UUID) -> set[uuid.UUID]:
+        rows = (
+            db.query(Wishlist.recipient_id)
+            .join(WishlistItem, WishlistItem.wishlist_id == Wishlist.id)
+            .filter(
+                Wishlist.campaign_id == campaign_id,
+                or_(
+                    WishlistItem.qty_fulfilled > 0,
+                    WishlistItem.status.in_(
+                        (
+                            "COMMITTED",
+                            "RECEIVED",
+                            "WRAPPED",
+                            "TAGGED",
+                            "READY_FOR_DISTRIBUTION",
+                            "DISTRIBUTED",
+                            "PICKED_UP",
+                        )
+                    ),
+                    WishlistItem.sponsorship_item.has(),
+                ),
+            )
+            .distinct()
+            .all()
+        )
+        return {row[0] for row in rows}
+
     def _record_event(
         self,
         db: Session,
         item: WishlistItem,
         actor_user_id: uuid.UUID | None,
         *,
+        event_type: str = "RECEIVED",
         detail: dict[str, Any],
     ) -> None:
         db.add(
             ItemEvent(
                 id=uuid.uuid4(),
                 wishlist_item_id=item.id,
-                event_type="RECEIVED",
+                event_type=event_type,
                 actor_user_id=actor_user_id,
                 detail_json=detail,
             )
@@ -461,6 +623,17 @@ def _enum_value(value: Any, allowed: set[str] | tuple[str, ...], field: str) -> 
     return normalized
 
 
+def _match_mode(value: object) -> str:
+    mode = str(value or "suggested").strip().lower()
+    if mode in {"suggested", "needs_gifts", "search"}:
+        return mode
+    raise ServiceError(
+        "mode is invalid",
+        status_code=400,
+        details={"field": "mode", "allowed": ["suggested", "needs_gifts", "search"]},
+    )
+
+
 def _remaining_quantity(item: WishlistItem) -> int:
     fulfilled = max(item.qty_fulfilled or 0, sum(row.quantity_fulfilled or 0 for row in list(item.fulfillment_rows or [])))
     return max((item.qty_requested or 1) - fulfilled, 0)
@@ -472,6 +645,39 @@ def _same_text(left: str | None, right: str | None) -> bool:
 
 def _keywords(value: str | None) -> set[str]:
     return {token for token in re.findall(r"[a-z0-9]+", (value or "").lower()) if len(token) > 2}
+
+
+def _candidate_haystack(item: WishlistItem) -> set[str]:
+    wishlist = item.wishlist
+    recipient = wishlist.recipient if wishlist is not None else None
+    group = recipient.recipient_group if recipient is not None else None
+    values = [
+        item.description,
+        item.category,
+        item.item_type,
+        item.size,
+        item.priority,
+        item.recipient_note,
+        item.notes,
+        recipient.display_label if recipient is not None else None,
+        recipient.program_recipient_id if recipient is not None else None,
+        recipient.first_name if recipient is not None else None,
+        recipient.last_name if recipient is not None else None,
+        group.group_name if group is not None else None,
+        group.program_group_id if group is not None else None,
+        group.program_abbreviation if group is not None else None,
+    ]
+    return set().union(*(_keywords(value) for value in values))
+
+
+def _recipient_need_sort_key(item: WishlistItem) -> tuple[str, str, str, str]:
+    wishlist = item.wishlist
+    recipient = wishlist.recipient if wishlist is not None else None
+    group = recipient.recipient_group if recipient is not None else None
+    group_id = group.program_group_id if group is not None and group.program_group_id else ""
+    recipient_id = recipient.program_recipient_id if recipient is not None and recipient.program_recipient_id else ""
+    priority_rank = {"HIGH": "0", "MEDIUM": "1", "LOW": "2"}.get(item.priority, "3")
+    return (group_id, recipient_id, priority_rank, item.description.lower())
 
 
 def _age_compatible(line: DonationLine, recipient: Recipient) -> bool:

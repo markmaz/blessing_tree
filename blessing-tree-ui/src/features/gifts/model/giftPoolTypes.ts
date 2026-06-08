@@ -15,7 +15,9 @@ export interface GiftPoolAssignment {
   quantityFulfilled: number;
   fulfilledAt: string | null;
   fulfilledByUserId: string | null;
+  fulfilledByDisplayName: string | null;
   notes: string | null;
+  wishlistItem?: GiftSearchItem | null;
 }
 
 export interface GiftPoolLine {
@@ -68,6 +70,8 @@ export interface GiftPoolMatch {
   score: number;
   reasons: string[];
 }
+
+export type GiftPoolMatchMode = 'suggested' | 'needs_gifts' | 'search';
 
 export interface GiftPoolLineInput {
   description: string;

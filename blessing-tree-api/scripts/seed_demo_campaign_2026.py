@@ -37,6 +37,8 @@ from app.models.models import (
     CampaignTeamRole,
     CampaignUserRole,
     CommunicationTemplate,
+    Donation,
+    DonationLine,
     GroupContact,
     OrganizationType,
     PendingSponsorRegistration,
@@ -755,6 +757,7 @@ def seed_demo(db: Session) -> dict[str, int]:
     orgs = seed_organizations(db, campaign)
     children, adult_recipients, wishlist_items = seed_recipients_and_wishlists(db, campaign, orgs, rng)
     family_id_summary = validate_demo_family_ids(db, campaign, orgs["blessing_tree"].id)
+    gift_pool_lines = seed_gift_pool_inventory(db, campaign, users["gift_ops"].id)
     sponsors, sponsorships = seed_sponsors(db, campaign, users["sponsor_intake"].id, rng)
     committed_count = seed_commitments(db, wishlist_items, sponsorships, rng)
     seed_sponsor_interactions(db, campaign, sponsors, sponsorships, users["sponsor_intake"].id, rng)
@@ -767,6 +770,7 @@ def seed_demo(db: Session) -> dict[str, int]:
         "children": len(children),
         "nursing_home_adults": len(adult_recipients),
         "wishlist_items": len(wishlist_items),
+        "gift_pool_lines": gift_pool_lines,
         "sponsors": len(sponsors),
         "committed_gifts": committed_count,
     }
@@ -1620,6 +1624,102 @@ def make_wishlist_item(
         label_code=f"{LABEL_CODE_PREFIX}-{item_counter:04d}",
         notes=rng.choice((None, "Seeded demo wishlist item.", "Good candidate for sponsor walkthrough.")),
     )
+
+
+def seed_gift_pool_inventory(db: Session, campaign: Campaign, received_by_user_id: uuid.UUID) -> int:
+    donations = [
+        (
+            "DROP_OFF",
+            "Community toy drive overflow",
+            datetime(2026, 12, 3, 10, 30),
+            [
+                ("Remote control race cars", "Toy", None, 8, 5, 12, "M", 2500, "RC cars and trucks for elementary kids."),
+                ("Lego and compatible brick sets", "Toy", None, 6, 6, 14, "ANY", 3000, "Mixed medium-size boxed building sets."),
+                ("Batman and superhero action figures", "Toy", None, 5, 4, 10, "ANY", 1800, "Popular character toys for quick matching."),
+                ("Nintendo Switch game cards", "Video Games", None, 3, 9, 18, "ANY", 4500, "Family-friendly game cards from donor drop-off."),
+                ("Art kits with sketch pads", "Art", None, 5, 6, 16, "ANY", 2200, "Markers, pencils, sketch pads, and craft supplies."),
+            ],
+        ),
+        (
+            "SHIPMENT",
+            "Corporate winter clothing shipment",
+            datetime(2026, 12, 4, 14, 0),
+            [
+                ("Winter coats", "Outerwear", "Youth medium", 7, 7, 11, "ANY", 4500, "Neutral colors; good for BT and FC children."),
+                ("Winter coats", "Outerwear", "Youth large", 5, 10, 14, "ANY", 4800, "Mostly black, navy, and purple coats."),
+                ("Hoodies", "Clothing", "Adult small", 9, 12, 18, "ANY", 2800, "Teen sizes from the clothing drive."),
+                ("Sneakers", "Shoes", "Youth 4", 4, 7, 10, "ANY", 3500, "New athletic shoes; assorted colors."),
+                ("Warm pajama sets", "Clothing", "Girls 8", 6, 7, 9, "F", 2400, "Soft winter pajama sets."),
+            ],
+        ),
+        (
+            "CHURCH_PURCHASE",
+            "Blessing Tree emergency needs closet",
+            datetime(2026, 12, 5, 9, 15),
+            [
+                ("Baby board books and rattles", "Baby", None, 8, 0, 2, "ANY", 1600, "Good substitute for infant wishlist toys."),
+                ("Toddler learning toys", "Toy", None, 7, 1, 4, "ANY", 2000, "Shape sorters, stacking toys, and music toys."),
+                ("Teen hygiene kits", "Essentials", None, 12, 12, 18, "ANY", 1800, "Shampoo, deodorant, body wash, socks."),
+                ("$25 Target gift cards", "Gift Card", "$25", 10, None, None, "ANY", 2500, "Flexible operational assignment for hard-to-match wishes."),
+                ("Sports balls", "Sports", None, 6, 7, 15, "ANY", 1700, "Basketballs, soccer balls, and footballs."),
+            ],
+        ),
+        (
+            "OTHER",
+            "Senior ministry donated items",
+            datetime(2026, 12, 6, 11, 45),
+            [
+                ("Large print puzzle books", "Activities", None, 12, 75, 100, "ANY", 1200, "Crosswords, word searches, and sudoku."),
+                ("Fleece lap blankets", "Comfort", None, 10, 75, 100, "ANY", 2200, "Soft neutral blankets for nursing home residents."),
+                ("Non-slip socks", "Essentials", "Adult", 16, 75, 100, "ANY", 900, "Grippy socks for nursing home residents."),
+                ("Unscented lotion gift sets", "Personal Care", None, 8, 75, 100, "ANY", 1500, "Sensitive-skin lotion and hand cream."),
+                ("Bird calendar and stationery sets", "Activities", None, 5, 75, 100, "ANY", 1400, "Calendars, note cards, and pens."),
+            ],
+        ),
+    ]
+
+    line_count = 0
+    for donation_index, (source, label, received_at, lines) in enumerate(donations, start=1):
+        donation = Donation(
+            id=demo_uuid(f"donation:{donation_index}"),
+            campaign_id=campaign.id,
+            source=source,
+            received_at=received_at,
+            received_by_user_id=received_by_user_id,
+            notes=label,
+        )
+        db.add(donation)
+        for line_index, (description, category, size, quantity, age_min, age_max, gender_fit, value_cents, notes) in enumerate(
+            lines,
+            start=1,
+        ):
+            db.add(
+                DonationLine(
+                    id=demo_uuid(f"donation-line:{donation_index}:{line_index}"),
+                    donation_id=donation.id,
+                    campaign_id=campaign.id,
+                    line_type="GOODS",
+                    description=description,
+                    category=category,
+                    size=size,
+                    quantity=quantity,
+                    quantity_available=quantity,
+                    quantity_assigned=0,
+                    estimated_value_cents=value_cents,
+                    age_min=age_min,
+                    age_max=age_max,
+                    gender_fit=gender_fit,
+                    gift_condition="NEW",
+                    source_label=label,
+                    status="UNASSIGNED",
+                    inventory_status="AVAILABLE",
+                    received_by_user_id=received_by_user_id,
+                    notes=notes,
+                )
+            )
+            line_count += 1
+    db.flush()
+    return line_count
 
 
 def seed_sponsors(

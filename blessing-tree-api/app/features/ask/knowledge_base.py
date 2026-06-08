@@ -321,6 +321,98 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
         required_capability="campaign.gifts.check_in",
     ),
     KnowledgeArticle(
+        key="guide_gift_pool",
+        title="Gift Pool",
+        section="User Guide > Gifts > Gift Pool",
+        content=(
+            "Gift Pool is for donated inventory that is not already promised to a specific person. Use this screen when "
+            "someone drops off extra gifts, a church group brings bulk toys, a donor gives several coats, staff buy "
+            "emergency gift cards, or a senior ministry donates blankets and puzzle books. The goal is to enter those "
+            "donated items once, then assign the available quantity to recipients who can use them. The top cards separate "
+            "two different kinds of numbers. Inventory Lines counts rows in the table, like one row for Winter coats and "
+            "one row for Lego sets. Total Items counts physical items across those rows. Available Items counts physical "
+            "items that can still be assigned. Assigned Items counts physical items already matched to recipients. Partially "
+            "Assigned Lines counts rows where some quantity has been assigned but some is still available. Archived Lines "
+            "counts rows staff removed from active use. To assign inventory, click an inventory row to open the assignment "
+            "drawer. First review Available, Category, Size, and Fit so staff know what item they are assigning. The "
+            "Assignments section shows where that inventory has already gone. In Find Recipient Gifts, choose one of three "
+            "tabs. Suggested Matches is the normal starting point; it shows recommendations for the selected inventory item "
+            "using category, words in the description, size, age range, gender fit, and wishlist priority. Needs Gifts is "
+            "for fairness checks; it shows recipients who do not have any gift covered yet, ordered by family ID and "
+            "recipient ID, even if the item is not the strongest match. Search is for a specific lookup; it intentionally "
+            "stays empty until staff type a recipient ID, family ID, name, gift, category, or size. After staff find the "
+            "right recipient gift, enter the quantity to assign, add notes if the match needs explanation, and choose "
+            "Assign. The assignment reduces Available Items on the inventory row, increases Assigned Items, and updates "
+            "the recipient wishlist item as received when the requested quantity is fully covered. If staff assign pool "
+            "inventory to the wrong recipient, open the same inventory row, find the recipient in Assignments, and choose "
+            "Remove. The Remove action asks for confirmation, returns the quantity to Available Items, and reopens the "
+            "recipient gift when that gift is no longer covered by assigned pool inventory."
+        ),
+        phrases=(
+            "gift pool",
+            "inventory pool",
+            "donated inventory",
+            "assign inventory",
+            "assign donated gift",
+            "assign pool item",
+            "pool inventory assignment",
+            "gift pool suggested",
+            "gift pool suggested matches",
+            "suggested matches tab",
+            "how does suggested matches work",
+            "gift pool needs gifts",
+            "needs gifts mode",
+            "needs gifts tab",
+            "how does needs gifts work",
+            "gift pool search",
+            "gift pool search tab",
+            "how does gift pool search work",
+            "inventory search",
+            "what do gift pool numbers mean",
+            "available items gift pool",
+            "inventory lines",
+            "total items gift pool",
+            "assigned items gift pool",
+            "bulk donated gifts",
+            "toy drive overflow",
+            "donated coats",
+            "how do i assign donated inventory",
+            "how do i use the gift pool tabs",
+            "when should i use suggested matches",
+            "when should i use needs gifts",
+            "when should i use search in gift pool",
+            "which gift pool tab should i use",
+            "explain gift pool tabs",
+            "gift pool directions",
+            "gift pool instructions",
+            "gift pool numbers are confusing",
+            "remove pool assignment",
+            "undo pool assignment",
+            "wrong pool assignment",
+            "unassign donated gift",
+        ),
+        steps=(
+            "Open Gifts, then Gift Pool.",
+            "If the item is new to the pool, choose Add Inventory and enter the description, quantity, category, size, age fit, gender fit, condition, source label, and notes.",
+            "Use the top cards carefully: Inventory Lines is row count; Total Items, Available Items, and Assigned Items are physical item counts.",
+            "Find the inventory row by scanning the table, using Search Inventory, or filtering by status.",
+            "Click the inventory row to open the assignment drawer.",
+            "Review the inventory details so staff know the available quantity and who the item is likely to fit.",
+            "Check the Assignments section to see whether some of this inventory has already been assigned.",
+            "Use Suggested Matches first when staff want the system's best recommendations for this item.",
+            "Use Needs Gifts when staff want to find people who still have no gift covered.",
+            "Use Search when staff already know the recipient ID, family ID, name, gift, category, or size.",
+            "Review the recipient, family ID, gift description, size, category, and needed quantity before assigning.",
+            "Enter the quantity to assign. Do not assign more than the recipient still needs or more than the inventory has available.",
+            "Add notes when the donated item is a substitute or when staff need to explain the decision.",
+            "Choose Assign. The inventory available quantity decreases and the recipient gift is updated.",
+            "To undo a mistake, reopen the inventory row, find the recipient in Assignments, choose Remove, and confirm.",
+            "After removing, the inventory available quantity increases again and the recipient gift returns to open if nothing else covers it.",
+        ),
+        route_name="campaign_gifts_pool",
+        required_capability="campaign.gifts.pool.manage",
+    ),
+    KnowledgeArticle(
         key="guide_gift_status",
         title="Gift Status",
         section="User Guide > Gifts > Gift Status",

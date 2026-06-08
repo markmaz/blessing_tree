@@ -439,6 +439,22 @@ Matching inputs:
 - open status
 - program/group constraints
 
+Gift Pool assignment modes:
+
+- Suggested Matches: fit-ranked recommendations for the selected donated
+  inventory line. This mode uses category, description keyword overlap, size,
+  age range, gender fit, and wishlist priority.
+- Needs Gifts: recipients with no current gift coverage. This mode is ordered
+  by family/group ID and recipient ID so operators can work through uncovered
+  recipients in a predictable order rather than by fit score.
+- Search: explicit lookup only. This mode should stay empty until staff search
+  by recipient ID, family ID, recipient name, gift description, category, or
+  size.
+- Remove assignment: reversal action for an existing pool fulfillment row. The
+  action is confirmation-gated, restores inventory availability, and reopens
+  the wishlist item when the removed pool quantity means the item is no longer
+  fully covered.
+
 Suggested match scoring:
 
 - exact category match: +30
@@ -777,8 +793,11 @@ Main screen:
 
 - donation/inventory intake drawer
 - inventory table
-- match suggestions drawer
+- assignment drawer with current assignments
+- Suggested Matches, Needs Gifts, and Search candidate modes
 - assignment confirmation
+- remove assignment confirmation
+- summary cards that distinguish line counts from physical item quantities
 
 ### Scan Screen
 

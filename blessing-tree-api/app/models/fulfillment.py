@@ -11,6 +11,7 @@ from .base import Base
 from .uuid_bin import UUIDBin
 
 if TYPE_CHECKING:
+    from .app_user import AppUser
     from .donation_line import DonationLine
     from .wishlist_item import WishlistItem
 
@@ -47,6 +48,7 @@ class Fulfillment(Base):
 
     wishlist_item: Mapped["WishlistItem"] = relationship(back_populates="fulfillment_rows")
     donation_line: Mapped["DonationLine"] = relationship(back_populates="fulfillments")
+    fulfilled_by_user: Mapped[Optional["AppUser"]] = relationship()
 
     __table_args__ = (
         UniqueConstraint("wishlist_item_id", "donation_line_id", name="uq_fulfillment_pair"),
