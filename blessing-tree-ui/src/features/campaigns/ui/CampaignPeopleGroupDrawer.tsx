@@ -646,6 +646,7 @@ export function CampaignPeopleGroupDrawer({
                       <span className="fw-semibold">{candidate.groupName}</span>
                       <span className="small text-muted">
                         {[
+                          candidate.programGroupId,
                           candidate.programAbbreviation,
                           candidate.addressLine1,
                           candidate.city,
@@ -1138,6 +1139,12 @@ export function CampaignPeopleGroupDrawer({
                   <i className={`bi ${isOrganizationGroup ? 'bi-diagram-3' : 'bi-house-door'} me-1`} aria-hidden="true" />
                   {isOrganizationGroup ? groupDraft.groupName || 'Unnamed organization' : derivedFamilyName || 'Unnamed family'}
                 </span>
+                {group?.programGroupId ? (
+                  <span className="campaign-chip campaign-chip-muted">
+                    <i className="bi bi-hash me-1" aria-hidden="true" />
+                    {group.programGroupId}
+                  </span>
+                ) : null}
                 <span className="campaign-chip campaign-chip-muted">
                   <i className="bi bi-geo-alt me-1" aria-hidden="true" />
                   {[groupDraft.city, groupDraft.state].filter(Boolean).join(', ') || 'No location'}
@@ -1208,7 +1215,7 @@ export function CampaignPeopleGroupDrawer({
                 linkedFamilyGroups.map((family) => (
                   <div key={family.id} className="campaign-team-inline-item campaign-team-inline-item--stacked">
                     <div className="campaign-team-inline-item__content">
-                      <strong>{family.groupName}</strong>
+                      <strong>{[family.programGroupId, family.groupName].filter(Boolean).join(' ')}</strong>
                       <div className="campaign-team-inline-meta">
                         <span className="campaign-chip campaign-chip-muted">
                           <i className="bi bi-people me-1" aria-hidden="true" />

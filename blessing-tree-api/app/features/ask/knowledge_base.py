@@ -128,9 +128,11 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
             "People Directory is the maintenance screen for existing families, organizations, recipients, contacts, and "
             "wishlists. Search for a record and click the row to open the drawer. The drawer can add another child or "
             "adult to an existing household and can add a family under an organization. Directory rows include sortable "
-            "recipient IDs, program abbreviation filters, gift descriptions, gift size/detail context, and committed "
-            "sponsor names so staff can print the directory as a working list. Export buttons sit in the upper right "
-            "of directory containers, while expand-all and collapse-all controls sit on the left."
+            "family group IDs and recipient IDs, program abbreviation filters, gift descriptions, gift size/detail "
+            "context, and committed sponsor names so staff can print the directory as a working list. Family IDs such "
+            "as BT-001 identify the whole family; suffixed IDs such as BT-001-01 identify one recipient in that family. "
+            "Export buttons sit in the upper right of directory containers, while expand-all and collapse-all controls "
+            "sit on the left."
         ),
         phrases=(
             "people directory",
@@ -143,13 +145,17 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
             "organization directory gifts",
             "print people directory",
             "recipient id sorting",
+            "family id",
+            "group id",
+            "bt-001",
+            "bt-001-01",
             "expand all organizations",
         ),
         steps=(
             "Open People, then Directory.",
             "Search for the household, family, organization, child, or adult.",
             "Use program abbreviation chips to narrow the directory when needed.",
-            "Sort by recipient ID when staff need records in operational order.",
+            "Sort by group ID or recipient ID when staff need records in operational order.",
             "Expand or collapse groups to control which member and gift rows are visible.",
             "Click anywhere on the row to open the drawer.",
             "Use Quick Actions or the related section to add another child, adult, or family.",
@@ -208,8 +214,9 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
             "structured filters for exact details and optional Qdrant semantic retrieval for broader wording and synonyms, "
             "such as toys for boys under 8, Batman stuff, or video games when a wishlist says Mario Kart. Search chips show "
             "which filters were understood and can be cleared. Results are paginated and can be exported to PDF or Excel "
-            "from the upper right of the results container. Click a recipient to open recipient details, and click a "
-            "sponsor name on a committed gift to open the sponsor drawer."
+            "from the upper right of the results container. Results and exports use natural recipient ID order for IDs "
+            "such as BT-001-01, BT-001-02, and BT-001-10. Click a recipient to open recipient details, and click a sponsor "
+            "name on a committed gift to open the sponsor drawer."
         ),
         phrases=(
             "gift search",
@@ -226,6 +233,7 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
             "export gift search",
             "recipient details from gift search",
             "sponsor drawer from gift search",
+            "gift search recipient id order",
             "reserve gifts",
             "commit gifts",
         ),
@@ -284,11 +292,25 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
         content=(
             "The gift workflow manages searching, reserving, receiving, wrapping, tagging, pickup, distribution, and gift "
             "pool donations. Staff receive gifts when sponsors bring them in, move them through wrapping and ready states, "
-            "and use QR scanning during pickup or distribution."
+            "and use QR scanning during pickup or distribution. In mobile receive, entering a family ID such as BT-001 "
+            "shows all recipients and wishlist items in that family; entering a suffixed recipient ID such as BT-001-01 "
+            "shows only that recipient's wishlist items."
         ),
-        phrases=("receive gifts", "wrap gifts", "gift workflow", "picked up", "distributed", "qr scan", "gift operations"),
+        phrases=(
+            "receive gifts",
+            "wrap gifts",
+            "gift workflow",
+            "picked up",
+            "distributed",
+            "qr scan",
+            "gift operations",
+            "mobile receive family id",
+            "receive by family id",
+            "receive bt-001",
+        ),
         steps=(
             "Find or open the gift in Gift Operations or Gift Status.",
+            "On mobile receive, enter a family ID to show all family recipients or a recipient ID to show one recipient.",
             "Mark the gift received when it arrives.",
             "Wrap the gift and print the gift tag.",
             "Mark the gift ready.",

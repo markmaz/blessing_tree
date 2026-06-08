@@ -139,6 +139,7 @@ interface RecipientResponse {
     group_name: string;
     group_type: CampaignPeopleGroup['groupType'];
     organization_type: CampaignPeopleGroup['organizationType'];
+    program_group_id?: string | null;
     status: CampaignPeopleGroup['status'];
   } | null;
   wishlist: WishlistResponse | null;
@@ -162,6 +163,8 @@ interface GroupResponse {
   group_name: string;
   organization_type: CampaignPeopleGroup['organizationType'];
   program_abbreviation: string | null;
+  program_group_number: number | null;
+  program_group_id: string | null;
   intake_source: string | null;
   external_reference: string | null;
   notes: string | null;
@@ -523,6 +526,8 @@ function mapGroup(response: GroupResponse): CampaignPeopleGroup {
     groupName: response.group_name,
     organizationType: response.organization_type,
     programAbbreviation: response.program_abbreviation,
+    programGroupNumber: response.program_group_number,
+    programGroupId: response.program_group_id,
     intakeSource: response.intake_source,
     externalReference: response.external_reference,
     notes: response.notes,
@@ -578,6 +583,7 @@ function mapRecipient(response: RecipientResponse): CampaignRecipient {
           groupName: response.group.group_name,
           groupType: response.group.group_type,
           organizationType: response.group.organization_type,
+          programGroupId: response.group.program_group_id ?? null,
           status: response.group.status,
         }
       : null,

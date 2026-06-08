@@ -214,6 +214,7 @@ def serialize_recipient(recipient: Recipient, gift_policy: Any | None = None) ->
                 "group_name": recipient.recipient_group.group_name,
                 "group_type": recipient.recipient_group.group_type,
                 "organization_type": recipient.recipient_group.organization_type,
+                "program_group_id": recipient.recipient_group.program_group_id,
                 "status": recipient.recipient_group.status,
             }
             if recipient.recipient_group is not None
@@ -259,6 +260,8 @@ def serialize_recipient_group(group: RecipientGroup, gift_policy: Any | None = N
         "group_name": group.group_name,
         "organization_type": group.organization_type,
         "program_abbreviation": group.program_abbreviation,
+        "program_group_number": group.program_group_number,
+        "program_group_id": group.program_group_id,
         "intake_source": group.intake_source,
         "external_reference": group.external_reference,
         "notes": group.notes,

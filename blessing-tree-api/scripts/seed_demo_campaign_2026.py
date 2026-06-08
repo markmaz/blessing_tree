@@ -754,6 +754,7 @@ def seed_demo(db: Session) -> dict[str, int]:
     seed_campaign_setup(db, campaign, users["manager"].id)
     orgs = seed_organizations(db, campaign)
     children, adult_recipients, wishlist_items = seed_recipients_and_wishlists(db, campaign, orgs, rng)
+    family_id_summary = validate_demo_family_ids(db, campaign, orgs["blessing_tree"].id)
     sponsors, sponsorships = seed_sponsors(db, campaign, users["sponsor_intake"].id, rng)
     committed_count = seed_commitments(db, wishlist_items, sponsorships, rng)
     seed_sponsor_interactions(db, campaign, sponsors, sponsorships, users["sponsor_intake"].id, rng)
@@ -761,7 +762,7 @@ def seed_demo(db: Session) -> dict[str, int]:
         "campaigns": 1,
         "demo_users": len(users),
         "organizations": len(orgs),
-        "families": 100,
+        "families": family_id_summary["families"],
         "foster_children": int(getattr(campaign, "_demo_foster_child_count", 0)),
         "children": len(children),
         "nursing_home_adults": len(adult_recipients),
@@ -769,6 +770,58 @@ def seed_demo(db: Session) -> dict[str, int]:
         "sponsors": len(sponsors),
         "committed_gifts": committed_count,
     }
+
+
+def validate_demo_family_ids(db: Session, campaign: Campaign, blessing_tree_group_id: uuid.UUID) -> dict[str, int]:
+    family_groups = (
+        db.query(RecipientGroup)
+        .filter(
+            RecipientGroup.campaign_id == campaign.id,
+            RecipientGroup.parent_organization_group_id == blessing_tree_group_id,
+            RecipientGroup.group_type == RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+        )
+        .order_by(RecipientGroup.program_group_number.asc())
+        .all()
+    )
+    family_ids = [family.program_group_id for family in family_groups]
+    validate_seed_family_id_values(family_ids)
+
+    recipients = (
+        db.query(Recipient)
+        .join(RecipientGroup, RecipientGroup.id == Recipient.recipient_group_id)
+        .filter(
+            Recipient.campaign_id == campaign.id,
+            RecipientGroup.parent_organization_group_id == blessing_tree_group_id,
+            Recipient.program_type == RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+        )
+        .all()
+    )
+    recipient_ids = [recipient.program_recipient_id for recipient in recipients]
+    validate_seed_recipient_id_values(recipient_ids, set(family_ids))
+    return {"families": len(family_ids), "children": len(recipient_ids)}
+
+
+def validate_seed_family_id_values(family_ids: list[str | None]) -> None:
+    expected_ids = [f"BT-{index:03d}" for index in range(1, 101)]
+    actual_ids = sorted(str(family_id) for family_id in family_ids if family_id)
+    if actual_ids != expected_ids:
+        raise RuntimeError("Seeded Blessing Tree family IDs must be BT-001 through BT-100.")
+    if len(set(actual_ids)) != len(actual_ids):
+        raise RuntimeError("Seeded Blessing Tree family IDs contain duplicates.")
+
+
+def validate_seed_recipient_id_values(recipient_ids: list[str | None], family_ids: set[str | None]) -> None:
+    actual_ids = [str(recipient_id) for recipient_id in recipient_ids if recipient_id]
+    if len(actual_ids) != len(recipient_ids):
+        raise RuntimeError("Every seeded Blessing Tree child must have a recipient ID.")
+    if len(set(actual_ids)) != len(actual_ids):
+        raise RuntimeError("Seeded Blessing Tree child recipient IDs contain duplicates.")
+    family_prefixes = {str(family_id) for family_id in family_ids if family_id}
+    for recipient_id in actual_ids:
+        family_id = recipient_id.rsplit("-", 1)[0]
+        suffix = recipient_id.rsplit("-", 1)[-1]
+        if family_id not in family_prefixes or not suffix.isdigit() or len(suffix) < 2:
+            raise RuntimeError(f"Seeded child recipient ID {recipient_id} does not match the family ID scheme.")
 
 
 def seed_users(db: Session) -> dict[str, AppUser]:
@@ -1309,6 +1362,8 @@ def seed_recipients_and_wishlists(
             group_name=f"{first_name} {last_name} Family",
             organization_type=None,
             program_abbreviation=None,
+            program_group_number=family_index,
+            program_group_id=f"BT-{family_index:03d}",
             intake_source="Blessing Tree intake",
             notes=rng.choice(("Needs evening pickup window.", "Prefers text reminders.", "Referred by church partner.", None)),
             status=RECIPIENT_GROUP_STATUS_ACTIVE,
@@ -1348,8 +1403,8 @@ def seed_recipients_and_wishlists(
                 privacy_level=RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
                 display_label=display_label,
                 public_label=display_label,
-                program_recipient_number=child_counter,
-                program_recipient_id=f"BT-{child_counter:03d}",
+                program_recipient_number=child_position,
+                program_recipient_id=f"BT-{family_index:03d}-{child_position:02d}",
                 first_name=None,
                 last_name=None,
                 age=age,

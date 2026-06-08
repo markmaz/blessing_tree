@@ -13,6 +13,7 @@ import type { CampaignPeopleGroup } from '@/features/campaigns/model/campaignPeo
 import { ExpandCollapseControls } from '@/shared/ui/ExpandCollapseControls';
 import { TablePagination } from '@/shared/ui/TablePagination';
 import { clampTablePage } from '@/shared/ui/tablePaginationModel';
+import { compareOptionalProgramIds } from '@/shared/lib/naturalSort';
 
 interface CampaignPeopleGroupTableProps {
   groups: CampaignPeopleGroup[];
@@ -23,7 +24,7 @@ interface CampaignPeopleGroupTableProps {
   onRequestDeleteRecipient: (recipientId: string) => void;
 }
 
-type GroupSortKey = 'group' | 'program' | 'type' | 'contact' | 'people' | 'updated' | 'status';
+type GroupSortKey = 'group' | 'groupId' | 'program' | 'type' | 'contact' | 'people' | 'updated' | 'status';
 
 export function CampaignPeopleGroupTable({
   groups,
@@ -45,12 +46,13 @@ export function CampaignPeopleGroupTable({
     sorted.sort((left, right) => {
       const leftValue = getGroupSortValue(left, sortKey);
       const rightValue = getGroupSortValue(right, sortKey);
+      const comparison =
+        sortKey === 'groupId'
+          ? compareOptionalProgramIds(String(leftValue), String(rightValue))
+          : compareSortValues(leftValue, rightValue);
 
-      if (leftValue < rightValue) {
-        return sortDirection === 'asc' ? -1 : 1;
-      }
-      if (leftValue > rightValue) {
-        return sortDirection === 'asc' ? 1 : -1;
+      if (comparison !== 0) {
+        return sortDirection === 'asc' ? comparison : -comparison;
       }
       return left.groupName.localeCompare(right.groupName);
     });
@@ -100,6 +102,13 @@ export function CampaignPeopleGroupTable({
               <SortableHeader
                 label="Group"
                 sortKey="group"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Group ID"
+                sortKey="groupId"
                 activeKey={sortKey}
                 direction={sortDirection}
                 onSort={handleSort}
@@ -193,6 +202,7 @@ export function CampaignPeopleGroupTable({
                       </div>
                     </div>
                   </td>
+                  <td>{group.programGroupId ?? '—'}</td>
                   <td>{group.programAbbreviation ?? group.parentOrganization?.groupName ?? '—'}</td>
                   <td>{toRecipientGroupTypeLabel(group.groupType)}</td>
                   <td>
@@ -233,7 +243,7 @@ export function CampaignPeopleGroupTable({
                 </tr>
                 {isOpen ? (
                   <tr className="campaign-people-group-children-row">
-                    <td colSpan={8}>
+                    <td colSpan={9}>
                       {group.recipients.length > 0 ? (
                         <div className="campaign-people-group-children-wrap">
                           <table className="table table-sm mb-0 campaign-people-group-children-table">
@@ -332,9 +342,7 @@ export function CampaignPeopleGroupTable({
 
 function sortRecipientsByProgramId(groupRecipients: CampaignPeopleGroup['recipients']) {
   return [...groupRecipients].sort((left, right) => {
-    const leftId = left.programRecipientId ?? '';
-    const rightId = right.programRecipientId ?? '';
-    const idComparison = leftId.localeCompare(rightId, undefined, { numeric: true, sensitivity: 'base' });
+    const idComparison = compareOptionalProgramIds(left.programRecipientId, right.programRecipientId);
     if (idComparison !== 0) {
       return idComparison;
     }
@@ -408,6 +416,8 @@ function getGroupSortValue(group: CampaignPeopleGroup, sortKey: GroupSortKey) {
       return toRecipientGroupTypeLabel(group.groupType);
     case 'program':
       return group.programAbbreviation ?? group.parentOrganization?.groupName ?? '';
+    case 'groupId':
+      return group.programGroupId ?? '';
     case 'contact':
       return group.primaryContact
         ? `${group.primaryContact.firstName ?? ''} ${group.primaryContact.lastName ?? ''} ${group.primaryContact.email ?? ''}`.trim()
@@ -422,4 +432,11 @@ function getGroupSortValue(group: CampaignPeopleGroup, sortKey: GroupSortKey) {
     default:
       return group.groupName;
   }
+}
+
+function compareSortValues(left: string | number, right: string | number) {
+  if (typeof left === 'number' && typeof right === 'number') {
+    return left - right;
+  }
+  return String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: 'base' });
 }

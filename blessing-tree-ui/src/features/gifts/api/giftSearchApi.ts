@@ -61,6 +61,7 @@ interface GiftSearchItemResponse {
     age_unit: string | null;
     gender: string | null;
     group_id?: string | null;
+    group_program_id?: string | null;
     group_label?: string | null;
   } | null;
   label_code?: string;
@@ -574,6 +575,7 @@ function mapGiftSearchItem(item: GiftSearchItemResponse): GiftSearchItem {
           ageUnit: item.recipient.age_unit,
           gender: item.recipient.gender,
           groupId: item.recipient.group_id,
+          groupProgramId: item.recipient.group_program_id,
           groupLabel: item.recipient.group_label,
         }
       : null,

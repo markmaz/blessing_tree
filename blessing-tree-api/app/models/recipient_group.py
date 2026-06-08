@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import List, Optional, TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -52,6 +52,8 @@ class RecipientGroup(Base):
     group_name: Mapped[str] = mapped_column(String(255), nullable=False)
     organization_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     program_abbreviation: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    program_group_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    program_group_id: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     intake_source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     external_reference: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -116,6 +118,8 @@ class RecipientGroup(Base):
         Index("idx_recipient_group_organization_type", "campaign_id", "organization_type"),
         Index("idx_recipient_group_name", "campaign_id", "group_name"),
         Index("idx_recipient_group_program_abbreviation", "campaign_id", "program_abbreviation"),
+        Index("idx_recipient_group_program_group_id", "campaign_id", "program_group_id"),
         Index("idx_recipient_group_status", "campaign_id", "status"),
         UniqueConstraint("campaign_id", "program_abbreviation", name="uq_recipient_group_program_abbreviation"),
+        UniqueConstraint("campaign_id", "program_group_id", name="uq_recipient_group_program_group_id"),
     )

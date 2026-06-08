@@ -141,6 +141,7 @@ export interface CampaignPeopleGroupSummary {
   groupName: string;
   groupType: RecipientGroupType;
   organizationType: RecipientOrganizationType | null;
+  programGroupId?: string | null;
   status: RecipientGroupStatus;
 }
 
@@ -196,6 +197,8 @@ export interface CampaignPeopleGroup {
   groupName: string;
   organizationType: RecipientOrganizationType | null;
   programAbbreviation: string | null;
+  programGroupNumber?: number | null;
+  programGroupId?: string | null;
   intakeSource: string | null;
   externalReference: string | null;
   notes: string | null;

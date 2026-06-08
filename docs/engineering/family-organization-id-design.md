@@ -354,7 +354,7 @@ Update recipient service:
 
 Create an admin/backfill command that can run campaign-by-campaign:
 
-1. Find household groups with `parent_organization_group_id`.
+1. Find household groups in the campaign.
 2. Assign stable `program_group_number` ordered by:
    - existing minimum recipient number if present
    - created date
@@ -370,6 +370,19 @@ Create an admin/backfill command that can run campaign-by-campaign:
 
 Do not run this automatically on production active campaigns without an explicit
 admin decision.
+
+Implemented command:
+
+```bash
+cd blessing-tree-api
+python scripts/backfill_family_group_ids.py --campaign-id <campaign_uuid>
+python scripts/backfill_family_group_ids.py --campaign-id <campaign_uuid> --apply
+```
+
+The default mode is a dry run. It reports how many household groups were scanned,
+how many group IDs would change, and how many child recipient IDs would be
+rewritten, then rolls back the transaction. The `--apply` flag is required to
+persist changes.
 
 ### Phase 4: API/UI Exposure
 
@@ -431,10 +444,10 @@ OAK-012   -> ["OAK", 12]
 
 Use it in:
 
-- People Directory
-- Gift Search
-- mobile result lists
-- PDF/Excel exports
+- People Directory: implemented through the shared frontend comparator.
+- Gift Search: use the same comparator where recipient-ID ordering is presented or exported.
+- mobile result lists: implemented for family receive grouping.
+- PDF/Excel exports: implemented for People Directory rows.
 - seeded data generation tests
 
 ## Audit and Safety

@@ -503,6 +503,7 @@ def _serialize_staff_recipient(recipient) -> dict[str, Any]:
         "age_unit": recipient.age_unit,
         "gender": recipient.gender,
         "group_id": str(recipient.recipient_group_id),
+        "group_program_id": group.program_group_id if group is not None else None,
         "group_label": group.group_name if group is not None else None,
     }
 

@@ -164,6 +164,40 @@ def test_receive_lookup_uses_check_in_capability_without_general_gift_search(app
     assert {item["recipient"]["program_recipient_id"] for item in payload["items"]} == {"CH-001"}
 
 
+def test_receive_lookup_accepts_family_group_id(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Receive Manager")
+    campaign = seed_campaign(session, name="Family Receive Lookup Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    _seed_gifts(session, campaign.id)
+    recipient = session.query(Recipient).filter(Recipient.campaign_id == campaign.id).one()
+    recipient.program_recipient_number = 1
+    recipient.program_recipient_id = "BT-001-01"
+    recipient.recipient_group.program_group_number = 1
+    recipient.recipient_group.program_group_id = "BT-001"
+    session.commit()
+
+    client = app.test_client()
+    family_response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/gifts/receive-lookup?recipient_id=BT-001",
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+    recipient_response = client.get(
+        f"/api/v1/campaigns/{campaign.id}/gifts/receive-lookup?recipient_id=BT-001-01",
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+
+    assert family_response.status_code == 200
+    assert recipient_response.status_code == 200
+    assert family_response.get_json()["count"] == 3
+    assert recipient_response.get_json()["count"] == 3
+    assert {
+        item["recipient"]["program_recipient_id"]
+        for item in family_response.get_json()["items"]
+    } == {"BT-001-01"}
+
+
 def test_staff_gift_search_uses_broad_toy_synonyms(app, monkeypatch) -> None:
     install_auth(monkeypatch)
     session = campaign_api_module.SessionLocal()

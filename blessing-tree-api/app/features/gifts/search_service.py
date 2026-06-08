@@ -287,6 +287,7 @@ class GiftSearchService:
                         func.lower(func.coalesce(Recipient.notes, "")).like(pattern),
                         func.lower(func.coalesce(RecipientGroup.group_name, "")).like(pattern),
                         func.lower(func.coalesce(RecipientGroup.program_abbreviation, "")).like(pattern),
+                        func.lower(func.coalesce(RecipientGroup.program_group_id, "")).like(pattern),
                         func.lower(func.coalesce(RecipientGroup.external_reference, "")).like(pattern),
                         func.lower(func.coalesce(Sponsor.display_name, "")).like(pattern),
                         func.lower(func.coalesce(Sponsor.organization_name, "")).like(pattern),

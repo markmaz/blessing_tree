@@ -6,8 +6,8 @@ from flask_restx import Resource
 from app.db import SessionLocal
 from app.features.campaigns import campaign_ns
 from app.features.admin.audit_service import AuditEventService, build_changes
-from app.features.recipients import (
-    CampaignRecipientService,
+from app.features.recipients.service import CampaignRecipientService
+from app.features.recipients.serializers import (
     serialize_group_contact,
     serialize_people_workspace,
     serialize_recipient,
@@ -29,6 +29,8 @@ GROUP_FIELD_MAP = {
     "group_name": "Name",
     "organization_type": "Organization Type",
     "program_abbreviation": "Program Abbreviation",
+    "program_group_number": "Group ID Number",
+    "program_group_id": "Group ID",
     "intake_source": "Intake Source",
     "external_reference": "External Reference",
     "notes": "Notes",
@@ -518,6 +520,8 @@ def _snapshot_group(group) -> dict[str, object]:
         "group_name": group.group_name,
         "organization_type": group.organization_type,
         "program_abbreviation": group.program_abbreviation,
+        "program_group_number": group.program_group_number,
+        "program_group_id": group.program_group_id,
         "intake_source": group.intake_source,
         "external_reference": group.external_reference,
         "notes": group.notes,
