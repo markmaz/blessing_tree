@@ -23,6 +23,7 @@ export interface GiftSearchRecipient {
   ageUnit: string | null;
   gender: string | null;
   groupId?: string | null;
+  groupProgramId?: string | null;
   groupLabel?: string | null;
 }
 

@@ -6,6 +6,8 @@ import pytest
 
 from app.features.campaigns import api as campaign_api_module
 from app.features.campaigns import recipient_api as recipient_api_module
+from app.features.admin.audit_service import build_changes
+from app.features.recipients.service import CampaignRecipientService
 from app.models.campaign_gift_policy import CampaignGiftPolicy
 from app.models.group_contact import GroupContact
 from app.models.recipient import Recipient
@@ -532,7 +534,7 @@ def test_household_children_are_cardinally_named_and_renumbered_after_delete(app
 
     with campaign_api_module.SessionLocal() as verify_session:
         labels = [
-            row.display_label
+            (row.display_label, row.program_recipient_id)
             for row in (
                 verify_session.query(Recipient)
                 .filter(Recipient.recipient_group_id == uuid.UUID(group_id))
@@ -540,7 +542,11 @@ def test_household_children_are_cardinally_named_and_renumbered_after_delete(app
                 .all()
             )
         ]
-        assert labels == ["Child One", "Child Two", "Child Three"]
+        assert labels == [
+            ("Child One", "SC-001-01"),
+            ("Child Two", "SC-001-02"),
+            ("Child Three", "SC-001-03"),
+        ]
 
     delete_response = client.delete(
         f"/api/v1/campaigns/{campaign_id}/recipients/{child_ids[1]}",
@@ -557,6 +563,22 @@ def test_household_children_are_cardinally_named_and_renumbered_after_delete(app
         )
         assert [child.display_label for child in children] == ["Child One", "Child Two"]
         assert [(child.first_name, child.last_name) for child in children] == [("Child", "One"), ("Child", "Two")]
+        assert [child.program_recipient_id for child in children] == ["SC-001-01", "SC-001-03"]
+
+    response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/recipients",
+        json={
+            "recipient_group_id": group_id,
+            "recipient_kind": "CHILD",
+            "program_type": "CHILD_FAMILY",
+            "privacy_level": "FULL_NAME",
+            "age": 2,
+            "age_unit": "YEARS",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert response.status_code == 201
+    assert response.get_json()["program_recipient_id"] == "SC-001-04"
 
 
 def test_recipient_address_search_returns_suggestions(app, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -728,6 +750,23 @@ def test_family_can_be_associated_with_an_organization(app, monkeypatch: pytest.
     family_payload = response.get_json()
     assert family_payload["parent_organization_group_id"] == organization_id
     assert family_payload["parent_organization"]["group_name"] == "Senior At Home"
+    assert family_payload["program_group_number"] == 1
+    assert family_payload["program_group_id"] == "SAH-001"
+
+    child_response = client.post(
+        f"/api/v1/campaigns/{campaign_id}/recipients",
+        json={
+            "recipient_group_id": family_payload["id"],
+            "recipient_kind": "CHILD",
+            "program_type": "CHILD_FAMILY",
+            "privacy_level": "FULL_NAME",
+            "age": 7,
+            "age_unit": "YEARS",
+        },
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert child_response.status_code == 201
+    assert child_response.get_json()["program_recipient_id"] == "SAH-001-01"
 
     workspace_response = client.get(
         f"/api/v1/campaigns/{campaign_id}/people-workspace",
@@ -736,6 +775,109 @@ def test_family_can_be_associated_with_an_organization(app, monkeypatch: pytest.
     payload = workspace_response.get_json()
     organization_payload = next(group for group in payload["groups"] if group["id"] == organization_id)
     assert organization_payload["family_count"] == 1
+    family_workspace_payload = next(group for group in payload["groups"] if group["id"] == family_payload["id"])
+    assert family_workspace_payload["program_group_id"] == "SAH-001"
+    assert family_workspace_payload["recipients"][0]["program_recipient_id"] == "SAH-001-01"
+
+
+def test_group_audit_changes_include_family_group_id_fields() -> None:
+    changes = build_changes(
+        before={"program_group_number": None, "program_group_id": None},
+        after={"program_group_number": 1, "program_group_id": "BT-001"},
+        field_map=recipient_api_module.GROUP_FIELD_MAP,
+    )
+
+    assert {change["field"] for change in changes} == {"program_group_number", "program_group_id"}
+    assert {change["label"] for change in changes} == {"Group ID Number", "Group ID"}
+
+
+def test_family_program_id_backfill_is_campaign_scoped_and_dry_run_safe(
+    app, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    campaign = seed_campaign(session)
+    organization = _seed_organization_group(session, campaign.id)
+    baker_family = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        group_type=RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+        parent_organization_group_id=organization.id,
+        group_name="Baker Family",
+        status=RECIPIENT_GROUP_STATUS_ACTIVE,
+    )
+    adams_family = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        group_type=RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+        parent_organization_group_id=organization.id,
+        group_name="Adams Family",
+        status=RECIPIENT_GROUP_STATUS_ACTIVE,
+    )
+    session.add_all([baker_family, adams_family])
+    session.flush()
+    session.add_all(
+        [
+            Recipient(
+                id=uuid.uuid4(),
+                campaign_id=campaign.id,
+                recipient_group_id=baker_family.id,
+                recipient_kind=RECIPIENT_KIND_CHILD,
+                program_type=RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+                privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+                display_label="Ben Baker",
+                program_recipient_number=5,
+                program_recipient_id="SAH-005",
+                status=RECIPIENT_STATUS_ACTIVE,
+            ),
+            Recipient(
+                id=uuid.uuid4(),
+                campaign_id=campaign.id,
+                recipient_group_id=baker_family.id,
+                recipient_kind=RECIPIENT_KIND_CHILD,
+                program_type=RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+                privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+                display_label="Bella Baker",
+                program_recipient_number=6,
+                program_recipient_id="SAH-006",
+                status=RECIPIENT_STATUS_ACTIVE,
+            ),
+            Recipient(
+                id=uuid.uuid4(),
+                campaign_id=campaign.id,
+                recipient_group_id=adams_family.id,
+                recipient_kind=RECIPIENT_KIND_CHILD,
+                program_type=RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+                privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+                display_label="Ava Adams",
+                program_recipient_number=1,
+                program_recipient_id="SAH-001",
+                status=RECIPIENT_STATUS_ACTIVE,
+            ),
+        ]
+    )
+    session.commit()
+
+    service = CampaignRecipientService()
+    dry_run_summary = service.backfill_family_program_ids(session, str(campaign.id), dry_run=True)
+    assert dry_run_summary == {"groups_scanned": 2, "groups_updated": 2, "recipients_updated": 3}
+    session.expire_all()
+    assert session.get(RecipientGroup, baker_family.id).program_group_id is None
+    assert session.get(RecipientGroup, adams_family.id).program_group_id is None
+
+    apply_summary = service.backfill_family_program_ids(session, str(campaign.id), dry_run=False)
+    assert apply_summary == {"groups_scanned": 2, "groups_updated": 2, "recipients_updated": 3}
+    session.expire_all()
+    assert session.get(RecipientGroup, adams_family.id).program_group_id == "SAH-001"
+    assert session.get(RecipientGroup, baker_family.id).program_group_id == "SAH-002"
+    baker_children = (
+        session.query(Recipient)
+        .filter(Recipient.recipient_group_id == baker_family.id)
+        .order_by(Recipient.program_recipient_number.asc())
+        .all()
+    )
+    assert [child.program_recipient_id for child in baker_children] == ["SAH-002-01", "SAH-002-02"]
+    session.close()
 
 
 def test_only_households_can_be_associated_with_organizations(app, monkeypatch: pytest.MonkeyPatch) -> None:

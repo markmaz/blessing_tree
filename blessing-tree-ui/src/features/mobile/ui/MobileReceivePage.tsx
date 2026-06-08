@@ -4,6 +4,7 @@ import { buildMobileScanPath } from '@/app/routes';
 import { lookupCampaignReceiveGifts, updateCampaignGiftOperation } from '@/features/gifts/api/giftSearchApi';
 import type { GiftSearchItem } from '@/features/gifts/model/giftSearchTypes';
 import { useCampaigns } from '@/features/campaigns/model/campaignContext';
+import { compareOptionalProgramIds } from '@/shared/lib/naturalSort';
 
 const RECEIVED_OR_LATER_STATUSES = new Set([
   'RECEIVED',
@@ -48,6 +49,7 @@ export function MobileReceivePage() {
     () => [...items].sort((left, right) => left.description.localeCompare(right.description)),
     [items]
   );
+  const groupedItems = useMemo(() => groupItemsByRecipient(sortedItems), [sortedItems]);
 
   const lookupRecipient = useCallback(async (nextRecipientId: string) => {
     if (!selectedCampaignId || !nextRecipientId) {
@@ -240,13 +242,17 @@ export function MobileReceivePage() {
       {recipient ? (
         <section className="mobile-recipient-card" aria-label="Recipient summary">
           <div>
-            <span className="mobile-recipient-card__label">Recipient</span>
-            <h2>{recipient.displayLabel ?? recipient.programRecipientId ?? lookedUpRecipientId}</h2>
+            <span className="mobile-recipient-card__label">{groupedItems.length > 1 ? 'Family' : 'Recipient'}</span>
+            <h2>
+              {groupedItems.length > 1
+                ? recipient.groupLabel ?? lookedUpRecipientId
+                : recipient.displayLabel ?? recipient.programRecipientId ?? lookedUpRecipientId}
+            </h2>
           </div>
           <dl>
             <div>
               <dt>ID</dt>
-              <dd>{recipient.programRecipientId ?? lookedUpRecipientId}</dd>
+              <dd>{groupedItems.length > 1 ? lookedUpRecipientId : recipient.programRecipientId ?? lookedUpRecipientId}</dd>
             </div>
             <div>
               <dt>Age / Gender</dt>
@@ -260,14 +266,23 @@ export function MobileReceivePage() {
         </section>
       ) : null}
 
-      {sortedItems.length > 0 ? (
+      {groupedItems.length > 0 ? (
         <section className="mobile-gift-list" aria-label="Wishlist items">
-          {sortedItems.map((item) => {
-            const isReceived = isReceivedOrLater(item.status);
-            const isBusy = isGiftBusy(busyItemIds, item.wishlistItemId);
-            const noteOpen = activeNoteItemId === item.wishlistItemId;
-            return (
-              <article key={item.wishlistItemId} className="mobile-gift-card">
+          {groupedItems.map((group) => (
+            <div key={group.key} className="mobile-recipient-gift-group">
+              {groupedItems.length > 1 ? (
+                <header className="mobile-recipient-gift-group__header">
+                  <span>{group.recipient?.programRecipientId ?? 'No recipient ID'}</span>
+                  <h3>{group.recipient?.displayLabel ?? 'Recipient'}</h3>
+                  <p>{formatAgeGender(group.recipient?.age ?? null, group.recipient?.ageUnit ?? null, group.recipient?.gender ?? null)}</p>
+                </header>
+              ) : null}
+              {group.items.map((item) => {
+                const isReceived = isReceivedOrLater(item.status);
+                const isBusy = isGiftBusy(busyItemIds, item.wishlistItemId);
+                const noteOpen = activeNoteItemId === item.wishlistItemId;
+                return (
+                  <article key={item.wishlistItemId} className="mobile-gift-card">
                 <div className="mobile-gift-card__main">
                   <div
                     className={`mobile-gift-card__check ${isReceived ? 'mobile-gift-card__check--received' : ''}`}
@@ -339,9 +354,11 @@ export function MobileReceivePage() {
                     />
                   </div>
                 ) : null}
-              </article>
-            );
-          })}
+                  </article>
+                );
+              })}
+            </div>
+          ))}
         </section>
       ) : null}
     </section>
@@ -350,6 +367,30 @@ export function MobileReceivePage() {
 
 function isReceivedOrLater(status: string): boolean {
   return RECEIVED_OR_LATER_STATUSES.has(status);
+}
+
+function groupItemsByRecipient(items: GiftSearchItem[]): Array<{
+  key: string;
+  recipient: GiftSearchItem['recipient'];
+  items: GiftSearchItem[];
+}> {
+  const groups = new Map<string, { key: string; recipient: GiftSearchItem['recipient']; items: GiftSearchItem[] }>();
+  for (const item of items) {
+    const key = item.recipient?.id ?? 'unknown-recipient';
+    const existingGroup = groups.get(key);
+    if (existingGroup) {
+      existingGroup.items.push(item);
+    } else {
+      groups.set(key, { key, recipient: item.recipient, items: [item] });
+    }
+  }
+  return [...groups.values()].sort((left, right) => {
+    const idComparison = compareOptionalProgramIds(left.recipient?.programRecipientId, right.recipient?.programRecipientId);
+    if (idComparison !== 0) {
+      return idComparison;
+    }
+    return String(left.recipient?.displayLabel ?? '').localeCompare(String(right.recipient?.displayLabel ?? ''));
+  });
 }
 
 function isGiftBusy(busyIds: string[], giftId: string): boolean {

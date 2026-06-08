@@ -380,7 +380,7 @@ def build_document() -> None:
     add_heading(doc, "People Directory", level=2)
     add_body(
         doc,
-        "Use the directory when someone is already in the system. Search for a family, organization, child, or adult, then click the row to open the drawer. The drawer is also where staff can add another child or adult to an existing household, add a family under an organization, edit contacts, and manage wishlist details. Directory tables include sortable recipient IDs, program abbreviation quick filters, gift descriptions, gift sizes/details, and committed sponsor names. Use Expand All or Collapse All on the left and PDF or Excel export buttons in the upper right when staff need a printed operating list.",
+        "Use the directory when someone is already in the system. Search for a family, organization, child, or adult, then click the row to open the drawer. The drawer is also where staff can add another child or adult to an existing household, add a family under an organization, edit contacts, and manage wishlist details. Directory tables include sortable family group IDs and recipient IDs, program abbreviation quick filters, gift descriptions, gift sizes/details, and committed sponsor names. Family IDs such as BT-001 identify the whole family; suffixed IDs such as BT-001-01 identify one recipient in that family. Use Expand All or Collapse All on the left and PDF or Excel export buttons in the upper right when staff need a printed operating list.",
     )
     add_workflow(
         doc,
@@ -447,7 +447,7 @@ def build_document() -> None:
     add_heading(doc, "Gift Search", level=2)
     add_body(
         doc,
-        "Gift Search helps staff or eligible sponsors find gifts to reserve or commit to. The search supports natural-language prompts such as 'girls age 8 to 10 who need coats' and can use Qdrant semantic matching for broader terms such as toys, Batman gifts, or video games when the wishlist uses a more specific description. Search chips show inferred filters and can be cleared. Results are paginated and can be exported to PDF or Excel from the upper right of the results container.",
+        "Gift Search helps staff or eligible sponsors find gifts to reserve or commit to. The search supports natural-language prompts such as 'girls age 8 to 10 who need coats' and can use Qdrant semantic matching for broader terms such as toys, Batman gifts, or video games when the wishlist uses a more specific description. Search chips show inferred filters and can be cleared. Results are paginated, sorted in natural recipient ID order, and can be exported to PDF or Excel from the upper right of the results container.",
     )
     add_workflow(
         doc,
@@ -489,7 +489,7 @@ def build_document() -> None:
     add_heading(doc, "Gift Status Report", level=2)
     add_body(
         doc,
-        "Gift Status is the visual report for the gift workflow. It lists recipients, their wishlist gifts, and each status in the workflow so staff can see what is sponsored, received, wrapped, ready, picked up, and distributed at a glance. The page polls while visible so scan updates appear without a manual refresh.",
+        "Gift Status is the visual report for the gift workflow. It lists recipients, their wishlist gifts, and each status in the workflow so staff can see what is sponsored, received, wrapped, ready, picked up, and distributed at a glance. The page polls while visible so scan updates appear without a manual refresh. On mobile receive, staff can enter a family ID such as BT-001 to show all recipients and wishlist items in that family, or a suffixed recipient ID such as BT-001-01 to show only that recipient.",
     )
     add_workflow(
         doc,

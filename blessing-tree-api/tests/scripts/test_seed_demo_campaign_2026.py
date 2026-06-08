@@ -1,6 +1,10 @@
 import pytest
 
-from scripts.seed_demo_campaign_2026 import enforce_environment_safety
+from scripts.seed_demo_campaign_2026 import (
+    enforce_environment_safety,
+    validate_seed_family_id_values,
+    validate_seed_recipient_id_values,
+)
 
 
 def test_seed_reset_is_refused_in_production(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -33,3 +37,20 @@ def test_seed_safety_does_not_block_local_reset(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setenv("CURRENT_ENVIRONMENT", "development")
 
     enforce_environment_safety(reset=True, append=False, allow_production_replace=False)
+
+
+def test_seed_family_id_validation_requires_full_bt_sequence() -> None:
+    validate_seed_family_id_values([f"BT-{index:03d}" for index in range(1, 101)])
+
+    with pytest.raises(RuntimeError, match="BT-001 through BT-100"):
+        validate_seed_family_id_values(["BT-001", "BT-003"])
+
+
+def test_seed_recipient_id_validation_requires_family_prefix_and_unique_suffixes() -> None:
+    validate_seed_recipient_id_values(["BT-001-01", "BT-001-02", "BT-002-01"], {"BT-001", "BT-002"})
+
+    with pytest.raises(RuntimeError, match="duplicates"):
+        validate_seed_recipient_id_values(["BT-001-01", "BT-001-01"], {"BT-001"})
+
+    with pytest.raises(RuntimeError, match="family ID scheme"):
+        validate_seed_recipient_id_values(["BT-999-01"], {"BT-001"})

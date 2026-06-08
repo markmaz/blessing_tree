@@ -11,6 +11,7 @@ import type { CampaignRecipient } from '@/features/campaigns/model/campaignPeopl
 import { ExpandCollapseControls } from '@/shared/ui/ExpandCollapseControls';
 import { TablePagination } from '@/shared/ui/TablePagination';
 import { clampTablePage } from '@/shared/ui/tablePaginationModel';
+import { compareOptionalProgramIds } from '@/shared/lib/naturalSort';
 
 interface CampaignPeopleRecipientTableProps {
   recipients: CampaignRecipient[];
@@ -40,7 +41,10 @@ export function CampaignPeopleRecipientTable({
       const leftValue = getRecipientSortValue(left, sortKey);
       const rightValue = getRecipientSortValue(right, sortKey);
 
-      const comparison = compareSortValues(leftValue, rightValue);
+      const comparison =
+        sortKey === 'personId'
+          ? compareOptionalProgramIds(String(leftValue), String(rightValue))
+          : compareSortValues(leftValue, rightValue);
       if (comparison !== 0) {
         return sortDirection === 'asc' ? comparison : -comparison;
       }
@@ -203,7 +207,9 @@ export function CampaignPeopleRecipientTable({
                   </td>
                   <td>{recipient.programRecipientId ?? '—'}</td>
                   <td>{toRecipientProgramTypeLabel(recipient.programType)}</td>
-                  <td>{recipient.group?.groupName ?? 'No group'}</td>
+                  <td>
+                    {[recipient.group?.programGroupId, recipient.group?.groupName].filter(Boolean).join(' ') || 'No group'}
+                  </td>
                   <td>{formatRecipientAge(recipient.age, recipient.ageUnit)}</td>
                   <td>
                     {recipient.wishlist?.items.length ? (

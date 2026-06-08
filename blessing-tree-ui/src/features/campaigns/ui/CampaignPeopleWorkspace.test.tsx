@@ -40,6 +40,7 @@ const workspaceFixture: CampaignPeopleWorkspaceData = {
       groupName: 'Johnson Household',
       organizationType: null,
       programAbbreviation: null,
+      programGroupId: 'BT-001',
       intakeSource: 'Partner Church',
       externalReference: null,
       notes: null,
@@ -467,6 +468,7 @@ describe('CampaignPeopleWorkspace', () => {
     const [groupTable, peopleTable] = screen.getAllByRole('table');
 
     expect(within(groupTable).queryByText('Child One')).not.toBeInTheDocument();
+    expect(within(groupTable).getByText('BT-001')).toBeInTheDocument();
     expect(within(peopleTable).getByText('Art kit')).toBeInTheDocument();
     expect(within(peopleTable).getByText(/Unsponsored/)).toBeInTheDocument();
 

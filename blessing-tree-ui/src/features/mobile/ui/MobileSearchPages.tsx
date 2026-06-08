@@ -435,7 +435,9 @@ export function MobileGroupsPage() {
           <article key={group.id} className="mobile-lookup-card">
             <div className="mobile-lookup-card__header">
               <div>
-                <span className="mobile-lookup-card__eyebrow">{group.programAbbreviation ?? group.groupType}</span>
+                <span className="mobile-lookup-card__eyebrow">
+                  {group.programGroupId ?? group.programAbbreviation ?? group.groupType}
+                </span>
                 <h2>{group.groupName}</h2>
               </div>
               <span className="mobile-status-chip">{group.recipientCount} people</span>
@@ -562,6 +564,7 @@ function searchableSponsorText(sponsor: CampaignSponsor): string {
 function searchableGroupText(group: CampaignPeopleGroup): string {
   return normalizeSearch([
     group.groupName,
+    group.programGroupId,
     group.groupType,
     group.organizationType,
     group.programAbbreviation,

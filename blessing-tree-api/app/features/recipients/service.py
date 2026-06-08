@@ -1,20 +1,14 @@
 from __future__ import annotations
 
 import uuid
-from collections import Counter
+from collections import Counter, defaultdict
+from typing import TYPE_CHECKING
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.exceptions.service_error import ServiceError
-from app.features.campaigns.gift_policy_service import CampaignGiftPolicyService
-from app.features.campaigns.service import CampaignService
-from app.features.gifts.semantic_index_queue import (
-    enqueue_recipient_gift_reindex,
-    enqueue_wishlist_item_delete,
-    enqueue_wishlist_item_reindex,
-)
 from app.features.recipients.organization_type_service import OrganizationTypeService
 from app.features.recipients.validation import (
     parse_bool,
@@ -76,9 +70,33 @@ FULFILLED_GIFT_STATUSES = {
 }
 OPEN_SPONSORSHIP_STATUSES = {"OPEN", "RESERVED"}
 
+if TYPE_CHECKING:
+    from app.features.campaigns.service import CampaignService
+
+
+def enqueue_recipient_gift_reindex(recipient_id: uuid.UUID) -> None:
+    from app.features.gifts.semantic_index_queue import enqueue_recipient_gift_reindex as enqueue
+
+    enqueue(recipient_id)
+
+
+def enqueue_wishlist_item_reindex(wishlist_item_id: uuid.UUID) -> None:
+    from app.features.gifts.semantic_index_queue import enqueue_wishlist_item_reindex as enqueue
+
+    enqueue(wishlist_item_id)
+
+
+def enqueue_wishlist_item_delete(wishlist_item_id: uuid.UUID) -> None:
+    from app.features.gifts.semantic_index_queue import enqueue_wishlist_item_delete as enqueue
+
+    enqueue(wishlist_item_id)
+
 
 class CampaignRecipientService:
     def __init__(self, campaign_service: CampaignService | None = None) -> None:
+        from app.features.campaigns.gift_policy_service import CampaignGiftPolicyService
+        from app.features.campaigns.service import CampaignService
+
         self.campaigns = campaign_service or CampaignService()
         self.gift_policy = CampaignGiftPolicyService(self.campaigns)
         self.organization_types = OrganizationTypeService()
@@ -177,6 +195,7 @@ class CampaignRecipientService:
             postal_code=validate_optional_postal_code(payload.get("postal_code"), "postal_code"),
         )
         self._validate_program_abbreviation_uniqueness(db, group)
+        self._assign_program_group_identity(db, group)
         db.add(group)
         self._commit_with_duplicate_handling(db)
         return self.get_group(db, campaign_id, str(group.id))
@@ -239,10 +258,13 @@ class CampaignRecipientService:
         if "postal_code" in payload:
             group.postal_code = validate_optional_postal_code(payload.get("postal_code"), "postal_code")
         self._validate_program_abbreviation_uniqueness(db, group)
+        self._assign_program_group_identity(db, group)
         if group.group_type == RECIPIENT_GROUP_TYPE_ORGANIZATION:
+            group.program_group_number = None
+            group.program_group_id = None
             self._sync_group_program_recipient_ids(db, group)
         else:
-            self._clear_group_program_recipient_ids(group)
+            self._sync_family_program_recipient_ids(db, group)
         self._commit_with_duplicate_handling(db)
         return self.get_group(db, campaign_id, group_id)
 
@@ -250,6 +272,97 @@ class CampaignRecipientService:
         group = self.get_group(db, campaign_id, group_id)
         db.delete(group)
         db.commit()
+
+    def backfill_family_program_ids(self, db: Session, campaign_id: str, *, dry_run: bool = True) -> dict[str, int]:
+        self.campaigns.get_campaign(db, campaign_id)
+        groups = (
+            db.query(RecipientGroup)
+            .options(
+                joinedload(RecipientGroup.parent_organization),
+                joinedload(RecipientGroup.recipients),
+            )
+            .filter(
+                RecipientGroup.campaign_id == uuid.UUID(campaign_id),
+                RecipientGroup.group_type == RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+            )
+            .order_by(RecipientGroup.created_at.asc(), RecipientGroup.group_name.asc(), RecipientGroup.id.asc())
+            .all()
+        )
+        groups.sort(
+            key=lambda group: (
+                self._family_group_prefix(db, group),
+                self._legacy_family_sort_number(group),
+                group.created_at,
+                group.group_name,
+                str(group.id),
+            )
+        )
+        used_numbers_by_prefix: dict[str, set[int]] = defaultdict(set)
+        for group in groups:
+            prefix = self._family_group_prefix(db, group)
+            if group.program_group_number is not None:
+                used_numbers_by_prefix[prefix].add(group.program_group_number)
+
+        updated_groups = 0
+        updated_recipients = 0
+
+        for group in groups:
+            previous_group_id = group.program_group_id
+            prefix = self._family_group_prefix(db, group)
+            if group.program_group_number is None:
+                group.program_group_number = self._next_available_program_group_number(used_numbers_by_prefix[prefix])
+            used_numbers_by_prefix[prefix].add(group.program_group_number)
+            group.program_group_id = f"{prefix}-{group.program_group_number:03d}"
+            if previous_group_id != group.program_group_id:
+                updated_groups += 1
+
+            child_recipients = [
+                recipient
+                for recipient in list(group.recipients or [])
+                if _is_child_program(recipient.program_type)
+            ]
+            child_recipients.sort(
+                key=lambda recipient: (
+                    recipient.program_recipient_number is None,
+                    recipient.program_recipient_number or 0,
+                    recipient.created_at,
+                    recipient.display_label,
+                    str(recipient.id),
+                )
+            )
+            for index, recipient in enumerate(child_recipients, start=1):
+                next_program_id = f"{group.program_group_id}-{index:02d}"
+                if recipient.program_recipient_number != index or recipient.program_recipient_id != next_program_id:
+                    recipient.program_recipient_number = index
+                    recipient.program_recipient_id = next_program_id
+                    updated_recipients += 1
+
+        if dry_run:
+            db.rollback()
+        else:
+            self._commit_with_duplicate_handling(db)
+
+        return {
+            "groups_scanned": len(groups),
+            "groups_updated": updated_groups,
+            "recipients_updated": updated_recipients,
+        }
+
+    @staticmethod
+    def _legacy_family_sort_number(group: RecipientGroup) -> int:
+        child_numbers = [
+            recipient.program_recipient_number
+            for recipient in list(group.recipients or [])
+            if _is_child_program(recipient.program_type) and recipient.program_recipient_number is not None
+        ]
+        return min(child_numbers) if child_numbers else 999999
+
+    @staticmethod
+    def _next_available_program_group_number(used_numbers: set[int]) -> int:
+        next_number = 1
+        while next_number in used_numbers:
+            next_number += 1
+        return next_number
 
     def create_contact(self, db: Session, campaign_id: str, group_id: str, payload: dict[str, object]) -> GroupContact:
         group = self.get_group(db, campaign_id, group_id)
@@ -831,6 +944,12 @@ class CampaignRecipientService:
                     status_code=409,
                     details={"field": "program_abbreviation"},
                 ) from error
+            if "uq_recipient_group_program_group_id" in message:
+                raise ServiceError(
+                    "A family group ID collision was detected. Please retry the save.",
+                    status_code=409,
+                    details={"field": "program_group_id"},
+                ) from error
             if "uq_recipient_program_id" in message:
                 raise ServiceError(
                     "An organization recipient ID collision was detected. Please retry the save.",
@@ -845,10 +964,26 @@ class CampaignRecipientService:
         group: RecipientGroup,
         recipient: Recipient,
     ) -> None:
-        if (
-            group.group_type != RECIPIENT_GROUP_TYPE_ORGANIZATION
-            or recipient.program_type != RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT
-        ):
+        if group.group_type == RECIPIENT_GROUP_TYPE_HOUSEHOLD:
+            self._assign_program_group_identity(db, group)
+            if not _is_child_program(recipient.program_type):
+                recipient.program_recipient_number = None
+                recipient.program_recipient_id = None
+                return
+            if recipient.program_recipient_number is None:
+                max_number = (
+                    db.query(func.max(Recipient.program_recipient_number))
+                    .filter(
+                        Recipient.recipient_group_id == group.id,
+                        Recipient.id != recipient.id,
+                    )
+                    .scalar()
+                )
+                recipient.program_recipient_number = (max_number or 0) + 1
+            recipient.program_recipient_id = f"{group.program_group_id}-{recipient.program_recipient_number:02d}"
+            return
+
+        if recipient.program_type != RECIPIENT_PROGRAM_TYPE_ORGANIZATION_ADULT:
             recipient.program_recipient_number = None
             recipient.program_recipient_id = None
             return
@@ -947,11 +1082,54 @@ class CampaignRecipientService:
                 recipient.program_recipient_number = index
             recipient.program_recipient_id = f"{group.program_abbreviation}-{recipient.program_recipient_number:03d}"
 
+    def _sync_family_program_recipient_ids(self, db: Session, group: RecipientGroup) -> None:
+        self._assign_program_group_identity(db, group)
+        for recipient in db.query(Recipient).filter(Recipient.recipient_group_id == group.id).all():
+            self._assign_program_recipient_identity(db, group, recipient)
+
+    def _assign_program_group_identity(self, db: Session, group: RecipientGroup) -> None:
+        if group.group_type != RECIPIENT_GROUP_TYPE_HOUSEHOLD:
+            group.program_group_number = None
+            group.program_group_id = None
+            return
+
+        prefix = self._family_group_prefix(db, group)
+        if group.program_group_number is None:
+            max_number = (
+                db.query(func.max(RecipientGroup.program_group_number))
+                .filter(
+                    RecipientGroup.campaign_id == group.campaign_id,
+                    RecipientGroup.group_type == RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+                    RecipientGroup.id != group.id,
+                    RecipientGroup.program_group_id.like(f"{prefix}-%"),
+                )
+                .scalar()
+            )
+            group.program_group_number = (max_number or 0) + 1
+
+        group.program_group_id = f"{prefix}-{group.program_group_number:03d}"
+
+    def _family_group_prefix(self, db: Session, group: RecipientGroup) -> str:
+        if group.parent_organization_group_id:
+            parent_group = (
+                group.parent_organization
+                or db.query(RecipientGroup).filter(RecipientGroup.id == group.parent_organization_group_id).one_or_none()
+            )
+            if parent_group is not None:
+                prefix = parent_group.program_abbreviation or self._derive_group_abbreviation(parent_group.group_name)
+                parent_group.program_abbreviation = prefix
+                return prefix
+
+        campaign = group.campaign or self.campaigns.get_campaign(db, str(group.campaign_id))
+        return self._derive_campaign_primary_abbreviation(campaign.name)
+
     @staticmethod
-    def _clear_group_program_recipient_ids(group: RecipientGroup) -> None:
-        for recipient in list(group.recipients or []):
-            recipient.program_recipient_number = None
-            recipient.program_recipient_id = None
+    def _derive_campaign_primary_abbreviation(campaign_name: str) -> str:
+        words = ["".join(character for character in word.upper() if character.isalnum()) for word in campaign_name.split()]
+        initials = "".join(word[0] for word in words if word)
+        if len(initials) >= 2:
+            return initials[:12]
+        return CampaignRecipientService._derive_group_abbreviation(campaign_name)
 
     @staticmethod
     def _build_counts(groups: list[RecipientGroup], recipients: list[Recipient], policy) -> dict[str, int]:

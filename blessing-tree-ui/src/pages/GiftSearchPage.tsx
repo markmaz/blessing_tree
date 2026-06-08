@@ -14,6 +14,7 @@ import { TablePagination } from '@/shared/ui/TablePagination';
 import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import { clampTablePage } from '@/shared/ui/tablePaginationModel';
+import { compareOptionalProgramIds } from '@/shared/lib/naturalSort';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
 import type { ReportExportPayload } from '@/features/reports/model/reportExport';
 import '@/features/campaigns/ui/campaignStudioTeam.css';
@@ -62,14 +63,14 @@ export function GiftSearchPage() {
   const filterChips = useMemo(() => buildFilterChips(result), [result]);
   const selectedSponsor = sponsors.find((sponsor) => sponsor.id === selectedSponsorId) ?? null;
   const selectedSponsorDetails = sponsors.find((sponsor) => sponsor.id === selectedSponsorDetailsId) ?? null;
-  const safePage = clampTablePage(page, result?.items.length ?? 0, pageSize);
+  const sortedItems = useMemo(() => sortGiftSearchItems(result?.items ?? []), [result?.items]);
+  const safePage = clampTablePage(page, sortedItems.length, pageSize);
   const pagedItems = useMemo(() => {
-    const items = result?.items ?? [];
-    return items.slice((safePage - 1) * pageSize, safePage * pageSize);
-  }, [pageSize, result?.items, safePage]);
+    return sortedItems.slice((safePage - 1) * pageSize, safePage * pageSize);
+  }, [pageSize, safePage, sortedItems]);
   const giftSearchExport = useMemo(
-    () => buildGiftSearchExport(campaign?.name ?? 'Campaign', result),
-    [campaign?.name, result]
+    () => buildGiftSearchExport(campaign?.name ?? 'Campaign', result, sortedItems),
+    [campaign?.name, result, sortedItems]
   );
 
   async function runSearch(nextQuery = query) {
@@ -465,7 +466,7 @@ function GiftSearchRow({
         {item.recipient?.groupLabel ? (
           <div className="text-muted small">
             <i className="bi bi-people me-1" aria-hidden="true" />
-            {item.recipient.groupLabel}
+            {formatRecipientGroupLabel(item.recipient)}
           </div>
         ) : null}
       </td>
@@ -522,7 +523,7 @@ function GiftDetailsDrawerContent({ item }: { item: GiftSearchItem }) {
           <DetailField label="Recipient ID" value={recipient?.programRecipientId ?? 'Not assigned'} />
           <DetailField label="Recipient Type" value={formatEnumLabel(recipient?.recipientKind)} />
           <DetailField label="Program" value={formatEnumLabel(recipient?.programType)} />
-          <DetailField label="Family/Group" value={recipient?.groupLabel ?? 'Not set'} />
+          <DetailField label="Family/Group" value={recipient ? formatRecipientGroupLabel(recipient) : 'Not set'} />
           <DetailField label="Age" value={formatRecipientAge(recipient)} />
           <DetailField label="Gender" value={formatGender(recipient?.gender)} />
         </div>
@@ -658,6 +659,13 @@ function formatRecipientSummary(recipient: GiftSearchItem['recipient']) {
   ].filter((value) => value && value !== 'Not set').join(' · ');
 }
 
+function formatRecipientGroupLabel(recipient: GiftSearchItem['recipient']) {
+  if (!recipient) {
+    return 'Not set';
+  }
+  return [recipient.groupProgramId, recipient.groupLabel].filter(Boolean).join(' ') || 'Not set';
+}
+
 function formatGender(value: string | null | undefined) {
   switch (value) {
     case 'F':
@@ -738,7 +746,11 @@ function buildReleaseDetails(item: GiftSearchItem) {
   ];
 }
 
-function buildGiftSearchExport(campaignName: string, result: GiftSearchResult | null): ReportExportPayload {
+function buildGiftSearchExport(
+  campaignName: string,
+  result: GiftSearchResult | null,
+  sortedItems: GiftSearchItem[]
+): ReportExportPayload {
   const searchLabel = result?.parsedFilters.query ? `Search: ${result.parsedFilters.query}` : 'All gifts';
   return {
     title: 'Gift Search Results',
@@ -762,7 +774,7 @@ function buildGiftSearchExport(campaignName: string, result: GiftSearchResult | 
           { key: 'label', label: 'Label', pdfWidthWeight: 0.8 },
           { key: 'notes', label: 'Notes', pdfWidthWeight: 1.6 },
         ],
-        rows: (result?.items ?? []).map((item) => ({
+        rows: sortedItems.map((item) => ({
           gift: item.description,
           category: item.category ?? formatEnumLabel(item.itemType),
           size: item.size ?? '',
@@ -770,7 +782,7 @@ function buildGiftSearchExport(campaignName: string, result: GiftSearchResult | 
           recipientId: item.recipient?.programRecipientId ?? '',
           age: formatRecipientAge(item.recipient),
           gender: formatGender(item.recipient?.gender),
-          family: item.recipient?.groupLabel ?? '',
+          family: item.recipient ? formatRecipientGroupLabel(item.recipient) : '',
           status: item.isAvailable ? 'Available' : formatEnumLabel(item.status),
           sponsor: item.sponsor?.displayName ?? '',
           quantity: `${item.qtyRemaining}/${item.qtyRequested}`,
@@ -780,6 +792,30 @@ function buildGiftSearchExport(campaignName: string, result: GiftSearchResult | 
       },
     ],
   };
+}
+
+function sortGiftSearchItems(items: GiftSearchItem[]): GiftSearchItem[] {
+  return [...items].sort((left, right) => {
+    const recipientComparison = compareOptionalProgramIds(
+      left.recipient?.programRecipientId,
+      right.recipient?.programRecipientId
+    );
+    if (recipientComparison !== 0) {
+      return recipientComparison;
+    }
+    const groupComparison = compareOptionalProgramIds(left.recipient?.groupProgramId, right.recipient?.groupProgramId);
+    if (groupComparison !== 0) {
+      return groupComparison;
+    }
+    const giftComparison = left.description.localeCompare(right.description, undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    });
+    if (giftComparison !== 0) {
+      return giftComparison;
+    }
+    return left.wishlistItemId.localeCompare(right.wishlistItemId);
+  });
 }
 
 function buildFilterChips(result: GiftSearchResult | null): GiftSearchFilterChip[] {

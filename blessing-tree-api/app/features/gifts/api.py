@@ -5,6 +5,7 @@ import uuid
 
 from flask import g, request
 from flask_restx import Resource
+from sqlalchemy import func
 
 from app.db import SessionLocal
 from app.features.admin.audit_service import AuditEventService, build_changes
@@ -39,6 +40,8 @@ from app.features.gifts.serializers import (
     serialize_scan_lookup,
 )
 from app.models.donation_line import DonationLine
+from app.models.recipient import Recipient
+from app.models.recipient_group import RecipientGroup
 from app.models.wishlist import Wishlist
 from app.models.wishlist_item import WishlistItem
 
@@ -128,20 +131,14 @@ class CampaignGiftReceiveLookupResource(Resource):
             return {"message": "Recipient ID is required"}, 400
 
         with SessionLocal() as db:
-            parsed, results = _gift_search_service.search_staff_gifts(
-                db,
-                campaign_id,
-                query=recipient_id,
-                filters={"q": recipient_id},
-                limit=min(_limit_arg(), 200),
+            parsed = _gift_search_service.parse(recipient_id)
+            exact_results = _lookup_exact_receive_items(db, campaign_id, recipient_id)
+            return serialize_gift_search_response(
+                campaign_id=campaign_id,
+                parsed_filters=parsed.to_dict(),
+                results=exact_results,
+                public=False,
             )
-            exact_results = _filter_exact_recipient_results(results, recipient_id)
-        return serialize_gift_search_response(
-            campaign_id=campaign_id,
-            parsed_filters=parsed.to_dict(),
-            results=exact_results,
-            public=False,
-        )
 
 
 @campaign_ns.route("/<string:campaign_id>/gifts/operations")
@@ -840,21 +837,45 @@ def _limit_arg() -> int:
         return 100
 
 
-def _filter_exact_recipient_results(results: list[WishlistItem], recipient_id: str) -> list[WishlistItem]:
+def _lookup_exact_receive_items(db, campaign_id: str, recipient_id: str) -> list[WishlistItem]:
     normalized_lookup = _normalize_recipient_lookup(recipient_id)
-    exact_matches = [
-        item
-        for item in results
-        if _normalize_recipient_lookup(getattr(getattr(item.wishlist, "recipient", None), "program_recipient_id", None))
-        == normalized_lookup
-    ]
-    if not exact_matches:
-        return []
+    recipient = (
+        db.query(Recipient)
+        .filter(
+            Recipient.campaign_id == uuid.UUID(campaign_id),
+            func.upper(func.replace(Recipient.program_recipient_id, " ", "")) == normalized_lookup,
+        )
+        .one_or_none()
+    )
+    if recipient is not None:
+        return _receive_items_query(db, campaign_id).filter(Wishlist.recipient_id == recipient.id).all()
 
-    recipient_uuid = exact_matches[0].wishlist.recipient_id if exact_matches[0].wishlist is not None else None
-    if recipient_uuid is None:
-        return exact_matches
-    return [item for item in exact_matches if item.wishlist is not None and item.wishlist.recipient_id == recipient_uuid]
+    group = (
+        db.query(RecipientGroup)
+        .filter(
+            RecipientGroup.campaign_id == uuid.UUID(campaign_id),
+            func.upper(func.replace(RecipientGroup.program_group_id, " ", "")) == normalized_lookup,
+        )
+        .one_or_none()
+    )
+    if group is None:
+        return []
+    return _receive_items_query(db, campaign_id).filter(Recipient.recipient_group_id == group.id).all()
+
+
+def _receive_items_query(db, campaign_id: str):
+    return (
+        db.query(WishlistItem)
+        .join(Wishlist, Wishlist.id == WishlistItem.wishlist_id)
+        .join(Recipient, Recipient.id == Wishlist.recipient_id)
+        .join(RecipientGroup, RecipientGroup.id == Recipient.recipient_group_id)
+        .filter(Wishlist.campaign_id == uuid.UUID(campaign_id))
+        .order_by(
+            Recipient.program_recipient_id.asc(),
+            WishlistItem.description.asc(),
+            WishlistItem.id.asc(),
+        )
+    )
 
 
 def _normalize_recipient_lookup(value: object) -> str:

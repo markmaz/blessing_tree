@@ -30,6 +30,7 @@ import { CampaignPeopleRecipientDrawer } from '@/features/campaigns/ui/CampaignP
 import { ConfirmationModal } from '@/shared/ui/ConfirmationModal';
 import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
+import { compareOptionalProgramIds } from '@/shared/lib/naturalSort';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
 import type { ReportExportPayload } from '@/features/reports/model/reportExport';
 
@@ -149,6 +150,7 @@ export function CampaignPeopleWorkspace({
 
       const haystack = [
         group.groupName,
+        group.programGroupId ?? '',
         group.programAbbreviation ?? '',
         group.externalReference ?? '',
         group.parentOrganization?.groupName ?? '',
@@ -186,6 +188,7 @@ export function CampaignPeopleWorkspace({
         recipient.displayLabel,
         recipient.firstName ?? '',
         recipient.lastName ?? '',
+        recipient.group?.programGroupId ?? '',
         recipient.group?.groupName ?? '',
       ]
         .join(' ')
@@ -674,8 +677,9 @@ function buildGroupDirectoryRows(groups: CampaignPeopleGroup[]) {
 
   groups
     .filter((group) => !group.parentOrganizationGroupId)
+    .sort(compareGroupsByProgramGroupId)
     .forEach((group) => {
-    const familyGroups = childGroupsByParentId.get(group.id) ?? [];
+    const familyGroups = [...(childGroupsByParentId.get(group.id) ?? [])].sort(compareGroupsByProgramGroupId);
     const totalPeople = group.recipientCount + familyGroups.reduce((total, family) => total + family.recipientCount, 0);
     rows.push({
       __rowType: 'organizationHeader',
@@ -702,11 +706,19 @@ function buildGroupDirectoryRows(groups: CampaignPeopleGroup[]) {
   return rows;
 }
 
+function compareGroupsByProgramGroupId(left: CampaignPeopleGroup, right: CampaignPeopleGroup): number {
+  const leftId = left.programGroupId ?? left.programAbbreviation ?? left.groupName;
+  const rightId = right.programGroupId ?? right.programAbbreviation ?? right.groupName;
+  const idComparison = compareOptionalProgramIds(leftId, rightId);
+  if (idComparison !== 0) {
+    return idComparison;
+  }
+  return left.groupName.localeCompare(right.groupName);
+}
+
 function sortRecipientsByProgramId(recipients: CampaignRecipient[]): CampaignRecipient[] {
   return [...recipients].sort((left, right) => {
-    const leftId = left.programRecipientId ?? '';
-    const rightId = right.programRecipientId ?? '';
-    const idComparison = leftId.localeCompare(rightId, undefined, { numeric: true, sensitivity: 'base' });
+    const idComparison = compareOptionalProgramIds(left.programRecipientId, right.programRecipientId);
     if (idComparison !== 0) {
       return idComparison;
     }
@@ -729,6 +741,7 @@ function formatGroupHeader(group: CampaignPeopleGroup, totalPeople: number): str
   return [
     group.groupName,
     [
+      group.programGroupId ? `Group ID: ${group.programGroupId}` : null,
       group.programAbbreviation ? `Program: ${group.programAbbreviation}` : null,
       toRecipientGroupTypeLabel(group.groupType),
       group.organizationType ?? null,
@@ -744,7 +757,7 @@ function formatGroupHeader(group: CampaignPeopleGroup, totalPeople: number): str
 
 function formatFamilyHeader(group: CampaignPeopleGroup): string {
   return [
-    group.groupName,
+    [group.programGroupId, group.groupName].filter(Boolean).join(' '),
     `Parent/Guardian: ${formatGroupPrimaryContact(group)}`,
     group.externalReference ? `External Reference: ${group.externalReference}` : null,
   ]
@@ -824,7 +837,7 @@ function buildPeopleDirectoryExport(campaignName: string, recipients: CampaignRe
           personId: recipient.programRecipientId ?? '',
           person: recipient.displayLabel,
           program: toRecipientProgramTypeLabel(recipient.programType),
-          group: recipient.group?.groupName ?? '',
+          group: [recipient.group?.programGroupId, recipient.group?.groupName].filter(Boolean).join(' '),
           age: formatRecipientAge(recipient.age, recipient.ageUnit),
           gender: recipient.gender ?? '',
           room: recipient.facilityRoom ?? '',
