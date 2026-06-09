@@ -553,7 +553,7 @@ def build_document() -> None:
     add_heading(doc, "Gift Tag Builder", level=2)
     add_body(
         doc,
-        "Gift Tag Builder lets campaign managers design the tag template for a campaign. The default tag is 3 inches wide by 2 inches tall, includes the Blessing Tree logo, and must include the QR code. Templates support merge fields such as recipient label, family or organization, age, gender, campaign purpose, and optional gift details.",
+        "Gift Tag Builder lets campaign managers design the tag template for a campaign. The default tag is 3 inches wide by 2 inches tall, includes the Blessing Tree logo, and must include the QR code. Templates support merge fields such as recipient label, recipient ID, family or organization, family ID, age, gender, campaign purpose, and optional gift details.",
     )
     add_bullets(
         doc,

@@ -1228,7 +1228,7 @@ FIELD_REFERENCES: tuple[FieldReference, ...] = (
         section='Gift Tag Builder Fields',
         field='Merge Fields',
         what_it_does='Dynamic fields placed on the tag.',
-        suggestion='Use recipient label, family/group, age, gender, campaign purpose, and QR. Avoid gift description by default.',
+        suggestion='Use recipient label, recipient ID, family/group, family ID, age, gender, campaign purpose, and QR. Avoid gift description by default.',
     ),
     FieldReference(
         section='Gift Tag Builder Fields',

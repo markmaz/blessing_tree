@@ -445,6 +445,7 @@ def build_label_payload(campaign: Campaign, item: WishlistItem) -> dict[str, Any
         "recipient": {
             "display_label": recipient.display_label if recipient is not None else None,
             "program_recipient_id": recipient.program_recipient_id if recipient is not None else None,
+            "group_program_id": group.program_group_id if group is not None else None,
             "group_label": group.group_name if group is not None else None,
             "age": recipient.age if recipient is not None else None,
             "age_unit": recipient.age_unit if recipient is not None else None,
@@ -471,6 +472,7 @@ def build_manual_label_payload(campaign: Campaign, manual_label: CampaignManualG
         "recipient": {
             "display_label": None,
             "program_recipient_id": None,
+            "group_program_id": None,
             "group_label": None,
             "age": None,
             "age_unit": None,

@@ -66,7 +66,9 @@ const tagSizes = {
 } as const;
 const mergeFields = [
   '{{recipient_display_name}}',
+  '{{recipient_id}}',
   '{{family_or_group_name}}',
+  '{{family_id}}',
   '{{age_display}}',
   '{{gender}}',
   '{{campaign_name}}',
@@ -623,7 +625,9 @@ function isTagElement(value: unknown): value is TagElement {
 function sampleText(text: string): string {
   return text
     .replaceAll('{{recipient_display_name}}', 'Ava')
+    .replaceAll('{{recipient_id}}', 'BT-001-01')
     .replaceAll('{{family_or_group_name}}', 'Martinez Family')
+    .replaceAll('{{family_id}}', 'BT-001')
     .replaceAll('{{age_display}}', '8')
     .replaceAll('{{gender}}', 'Girl')
     .replaceAll('{{campaign_name}}', 'Christmas Giving')

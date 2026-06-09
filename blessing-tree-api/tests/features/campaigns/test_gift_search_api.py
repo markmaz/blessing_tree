@@ -886,6 +886,8 @@ def test_gift_label_print_job_creates_label_rows_and_opaque_scan_path(app, monke
     campaign.season_theme = "Christmas Giving"
     assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
     gifts = _seed_gifts(session, campaign.id)
+    label_item = session.query(WishlistItem).filter(WishlistItem.id == gifts["sponsored_id"]).one()
+    label_item.wishlist.recipient.recipient_group.program_group_id = "BT-001"
     session.commit()
 
     client = app.test_client()
@@ -907,6 +909,7 @@ def test_gift_label_print_job_creates_label_rows_and_opaque_scan_path(app, monke
     assert label["scan_path"] == "/public/gifts/scan/gift-search-sponsored"
     assert str(gifts["sponsored_id"]) not in label["scan_path"]
     assert label["recipient"]["program_recipient_id"] == "CH-001"
+    assert label["recipient"]["group_program_id"] == "BT-001"
     assert label["recipient"]["age"] == 8
     assert label["recipient"]["gender"] == "F"
     assert label["theme"]["icon"] == "bi-tree-fill"

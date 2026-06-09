@@ -540,6 +540,7 @@ HELP_TOPICS: tuple[HelpTopic, ...] = (
         answer=(
             "Use Gift Tag Builder under Gifts to edit the campaign's gift tag template. "
             "The template controls the tag size, text, images, merge fields, cut lines, and required QR code. "
+            "Use recipient ID and family ID merge fields when staff need IDs printed directly on the tag. "
             "Use Gift Status or Gift Operations when you are ready to print tags for selected gifts."
         ),
         steps=(
