@@ -438,7 +438,8 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
         content=(
             "Gift Tag Builder lets campaign managers design the tag template for a campaign. The default tag is 3 inches "
             "wide by 2 inches tall, includes the Blessing Tree logo, and must include the QR code. Batch printing can "
-            "request tracked or blank tags."
+            "request tracked or blank tags. Merge fields include recipient label, recipient ID, family or group name, "
+            "family ID, age, gender, campaign purpose, gift tag message, and optional gift description."
         ),
         phrases=("gift tag builder", "design gift tag", "print gift tags", "blank tags", "manual tags", "qr code tags"),
         steps=(

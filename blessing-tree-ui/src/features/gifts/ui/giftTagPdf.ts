@@ -143,7 +143,9 @@ function renderRect(pdf: jsPDF, element: TagRectElement, originX: number, origin
 function mergeText(text: string, label: GiftLabelPayload): string {
   return text
     .replaceAll('{{recipient_display_name}}', label.recipient.display_label ?? '')
+    .replaceAll('{{recipient_id}}', label.recipient.program_recipient_id ?? '')
     .replaceAll('{{family_or_group_name}}', label.recipient.group_label ?? '')
+    .replaceAll('{{family_id}}', label.recipient.group_program_id ?? '')
     .replaceAll('{{age_display}}', formatAge(label.recipient.age, label.recipient.age_unit))
     .replaceAll('{{gender}}', formatGender(label.recipient.gender))
     .replaceAll('{{campaign_name}}', label.campaign.name)

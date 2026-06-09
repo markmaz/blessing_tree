@@ -210,7 +210,9 @@ Initial merge fields:
 | Field | Meaning |
 | --- | --- |
 | `{{recipient_display_name}}` | Safe recipient display name. |
+| `{{recipient_id}}` | Recipient ID, including family suffix when present, such as `BT-001-01`. |
 | `{{family_or_group_name}}` | Household, family, organization, or group. |
+| `{{family_id}}` | Family/group ID such as `BT-001`. Blank for records without a group ID. |
 | `{{age_display}}` | Age or age band. |
 | `{{gender}}` | Recipient gender label. |
 | `{{campaign_name}}` | Campaign name. |

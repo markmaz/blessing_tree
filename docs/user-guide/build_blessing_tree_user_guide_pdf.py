@@ -866,7 +866,7 @@ def build() -> None:
             h2("QR Scan Page"),
             p("Gift tags include a QR code. Scanning the QR code opens a mobile-friendly public scan page for that gift label. Staff can use the page in a pickup or distribution setting to mark a gift as picked up or distributed, confirm the update, and move to the next scan."),
             h2("Gift Tag Builder"),
-            p("Gift Tag Builder lets campaign managers design the tag template for a campaign. The default tag is 3 inches wide by 2 inches tall, includes the Blessing Tree logo, and must include the QR code. Templates support merge fields such as recipient label, family or organization, age, gender, campaign purpose, and optional gift details."),
+            p("Gift Tag Builder lets campaign managers design the tag template for a campaign. The default tag is 3 inches wide by 2 inches tall, includes the Blessing Tree logo, and must include the QR code. Templates support merge fields such as recipient label, recipient ID, family or organization, family ID, age, gender, campaign purpose, and optional gift details."),
             bullets(["QR code is required and cannot be omitted from a valid tracked tag.", "Images can be uploaded and placed on the tag.", "The default template avoids gift description so the physical gift tag does not reveal gift contents.", "Batch printing can request a quantity of tracked or blank tags.", "Blank/manual tags create unassigned QR labels for quick hand-written use."]),
             PageBreak(),
             h1("Ask Blessing Tree"),

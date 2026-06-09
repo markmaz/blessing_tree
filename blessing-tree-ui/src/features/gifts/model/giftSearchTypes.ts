@@ -89,6 +89,7 @@ export interface GiftLabelPayload {
   recipient: {
     display_label: string | null;
     program_recipient_id: string | null;
+    group_program_id: string | null;
     group_label: string | null;
     age?: number | null;
     age_unit?: string | null;
