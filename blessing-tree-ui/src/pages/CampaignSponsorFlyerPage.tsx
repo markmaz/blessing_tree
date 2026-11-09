@@ -16,6 +16,11 @@ import {
 } from '@/features/campaigns/api/campaignFlyerApi';
 import { getCampaign } from '@/features/campaigns/api/campaignApi';
 import { CampaignStudioDrawer } from '@/features/campaigns/ui/CampaignStudioDrawer';
+import {
+  copyQrDataUrl,
+  createPrintQrDataUrl,
+  downloadQrDataUrl,
+} from '@/features/campaigns/ui/flyerQrExport';
 import type { CampaignFlyer, CampaignFlyerInput } from '@/features/campaigns/model/campaignFlyerTypes';
 import type { Campaign } from '@/features/campaigns/model/campaignTypes';
 import '@/features/campaigns/ui/publicSponsors.css';
@@ -93,6 +98,7 @@ export function CampaignSponsorFlyerPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [qrExportAction, setQrExportAction] = useState<'copy' | 'download' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -308,6 +314,47 @@ export function CampaignSponsorFlyerPage() {
       altText: 'Sponsor QR code',
     };
     addElement(element);
+  }
+
+  async function handleDownloadQr() {
+    if (!qrUrl) {
+      setError('Set a QR target before downloading the sponsor QR code.');
+      return;
+    }
+    setQrExportAction('download');
+    setError(null);
+    setMessage(null);
+    try {
+      const dataUrl = await createPrintQrDataUrl(qrUrl);
+      downloadQrDataUrl(
+        dataUrl,
+        `${slugifyFlyerKey(draftRef.current.flyerKey || draftRef.current.name)}-qr.png`
+      );
+      setMessage('High-resolution QR code downloaded.');
+    } catch (downloadError) {
+      setError(downloadError instanceof Error ? downloadError.message : 'Unable to download the QR code.');
+    } finally {
+      setQrExportAction(null);
+    }
+  }
+
+  async function handleCopyQr() {
+    if (!qrUrl) {
+      setError('Set a QR target before copying the sponsor QR code.');
+      return;
+    }
+    setQrExportAction('copy');
+    setError(null);
+    setMessage(null);
+    try {
+      const dataUrl = await createPrintQrDataUrl(qrUrl);
+      await copyQrDataUrl(dataUrl);
+      setMessage('QR code copied. Paste it into your printing or design service.');
+    } catch (copyError) {
+      setError(copyError instanceof Error ? copyError.message : 'Unable to copy the QR code.');
+    } finally {
+      setQrExportAction(null);
+    }
   }
 
   function handleInsertLogo() {
@@ -563,7 +610,27 @@ export function CampaignSponsorFlyerPage() {
         </button>
         <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => void handleInsertQr()}>
           <i className="bi bi-qr-code me-2" aria-hidden="true" />
-          QR
+          Insert QR
+        </button>
+        <button
+          type="button"
+          className="btn btn-outline-secondary btn-sm"
+          disabled={!qrUrl || qrExportAction !== null}
+          onClick={() => void handleDownloadQr()}
+          title="Download a high-resolution PNG for printing"
+        >
+          <i className="bi bi-download me-2" aria-hidden="true" />
+          {qrExportAction === 'download' ? 'Preparing...' : 'Download QR'}
+        </button>
+        <button
+          type="button"
+          className="btn btn-outline-secondary btn-sm"
+          disabled={!qrUrl || qrExportAction !== null}
+          onClick={() => void handleCopyQr()}
+          title="Copy the QR image to the clipboard"
+        >
+          <i className="bi bi-clipboard me-2" aria-hidden="true" />
+          {qrExportAction === 'copy' ? 'Copying...' : 'Copy QR'}
         </button>
         <button type="button" className="btn btn-outline-secondary btn-sm" disabled={!selectedElement} onClick={handleDuplicate}>
           <i className="bi bi-copy me-2" aria-hidden="true" />
@@ -591,7 +658,7 @@ export function CampaignSponsorFlyerPage() {
           </div>
           <h1 className="h3 mb-1">Flyer Builder</h1>
           <p className="text-muted mb-0">
-            Double-click text to edit it, drag items around the page, resize with handles, and export the finished flyer as a PDF.
+            Double-click text to edit it, drag items around the page, resize with handles, and export the finished flyer or its QR code.
           </p>
         </div>
       </div>
