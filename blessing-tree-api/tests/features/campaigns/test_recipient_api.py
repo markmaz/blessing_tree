@@ -780,6 +780,129 @@ def test_family_can_be_associated_with_an_organization(app, monkeypatch: pytest.
     assert family_workspace_payload["recipients"][0]["program_recipient_id"] == "SAH-001-01"
 
 
+def test_associating_existing_family_reallocates_colliding_organization_id(
+    app, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    organization = _seed_organization_group(session, campaign.id)
+    existing_family = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        parent_organization_group_id=organization.id,
+        group_type=RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+        group_name="Adams Family",
+        program_group_number=1,
+        program_group_id="SAH-001",
+        status=RECIPIENT_GROUP_STATUS_ACTIVE,
+    )
+    standalone_family = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        group_type=RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+        group_name="Baker Family",
+        program_group_number=1,
+        program_group_id="BT-001",
+        status=RECIPIENT_GROUP_STATUS_ACTIVE,
+    )
+    session.add_all([existing_family, standalone_family])
+    session.flush()
+    child = Recipient(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        recipient_group_id=standalone_family.id,
+        recipient_kind=RECIPIENT_KIND_CHILD,
+        program_type=RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
+        privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+        display_label="Ben Baker",
+        program_recipient_number=1,
+        program_recipient_id="BT-001-01",
+        status=RECIPIENT_STATUS_ACTIVE,
+    )
+    session.add(child)
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    organization_id = str(organization.id)
+    family_id = str(standalone_family.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().patch(
+        f"/api/v1/campaigns/{campaign_id}/recipient-groups/{family_id}",
+        json={"parent_organization_group_id": organization_id},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["parent_organization_group_id"] == organization_id
+    assert payload["program_group_number"] == 2
+    assert payload["program_group_id"] == "SAH-002"
+    assert payload["recipients"][0]["program_recipient_id"] == "SAH-002-01"
+
+
+def test_moving_family_uses_new_organization_prefix_and_next_available_id(
+    app, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    original_organization = _seed_organization_group(session, campaign.id)
+    next_organization = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        group_type=RECIPIENT_GROUP_TYPE_ORGANIZATION,
+        organization_type="CHURCH_PROGRAM",
+        group_name="Maple Grove",
+        program_abbreviation="MG",
+        status=RECIPIENT_GROUP_STATUS_ACTIVE,
+    )
+    moving_family = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        parent_organization_group_id=original_organization.id,
+        group_type=RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+        group_name="Baker Family",
+        program_group_number=1,
+        program_group_id="SAH-001",
+        status=RECIPIENT_GROUP_STATUS_ACTIVE,
+    )
+    occupied_family = RecipientGroup(
+        id=uuid.uuid4(),
+        campaign_id=campaign.id,
+        parent_organization_group_id=next_organization.id,
+        group_type=RECIPIENT_GROUP_TYPE_HOUSEHOLD,
+        group_name="Adams Family",
+        program_group_number=1,
+        program_group_id="MG-001",
+        status=RECIPIENT_GROUP_STATUS_ACTIVE,
+    )
+    session.add_all([next_organization, moving_family, occupied_family])
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    next_organization_id = str(next_organization.id)
+    family_id = str(moving_family.id)
+    session.commit()
+    session.close()
+
+    response = app.test_client().patch(
+        f"/api/v1/campaigns/{campaign_id}/recipient-groups/{family_id}",
+        json={"parent_organization_group_id": next_organization_id},
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["parent_organization_group_id"] == next_organization_id
+    assert payload["program_group_number"] == 2
+    assert payload["program_group_id"] == "MG-002"
+
+
 def test_group_audit_changes_include_family_group_id_fields() -> None:
     changes = build_changes(
         before={"program_group_number": None, "program_group_id": None},
