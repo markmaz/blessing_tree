@@ -42,6 +42,42 @@ KNOWLEDGE_ARTICLES: tuple[KnowledgeArticle, ...] = (
         required_capability="campaign.view",
     ),
     KnowledgeArticle(
+        key="guide_start_campaign_step_by_step",
+        title="Start a Campaign Step by Step",
+        section="User Guide > Campaigns > Start a Campaign",
+        content=(
+            "Set up a new campaign in this order: create it as Draft, make it the current campaign, review Settings, "
+            "set up the Team, choose Gift Rules, add milestone dates, create and test communication templates, schedule "
+            "messages, test public sponsor signup, review printed materials, clear Readiness blockers, and only then "
+            "change the campaign to Active. Copy a correctly configured previous campaign when possible, but review all "
+            "copied dates, people, templates, and public settings before activation."
+        ),
+        phrases=(
+            "start a campaign",
+            "set up a campaign",
+            "setup a campaign",
+            "new campaign checklist",
+            "campaign setup steps",
+            "what do i need for a campaign",
+            "how do i configure a campaign",
+            "prepare a campaign",
+        ),
+        steps=(
+            "Open Campaigns and create the campaign with status Draft. Use Start From Previous Campaign when an earlier campaign has a good setup.",
+            "Make the new campaign current and open Campaign Studio.",
+            "In Settings, confirm the name, year, purpose, description, public sponsor slug, and full campaign start and end dates.",
+            "In Team, confirm at least one Campaign Manager, add a backup manager, and give staff only the app access they need.",
+            "In Gift Rules, review sponsor limits, wishlist limits, fulfillment rules, partial commitments, and the reservation hold time.",
+            "In Schedule, add recipient registration, sponsor outreach, gift intake, gift turn-in, pickup, and campaign close milestones. Add sponsor registration start and end dates when public signup will be used.",
+            "In Communications, create active templates, insert the needed merge fields, and send test emails before any real send.",
+            "Return to Schedule to place reminders and instructions on the calendar.",
+            "Test the public sponsor page, verification email, gift selection, flyer QR code, and a sample gift tag.",
+            "Open Readiness, clear every blocker, and then change the campaign status from Draft to Active in Settings.",
+        ),
+        route_name="campaign_studio",
+        required_capability="campaign.admin",
+    ),
+    KnowledgeArticle(
         key="guide_teams_access",
         title="Teams and App Access",
         section="User Guide > Campaign Studio > Teams and App Access",
