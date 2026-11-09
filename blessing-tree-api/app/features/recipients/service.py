@@ -1094,6 +1094,25 @@ class CampaignRecipientService:
             return
 
         prefix = self._family_group_prefix(db, group)
+        current_prefix = group.program_group_id.rsplit("-", 1)[0] if group.program_group_id else None
+        if current_prefix is not None and current_prefix != prefix:
+            group.program_group_number = None
+
+        if group.program_group_number is not None:
+            candidate_group_id = f"{prefix}-{group.program_group_number:03d}"
+            candidate_is_used = (
+                db.query(RecipientGroup.id)
+                .filter(
+                    RecipientGroup.campaign_id == group.campaign_id,
+                    RecipientGroup.id != group.id,
+                    RecipientGroup.program_group_id == candidate_group_id,
+                )
+                .first()
+                is not None
+            )
+            if candidate_is_used:
+                group.program_group_number = None
+
         if group.program_group_number is None:
             max_number = (
                 db.query(func.max(RecipientGroup.program_group_number))
@@ -1111,10 +1130,13 @@ class CampaignRecipientService:
 
     def _family_group_prefix(self, db: Session, group: RecipientGroup) -> str:
         if group.parent_organization_group_id:
-            parent_group = (
-                group.parent_organization
-                or db.query(RecipientGroup).filter(RecipientGroup.id == group.parent_organization_group_id).one_or_none()
-            )
+            parent_group = group.parent_organization
+            if parent_group is None or parent_group.id != group.parent_organization_group_id:
+                parent_group = (
+                    db.query(RecipientGroup)
+                    .filter(RecipientGroup.id == group.parent_organization_group_id)
+                    .one_or_none()
+                )
             if parent_group is not None:
                 prefix = parent_group.program_abbreviation or self._derive_group_abbreviation(parent_group.group_name)
                 parent_group.program_abbreviation = prefix
