@@ -889,6 +889,13 @@ def test_staff_can_recover_pending_public_sponsor_registrations(
     assert verify_payload["sponsor"]["email"] == "verify-me@example.com"
     assert verify_payload["sponsor"]["sponsored_item_count"] == 1
 
+    pending_response = client.get(
+        f"/api/v1/campaigns/{campaign_id}/pending-sponsor-registrations",
+        headers=auth_header(manager_id, "VOLUNTEER"),
+    )
+    assert pending_response.status_code == 200
+    assert pending_response.get_json() == []
+
 
 def test_public_sponsor_client_ip_only_trusts_forwarded_header_from_trusted_proxy(
     app,
