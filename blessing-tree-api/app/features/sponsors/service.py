@@ -317,7 +317,10 @@ class CampaignSponsorService:
         self.expire_pending_registrations(db, campaign_id)
         return (
             db.query(PendingSponsorRegistration)
-            .filter(PendingSponsorRegistration.campaign_id == uuid.UUID(campaign_id))
+            .filter(
+                PendingSponsorRegistration.campaign_id == uuid.UUID(campaign_id),
+                PendingSponsorRegistration.status == PENDING_SPONSOR_REGISTRATION_STATUS_PENDING,
+            )
             .order_by(PendingSponsorRegistration.created_at.desc())
             .all()
         )
