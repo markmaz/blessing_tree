@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.config import FRONTEND_BASE_URL
 from app.exceptions.service_error import ServiceError
+from app.features.recipients.privacy import external_recipient_group_label, external_recipient_label
 from app.models.campaign import Campaign
 from app.models.recipient import Recipient
 from app.models.recipient_group import RecipientGroup
@@ -218,11 +219,11 @@ def serialize_dropoff_payload(row: SponsorDropoffToken) -> dict[str, object]:
             recipients[recipient_key] = {
                 "id": str(recipient.id) if recipient is not None else None,
                 "program_recipient_id": recipient.program_recipient_id if recipient is not None else None,
-                "display_label": recipient.display_label if recipient is not None else "Recipient",
+                "display_label": external_recipient_label(recipient),
                 "age": recipient.age if recipient is not None else None,
                 "age_unit": recipient.age_unit if recipient is not None else None,
                 "gender": recipient.gender if recipient is not None else None,
-                "group_label": group.group_name if isinstance(group, RecipientGroup) else None,
+                "group_label": external_recipient_group_label(recipient) if isinstance(group, RecipientGroup) else None,
                 "gifts": [],
             }
         recipients[recipient_key]["gifts"].append(_serialize_dropoff_gift(item))

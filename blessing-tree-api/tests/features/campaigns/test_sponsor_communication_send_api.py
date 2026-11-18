@@ -20,6 +20,7 @@ from app.models.recipient import Recipient
 from app.models.recipient_constants import (
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
     RECIPIENT_KIND_CHILD,
+    RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
     RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
     RECIPIENT_STATUS_ACTIVE,
@@ -81,6 +82,51 @@ def test_preview_sponsor_communication_renders_gift_merge_fields(app, monkeypatc
     assert "Noah Display: Board game" in payload["text"]
     assert payload["merge_fields"]["gift.due_date"] == "2026-12-10"
     assert payload["warnings"] == []
+
+
+def test_sponsor_communication_hides_anonymous_recipient_names(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    session = sponsor_api_module.SessionLocal()
+    manager = seed_user(session, name="Gift Manager")
+    campaign = seed_campaign(session, name="Private Recipient Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    sponsor, template = _seed_sponsor_template_context(session, campaign.id)
+    recipient = session.query(Recipient).filter(Recipient.display_label == "Ava Display").one()
+    recipient.privacy_level = RECIPIENT_PRIVACY_LEVEL_ANONYMOUS
+    recipient.first_name = "Ava"
+    recipient.last_name = "Johnson"
+    recipient.public_label = "Ava Public"
+    recipient.program_recipient_id = "BT-001-01"
+    session.commit()
+
+    client = app.test_client()
+    response = client.post(
+        f"/api/v1/campaigns/{campaign.id}/sponsors/{sponsor.id}/communications/preview",
+        json={"template_id": str(template.id)},
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert "BT-001-01: Winter coat" in payload["text"]
+    assert "Ava" not in payload["text"]
+    assert "Johnson" not in payload["text"]
+    assert "Ava" not in payload["merge_fields"]["gift.recipient_names"]
+
+    from app.features.gifts.label_service import build_label_payload
+    from app.features.sponsors.service import CampaignSponsorService
+
+    wishlist_item = recipient.wishlist.items[0]
+    label_payload = build_label_payload(campaign, wishlist_item)
+    assert label_payload["recipient"]["display_label"] == "BT-001-01"
+    assert label_payload["recipient"]["group_label"] == "Household"
+    assert "Ava" not in str(label_payload)
+    assert "Johnson" not in str(label_payload)
+
+    public_payload = CampaignSponsorService()._serialize_public_available_item(wishlist_item)
+    assert public_payload["recipient"]["display_label"] == "BT-001-01"
+    assert "Ava" not in str(public_payload)
+    assert "Johnson" not in str(public_payload)
 
 
 def test_preview_warns_when_template_has_no_matching_gifts(app, monkeypatch) -> None:
@@ -286,6 +332,12 @@ def test_mobile_dropoff_token_resolves_committed_gifts(app, monkeypatch) -> None
         .filter(Sponsorship.campaign_id == campaign.id, Sponsorship.sponsor_id == sponsor.id)
         .one()
     )
+    private_recipient = session.query(Recipient).filter(Recipient.display_label == "Ava Display").one()
+    private_recipient.privacy_level = RECIPIENT_PRIVACY_LEVEL_ANONYMOUS
+    private_recipient.first_name = "Ava"
+    private_recipient.last_name = "Johnson"
+    private_recipient.public_label = "Ava Public"
+    private_recipient.program_recipient_id = "BT-001-01"
     from app.features.gifts.sponsor_dropoff_service import SponsorDropoffService
 
     raw_token, token_row = SponsorDropoffService().get_or_create_active_token(session, sponsorship=sponsorship)
@@ -301,15 +353,27 @@ def test_mobile_dropoff_token_resolves_committed_gifts(app, monkeypatch) -> None
     payload = response.get_json()
     assert payload["sponsor"]["display_name"] == "Jane Sponsor"
     assert payload["sponsorship"]["drop_off_status"] == "NOT_STARTED"
-    assert [recipient["program_recipient_id"] for recipient in payload["recipients"]] == [None, None]
+    assert [recipient["program_recipient_id"] for recipient in payload["recipients"]] == [None, "BT-001-01"]
+    anonymous_recipient = next(
+        recipient for recipient in payload["recipients"] if recipient["program_recipient_id"] == "BT-001-01"
+    )
+    assert anonymous_recipient["display_label"] == "BT-001-01"
+    assert anonymous_recipient["group_label"] == "Household"
+    assert "Ava" not in str(anonymous_recipient)
+    assert "Johnson" not in str(anonymous_recipient)
     gift_descriptions = [
         gift["description"]
         for recipient in payload["recipients"]
         for gift in recipient["gifts"]
     ]
-    assert gift_descriptions == ["Winter coat", "Board game"]
-    assert payload["recipients"][0]["gifts"][0]["can_receive"] is True
-    assert payload["recipients"][1]["gifts"][0]["can_unreceive"] is True
+    assert sorted(gift_descriptions) == ["Board game", "Winter coat"]
+    gifts_by_description = {
+        gift["description"]: gift
+        for recipient in payload["recipients"]
+        for gift in recipient["gifts"]
+    }
+    assert gifts_by_description["Winter coat"]["can_receive"] is True
+    assert gifts_by_description["Board game"]["can_unreceive"] is True
     session.expire(token_row)
     assert token_row.last_scanned_at is not None
     scan_event = session.query(SponsorDropoffScanEvent).one()
