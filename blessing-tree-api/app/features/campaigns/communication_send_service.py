@@ -14,6 +14,7 @@ from app.features.campaigns.service import CampaignService
 from app.features.campaigns.recipient_resolver import CampaignRecipientResolver, ResolvedCampaignRecipient
 from app.features.campaigns.studio_constants import COMMUNICATION_AUDIENCE_SPONSOR
 from app.features.campaigns.template_renderer import CampaignTemplateRenderer
+from app.features.recipients.privacy import external_recipient_label
 from app.features.gifts.sponsor_dropoff_service import SponsorDropoffService, build_dropoff_qr_url
 from app.models.campaign_communication_send import (
     COMMUNICATION_SEND_STATUS_FAILED,
@@ -729,19 +730,7 @@ def _dropoff_recipient_summary(rows: list[dict[str, str]]) -> str:
 
 
 def _public_safe_recipient_label(recipient: Recipient | None) -> str:
-    if recipient is None:
-        return "Recipient"
-    if recipient.public_label:
-        return recipient.public_label
-    if recipient.display_label:
-        return recipient.display_label
-    first_name = str(recipient.first_name or "").strip()
-    last_name = str(recipient.last_name or "").strip()
-    if first_name and last_name:
-        return f"{first_name} {last_name[0]}."
-    if first_name:
-        return first_name
-    return "Recipient"
+    return external_recipient_label(recipient)
 
 
 def _first_name(display_name: str | None) -> str:

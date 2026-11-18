@@ -16,6 +16,7 @@ from app.models.recipient import Recipient
 from app.models.recipient_constants import (
     RECIPIENT_GROUP_TYPE_HOUSEHOLD,
     RECIPIENT_KIND_CHILD,
+    RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
     RECIPIENT_GROUP_STATUS_ACTIVE,
     RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
     RECIPIENT_STATUS_ACTIVE,
@@ -493,9 +494,9 @@ def test_regenerate_sponsor_dropoff_token_returns_one_time_link_diagnostics(app,
     payload = response.get_json()
     link = payload["dropoff_link"]
     assert link["token_id"]
-    assert f"/mobile/receive/dropoff/" in link["dropoff_url"]
+    assert "/mobile/receive/dropoff/" in link["dropoff_url"]
     assert f"campaignId={campaign_id}" in link["dropoff_url"]
-    assert f"/api/v1/campaigns/mobile/dropoff-qr/" in link["qr_image_url"]
+    assert "/api/v1/campaigns/mobile/dropoff-qr/" in link["qr_image_url"]
     assert f"campaignId={campaign_id}" in link["qr_image_url"]
     assert link["expires_at"] is not None
     assert payload["sponsor"]["id"] == sponsor_id
@@ -645,6 +646,13 @@ def test_public_sponsor_signup_and_verification_flow(app, monkeypatch: pytest.Mo
 
     session = campaign_api_module.SessionLocal()
     campaign = _seed_public_signup_ready_campaign(session)
+    recipient = session.query(Recipient).one()
+    recipient.privacy_level = RECIPIENT_PRIVACY_LEVEL_ANONYMOUS
+    recipient.first_name = "Ava"
+    recipient.last_name = "Johnson"
+    recipient.display_label = "Ava Johnson"
+    recipient.public_label = "Ava Public"
+    recipient.program_recipient_id = "BT-001-01"
     campaign_id = str(campaign.id)
     session.commit()
     item_ids = [str(item.id) for item in session.query(WishlistItem).order_by(WishlistItem.label_code.asc()).all()]
@@ -657,6 +665,12 @@ def test_public_sponsor_signup_and_verification_flow(app, monkeypatch: pytest.Mo
     config_payload = config_response.get_json()
     assert config_payload["registration"]["status"] == "OPEN"
     assert len(config_payload["available_items"]) == 2
+    assert {
+        item["recipient"]["display_label"]
+        for item in config_payload["available_items"]
+    } == {"BT-001-01"}
+    assert "Ava" not in str(config_payload["available_items"])
+    assert "Johnson" not in str(config_payload["available_items"])
 
     signup_response = client.post(
         "/api/v1/public/campaigns/sponsor-signup-campaign/sponsors",
@@ -716,6 +730,12 @@ def test_public_sponsor_signup_and_verification_flow(app, monkeypatch: pytest.Mo
     assert commit_payload["sponsor"]["email"] == "jordan@example.com"
     assert commit_payload["sponsor"]["sponsored_item_count"] == 2
     assert commit_payload["gift_deadline"] is not None
+    assert {
+        item["recipient"]["display_label"]
+        for item in commit_payload["sponsor"]["sponsored_items"]
+    } == {"BT-001-01"}
+    assert "Ava" not in str(commit_payload["sponsor"]["sponsored_items"])
+    assert "Johnson" not in str(commit_payload["sponsor"]["sponsored_items"])
 
     session = campaign_api_module.SessionLocal()
     sponsorships = session.query(Sponsorship).filter(Sponsorship.campaign_id == uuid.UUID(campaign_id)).all()

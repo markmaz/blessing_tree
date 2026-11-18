@@ -15,6 +15,11 @@ from app.features.campaigns.studio_constants import (
     COMMUNICATION_AUDIENCE_VOLUNTEER,
 )
 from app.features.rbac.constants import CAMPAIGN_MANAGER_ROLE
+from app.features.recipients.privacy import (
+    external_recipient_first_name,
+    external_recipient_group_label,
+    external_recipient_label,
+)
 from app.features.rbac.models.campaign_user_role import CampaignUserRole
 from app.models.campaign_member import CampaignMember
 from app.models.campaign_member_access_role import CampaignMemberAccessRole
@@ -319,13 +324,13 @@ class CampaignRecipientResolver:
         recipients = [
             ResolvedCampaignRecipient(
                 email=str(recipient.direct_email).strip().lower(),
-                display_name=recipient.display_label,
+                display_name=external_recipient_label(recipient),
                 merge_fields={
-                    "contact.first_name": _first_name(recipient.display_label),
-                    "contact.full_name": recipient.display_label,
-                    "group.name": recipient.recipient_group.group_name if recipient.recipient_group else "",
-                    "recipient.first_name": _first_name(recipient.display_label),
-                    "recipient.full_name": recipient.display_label,
+                    "contact.first_name": external_recipient_first_name(recipient),
+                    "contact.full_name": external_recipient_label(recipient),
+                    "group.name": external_recipient_group_label(recipient),
+                    "recipient.first_name": external_recipient_first_name(recipient),
+                    "recipient.full_name": external_recipient_label(recipient),
                 },
                 contact_id=str(recipient.id),
             )

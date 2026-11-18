@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns.gift_policy_service import CampaignGiftPolicyService
+from app.features.recipients.privacy import external_recipient_label
 from app.features.campaigns.service import CampaignService
 from app.features.gifts.reservation_service import GiftReservationService
 from app.features.sponsors.validation import (
@@ -934,7 +935,7 @@ class CampaignSponsorService:
             "recipient": (
                 {
                     "id": str(recipient.id),
-                    "display_label": recipient.display_label,
+                    "display_label": external_recipient_label(recipient),
                     "program_recipient_id": recipient.program_recipient_id,
                 }
                 if recipient is not None

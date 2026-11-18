@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from app.features.recipients.privacy import external_recipient_label
 from app.models.pending_sponsor_registration import PendingSponsorRegistration
 from app.models.sponsor_dropoff_scan_event import SponsorDropoffScanEvent
 from app.models.sponsor_dropoff_token import SponsorDropoffToken
@@ -44,6 +45,16 @@ def serialize_sponsorship_item(item: SponsorshipItem) -> dict[str, Any]:
             else None
         ),
     }
+
+
+def serialize_public_sponsorship_item(item: SponsorshipItem) -> dict[str, Any]:
+    payload = serialize_sponsorship_item(item)
+    wishlist_item = item.wishlist_item
+    wishlist = wishlist_item.wishlist if wishlist_item is not None else None
+    recipient = wishlist.recipient if wishlist is not None else None
+    if recipient is not None and payload["recipient"] is not None:
+        payload["recipient"]["display_label"] = external_recipient_label(recipient)
+    return payload
 
 
 def serialize_sponsor_interaction(interaction: SponsorInteraction) -> dict[str, Any]:
@@ -261,6 +272,11 @@ def serialize_public_sponsor_verification_result(
     selection_limit: int,
     message: str,
 ) -> dict[str, Any]:
+    sponsor_payload = serialize_workspace_sponsor(sponsorship)
+    sponsor_payload["sponsored_items"] = [
+        serialize_public_sponsorship_item(item)
+        for item in sponsorship.items or []
+    ]
     return {
         "campaign": {
             "id": str(campaign.id),
@@ -274,7 +290,7 @@ def serialize_public_sponsor_verification_result(
             "verified_at": _serialize_datetime(registration.verified_at),
             "email": registration.email,
         },
-        "sponsor": serialize_workspace_sponsor(sponsorship),
+        "sponsor": sponsor_payload,
         "gift_deadline": gift_deadline,
         "selection_limit": selection_limit,
         "message": message,
