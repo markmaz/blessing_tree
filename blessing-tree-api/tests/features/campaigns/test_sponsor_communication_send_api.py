@@ -268,6 +268,93 @@ def test_send_sponsor_communication_records_send_recipient_and_interaction(app, 
     assert interaction.related_delivery_attempt_id == str(send.id)
 
 
+def test_sponsor_confirmation_email_includes_only_that_sponsors_complete_gift_details(app, monkeypatch) -> None:
+    install_auth(monkeypatch)
+    delivered: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        "app.features.campaigns.communication_send_service.send_email_message",
+        lambda **kwargs: delivered.append(kwargs),
+    )
+    session = sponsor_api_module.SessionLocal()
+    manager = seed_user(session, name="Gift Manager")
+    campaign = seed_campaign(session, name="Sponsor Confirmation Campaign")
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    sponsor = _seed_sponsor(session, campaign.id, email="confirming-sponsor@example.com")
+    other_sponsor = _seed_sponsor(session, campaign.id, email="other-sponsor@example.com")
+    template = _seed_template(
+        session,
+        campaign.id,
+        body_template="Confirmed gifts:\n{{gift.all_list}}",
+    )
+    _seed_gift(
+        session,
+        campaign.id,
+        sponsor,
+        None,
+        "Avery Confidential",
+        "Winter coat",
+        "COMMITTED",
+        size="Youth M",
+        gender="F",
+        privacy_level=RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
+        program_recipient_id="BT-101-01",
+    )
+    _seed_gift(
+        session,
+        campaign.id,
+        sponsor,
+        None,
+        "Jordan Confidential",
+        "Batman action figure with grappling launcher",
+        "COMMITTED",
+        privacy_level=RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
+        program_recipient_id="BT-102-01",
+    )
+    _seed_gift(
+        session,
+        campaign.id,
+        other_sponsor,
+        None,
+        "Morgan Confidential",
+        "Remote-control truck",
+        "COMMITTED",
+        size="Large",
+        gender="M",
+        privacy_level=RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
+        program_recipient_id="BT-103-01",
+    )
+    session.commit()
+
+    client = app.test_client()
+    preview_response = client.post(
+        f"/api/v1/campaigns/{campaign.id}/sponsors/{sponsor.id}/communications/preview",
+        json={"template_id": str(template.id)},
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+    send_response = client.post(
+        f"/api/v1/campaigns/{campaign.id}/sponsors/{sponsor.id}/communications/send",
+        json={"template_id": str(template.id)},
+        headers=auth_header(str(manager.id), "ADMIN"),
+    )
+
+    assert preview_response.status_code == 200
+    assert send_response.status_code == 200
+    assert len(delivered) == 1
+    preview_text = preview_response.get_json()["text"]
+    delivered_text = delivered[0]["text_body"]
+    coat_line = "- BT-101-01: Winter coat; Size: Youth M; Gender: Female (Committed, Qty 1)"
+    toy_line = "- BT-102-01: Batman action figure with grappling launcher (Committed, Qty 1)"
+    assert coat_line in preview_text
+    assert toy_line in preview_text
+    assert delivered_text == preview_text
+    assert "; Size: ;" not in delivered_text
+    assert "; Gender: ;" not in delivered_text
+    assert "Avery" not in delivered_text
+    assert "Jordan" not in delivered_text
+    assert "Confidential" not in delivered_text
+    assert "Remote-control truck" not in delivered_text
+
+
 def test_sponsor_intake_role_can_send_sponsor_communication(app, monkeypatch) -> None:
     install_auth(monkeypatch)
     delivered: list[dict[str, object]] = []
@@ -779,7 +866,20 @@ def _seed_sponsor(session, campaign_id, *, email: str = "sponsor@example.com"):
     return sponsor
 
 
-def _seed_gift(session, campaign_id, sponsor, public_label, display_label, description, status):
+def _seed_gift(
+    session,
+    campaign_id,
+    sponsor,
+    public_label,
+    display_label,
+    description,
+    status,
+    *,
+    size=None,
+    gender=None,
+    privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+    program_recipient_id=None,
+):
     group = RecipientGroup(
         id=uuid.uuid4(),
         campaign_id=campaign_id,
@@ -795,9 +895,11 @@ def _seed_gift(session, campaign_id, sponsor, public_label, display_label, descr
         recipient_group_id=group.id,
         recipient_kind=RECIPIENT_KIND_CHILD,
         program_type=RECIPIENT_PROGRAM_TYPE_CHILD_FAMILY,
-        privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
+        privacy_level=privacy_level,
         display_label=display_label,
         public_label=public_label,
+        program_recipient_id=program_recipient_id,
+        gender=gender,
         status=RECIPIENT_STATUS_ACTIVE,
     )
     session.add(recipient)
@@ -815,6 +917,7 @@ def _seed_gift(session, campaign_id, sponsor, public_label, display_label, descr
         wishlist_id=wishlist.id,
         item_type=WISHLIST_ITEM_TYPE_GIFT,
         description=description,
+        size=size,
         qty_requested=1,
         priority="MEDIUM",
         status=status,

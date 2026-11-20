@@ -71,6 +71,12 @@ _SPONSOR_QR_FIELDS = {
     "gift.dropoff_recipient_ids",
     "gift.dropoff_recipient_summary",
 }
+_RECIPIENT_GENDER_LABELS = {
+    "F": "Female",
+    "M": "Male",
+    "X": "Other",
+    "U": "Prefer not to say",
+}
 
 
 @dataclass(frozen=True)
@@ -563,6 +569,8 @@ class CampaignCommunicationSendService:
                     "recipient_id": recipient.program_recipient_id if recipient is not None else "",
                     "group_name": group.group_name if isinstance(group, RecipientGroup) else "",
                     "description": item.description,
+                    "size": str(item.size or "").strip(),
+                    "gender": _recipient_gender_label(recipient),
                     "status": item.status,
                     "quantity": str(sponsorship_item.qty_committed or item.qty_requested or 1),
                 }
@@ -699,13 +707,18 @@ def _build_gift_warnings(
 def _format_gift_list(rows: list[dict[str, str]]) -> str:
     if not rows:
         return ""
-    return "\n".join(
-        (
-            f"- {row['recipient_label']}: {row['description']}"
+    lines: list[str] = []
+    for row in rows:
+        gift_details = [row["description"]]
+        if row.get("size"):
+            gift_details.append(f"Size: {row['size']}")
+        if row.get("gender"):
+            gift_details.append(f"Gender: {row['gender']}")
+        lines.append(
+            f"- {row['recipient_label']}: {'; '.join(gift_details)}"
             f" ({_status_label(row['status'])}, Qty {row['quantity']})"
         )
-        for row in rows
-    )
+    return "\n".join(lines)
 
 
 def _commitment_summary(rows: list[dict[str, str]]) -> str:
@@ -731,6 +744,12 @@ def _dropoff_recipient_summary(rows: list[dict[str, str]]) -> str:
 
 def _public_safe_recipient_label(recipient: Recipient | None) -> str:
     return external_recipient_label(recipient)
+
+
+def _recipient_gender_label(recipient: Recipient | None) -> str:
+    if recipient is None:
+        return ""
+    return _RECIPIENT_GENDER_LABELS.get(str(recipient.gender or "").upper(), "")
 
 
 def _first_name(display_name: str | None) -> str:
