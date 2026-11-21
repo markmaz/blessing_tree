@@ -1,5 +1,6 @@
 import type {
   CampaignPeopleGroupContact,
+  CampaignRecipient,
   GroupContactRole,
   PreferredContact,
   RecipientGroupStatus,
@@ -173,4 +174,20 @@ function toTitleCase(value: string): string {
     .split('_')
     .map((segment) => `${segment.slice(0, 1)}${segment.slice(1).toLowerCase()}`)
     .join(' ');
+}
+
+export function formatRecipientDirectoryDetails(
+  recipient: Pick<CampaignRecipient, 'age' | 'ageUnit' | 'gender' | 'facilityRoom'>
+): string {
+  const age = recipient.age == null
+    ? null
+    : recipient.ageUnit === 'MONTHS'
+      ? formatRecipientAge(recipient.age, recipient.ageUnit)
+      : String(recipient.age);
+  const genderLabels: Record<string, string> = { F: 'Female', M: 'Male', X: 'Nonbinary', U: 'Unknown' };
+  const gender = recipient.gender?.trim();
+  const demographics = [age, gender ? genderLabels[gender] ?? gender : null].filter(Boolean).join(', ');
+  return [demographics, recipient.facilityRoom ? `Room ${recipient.facilityRoom}` : null]
+    .filter(Boolean)
+    .join(' · ') || 'No extra details';
 }

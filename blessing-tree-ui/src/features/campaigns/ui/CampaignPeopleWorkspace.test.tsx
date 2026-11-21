@@ -478,7 +478,7 @@ describe('CampaignPeopleWorkspace', () => {
 
     expect(within(groupTable).getByText('Child One')).toBeInTheDocument();
     expect(within(groupTable).getByText('Mary Smith')).toBeInTheDocument();
-    expect(within(groupTable).getByText('8 years')).toBeInTheDocument();
+    expect(within(groupTable).getByText('8, Female')).toBeInTheDocument();
     expect(within(groupTable).getByText('MGWW-001')).toBeInTheDocument();
     expect(within(peopleTable).getByText('MGWW-001')).toBeInTheDocument();
     expect(within(peopleTable).getAllByText('Art kit')).toHaveLength(2);

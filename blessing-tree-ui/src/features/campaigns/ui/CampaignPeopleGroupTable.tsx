@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
 import {
-  formatRecipientAge,
+  formatRecipientDirectoryDetails,
   formatShortDate,
   toGiftWorkflowStatusLabel,
   toGroupContactRoleLabel,
@@ -282,9 +282,7 @@ export function CampaignPeopleGroupTable({
                                   </td>
                                   <td>{toRecipientProgramTypeLabel(recipient.programType)}</td>
                                   <td>
-                                    {[recipient.age !== null ? formatRecipientAge(recipient.age, recipient.ageUnit) : null, recipient.facilityRoom ? `Room ${recipient.facilityRoom}` : null]
-                                      .filter(Boolean)
-                                      .join(' · ') || 'No extra details'}
+                                    {formatRecipientDirectoryDetails(recipient)}
                                   </td>
                                   <td>
                                     {recipient.wishlist?.items.length ? (

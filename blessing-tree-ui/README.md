@@ -30,6 +30,7 @@ The frontend is a React 19 + TypeScript + Vite application with:
 - The Team workspace is now intentionally reduced to search-plus-sort controls: compact top stats, a People card with search and sortable columns, and a Teams card with the same simpler interaction model.
 - The Team section now also includes inline concept help for roster terms such as `Member Type`, `App Access`, `App Access Roles`, and `Teams`, and the Studio AI drawer now exposes the same Team glossary when the Team section is active.
 - The Team workspace now consumes the backend-provided app access role catalog, so role labels and descriptions are no longer duplicated in the frontend.
+- Directory member Details show age followed by the existing gender (for example, `8, Female`), omit missing gender, preserve infant month units, and retain room information.
 - The old placeholder `Families` page is now replaced by a campaign-aware `People` section with child routes at `/campaigns/:campaignId/people/intake` and `/campaigns/:campaignId/people/directory`, splitting new intake work from searchable directory maintenance.
 - The Reports page now uses the selected campaign's People workspace data for live group, people, wishlist, and coordination reporting instead of placeholder scheduled-report rows.
 - The Admin area now uses left-sidebar child navigation under `Admin` for user management, LLM configuration, health checks, and app capabilities.
