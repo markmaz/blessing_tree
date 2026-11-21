@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from urllib.parse import urlparse
 
@@ -300,6 +300,11 @@ class CampaignCommunicationSendService:
         if not recipients:
             raise ServiceError("At least one email recipient is required", status_code=400)
 
+        recipients = self._prepare_campaign_gift_fields(
+            db, campaign_id=campaign_id, template=template,
+            recipients=recipients, created_by_user_id=created_by_user_id,
+        )
+
         first_subject, _, _ = self.template_renderer.render(
             campaign_name=campaign.name,
             campaign_year=campaign.year,
@@ -495,6 +500,37 @@ class CampaignCommunicationSendService:
         if "@" not in email:
             raise ServiceError("Sponsor must have a valid email address before sending email", status_code=409)
         return email
+
+    def _prepare_campaign_gift_fields(
+        self, db: Session, *, campaign_id: str, template: CommunicationTemplate,
+        recipients: list[ResolvedCampaignRecipient], created_by_user_id: str | None,
+    ) -> list[ResolvedCampaignRecipient]:
+        gift_fields = {field for field in _referenced_fields(template) if field.startswith("gift.")}
+        if not gift_fields:
+            return recipients
+        if any(recipient.sponsor_id is None for recipient in recipients):
+            raise ServiceError(
+                "This template includes sponsor gift details. Select sponsors to send their gifts, "
+                "or use Send Test in the template builder for a sample email. "
+                "Manual addresses and campaign team members have no sponsor gift context.",
+                status_code=422,
+                details={"fields": sorted(gift_fields)},
+            )
+        prepared = []
+        for recipient in recipients:
+            sponsorship = self._get_sponsorship(db, campaign_id, recipient.sponsor_id)
+            context = self._build_sponsor_merge_context(
+                db, sponsorship=sponsorship, template=template,
+                created_by_user_id=created_by_user_id,
+            )
+            missing = gift_fields - context.merge_fields.keys()
+            if missing:
+                raise ServiceError(
+                    "This template contains unsupported gift fields. Check the template before sending.",
+                    status_code=422, details={"fields": sorted(missing)},
+                )
+            prepared.append(replace(recipient, merge_fields={**recipient.merge_fields, **context.merge_fields}))
+        return prepared
 
     def _build_sponsor_merge_context(
         self,

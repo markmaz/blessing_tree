@@ -949,3 +949,66 @@ def _seed_gift(
     session.add(sponsorship_item)
     session.flush()
     return item
+
+
+def test_campaign_send_resolves_each_sponsors_gifts_for_audience_and_selected_targets(app, monkeypatch):
+    install_auth(monkeypatch)
+    delivered = []
+    monkeypatch.setattr('app.features.campaigns.communication_send_service.send_email_message',
+                        lambda **kwargs: delivered.append(kwargs))
+    session = sponsor_api_module.SessionLocal()
+    manager = seed_user(session, name='Manager')
+    campaign = seed_campaign(session, name='Campaign gift fields')
+    assign_role(session, manager, campaign, 'CAMPAIGN_MANAGER')
+    sponsor = _seed_sponsor(session, campaign.id, email='first@example.com')
+    other = _seed_sponsor(session, campaign.id, email='second@example.com')
+    template = _seed_template(session, campaign.id, body_template='{{gift.items_list}}')
+    _seed_gift(session, campaign.id, sponsor, None, 'Private child', 'Coat', 'COMMITTED',
+               age=8, gender='F', program_recipient_id='BT-01',
+               privacy_level=RECIPIENT_PRIVACY_LEVEL_ANONYMOUS)
+    _seed_gift(session, campaign.id, other, None, 'Other child', 'Doll', 'COMMITTED',
+               age=6, gender='M', program_recipient_id='BT-02',
+               privacy_level=RECIPIENT_PRIVACY_LEVEL_ANONYMOUS)
+    session.commit()
+    client = app.test_client()
+    for mode in ['AUDIENCE', 'SELECTED_SPONSORS']:
+        delivered.clear()
+        response = client.post(f'/api/v1/campaigns/{campaign.id}/communications/send',
+            json={'template_id': str(template.id), 'target_mode': mode,
+                  'sponsor_ids': [str(sponsor.id), str(other.id)]},
+            headers=auth_header(str(manager.id), 'ADMIN'))
+        assert response.status_code == 200, response.get_json()
+        assert len(delivered) == 2
+        by_email = {message['recipients'][0]: message for message in delivered}
+        first = by_email['first@example.com']
+        assert 'BT-01 (Age: 8 years; Gender: Female)' in first['html']
+        assert 'Coat' in first['text_body']
+        assert 'Doll' not in first['html']
+        assert 'Private child' not in first['html']
+        second = by_email['second@example.com']
+        assert 'BT-02 (Age: 6 years; Gender: Male)' in second['html']
+        assert 'Doll' in second['text_body']
+        assert 'Coat' not in second['html']
+        assert all('{{gift.items_list}}' not in message['html'] for message in delivered)
+
+
+def test_campaign_send_blocks_gift_template_without_sponsor_context_before_sending(app, monkeypatch):
+    install_auth(monkeypatch)
+    delivered = []
+    monkeypatch.setattr('app.features.campaigns.communication_send_service.send_email_message',
+                        lambda **kwargs: delivered.append(kwargs))
+    session = sponsor_api_module.SessionLocal()
+    manager = seed_user(session, name='Manager')
+    campaign = seed_campaign(session, name='Manual gift fields')
+    assign_role(session, manager, campaign, 'CAMPAIGN_MANAGER')
+    template = _seed_template(session, campaign.id, body_template='{{gift.items_list}}')
+    session.commit()
+    response = app.test_client().post(f'/api/v1/campaigns/{campaign.id}/communications/send',
+        json={'template_id': str(template.id), 'target_mode': 'MANUAL_EMAIL',
+              'manual_recipients': [{'email': 'reviewer@example.com'}]},
+        headers=auth_header(str(manager.id), 'ADMIN'))
+    assert response.status_code == 422
+    assert 'Select sponsors' in response.get_json()['error']
+    assert 'Send Test' in response.get_json()['error']
+    assert delivered == []
+    assert session.query(CampaignCommunicationSend).count() == 0

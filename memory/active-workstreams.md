@@ -360,4 +360,22 @@ Recent commits pushed to `codex/report-exports`:
   build passed. Changed backend files pass lint; full backend lint still reports
   four pre-existing errors in health/calendar/semantic-search/gift serializers.
   Frontend lint has the existing GiftPoolPage hook warning.
-- Implemented locally; not merged or deployed.
+- Merged in PR #35 and deployed via workflow 44931405208 as `34d8f08`.
+  Sponsor drawer preview verified ages and separated sections for three people;
+  the subsequent campaign-send issue below was not covered by that UI check.
+
+## Campaign Studio Gift Merge Fix (2026-11-21)
+
+- A received confirmation email contained literal `{{gift.items_list}}`.
+- The campaign send path used only recipient identity merge fields, unlike the
+  sponsor drawer preview/send path. It now builds gift context per sponsor
+  before creating send history or sending any email.
+- Gift templates with non-sponsor targets are rejected with guidance to select
+  sponsors or use the template builder Send Test. No arbitrary sponsor data is
+  inferred from a manual email address. Unknown gift fields are also blocked.
+- Regression tests exercise actual campaign audience and selected-sponsor sends
+  with mocked mail delivery, checking age, privacy labels, and sponsor isolation,
+  plus rejection of manual sends before delivery/history creation.
+- Verification: 271 backend tests and 161 frontend tests passed; changed backend
+  files pass lint. Review confirmed preflight occurs before delivery/history and
+  preserves recipient identity fields and sponsor isolation.
