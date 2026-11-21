@@ -143,3 +143,5 @@ The following older files are retained only as redirects to the current docs:
 - `COMMANDS.md`
 - `INDEX.md`
 - `FINAL_SUMMARY.txt`
+
+- Sponsor gift-list samples show separate recipient sections with age, gender, and gift bullets; multi-line Heading blocks preview at normal body size with line breaks preserved.

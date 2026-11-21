@@ -119,3 +119,26 @@ def test_campaign_template_renderer_keeps_dropoff_qr_image_compact() -> None:
     assert 'src="https://example.com/map.png"' in html
     assert "max-width:100%;border-radius:12px;" in html
     assert text == "Scan at drop-off\n\nWarehouse map"
+
+
+def test_gift_list_in_heading_preserves_recipient_spacing_and_escapes_content():
+    import json
+
+    gift_list = 'BT-001 (Age: 8 years; Gender: Female)\n  • Coat <large>\n\nBT-002\n  • Doll'
+    renderer = CampaignTemplateRenderer()
+    for body in [
+        '{{gift.items_list}}',
+        '__bt_template_blocks_v1__::' + json.dumps({'version': 1, 'blocks': [
+            {'type': 'heading', 'content': '{{gift.items_list}}'},
+        ]}),
+        '__bt_template_blocks_v1__::' + json.dumps({'version': 1, 'blocks': [
+            {'type': 'text', 'content': '{{gift.items_list}}'},
+        ]}),
+    ]:
+        _, html, text = renderer.render(campaign_name='Christmas', campaign_year=2026,
+                                       subject_template='Gifts', body_template=body,
+                                       merge_fields={'gift.items_list': gift_list})
+        assert text == gift_list
+        assert 'Female)<br />  • Coat &lt;large&gt;<br /><br />BT-002' in html
+        assert '<h2' not in html
+        assert '<large>' not in html

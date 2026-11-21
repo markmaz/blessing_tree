@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import date
 from urllib.parse import parse_qs, urlparse
@@ -78,8 +79,8 @@ def test_preview_sponsor_communication_renders_gift_merge_fields(app, monkeypatc
     assert parse_qs(qr_image_url.query)["campaignId"] == [str(campaign.id)]
     assert payload["merge_fields"]["gift.dropoff_qr_image_url"] == payload["merge_fields"]["gift.dropoff_qr_image"]
     assert payload["merge_fields"]["gift.dropoff_recipient_summary"]
-    assert "Ava Public: Winter coat" in payload["text"]
-    assert "Noah Display: Board game" in payload["text"]
+    assert "Ava Public\n  • Winter coat" in payload["text"]
+    assert "Noah Display\n  • Board game" in payload["text"]
     assert payload["merge_fields"]["gift.due_date"] == "2026-12-10"
     assert payload["warnings"] == []
 
@@ -108,7 +109,7 @@ def test_sponsor_communication_hides_anonymous_recipient_names(app, monkeypatch)
 
     assert response.status_code == 200
     payload = response.get_json()
-    assert "BT-001-01: Winter coat" in payload["text"]
+    assert "BT-001-01\n  • Winter coat" in payload["text"]
     assert "Ava" not in payload["text"]
     assert "Johnson" not in payload["text"]
     assert "Ava" not in payload["merge_fields"]["gift.recipient_names"]
@@ -284,7 +285,9 @@ def test_sponsor_confirmation_email_includes_only_that_sponsors_complete_gift_de
     template = _seed_template(
         session,
         campaign.id,
-        body_template="Confirmed gifts:\n{{gift.all_list}}",
+        body_template="__bt_template_blocks_v1__::" + json.dumps({
+            "version": 1, "blocks": [{"type": "heading", "content": "{{gift.items_list}}"}],
+        }),
     )
     _seed_gift(
         session,
@@ -296,6 +299,7 @@ def test_sponsor_confirmation_email_includes_only_that_sponsors_complete_gift_de
         "COMMITTED",
         size="Youth M",
         gender="F",
+        age=8,
         privacy_level=RECIPIENT_PRIVACY_LEVEL_ANONYMOUS,
         program_recipient_id="BT-101-01",
     )
@@ -342,11 +346,13 @@ def test_sponsor_confirmation_email_includes_only_that_sponsors_complete_gift_de
     assert len(delivered) == 1
     preview_text = preview_response.get_json()["text"]
     delivered_text = delivered[0]["text_body"]
-    coat_line = "- BT-101-01: Winter coat; Size: Youth M; Gender: Female (Committed, Qty 1)"
-    toy_line = "- BT-102-01: Batman action figure with grappling launcher (Committed, Qty 1)"
+    coat_line = "BT-101-01 (Age: 8 years; Gender: Female)\n  • Winter coat; Size: Youth M (Committed, Qty 1)"
+    toy_line = "BT-102-01\n  • Batman action figure with grappling launcher (Committed, Qty 1)"
     assert coat_line in preview_text
     assert toy_line in preview_text
     assert delivered_text == preview_text
+    assert "<h2" not in delivered[0]["html"]
+    assert "<br /><br />BT-102-01" in delivered[0]["html"]
     assert "; Size: ;" not in delivered_text
     assert "; Gender: ;" not in delivered_text
     assert "Avery" not in delivered_text
@@ -877,6 +883,8 @@ def _seed_gift(
     *,
     size=None,
     gender=None,
+    age=None,
+    age_unit="YEARS",
     privacy_level=RECIPIENT_PRIVACY_LEVEL_FULL_NAME,
     program_recipient_id=None,
 ):
@@ -900,6 +908,8 @@ def _seed_gift(
         public_label=public_label,
         program_recipient_id=program_recipient_id,
         gender=gender,
+        age=age,
+        age_unit=age_unit,
         status=RECIPIENT_STATUS_ACTIVE,
     )
     session.add(recipient)

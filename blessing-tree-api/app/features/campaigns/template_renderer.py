@@ -48,10 +48,14 @@ def _render_body(body_template: str, context: dict[str, str]) -> tuple[str, str]
             content = _render_text(str(block.get("content") or ""), context)
             if not content:
                 continue
-            html_parts.append(
-                f'<h2 style="color:{COLOR_PURPLE};margin:0 0 12px;font-family:Georgia,serif;font-size:24px;line-height:1.25;">'
-                f"{escape(content)}</h2>"
-            )
+            if "\n" in content:
+                # Lists inserted into a heading must retain line breaks and readable body sizing.
+                html_parts.append(f'<div style="margin:0 0 16px;font-size:15px;font-weight:normal;">{_paragraph_html(content)}</div>')
+            else:
+                html_parts.append(
+                    f'<h2 style="color:{COLOR_PURPLE};margin:0 0 12px;font-family:Georgia,serif;font-size:24px;line-height:1.25;">'
+                    f"{escape(content)}</h2>"
+                )
             text_parts.append(content)
             continue
         if block_type == "image":
