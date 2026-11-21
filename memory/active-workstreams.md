@@ -336,7 +336,11 @@ Recent commits pushed to `codex/report-exports`:
 - API already serializes and maps gender; no API/schema change was needed.
 - Added display edge-case coverage and updated the directory integration assertion.
 - Footer version test now follows the configured app version rather than a stale literal.
-- Local implementation only; production deployment remains pending.
+- Deployed commit `f3ff821` through Docker workflow run `44929514810`
+  successfully on 2026-11-21, preserving the previously deployed `5482733` base.
 - Verification: all 160 frontend tests passed, production build passed, lint
   completed with one pre-existing GiftPoolPage hook warning. Diff review found
-  no sorting/filtering/CSS changes; live browser/mobile visual QA was not run.
+  no sorting/filtering/CSS changes. Live desktop and 390x844 phone-width checks
+  confirmed age/gender rendering, missing-gender age-only fallback, group search,
+  sorting controls, and horizontal table scrolling. Browser viewport restored.
+  Live versions: frontend 0.0.128, backend 0.1.71.
