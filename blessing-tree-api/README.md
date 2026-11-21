@@ -363,3 +363,5 @@ Config cleanup notes:
 - API route versioning remains in `app/factory.py` as `v1` path construction and should not be used as the backend build version.
 
 Sponsor gift-list merge fields (including `gift.items_list`) group gifts by recipient with a blank line between people, age and gender in the recipient heading when available, and gift bullets showing size, status, and quantity. Ages retain years/months. Multi-line Heading blocks preserve these line breaks at body text size in email previews and delivered email.
+
+Campaign Studio sponsor audience and selected-sponsor sends resolve the same sponsor-specific gift merge fields as the sponsor drawer. Gift templates require sponsor recipients; manual/team sends without sponsor context are rejected before sending. Use the template builder Send Test for sample data.
