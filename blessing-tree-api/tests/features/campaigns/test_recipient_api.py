@@ -581,6 +581,75 @@ def test_household_children_are_cardinally_named_and_renumbered_after_delete(app
     assert response.get_json()["program_recipient_id"] == "SC-001-04"
 
 
+def test_child_renumbering_updates_generated_public_label_used_in_sponsor_messages(app, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name="Manager User")
+    campaign = seed_campaign(session)
+    assign_role(session, manager, campaign, "CAMPAIGN_MANAGER")
+    household = _seed_household_group(session, campaign.id)
+    manager_id = str(manager.id)
+    campaign_id = str(campaign.id)
+    group_id = str(household.id)
+    session.commit()
+    session.close()
+
+    client = app.test_client()
+    child_ids: list[str] = []
+    for age in [12, 10, 8, 6, 4]:
+        response = client.post(
+            f"/api/v1/campaigns/{campaign_id}/recipients",
+            json={
+                "recipient_group_id": group_id,
+                "recipient_kind": "CHILD",
+                "program_type": "CHILD_FAMILY",
+                "privacy_level": "FULL_NAME",
+                "age": age,
+                "age_unit": "YEARS",
+            },
+            headers=auth_header(manager_id, "VOLUNTEER"),
+        )
+        assert response.status_code == 201
+        child_ids.append(response.get_json()["id"])
+
+    with campaign_api_module.SessionLocal() as update_session:
+        children = (
+            update_session.query(Recipient)
+            .filter(Recipient.recipient_group_id == uuid.UUID(group_id))
+            .order_by(Recipient.created_at.asc(), Recipient.id.asc())
+            .all()
+        )
+        for index, child in enumerate(children):
+            child.public_label = "Approved Public Alias" if index == 0 else child.display_label
+        update_session.commit()
+
+    for child_id in [child_ids[1], child_ids[3]]:
+        response = client.delete(
+            f"/api/v1/campaigns/{campaign_id}/recipients/{child_id}",
+            headers=auth_header(manager_id, "VOLUNTEER"),
+        )
+        assert response.status_code == 204
+
+    with campaign_api_module.SessionLocal() as verify_session:
+        remaining_children = (
+            verify_session.query(Recipient)
+            .filter(Recipient.recipient_group_id == uuid.UUID(group_id))
+            .order_by(Recipient.created_at.asc(), Recipient.id.asc())
+            .all()
+        )
+        assert [child.display_label for child in remaining_children] == ["Child One", "Child Two", "Child Three"]
+        assert [child.public_label for child in remaining_children] == [
+            "Approved Public Alias",
+            "Child Two",
+            "Child Three",
+        ]
+        assert remaining_children[-1].program_recipient_id == "SC-001-05"
+
+        from app.features.recipients.privacy import external_recipient_label
+
+        assert external_recipient_label(remaining_children[-1]) == "Child Three"
+
+
 def test_recipient_address_search_returns_suggestions(app, monkeypatch: pytest.MonkeyPatch) -> None:
     install_auth(monkeypatch)
     session = campaign_api_module.SessionLocal()

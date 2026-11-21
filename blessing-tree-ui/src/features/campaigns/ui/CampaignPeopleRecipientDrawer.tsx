@@ -106,7 +106,7 @@ function buildRecipientDraft(
   return {
     recipientGroupId: recipient?.recipientGroupId ?? initialGroupId ?? '',
     displayLabel: recipient?.displayLabel ?? '',
-    privacyLevel: recipient?.privacyLevel ?? 'FULL_NAME',
+    privacyLevel: recipient?.privacyLevel ?? 'ANONYMOUS',
     firstName: recipient?.firstName ?? '',
     lastName: recipient?.lastName ?? '',
     birthYear: recipient?.birthYear ?? null,
@@ -797,7 +797,7 @@ export function CampaignPeopleRecipientDrawer({
               </RecipientHelpLabel>
               <select
                 className="form-select mt-2"
-                value={recipientDraft.privacyLevel ?? 'FULL_NAME'}
+                value={recipientDraft.privacyLevel ?? 'ANONYMOUS'}
                 onChange={(event) =>
                   setRecipientDraft((currentValue) => ({
                     ...currentValue,

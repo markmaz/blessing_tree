@@ -254,6 +254,7 @@ describe('CampaignPeopleRecipientDrawer', () => {
     expect(screen.queryByLabelText('First Name')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Last Name')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Gender')).toHaveDisplayValue('Not set');
+    expect(screen.getByLabelText('Privacy Level')).toHaveValue('ANONYMOUS');
     expect(screen.queryByLabelText('Direct Email')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Direct Phone')).not.toBeInTheDocument();
   });

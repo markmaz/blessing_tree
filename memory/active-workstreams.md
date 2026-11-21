@@ -326,3 +326,21 @@ Recent commits pushed to `codex/report-exports`:
 - The production self-hosted runner is powerful because it can run commands on
   the EC2 host. Keep it repo-scoped, label-scoped, and protected by the
   GitHub `production` environment approval flow.
+
+## Directory Age and Gender (2026-11-21)
+
+- Branch `codex/directory-age-gender` adds existing recipient gender after age
+  in the directory group-member Details column (`8, Female`).
+- Missing gender is omitted; month units, room details, empty fallback, and
+  existing table sorting/filtering/responsive markup are preserved.
+- API already serializes and maps gender; no API/schema change was needed.
+- Added display edge-case coverage and updated the directory integration assertion.
+- Footer version test now follows the configured app version rather than a stale literal.
+- Deployed commit `f3ff821` through Docker workflow run `44929514810`
+  successfully on 2026-11-21, preserving the previously deployed `5482733` base.
+- Verification: all 160 frontend tests passed, production build passed, lint
+  completed with one pre-existing GiftPoolPage hook warning. Diff review found
+  no sorting/filtering/CSS changes. Live desktop and 390x844 phone-width checks
+  confirmed age/gender rendering, missing-gender age-only fallback, group search,
+  sorting controls, and horizontal table scrolling. Browser viewport restored.
+  Live versions: frontend 0.0.128, backend 0.1.71.

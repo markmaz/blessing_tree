@@ -1026,12 +1026,19 @@ class CampaignRecipientService:
         for index, child in enumerate(child_recipients, start=1):
             if child.id == recipient.id:
                 label = _child_cardinal_label(index)
+                if _is_generated_child_cardinal_label(child.public_label):
+                    child.public_label = label
                 child.display_label = label
                 child.first_name, child.last_name = _split_child_cardinal_label(label)
                 return
 
     def _renumber_child_recipients(self, db: Session, group_id: uuid.UUID) -> None:
         child_recipients = self._child_recipients_for_group(db, group_id)
+        generated_public_label_ids = {
+            child.id
+            for child in child_recipients
+            if _is_generated_child_cardinal_label(child.public_label)
+        }
         for child in child_recipients:
             child.display_label = f"__child_renumber_{child.id}"
             child.first_name = None
@@ -1041,6 +1048,8 @@ class CampaignRecipientService:
             label = _child_cardinal_label(index)
             child.display_label = label
             child.first_name, child.last_name = _split_child_cardinal_label(label)
+            if child.id in generated_public_label_ids:
+                child.public_label = label
 
     @staticmethod
     def _child_recipients_for_group(
@@ -1336,6 +1345,17 @@ _CARDINAL_TENS = {
     90: "Ninety",
 }
 
+_CARDINAL_LABEL_WORDS = {
+    *_CARDINAL_WORDS.values(),
+    *_CARDINAL_TENS.values(),
+    *{
+        f"{tens_word}-{ones_word}"
+        for tens_word in _CARDINAL_TENS.values()
+        for ones_number, ones_word in _CARDINAL_WORDS.items()
+        if ones_number < 10
+    },
+}
+
 
 def _is_child_program(program_type: str) -> bool:
     return program_type in _CHILD_PROGRAM_TYPES
@@ -1348,6 +1368,14 @@ def _child_cardinal_label(index: int) -> str:
 def _split_child_cardinal_label(label: str) -> tuple[str, str]:
     parts = label.split(" ", 1)
     return parts[0], parts[1] if len(parts) > 1 else ""
+
+
+def _is_generated_child_cardinal_label(value: str | None) -> bool:
+    label = str(value or "").strip()
+    if not label.startswith("Child "):
+        return False
+    cardinal = label.removeprefix("Child ")
+    return cardinal in _CARDINAL_LABEL_WORDS or cardinal.isdigit()
 
 
 def _cardinal_word(value: int) -> str:

@@ -14,7 +14,7 @@ describe('AppFooter', () => {
     render(<AppFooter />);
 
     expect(screen.getByText(/queryforge, llc/i)).toBeInTheDocument();
-    expect(screen.getByText(/frontend v0\.0\.125/i)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`frontend v${__APP_VERSION__.replaceAll('.', '\\.')}`, 'i'))).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText(/backend v0\.1\.65/i)).toBeInTheDocument();
