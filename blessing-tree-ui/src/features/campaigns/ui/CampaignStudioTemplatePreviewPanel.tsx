@@ -42,7 +42,7 @@ export function CampaignStudioTemplatePreviewPanel({
               <div className="campaign-template-preview-card__body">
                 {renderedBlocks.length > 0 ? (
                   renderedBlocks.map((block) => {
-                    if (block.type === 'heading') {
+                    if (block.type === 'heading' && !block.content.includes('\n')) {
                       return <h3 key={block.id}>{block.content || 'Heading block'}</h3>;
                     }
                     if (block.type === 'image') {

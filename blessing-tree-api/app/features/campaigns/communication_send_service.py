@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.email import send_email_message
 from app.exceptions.service_error import ServiceError
 from app.features.campaigns.service import CampaignService
+from app.features.campaigns.sponsor_gift_list import format_sponsor_gift_list as _format_gift_list, recipient_age_label
 from app.features.campaigns.recipient_resolver import CampaignRecipientResolver, ResolvedCampaignRecipient
 from app.features.campaigns.studio_constants import COMMUNICATION_AUDIENCE_SPONSOR
 from app.features.campaigns.template_renderer import CampaignTemplateRenderer
@@ -565,12 +566,14 @@ class CampaignCommunicationSendService:
             group = recipient.recipient_group if recipient is not None else None
             rows.append(
                 {
+                    "recipient_key": str(recipient.id) if recipient is not None else str(item.id),
                     "recipient_label": _public_safe_recipient_label(recipient),
                     "recipient_id": recipient.program_recipient_id if recipient is not None else "",
                     "group_name": group.group_name if isinstance(group, RecipientGroup) else "",
                     "description": item.description,
                     "size": str(item.size or "").strip(),
                     "gender": _recipient_gender_label(recipient),
+                    "age": recipient_age_label(recipient),
                     "status": item.status,
                     "quantity": str(sponsorship_item.qty_committed or item.qty_requested or 1),
                 }
@@ -702,23 +705,6 @@ def _build_gift_warnings(
             "message": f"These merge fields do not have values for this sponsor email: {', '.join(unresolved_fields)}.",
         })
     return warnings
-
-
-def _format_gift_list(rows: list[dict[str, str]]) -> str:
-    if not rows:
-        return ""
-    lines: list[str] = []
-    for row in rows:
-        gift_details = [row["description"]]
-        if row.get("size"):
-            gift_details.append(f"Size: {row['size']}")
-        if row.get("gender"):
-            gift_details.append(f"Gender: {row['gender']}")
-        lines.append(
-            f"- {row['recipient_label']}: {'; '.join(gift_details)}"
-            f" ({_status_label(row['status'])}, Qty {row['quantity']})"
-        )
-    return "\n".join(lines)
 
 
 def _commitment_summary(rows: list[dict[str, str]]) -> str:

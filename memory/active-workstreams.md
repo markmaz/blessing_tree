@@ -344,3 +344,20 @@ Recent commits pushed to `codex/report-exports`:
   confirmed age/gender rendering, missing-gender age-only fallback, group search,
   sorting controls, and horizontal table scrolling. Browser viewport restored.
   Live versions: frontend 0.0.128, backend 0.1.71.
+
+## Sponsor Gift List Age and Readability (2026-11-21)
+
+- Branch `codex/sponsor-gift-list-age-formatting` groups sponsor gift-list merge
+  fields by recipient with separate headings, optional age/gender, gift bullets,
+  size/status/quantity, and blank lines between recipients. Existing recipient
+  privacy labels and sponsor-scoped selection remain authoritative.
+- Ages come from recipient age/age_unit, including month units and age zero.
+- Email renderer and template builder preserve multi-line heading content at
+  body size; sample gift lists now show multiple recipients and demographics.
+- Review checked escaping, anonymous recipients with matching labels, interleaved
+  gifts, missing age, preview/send consistency, and unchanged sponsor scoping.
+- Verification: backend suite 269 passed; frontend suite 161 passed; frontend
+  build passed. Changed backend files pass lint; full backend lint still reports
+  four pre-existing errors in health/calendar/semantic-search/gift serializers.
+  Frontend lint has the existing GiftPoolPage hook warning.
+- Implemented locally; not merged or deployed.
