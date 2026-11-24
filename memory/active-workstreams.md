@@ -394,3 +394,20 @@ Recent commits pushed to `codex/report-exports`:
   tests passed in the full run; an initially reused Response in the new test
   mock was corrected and the affected tests rerun. Frontend lint retains the
   existing GiftPoolPage hook warning. Changed backend files pass lint.
+
+## Gift Search Sorting and Availability (2026-11-24)
+
+- Continued on `codex/sponsor-available-gift-search`: Gift Search now has sortable
+  headers, a Sort by selector for composite-cell fields, direction control, and
+  All/Available/Unavailable buttons. Default ordering remains recipient ID.
+- Filtering and sorting apply before client pagination to the current fetched
+  search results; exports use the same filtered/sorted rows. Count shows visible
+  versus fetched result totals. Sponsor drawer remains available-only.
+- Review checked natural ID order, numeric quantities/costs, months versus years,
+  missing values last in either direction, no source-array mutation, and page reset.
+- Added rendered-page tests for header direction, availability filtering, and
+  resetting page two to page one after narrowing results.
+- Verification: full frontend suite passed (166 tests), followed by the final
+  sort-model check (4 tests) after adding displayed-gender ordering coverage.
+  Production build passed; lint has no errors and the existing GiftPoolPage warning.
+  Changes remain local, pending merge/deployment with the sponsor search update.
