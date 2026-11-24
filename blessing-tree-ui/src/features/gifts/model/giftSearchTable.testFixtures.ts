@@ -8,4 +8,3 @@ export function makeGift(id: number, available = true): GiftSearchItem {
     recipient: { id: String(id), displayLabel: `Child ${id}`, programRecipientId: `BT-${id}`,
       recipientKind: 'CHILD', programType: 'CHILD_FAMILY', age: id, ageUnit: 'YEARS', gender: 'F' } };
 }
-
