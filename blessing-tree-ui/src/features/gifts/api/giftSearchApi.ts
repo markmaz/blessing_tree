@@ -258,10 +258,13 @@ interface GiftReminderSendResponse {
   errors?: string[];
 }
 
-export async function searchCampaignGifts(campaignId: string, query: string): Promise<GiftSearchResult> {
+export async function searchCampaignGifts(campaignId: string, query: string, options: { availableOnly?: boolean } = {}): Promise<GiftSearchResult> {
   const params = new URLSearchParams();
   if (query.trim()) {
     params.set('q', query.trim());
+  }
+  if (options.availableOnly) {
+    params.set('available_only', 'true');
   }
   const suffix = params.toString() ? `?${params.toString()}` : '';
   const response = await apiFetchJson<GiftSearchResponse>(`/api/v1/campaigns/${campaignId}/gifts/search${suffix}`);

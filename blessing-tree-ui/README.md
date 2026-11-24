@@ -145,3 +145,5 @@ The following older files are retained only as redirects to the current docs:
 - `FINAL_SUMMARY.txt`
 
 - Sponsor gift-list samples show separate recipient sections with age, gender, and gift bullets; multi-line Heading blocks preview at normal body size with line breaks preserved.
+
+- Gift searches inside sponsor records show only available gifts, including after a commitment refresh; the result count and empty message reflect the available results.

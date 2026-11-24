@@ -105,6 +105,7 @@ class CampaignGiftSearchResource(Resource):
                 query=request.args.get("q", ""),
                 filters=request.args.to_dict(flat=True),
                 limit=_limit_arg(),
+                available_only=request.args.get("available_only", "").lower() in {"true", "1"},
             )
         return serialize_gift_search_response(
             campaign_id=campaign_id,

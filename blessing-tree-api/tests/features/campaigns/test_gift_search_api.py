@@ -1484,3 +1484,28 @@ def _seed_gift_reminder_dependencies(session, campaign_id, *, occurs_on=None):
         )
     )
     session.flush()
+
+
+def test_staff_available_only_search_filters_before_limit_and_preserves_default_search(app, monkeypatch):
+    install_auth(monkeypatch)
+    session = campaign_api_module.SessionLocal()
+    manager = seed_user(session, name='Gift Manager')
+    campaign = seed_campaign(session, name='Available gifts')
+    assign_role(session, manager, campaign, 'CAMPAIGN_MANAGER')
+    ids = _seed_gifts(session, campaign.id)
+    coat = session.get(WishlistItem, ids['coat_id'])
+    coat.qty_fulfilled = 1  # OPEN alone must not make a fully covered gift available.
+    sponsored = session.get(WishlistItem, ids['sponsored_id'])
+    sponsored.status = 'OPEN'  # A sponsorship link still makes this unavailable.
+    session.commit()
+    client = app.test_client()
+    url = f'/api/v1/campaigns/{campaign.id}/gifts/search'
+    headers = auth_header(str(manager.id), 'ADMIN')
+    response = client.get(url+'?available_only=true&limit=1', headers=headers)
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload['count'] == 1
+    assert payload['items'][0]['wishlist_item_id'] == str(ids['art_kit_id'])
+    assert payload['items'][0]['is_available'] is True
+    default = client.get(url, headers=headers).get_json()
+    assert len(default['items']) == 3

@@ -379,3 +379,18 @@ Recent commits pushed to `codex/report-exports`:
 - Verification: 271 backend tests and 161 frontend tests passed; changed backend
   files pass lint. Review confirmed preflight occurs before delivery/history and
   preserves recipient identity fields and sponsor isolation.
+
+## Sponsor Available Gift Search (2026-11-24)
+
+- Branch `codex/sponsor-available-gift-search` makes sponsor drawer gift search
+  request `available_only=true`. Server filtering occurs before result limiting
+  and excludes non-OPEN, sponsored, reserved, and fully fulfilled gifts.
+- Quantity checks include both direct fulfilled count and summed inventory
+  fulfillment rows. Other staff gift searches keep their default scope.
+- Review confirmed campaign scoping, semantic ranking, and post-commit refresh
+  use the same availability restriction. Backend gift tests: 32 passed.
+- Local implementation; deployment pending.
+- Frontend search API tests (3) and production build passed. Other frontend
+  tests passed in the full run; an initially reused Response in the new test
+  mock was corrected and the affected tests rerun. Frontend lint retains the
+  existing GiftPoolPage hook warning. Changed backend files pass lint.

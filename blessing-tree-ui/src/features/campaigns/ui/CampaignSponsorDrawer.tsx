@@ -282,7 +282,7 @@ export function CampaignSponsorDrawer({
     setGiftSearchError(null);
     setIsGiftSearchLoading(true);
     try {
-      const response = await searchCampaignGifts(campaignId, giftSearchQuery);
+      const response = await searchCampaignGifts(campaignId, giftSearchQuery, { availableOnly: true });
       setGiftSearchResult(response);
     } catch (searchError) {
       setGiftSearchError(searchError instanceof Error ? searchError.message : 'Unable to search gifts.');
@@ -866,7 +866,7 @@ export function CampaignSponsorDrawer({
                           ) : null}
                         </div>
                         {giftSearchResult.items.length === 0 ? (
-                          <div className="campaign-studio__empty-note mb-0">No gifts match that search.</div>
+                          <div className="campaign-studio__empty-note mb-0">No available gifts match that search.</div>
                         ) : (
                           <div className="campaign-sponsor-gift-result-list">
                             {giftSearchResult.items.slice(0, 8).map((item) => (

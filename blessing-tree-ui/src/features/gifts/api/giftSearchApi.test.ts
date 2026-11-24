@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   getPublicGiftScanLookup,
+  searchCampaignGifts,
   updatePublicGiftScanAction,
 } from '@/features/gifts/api/giftSearchApi';
 
@@ -104,3 +105,21 @@ function jsonResponse(payload: unknown): Response {
     headers: { 'Content-Type': 'application/json' },
   });
 }
+
+
+describe('gift search availability option', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it('requests only available gifts when the sponsor search opts in', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => jsonResponse({
+      campaign_id: 'campaign-1', count: 0, items: [],
+      parsed_filters: { query: 'coat', age_min: null, age_max: null, gender: null,
+        categories: [], item_types: [], sizes: [], min_cost_cents: null,
+        max_cost_cents: null, terms: [], warnings: [] },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    await searchCampaignGifts('campaign-1', 'coat', { availableOnly: true });
+    expect(fetchMock.mock.calls[0][0]).toContain('q=coat&available_only=true');
+    await searchCampaignGifts('campaign-1', 'coat');
+    expect(fetchMock.mock.calls[1][0]).not.toContain('available_only');
+  });
+});
