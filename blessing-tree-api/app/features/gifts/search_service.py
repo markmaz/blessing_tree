@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Protocol
 
-from sqlalchemy import case, func, or_
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.exceptions.service_error import ServiceError
@@ -12,6 +12,7 @@ from app.features.gifts.search_parser import GiftSearchFilters, gift_category_se
 from app.features.gifts.semantic_search_service import GiftSemanticSearchService
 from app.models.campaign import Campaign
 from app.models.gift_reservation import GiftReservation
+from app.models.fulfillment import Fulfillment
 from app.models.recipient import Recipient
 from app.models.recipient_group import RecipientGroup
 from app.models.recipient_constants import WISHLIST_STATUS_READY
@@ -54,6 +55,7 @@ class GiftSearchService:
         query: object = "",
         filters: dict[str, object] | None = None,
         limit: int = 100,
+        available_only: bool = False,
     ) -> tuple[GiftSearchFilters, list[WishlistItem]]:
         self.campaigns.get_campaign(db, campaign_id)
         parsed = self._merge_filters(parse_gift_search_text(query), filters or {})
@@ -63,6 +65,7 @@ class GiftSearchService:
             parsed=parsed,
             public=False,
             limit=limit,
+            available_only=available_only,
         )
         return parsed, results
 
@@ -94,6 +97,7 @@ class GiftSearchService:
         parsed: GiftSearchFilters,
         public: bool,
         limit: int,
+        available_only: bool = False,
     ) -> list[WishlistItem]:
         query = (
             db.query(WishlistItem)
@@ -129,6 +133,22 @@ class GiftSearchService:
                 WishlistItem.status == "OPEN",
                 SponsorshipItem.id.is_(None),
                 GiftReservation.id.is_(None),
+            )
+
+        if available_only:
+            fulfilled_quantity = (
+                select(func.coalesce(func.sum(Fulfillment.quantity_fulfilled), 0))
+                .where(Fulfillment.wishlist_item_id == WishlistItem.id)
+                .correlate(WishlistItem)
+                .scalar_subquery()
+            )
+            requested_quantity = func.coalesce(func.nullif(WishlistItem.qty_requested, 0), 1)
+            query = query.filter(
+                WishlistItem.status == "OPEN",
+                SponsorshipItem.id.is_(None),
+                GiftReservation.id.is_(None),
+                func.coalesce(WishlistItem.qty_fulfilled, 0) < requested_quantity,
+                fulfilled_quantity < requested_quantity,
             )
 
         if parsed.age_min is not None:

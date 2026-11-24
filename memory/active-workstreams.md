@@ -379,3 +379,35 @@ Recent commits pushed to `codex/report-exports`:
 - Verification: 271 backend tests and 161 frontend tests passed; changed backend
   files pass lint. Review confirmed preflight occurs before delivery/history and
   preserves recipient identity fields and sponsor isolation.
+
+## Sponsor Available Gift Search (2026-11-24)
+
+- Branch `codex/sponsor-available-gift-search` makes sponsor drawer gift search
+  request `available_only=true`. Server filtering occurs before result limiting
+  and excludes non-OPEN, sponsored, reserved, and fully fulfilled gifts.
+- Quantity checks include both direct fulfilled count and summed inventory
+  fulfillment rows. Other staff gift searches keep their default scope.
+- Review confirmed campaign scoping, semantic ranking, and post-commit refresh
+  use the same availability restriction. Backend gift tests: 32 passed.
+- Local implementation; deployment pending.
+- Frontend search API tests (3) and production build passed. Other frontend
+  tests passed in the full run; an initially reused Response in the new test
+  mock was corrected and the affected tests rerun. Frontend lint retains the
+  existing GiftPoolPage hook warning. Changed backend files pass lint.
+
+## Gift Search Sorting and Availability (2026-11-24)
+
+- Continued on `codex/sponsor-available-gift-search`: Gift Search now has sortable
+  headers, a Sort by selector for composite-cell fields, direction control, and
+  All/Available/Unavailable buttons. Default ordering remains recipient ID.
+- Filtering and sorting apply before client pagination to the current fetched
+  search results; exports use the same filtered/sorted rows. Count shows visible
+  versus fetched result totals. Sponsor drawer remains available-only.
+- Review checked natural ID order, numeric quantities/costs, months versus years,
+  missing values last in either direction, no source-array mutation, and page reset.
+- Added rendered-page tests for header direction, availability filtering, and
+  resetting page two to page one after narrowing results.
+- Verification: full frontend suite passed (166 tests), followed by the final
+  sort-model check (4 tests) after adding displayed-gender ordering coverage.
+  Production build passed; lint has no errors and the existing GiftPoolPage warning.
+  Changes remain local, pending merge/deployment with the sponsor search update.

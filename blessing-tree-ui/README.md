@@ -145,3 +145,7 @@ The following older files are retained only as redirects to the current docs:
 - `FINAL_SUMMARY.txt`
 
 - Sponsor gift-list samples show separate recipient sections with age, gender, and gift bullets; multi-line Heading blocks preview at normal body size with line breaks preserved.
+
+- Gift searches inside sponsor records show only available gifts, including after a commitment refresh; the result count and empty message reflect the available results.
+
+- Gift Search supports sortable Gift, Recipient, Workflow, and Details headers; Sort by adds recipient name, age, gender, group, sponsor, quantity, cost, and label. All/Available/Unavailable filters operate on current search results, reset pagination, and apply to exports. Age sorting compares months and years correctly.

@@ -14,7 +14,7 @@ import { TablePagination } from '@/shared/ui/TablePagination';
 import { WorkspacePageHeader } from '@/shared/ui/WorkspacePageHeader';
 import { WorkspaceSectionHeader } from '@/shared/ui/WorkspaceSectionHeader';
 import { clampTablePage } from '@/shared/ui/tablePaginationModel';
-import { compareOptionalProgramIds } from '@/shared/lib/naturalSort';
+import { filterAndSortGiftSearchItems, type GiftSearchSortKey, type GiftAvailabilityFilter } from '@/features/gifts/model/giftSearchTable';
 import { ReportExportActions } from '@/features/reports/ui/ReportExportActions';
 import type { ReportExportPayload } from '@/features/reports/model/reportExport';
 import '@/features/campaigns/ui/campaignStudioTeam.css';
@@ -36,6 +36,9 @@ export function GiftSearchPage() {
   const [commitNotes, setCommitNotes] = useState('');
   const [isSavingGift, setIsSavingGift] = useState(false);
   const [page, setPage] = useState(1);
+  const [sortKey, setSortKey] = useState<GiftSearchSortKey>('recipientId');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [availability, setAvailability] = useState<GiftAvailabilityFilter>('all');
   const [pageSize, setPageSize] = useState(25);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +66,12 @@ export function GiftSearchPage() {
   const filterChips = useMemo(() => buildFilterChips(result), [result]);
   const selectedSponsor = sponsors.find((sponsor) => sponsor.id === selectedSponsorId) ?? null;
   const selectedSponsorDetails = sponsors.find((sponsor) => sponsor.id === selectedSponsorDetailsId) ?? null;
-  const sortedItems = useMemo(() => sortGiftSearchItems(result?.items ?? []), [result?.items]);
+  const sortedItems = useMemo(() => filterAndSortGiftSearchItems(result?.items ?? [], availability, sortKey, sortDirection), [result?.items, availability, sortKey, sortDirection]);
+  const handleSort = (key: GiftSearchSortKey) => {
+    setSortDirection(key === sortKey && sortDirection === 'asc' ? 'desc' : 'asc');
+    setSortKey(key);
+    setPage(1);
+  };
   const safePage = clampTablePage(page, sortedItems.length, pageSize);
   const pagedItems = useMemo(() => {
     return sortedItems.slice((safePage - 1) * pageSize, safePage * pageSize);
@@ -234,21 +242,48 @@ export function GiftSearchPage() {
       <section className="content-card">
         <WorkspaceSectionHeader
           title="Results"
-          meta={<span className="text-muted small">{result?.count ?? 0} gift{(result?.count ?? 0) === 1 ? '' : 's'}</span>}
+          meta={<span className="text-muted small">{sortedItems.length} of {result?.items.length ?? 0} search results</span>}
           actions={<ReportExportActions payload={giftSearchExport} formats={['pdf', 'excel']} />}
         />
-        {!result || result.items.length === 0 ? (
-          <div className="campaign-studio__empty-note">No gifts match the current search.</div>
+        <div className="d-flex flex-wrap align-items-end gap-3 mb-3">
+          <div>
+            <span className="form-label d-block">Availability</span>
+            <div className="btn-group" role="group" aria-label="Gift availability">
+              {(['all', 'available', 'unavailable'] as const).map((value) => (
+                <button key={value} type="button" className={`btn btn-sm ${availability === value ? 'btn-secondary' : 'btn-outline-secondary'}`}
+                  aria-pressed={availability === value} onClick={() => { setAvailability(value); setPage(1); }}>
+                  <i className={`bi ${value === 'all' ? 'bi-list' : value === 'available' ? 'bi-check-circle' : 'bi-dash-circle'} me-1`} aria-hidden="true" />
+                  {value.charAt(0).toUpperCase() + value.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className="form-label mb-0">Sort by
+            <select className="form-select form-select-sm mt-1" value={sortKey} onChange={(event) => { setSortKey(event.target.value as GiftSearchSortKey); setPage(1); }}>
+              {Object.entries(giftSortLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select>
+          </label>
+          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => { setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); setPage(1); }}>
+            <i className={`bi ${sortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down'} me-1`} aria-hidden="true" />
+            {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+          </button>
+        </div>
+        {!result || sortedItems.length === 0 ? (
+          <div className="campaign-studio__empty-note">No gifts match the current search and availability filter.</div>
         ) : (
           <>
             <div className="table-responsive">
               <table className="table align-middle">
                 <thead>
                   <tr>
-                    <th>Gift</th>
-                    <th>Recipient</th>
-                    <th>Workflow</th>
-                    <th>Details</th>
+                    {([['gift', 'Gift'], ['recipientId', 'Recipient'], ['workflow', 'Workflow'], ['quantity', 'Details']] as const).map(([key, label]) => (
+                      <th key={key} scope="col" aria-sort={sortKey === key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
+                        <button type="button" className="campaign-team-table__sort" onClick={() => handleSort(key)}
+                          aria-label={key === 'quantity' ? 'Sort Details by quantity remaining' : `Sort ${label}`}>
+                          <span>{label}</span><i className={`bi ${sortKey === key ? (sortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'}`} aria-hidden="true" />
+                        </button>
+                      </th>
+                    ))}
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -271,7 +306,7 @@ export function GiftSearchPage() {
             <TablePagination
               page={safePage}
               pageSize={pageSize}
-              totalItems={result.items.length}
+              totalItems={sortedItems.length}
               itemLabel="gifts"
               onPageChange={setPage}
               onPageSizeChange={(nextPageSize) => {
@@ -794,30 +829,6 @@ function buildGiftSearchExport(
   };
 }
 
-function sortGiftSearchItems(items: GiftSearchItem[]): GiftSearchItem[] {
-  return [...items].sort((left, right) => {
-    const recipientComparison = compareOptionalProgramIds(
-      left.recipient?.programRecipientId,
-      right.recipient?.programRecipientId
-    );
-    if (recipientComparison !== 0) {
-      return recipientComparison;
-    }
-    const groupComparison = compareOptionalProgramIds(left.recipient?.groupProgramId, right.recipient?.groupProgramId);
-    if (groupComparison !== 0) {
-      return groupComparison;
-    }
-    const giftComparison = left.description.localeCompare(right.description, undefined, {
-      numeric: true,
-      sensitivity: 'base',
-    });
-    if (giftComparison !== 0) {
-      return giftComparison;
-    }
-    return left.wishlistItemId.localeCompare(right.wishlistItemId);
-  });
-}
-
 function buildFilterChips(result: GiftSearchResult | null): GiftSearchFilterChip[] {
   if (!result) {
     return [];
@@ -898,3 +909,9 @@ function removeCategoryTerms(query: string, category: string): string {
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+const giftSortLabels: Record<GiftSearchSortKey, string> = {
+  gift: 'Gift', recipientId: 'Recipient ID', recipientName: 'Recipient name',
+  age: 'Age', gender: 'Gender', group: 'Group', workflow: 'Workflow',
+  sponsor: 'Sponsor', quantity: 'Quantity remaining', cost: 'Estimated cost', label: 'Label',
+};
